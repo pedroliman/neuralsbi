@@ -1,0 +1,7 @@
+^docs$
+^\.github$
+^LICENSE\.md$
+^.*\.Rproj$
+^\.Rproj\.user$
+^scratchpad$
+^\.git$
