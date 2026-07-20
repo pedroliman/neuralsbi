@@ -88,6 +88,57 @@ task_two_moons <- function() {
   new_task("two_moons", prior, simulator, 2L, 2L)
 }
 
+#' SIR epidemic task (sbibm `sir`)
+#'
+#' Susceptible-Infected-Recovered dynamics with contact rate \eqn{\beta} and
+#' recovery rate \eqn{\gamma} under log-normal priors (as in `sbibm`):
+#' \eqn{\beta \sim \mathrm{LogNormal}(\log 0.4, 0.5)},
+#' \eqn{\gamma \sim \mathrm{LogNormal}(\log 0.125, 0.2)}. The ODE is solved
+#' by simple Euler steps for a population of `N` over `days` days, and the
+#' data are binomial subsamples (`n_obs_draws` trials) of the infected
+#' fraction at `n_points` evenly spaced times. No closed-form posterior:
+#' verify with SBC / expected coverage (Level 2).
+#'
+#' @param N,days,n_points,n_obs_draws Population size, horizon, number of
+#'   observation times, and binomial trials per observation.
+#' @rdname tasks
+#' @export
+task_sir <- function(N = 1e6, days = 160, n_points = 10L, n_obs_draws = 1000L) {
+  prior <- prior_custom(
+    sample_fn = function(n) cbind(stats::rlnorm(n, log(0.4), 0.5),
+                                  stats::rlnorm(n, log(0.125), 0.2)),
+    log_prob_fn = function(theta) {
+      theta <- as_theta_matrix(theta, 2L)
+      stats::dlnorm(theta[, 1], log(0.4), 0.5, log = TRUE) +
+        stats::dlnorm(theta[, 2], log(0.125), 0.2, log = TRUE)
+    },
+    dim = 2L, lower = c(0, 0)
+  )
+  obs_times <- round(seq(1, days, length.out = n_points))
+  simulator <- function(theta) {
+    theta <- as_theta_matrix(theta, 2L)
+    n <- nrow(theta)
+    x <- matrix(0, nrow = n, ncol = n_points)
+    for (i in seq_len(n)) {
+      beta <- theta[i, 1]; gamma <- theta[i, 2]
+      S <- N - 1; I <- 1; R <- 0
+      Ipath <- numeric(days)
+      for (t in seq_len(days)) {
+        newinf <- beta * S * I / N
+        newrec <- gamma * I
+        S <- S - newinf
+        I <- I + newinf - newrec
+        R <- R + newrec
+        Ipath[t] <- I
+      }
+      p <- pmin(pmax(Ipath[obs_times] / N, 0), 1)
+      x[i, ] <- stats::rbinom(n_points, n_obs_draws, p) / n_obs_draws
+    }
+    x
+  }
+  new_task("sir", prior, simulator, 2L, n_points)
+}
+
 #' SLCP task (sbibm `slcp`)
 #'
 #' "Simple likelihood, complex posterior": uniform prior on

@@ -22,6 +22,7 @@ export(plot_coverage)
 export(task_gaussian_linear)
 export(task_two_moons)
 export(task_slcp)
+export(task_sir)
 
 S3method(print, nsbi_prior)
 S3method(print, nsbi_npe)

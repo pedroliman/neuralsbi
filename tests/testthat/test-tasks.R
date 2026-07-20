@@ -29,6 +29,22 @@ test_that("two_moons simulator produces the crescent geometry", {
   expect_true(all(x[, 1] >= 0.25 - 0.2))  # right half-moon only
 })
 
+test_that("sir task simulates plausible epidemics under its prior", {
+  set.seed(12)
+  task <- task_sir()
+  sims <- simulate_for_sbi(task$simulator, task$prior, 50)
+  expect_equal(dim(sims$x), c(50L, 10L))
+  expect_true(all(sims$x >= 0 & sims$x <= 1))       # infected fractions
+  expect_true(all(within_support(task$prior, sims$theta)))
+  expect_true(all(sims$theta > 0))                   # rates are positive
+  lp <- task$prior$log_prob(sims$theta)
+  expect_true(all(is.finite(lp)))
+  # a fast-spreading epidemic peaks higher than a slow one
+  x_fast <- task$simulator(matrix(c(0.9, 0.1), nrow = 1))
+  x_slow <- task$simulator(matrix(c(0.15, 0.14), nrow = 1))
+  expect_gt(max(x_fast), max(x_slow))
+})
+
 test_that("slcp simulator has the right shape and support behavior", {
   set.seed(11)
   task <- task_slcp()
