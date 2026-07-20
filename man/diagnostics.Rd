@@ -4,8 +4,7 @@
 \alias{diagnostics}
 \title{Posterior diagnostics}
 \description{
-Tools to check whether a trained posterior is trustworthy. These mirror the
-validation tools in the Python \code{sbi} package:
+Tools to check whether a trained posterior is trustworthy:
 }
 \details{
 \itemize{

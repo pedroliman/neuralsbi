@@ -21,5 +21,5 @@ Trains a logistic-regression classifier to distinguish samples in \code{x} from
 samples in \code{y} using cross-validation. A test accuracy near 0.5 means the two
 sample sets are indistinguishable (good); near 1.0 means they differ. This is
 the standard SBI metric for comparing an estimated posterior to a reference
-(e.g. an analytic posterior, or the Python \code{sbi} output).
+(e.g. an analytic posterior or long-run MCMC draws).
 }

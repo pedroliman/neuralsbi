@@ -16,8 +16,8 @@ task_slcp()
 task_sir(N = 1e6, days = 160, n_points = 10L, n_obs_draws = 1000L)
 }
 \arguments{
-\item{dim}{Parameter/data dimension for the Gaussian linear task (sbibm
-uses 10).}
+\item{dim}{Parameter/data dimension for the Gaussian linear task
+(default 10).}
 
 \item{prior_var, noise_var}{Prior and likelihood variances for the Gaussian
 linear task.}
@@ -31,12 +31,11 @@ A list of class \code{nsbi_task} with elements \code{name}, \code{prior},
 \code{reference_posterior(x_obs, n)} returning exact posterior draws.
 }
 \description{
-Standard simulation-based-inference benchmark tasks, matching the
-definitions in the \code{sbibm} suite that the Python \code{sbi} package
-benchmarks against. Each task bundles a prior, a simulator, and (where one
-exists) an analytic reference posterior, so the same object drives unit
-tests, calibration studies, and the head-to-head comparison with Python
-\code{sbi} in \code{inst/benchmarks/}.
+Standard simulation-based-inference benchmark tasks, following the
+definitions in the \code{sbibm} benchmark suite. Each task bundles a prior,
+a simulator, and (where one exists) an analytic reference posterior, so the
+same object drives unit tests, calibration studies, and the benchmark
+harness in \code{inst/benchmarks/}.
 \itemize{
 \item \code{task_gaussian_linear()} -- conjugate Gaussian; analytic posterior.
 \item \code{task_two_moons()} -- crescent-shaped, bimodal posterior.
