@@ -8,8 +8,9 @@
 #' parameters per dimension (K bin widths, K bin heights, K - 1 interior
 #' derivatives). The spline acts on `[-B, B]` and is the identity outside
 #' (linear tails), so the standard-normal base distribution is unaffected in
-#' the tails. Note: Python `sbi`'s "nsf" uses coupling layers; ours is
-#' autoregressive — same density family, different conditioning structure.
+#' the tails. Note: NSF implementations elsewhere often use coupling layers;
+#' ours is autoregressive — same density family, different conditioning
+#' structure.
 #'
 #' Select with `npe(..., density_estimator = "nsf")`.
 #'

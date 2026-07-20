@@ -4,8 +4,8 @@
 #' robustness features are implemented once: train/validation split, Adam,
 #' minibatching, early stopping on validation loss, learning-rate decay on
 #' plateau, gradient clipping, and best-of-`n_restarts` reinitialization.
-#' This mirrors the training defaults of the Python `sbi` package
-#' (batch 100, lr 5e-4, 10% validation, patience 20, clip norm 5).
+#' The defaults (batch 100, lr 5e-4, 10% validation, patience 20, clip norm 5)
+#' follow common practice in the NPE literature.
 #'
 #' @param build_net A zero-argument function returning a *fresh* torch module.
 #'   Called once per restart so each restart gets new initial weights.
