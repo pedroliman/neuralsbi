@@ -113,6 +113,73 @@ plot_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
   invisible(cov)
 }
 
+#' Plot TARP expected coverage
+#'
+#' Draws the expected coverage probability (ECP) curve from [tarp()] against
+#' the nominal credibility level. A calibrated posterior lies on the diagonal;
+#' a curve above the diagonal means the posterior is too wide (conservative),
+#' below means overconfident. The shaded band shows the Monte-Carlo uncertainty
+#' from the finite number of TARP trials.
+#'
+#' @param tarp_result An `nsbi_tarp` object from [tarp()].
+#' @return Invisibly, a data frame with `nominal` and `ecp` columns.
+#' @export
+plot_tarp <- function(tarp_result) {
+  stopifnot(inherits(tarp_result, "nsbi_tarp"))
+  lev <- tarp_result$levels
+  graphics::plot(NA, xlim = c(0, 1), ylim = c(0, 1), asp = 1,
+                 xlab = "nominal credibility level",
+                 ylab = "expected coverage probability",
+                 main = "TARP coverage")
+  n <- tarp_result$n_tarp
+  lo <- stats::qbinom(0.005, n, lev) / n
+  hi <- stats::qbinom(0.995, n, lev) / n
+  graphics::polygon(c(lev, rev(lev)), c(lo, rev(hi)),
+                    col = grDevices::adjustcolor("grey60", 0.3), border = NA)
+  graphics::abline(0, 1, col = "grey40", lty = 2)
+  graphics::lines(lev, tarp_result$ecp, col = "steelblue", lwd = 2)
+  invisible(data.frame(nominal = lev, ecp = tarp_result$ecp))
+}
+
+#' Plot posterior predictive checks
+#'
+#' Compares data simulated from posterior parameter draws (see
+#' [posterior_predictive()]) with the observed data, one marginal histogram per
+#' data dimension with the observation marked. If the observation falls in the
+#' tails of the predictive distribution, the model (or the fit) does not
+#' reproduce the data it is conditioned on.
+#'
+#' @param pred A matrix of predictive draws from [posterior_predictive()].
+#' @param x_obs The observed data vector the posterior was conditioned on.
+#' @param labels Optional labels for the data dimensions.
+#' @param bins Number of histogram bins.
+#' @return Invisibly, the per-dimension predictive quantile of the observation.
+#' @export
+plot_posterior_predictive <- function(pred, x_obs, labels = NULL, bins = 30L) {
+  pred <- as_theta_matrix(pred)
+  d <- ncol(pred)
+  x_obs <- as.numeric(x_obs)
+  stopifnot(length(x_obs) == d)
+  if (is.null(labels)) {
+    labels <- colnames(pred) %||% paste0("x[", seq_len(d), "]")
+  }
+  nrow_grid <- floor(sqrt(d))
+  op <- graphics::par(mfrow = c(nrow_grid, ceiling(d / nrow_grid)),
+                      mar = c(3.2, 3.2, 1.5, 0.6), mgp = c(1.8, 0.5, 0))
+  on.exit(graphics::par(op), add = TRUE)
+  q <- numeric(d)
+  for (j in seq_len(d)) {
+    xr <- range(pred[, j], x_obs[j])
+    graphics::hist(pred[, j], breaks = seq(xr[1], xr[2], length.out = bins + 1L),
+                   col = "grey80", border = "white", main = labels[j],
+                   xlab = "predictive draws")
+    graphics::abline(v = x_obs[j], col = "firebrick", lwd = 2)
+    q[j] <- mean(pred[, j] < x_obs[j])
+  }
+  names(q) <- labels
+  invisible(q)
+}
+
 #' @export
 print.nsbi_samples <- function(x, ...) {
   acc <- attr(x, "acceptance_rate")

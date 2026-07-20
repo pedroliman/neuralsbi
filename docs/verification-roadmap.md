@@ -101,13 +101,19 @@ leakage handling) and documented.
       clipping. All neural estimators share one training engine:
       `train_conditional_de()` in `R/train.R` (exposed via `npe(n_restarts =,
       clip_grad_norm =)`); per-epoch loss history stored in `fit$de$history`.
-- [ ] Better leakage handling (truncated proposals; log-prob normalization tests).
+- [x] Better leakage handling: log-prob normalization tested
+      (`test-posterior-normalization.R`: renormalized density integrates to 1
+      over a bounded support, `-Inf` outside); truncated proposals shipped as
+      TSNPE (`npe_sequential()`, see v0.5).
 - [x] `summary()` methods (`nsbi_npe`, `nsbi_posterior`, `nsbi_samples`) and
       `as.data.frame.nsbi_samples()` tidy accessor (`R/summaries.R`).
 - [x] `plot_coverage()` — nominal vs empirical coverage with Monte-Carlo band
-      (`R/plotting.R`). Still open: TARP-style coverage; posterior-predictive
-      plots.
-- [ ] Vignettes: an applied end-to-end case study (e.g. SIR epidemic).
+      (`R/plotting.R`).
+- [x] TARP joint coverage (`tarp()` in `R/diagnostics.R`, `plot_tarp()`;
+      Lemos et al. 2023) and posterior-predictive plots
+      (`plot_posterior_predictive()`). Tested with the linear-Gaussian oracle,
+      including a miscalibration-detection case.
+- [x] Vignettes: SIR applied case study (`vignettes/sir-case-study.Rmd`).
 - [x] CI with cached libtorch: `.github/workflows/R-CMD-check.yaml` now has a
       `test-torch` job (installs libtorch, caches it, runs the full suite via
       `cd tests && Rscript testthat.R` so internals are visible to tests).
@@ -152,12 +158,19 @@ leakage handling) and documented.
   trained jointly. Enables time series / image-like observations.
 - Standardization moves to embedding output.
 
-### v0.5 — Sequential / multi-round NPE
+### v0.5 — Sequential / multi-round NPE (in progress)
 
-- **NPE-C** (atomic proposal correction) and/or **NPE-A** (analytic correction)
-  for simulation-efficient inference targeting a specific `x_o`.
-- Proposal bookkeeping across rounds; importance-corrected loss.
-- Verify simulation efficiency vs. single-round on fixed budgets.
+- [x] **TSNPE** (truncated-prior proposals, Deistler et al. 2022):
+      `npe_sequential(prior, simulator, x_obs, n_rounds, ...)` in
+      `R/sequential.R`. Truncates the prior to the `1 - epsilon`
+      highest-probability region of the current posterior via rejection,
+      retrains on all accumulated rounds with the standard NPE loss (valid
+      because every proposal is prior-proportional on its support). Tested
+      against the analytic linear-Gaussian posterior, including bounded
+      priors and per-round budgets (`test-sequential.R`).
+- [ ] **NPE-C** (atomic proposal correction) and/or **NPE-A** (analytic
+      correction); importance-corrected loss and proposal bookkeeping.
+- [ ] Verify simulation efficiency vs. single-round on fixed budgets.
 
 ### v0.6+ — Breadth
 
@@ -179,7 +192,8 @@ leakage handling) and documented.
 - [~] M4 MAF and NSF estimators implemented + analytic parity tests; SLCP
       parity with `sbi` still open.
 - [ ] M5 Embedding nets; a structured-data case study.
-- [ ] M6 Sequential NPE-C; efficiency parity with `sbi`.
+- [~] M6 Sequential NPE: TSNPE implemented + analytic parity test; NPE-C and
+      efficiency parity with `sbi` still open.
 - [ ] M7 CRAN-ready: full docs, vignettes, `R CMD check` clean.
 
 ---
@@ -187,8 +201,8 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated after the v0.2/v0.3 implementation push
-(commits `24ad8d5..`, July 2026).*
+pick up the work. Last updated after the CI-fix + diagnostics push
+(branch `claude/roadmap-implementation-plan-un0t6w`, July 2026).*
 
 ### What exists right now
 
@@ -202,7 +216,11 @@ pick up the work. Last updated after the v0.2/v0.3 implementation push
 | Benchmarks vs sbi | `inst/benchmarks/01..04` | scripted, **never executed** |
 | Summaries/tidy | `R/summaries.R` | done |
 | Coverage plot | `plot_coverage()` in `R/plotting.R` | done |
-| CI | `.github/workflows/R-CMD-check.yaml` | check + test-torch jobs, unverified |
+| TARP coverage | `tarp()`, `plot_tarp()` | done + tested (calibrated & miscalibrated cases) |
+| Posterior-predictive plot | `plot_posterior_predictive()` | done |
+| Leakage normalization | tests in `test-posterior-normalization.R` | done |
+| Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
+| CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
 
 Key contract: every estimator implements `de_log_prob(de, theta, x)` and
@@ -222,31 +240,35 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 
 ### Next actions, in priority order
 
-1. **Confirm CI is green** (finishes M1). Check the Actions run for the
-   latest push to `main`; fix anything the `check`/`test-torch` jobs surface.
-   Watch for: hand-written NAMESPACE/man drift (consider generating with
-   roxygen2 instead), and libtorch cache misses.
+1. **Confirm CI is green** (finishes M1). The first runs failed and the
+   causes are fixed on this branch: codoc drift in `npe.Rd`/`fit_mdn.Rd`,
+   the `npe()` donttest example needing libtorch, `CLAUDE.md` missing from
+   `.Rbuildignore`, and `install_torch()` rejecting a nonexistent
+   `TORCH_HOME`. The workflow only triggers on pushes/PRs to `main`, so
+   open the PR and watch its run. Longer term, consider generating
+   NAMESPACE/man with roxygen2 so drift can't recur.
 2. **Run the sbi head-to-head** (finishes M3, headline claim). Needs
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
    CSVs + a short summary to `docs/benchmarks/`. Acceptance: C2ST ≤ 0.60.
 3. **Two-moons calibration study** (finishes M2): run `sbc()` +
-   `plot_coverage()` on the two-moons MDN/NSF fit; save figures to
-   `docs/figures/`; add a README section.
+   `plot_coverage()` + `tarp()` on the two-moons MDN/NSF fit; save figures
+   to `docs/figures/`; add a README section. TARP matters here: two-moons
+   marginals hide the crescent structure that the joint test sees.
 4. **SLCP with NSF** (finishes M4): `task_slcp()` exists; train NSF at 10k
    sims, compare to `sbi` via the harness. Expect this to stress leakage
    correction (uniform prior on [-3,3]^5).
-5. **v0.2 leftovers**: truncated-proposal leakage handling; log-prob
-   normalization tests; TARP coverage; posterior-predictive plots; SIR
-   vignette (`task_sir()` already exists and recovers true rates — the
-   vignette should walk prior → npe → posterior → sbc/coverage on it).
+5. **v0.2 leftovers**: none — log-prob normalization tests, TARP,
+   posterior-predictive plots, the SIR vignette, and truncated proposals
+   (via TSNPE) are all done.
 6. **v0.4 embedding nets**: optional `embedding_net` argument to `npe()`;
    an nn_module mapping raw x → features trained jointly (append it in each
    estimator's `build_net`/forward; standardize at embedding output).
-7. **v0.5 sequential NPE (TSNPE or APT/NPE-C)**: multi-round loop
-   `npe_sequential(prior, simulator, x_obs, n_rounds, ...)`; simplest
-   correct start is **TSNPE** (truncated-prior proposals, no loss
-   correction) reusing the existing single-round machinery.
+7. **v0.5 sequential NPE**: TSNPE is done (`npe_sequential()`,
+   `R/sequential.R`) and doubles as the truncated-proposal leakage
+   handling. Still open: APT/NPE-C with the atomic loss correction, and a
+   fixed-budget efficiency comparison (sequential vs. single-round) once a
+   torch env is available.
 
 ### Known wrinkles / gotchas
 

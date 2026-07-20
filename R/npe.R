@@ -40,14 +40,13 @@
 #'   [posterior()], or sample directly with [sample()].
 #'
 #' @examples
-#' \donttest{
 #' prior <- prior_uniform(c(-2, -2, -2), c(2, 2, 2))
 #' simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
 #'                                                  nrow = nrow(theta))
-#' fit <- npe(prior, simulator, n_simulations = 2000)
+#' fit <- npe(prior, simulator, n_simulations = 2000,
+#'            density_estimator = "linear_gaussian")
 #' post <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
 #' draws <- sample(post, 1000)
-#' }
 #' @export
 npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 theta = NULL, x = NULL,
