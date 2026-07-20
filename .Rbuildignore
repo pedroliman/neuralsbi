@@ -1,4 +1,5 @@
 ^docs$
+^dev$
 ^\.github$
 ^LICENSE\.md$
 ^.*\.Rproj$
