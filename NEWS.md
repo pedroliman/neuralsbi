@@ -1,4 +1,14 @@
-# neuralsbi 0.2.1.9000 (development)
+# neuralsbi 0.2.2.9000 (development)
+
+* New `npe_sequential()`: multi-round NPE targeting a single observation via
+  truncated-prior proposals (TSNPE, Deistler et al. 2022). Each round truncates
+  the prior to the highest-probability region of the current posterior and
+  retrains on all accumulated simulations; the standard NPE loss stays valid,
+  so no importance correction is needed. Returns an `nsbi_snpe` fit that works
+  with `posterior()`, `sample()`, and the diagnostics, but is only valid at the
+  targeted `x_obs`. Verified against the analytic linear-Gaussian posterior.
+
+# neuralsbi 0.2.1.9000
 
 * New `tarp()` diagnostic and `plot_tarp()` (Lemos et al. 2023): a *joint*
   expected-coverage test using random reference points, complementing the
