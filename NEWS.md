@@ -1,5 +1,14 @@
 # neuralsbi 0.2.1.9000 (development)
 
+* New `tarp()` diagnostic and `plot_tarp()` (Lemos et al. 2023): a *joint*
+  expected-coverage test using random reference points, complementing the
+  per-parameter `sbc()` ranks. Detects posteriors with calibrated marginals
+  but wrong correlation structure.
+* New `plot_posterior_predictive()`: marginal predictive histograms with the
+  observation marked; returns the observation's predictive quantiles.
+* Leakage correction is now under test: with a bounded prior, the renormalized
+  `log_prob()` integrates to one over the support and returns `-Inf` outside
+  it (`test-posterior-normalization.R`).
 * Fixed CI. `R CMD check` failed on three counts: the `npe()` example required
   libtorch (it now uses the torch-free `linear_gaussian` estimator and runs
   unconditionally), the hand-maintained `npe.Rd`/`fit_mdn.Rd` usage sections

@@ -88,6 +88,94 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
   data.frame(nominal = levels, emp, row.names = NULL, check.names = FALSE)
 }
 
+#' TARP expected coverage
+#'
+#' Tests of Accuracy with Random Points (Lemos et al. 2023). For each trial a
+#' true parameter is drawn from the prior, data are simulated, and posterior
+#' samples are drawn conditioned on those data. Given a random reference point,
+#' the fraction of posterior samples closer to the reference than the truth is
+#' the credibility level of the smallest distance-based credible region that
+#' contains the truth. For a calibrated posterior these fractions are uniform,
+#' so the expected coverage probability (ECP) at credibility level alpha equals
+#' alpha.
+#'
+#' Unlike [sbc()], which ranks each parameter marginally, TARP is a *joint*
+#' test: it can detect posteriors whose marginals are calibrated but whose
+#' correlation structure is wrong. Distances are computed after z-scoring each
+#' parameter (using the spread of the true draws), so parameters on different
+#' scales contribute comparably.
+#'
+#' @param fit An `nsbi_npe` fit (amortized posterior).
+#' @param simulator The simulator used for inference.
+#' @param prior The prior used for inference (defaults to `fit$prior`).
+#' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
+#' @param n_posterior_samples Posterior draws per trial.
+#' @param references How to draw reference points: `"uniform"` (default, uniform
+#'   over the hyper-rectangle spanned by the true parameter draws, as in the
+#'   paper) or `"prior"` (draws from the prior).
+#' @param seed Optional seed.
+#' @return An object of class `nsbi_tarp` with the per-trial coverage values
+#'   and the ECP curve. Plot it with [plot_tarp()].
+#' @references Lemos, Coogan, Hezaveh & Perreault-Levasseur (2023),
+#'   "Sampling-based accuracy testing of posterior estimators for general
+#'   inference", ICML. \doi{10.48550/arXiv.2302.03026}
+#' @export
+tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
+                 n_posterior_samples = 1000L,
+                 references = c("uniform", "prior"), seed = NULL) {
+  stopifnot(inherits(fit, "nsbi_npe"))
+  references <- match.arg(references)
+  if (!is.null(seed)) set.seed(seed)
+  d <- fit$dim_theta
+
+  theta_true <- sample_prior(prior, n_tarp)
+  x_all <- as_theta_matrix(simulator(theta_true), fit$dim_x)
+
+  # z-score all distances by the spread of the true draws so no single
+  # parameter dominates
+  std <- fit_standardizer(theta_true)
+  theta_z <- apply_standardizer(std, theta_true)
+
+  ref <- switch(references,
+    uniform = {
+      lo <- apply(theta_z, 2, min)
+      hi <- apply(theta_z, 2, max)
+      matrix(stats::runif(n_tarp * d, rep(lo, each = n_tarp),
+                          rep(hi, each = n_tarp)), ncol = d)
+    },
+    prior = apply_standardizer(std, sample_prior(prior, n_tarp))
+  )
+
+  f <- numeric(n_tarp)
+  for (i in seq_len(n_tarp)) {
+    post <- posterior(fit, x_obs = x_all[i, ])
+    draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+    draws_z <- apply_standardizer(std, draws)
+    d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
+    d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
+    f[i] <- mean(d_samples < d_truth)
+  }
+
+  levels <- seq(0, 1, by = 0.05)
+  ecp <- sapply(levels, function(a) mean(f < a))
+  structure(
+    list(coverage_values = f, levels = levels, ecp = ecp,
+         n_tarp = n_tarp, n_posterior_samples = n_posterior_samples,
+         references = references),
+    class = "nsbi_tarp"
+  )
+}
+
+#' @export
+print.nsbi_tarp <- function(x, ...) {
+  cat(sprintf("<nsbi_tarp> %d trials, %d posterior samples each\n",
+              x$n_tarp, x$n_posterior_samples))
+  dev <- max(abs(x$ecp - x$levels))
+  cat(sprintf("  max |ECP - nominal|: %.3f (0 = perfectly calibrated)\n", dev))
+  cat("  plot with plot_tarp()\n")
+  invisible(x)
+}
+
 #' Classifier two-sample test (C2ST)
 #'
 #' Trains a logistic-regression classifier to distinguish samples in `x` from
