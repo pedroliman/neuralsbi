@@ -21,7 +21,10 @@ home:
 
 authors:
   Pedro Nascimento de Lima:
-    href: https://www.rand.org/about/people/n/nascimento_de_lima_pedro.html
+    href: https://pedrodelima.com/
+  footer:
+    roles: [cre]
+    text: "Developed by"
 
 navbar:
   structure:
