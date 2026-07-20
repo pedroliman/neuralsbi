@@ -10,14 +10,17 @@ npe(
   n_simulations = 1000,
   theta = NULL,
   x = NULL,
-  density_estimator = c("mdn", "linear_gaussian"),
+  density_estimator = c("mdn", "maf", "nsf", "linear_gaussian"),
   n_components = 5L,
+  n_transforms = 5L,
   hidden = c(50L, 50L),
   max_epochs = 500L,
   batch_size = 100L,
   lr = 5e-04,
   validation_fraction = 0.1,
   patience = 20L,
+  n_restarts = 1L,
+  clip_grad_norm = 5,
   standardize = TRUE,
   seed = NULL,
   verbose = FALSE,
@@ -36,15 +39,28 @@ used and \code{theta}/\code{x} are not supplied.}
 \item{theta, x}{Optional pre-computed simulations. If supplied, \code{simulator}
 and \code{n_simulations} are ignored.}
 
-\item{density_estimator}{Either \code{"mdn"} (neural Mixture Density Network,
-needs \code{torch}) or \code{"linear_gaussian"} (closed-form baseline, no \code{torch}),
-or a function \verb{function(theta, x)} returning a fitted estimator.}
+\item{density_estimator}{One of \code{"mdn"} (neural Mixture Density Network,
+needs \code{torch}), \code{"maf"} (Masked Autoregressive Flow, needs \code{torch}),
+\code{"nsf"} (Neural Spline Flow, needs \code{torch}), or \code{"linear_gaussian"}
+(closed-form baseline, no \code{torch}), or a function \verb{function(theta, x)}
+returning a fitted estimator.}
 
 \item{n_components, hidden}{MDN settings: number of mixture components and a
 vector of hidden-layer widths.}
 
-\item{max_epochs, batch_size, lr, validation_fraction, patience}{MDN training
+\item{n_transforms}{MAF/NSF setting: number of stacked autoregressive
+transforms.}
+
+\item{max_epochs, batch_size, lr, validation_fraction, patience}{Neural training
 controls (Adam optimizer, early stopping on validation loss).}
+
+\item{n_restarts}{Train this many independently initialized networks and keep
+the one with the best validation loss (guards against bad initializations
+and MDN mode collapse).}
+
+\item{clip_grad_norm}{Maximum gradient norm during training (\code{Inf} disables
+clipping). The learning rate also decays 2x after 10 epochs without
+validation improvement.}
 
 \item{standardize}{Whether to z-score \code{theta} and \code{x} before training
 (strongly recommended; default \code{TRUE}).}
@@ -67,12 +83,11 @@ conditional density estimator whose output directly approximates the posterior
 once, you can condition on any observation without re-simulating.
 }
 \examples{
-\donttest{
 prior <- prior_uniform(c(-2, -2, -2), c(2, 2, 2))
 simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
                                                  nrow = nrow(theta))
-fit <- npe(prior, simulator, n_simulations = 2000)
+fit <- npe(prior, simulator, n_simulations = 2000,
+           density_estimator = "linear_gaussian")
 post <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
 draws <- sample(post, 1000)
-}
 }

@@ -1,6 +1,6 @@
 Package: neuralsbi
 Title: Neural Simulation-Based Inference in R
-Version: 0.2.0.9000
+Version: 0.2.2.9000
 Authors@R:
     person("neural.sbi", "authors", email = "plima@rand.org", role = c("aut", "cre"))
 Description: A native R implementation of neural simulation-based inference,

@@ -55,7 +55,11 @@ jobs:
           key: libtorch-${{ runner.os }}-r-torch
 
       - name: Install libtorch
-        run: Rscript -e 'if (!torch::torch_is_installed()) torch::install_torch()'
+        # torch 0.17 refuses a TORCH_HOME that does not exist yet, so create it
+        # before asking for the install.
+        run: |
+          mkdir -p "$TORCH_HOME"
+          Rscript -e 'if (!torch::torch_is_installed()) torch::install_torch()'
 
       - name: Install package and run full test suite
         run: |

@@ -45,3 +45,24 @@ test_that("posterior_predictive returns simulator-shaped output", {
   pp <- posterior_predictive(post, simulator, n = 300)
   expect_equal(nrow(pp), 300L)
 })
+
+test_that("plot_posterior_predictive runs and locates the observation", {
+  set.seed(2)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
+                                              nrow = nrow(theta))
+  fit <- npe(prior, simulator, n_simulations = 1000,
+             density_estimator = "linear_gaussian")
+  x_obs <- c(0.5, -0.2)
+  post <- posterior(fit, x_obs = x_obs)
+  pp <- posterior_predictive(post, simulator, n = 500)
+  path <- tempfile(fileext = ".png")
+  grDevices::png(path)
+  q <- plot_posterior_predictive(pp, x_obs)
+  grDevices::dev.off()
+  expect_true(file.exists(path))
+  expect_length(q, 2L)
+  # the observation should sit inside the bulk of its own predictive
+  expect_true(all(q > 0.01 & q < 0.99))
+  unlink(path)
+})
