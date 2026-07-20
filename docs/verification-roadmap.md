@@ -111,7 +111,15 @@ leakage handling) and documented.
 - [x] CI with cached libtorch: `.github/workflows/R-CMD-check.yaml` now has a
       `test-torch` job (installs libtorch, caches it, runs the full suite via
       `cd tests && Rscript testthat.R` so internals are visible to tests).
-- [ ] `sbibm`-parity benchmark harness in `inst/benchmarks/`.
+- [x] `sbibm`-parity benchmark harness in `inst/benchmarks/`: shared-data
+      protocol scripted as `01_generate_data.R` → `02_run_sbi_python.py` →
+      `03_run_neuralsbi.R` → `04_compare.R` (C2ST + moment diffs + analytic
+      reference where available). Task definitions live in `R/tasks.R`
+      (`task_gaussian_linear()`, `task_two_moons()`, `task_slcp()`, class
+      `nsbi_task`) and are exported so tests and benchmarks share them.
+      Still open: actually *running* the harness against Python `sbi` and
+      committing the resulting metrics to `docs/benchmarks/` (needs a Python
+      env with `pip install sbi`; see `inst/benchmarks/README.md`).
 
 ### v0.3 — Normalizing-flow density estimators (in progress)
 
