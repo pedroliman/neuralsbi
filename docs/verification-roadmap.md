@@ -201,8 +201,8 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated after the CI-fix + diagnostics push
-(branch `claude/roadmap-implementation-plan-un0t6w`, July 2026).*
+pick up the work. Last updated after the pkgdown-website push
+(branch `claude/r-package-website-pkgdown-wm24xp`, July 2026).*
 
 ### What exists right now
 
@@ -222,6 +222,8 @@ pick up the work. Last updated after the CI-fix + diagnostics push
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
+| Website | `_pkgdown.yml`, `.github/workflows/pkgdown.yaml` | pkgdown site deployed to gh-pages; builds locally into `site/` (gitignored, `docs/` stays for these design docs); `pkgdown/strip-internal.R` removes CLAUDE.md from the output. GitHub Pages must be set to serve from the `gh-pages` branch once. |
+| Vignettes | `vignettes/*.Rmd` (4) | neuralsbi (intro) → density-estimators → diagnostics → sir-epidemic; all `eval = FALSE` with `knitr::rmarkdown_notangle` engine so `R CMD check` does not execute torch code |
 
 Key contract: every estimator implements `de_log_prob(de, theta, x)` and
 `de_sample(de, x, n)` in **standardized** space (`R/density_estimator.R`);

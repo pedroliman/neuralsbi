@@ -7,3 +7,7 @@
 ^scratchpad$
 ^\.git$
 ^CLAUDE\.md$
+^_pkgdown\.yml$
+^site$
+^pkgdown$
+^\.claude$

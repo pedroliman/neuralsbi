@@ -6,23 +6,18 @@
 \alias{neuralsbi-package}
 \title{neuralsbi: Neural Simulation-Based Inference in R}
 \description{
-A native R implementation of neural simulation-based inference, focused on Neural Posterior Estimation (NPE). Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator to approximate the Bayesian posterior, enabling amortized, likelihood-free inference. The design mirrors the workflow of the Python 'sbi' package but is implemented directly in R (using the 'torch' back end for neural density estimators) rather than wrapping Python. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
+A native R implementation of neural simulation-based inference, focused on Neural Posterior Estimation (NPE). Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator to approximate the Bayesian posterior, enabling amortized, likelihood-free inference. Neural estimators run on the 'torch' back end, with no Python dependency. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://pedroliman.github.io/neural.sbi/}
   \item \url{https://github.com/pedroliman/neural.sbi}
   \item Report bugs at \url{https://github.com/pedroliman/neural.sbi/issues}
 }
 
 }
 \author{
-\strong{Maintainer}: neural.sbi authors \email{plima@rand.org}
-
-Authors:
-\itemize{
-  \item neural.sbi authors \email{plima@rand.org}
-}
-
+\strong{Maintainer}: Pedro Nascimento de Lima \email{plima@rand.org} (\href{https://orcid.org/0000-0001-9057-198X}{ORCID})
 }
 \keyword{internal}
