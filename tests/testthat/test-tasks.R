@@ -7,14 +7,17 @@ test_that("gaussian_linear task matches its analytic reference", {
   sims <- simulate_for_sbi(task$simulator, task$prior, 2000, seed = 9)
   expect_equal(dim(sims$x), c(2000L, 3L))
 
-  # NPE with the exact estimator should match the analytic posterior
+  # NPE with the exact estimator should match the analytic posterior.
+  # Use an observation well away from zero so the posterior means are not
+  # near-zero (where relative tolerance would be misleading).
   fit <- npe(task$prior, theta = sims$theta, x = sims$x,
              density_estimator = "linear_gaussian")
-  x_obs <- c(0.1, -0.2, 0.05)
-  draws <- sample(posterior(fit, x_obs = x_obs), 5000)
-  ref <- task$reference_posterior(x_obs, 5000)
-  expect_equal(colMeans(draws), colMeans(ref), tolerance = 0.05)
-  expect_equal(apply(draws, 2, sd), apply(ref, 2, sd), tolerance = 0.05)
+  x_obs <- c(0.3, -0.25, 0.2)
+  draws <- sample(posterior(fit, x_obs = x_obs), 20000)
+  ref <- task$reference_posterior(x_obs, 20000)
+  # absolute differences: posterior sd here is ~0.22, so 0.03 is a tight bar
+  expect_lt(max(abs(colMeans(draws) - colMeans(ref))), 0.03)
+  expect_lt(max(abs(apply(draws, 2, sd) - apply(ref, 2, sd))), 0.03)
 })
 
 test_that("two_moons simulator produces the crescent geometry", {

@@ -8,5 +8,11 @@
 /*.Rcheck/
 inst/doc
 
+# testthat run artifacts
+tests/testthat/_problems/
+tests/testthat/_snaps/
+testthat-problems.rds
+**/testthat-problems.rds
+
 # OS / editor
 .DS_Store
