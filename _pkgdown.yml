@@ -13,6 +13,8 @@ template:
     heading_font: {google: "Source Sans 3"}
     code_font: {google: "JetBrains Mono"}
 
+ga: G-2ZH21CKEW9
+
 home:
   title: Neural simulation-based inference in R
   description: >
