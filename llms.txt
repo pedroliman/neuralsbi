@@ -1,0 +1,178 @@
+# neuralsbi
+
+`neuralsbi` does Bayesian inference for models with a simulator but no
+tractable likelihood. Give it a prior and a function that turns
+parameters into simulated data; it trains a neural conditional density
+estimator (Neural Posterior Estimation) and returns a posterior you can
+sample from, evaluate, and check. Neural estimators run on the
+[`torch`](https://torch.mlverse.org/) R package — no Python required —
+and a closed-form linear-Gaussian estimator works without `torch` at
+all.
+
+## Installation
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("pedroliman/neural.sbi")
+
+# the neural back end (once)
+install.packages("torch")
+torch::install_torch()
+```
+
+## Usage
+
+``` r
+
+library(neuralsbi)
+
+prior <- prior_uniform(low = c(-2, -2, -2), high = c(2, 2, 2))
+simulator <- function(theta) {
+  theta + 1 + matrix(rnorm(length(theta), sd = 0.1), nrow = nrow(theta))
+}
+
+fit   <- npe(prior, simulator, n_simulations = 2000)
+post  <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
+draws <- sample(post, 10000)
+
+pairplot(draws)                # joint and marginal views
+map_estimate(post)             # point estimate
+sbc(fit, simulator)            # calibration check
+```
+
+The neural estimators handle genuinely non-Gaussian posteriors — here
+the bimodal two-moons task:
+
+![Two-moons posterior](reference/figures/two_moons_posterior.png)
+
+Two-moons posterior
+
+## Learn more
+
+The [package website](https://pedroliman.github.io/neural.sbi/) has four
+vignettes that build on each other:
+
+1.  [Getting
+    started](https://pedroliman.github.io/neural.sbi/articles/neuralsbi.html)
+    — the core prior/simulator/posterior workflow.
+2.  [Choosing a density
+    estimator](https://pedroliman.github.io/neural.sbi/articles/density-estimators.html)
+    — MDN, MAF, NSF, and the torch-free baseline.
+3.  [Checking the
+    posterior](https://pedroliman.github.io/neural.sbi/articles/diagnostics.html)
+    — calibration and predictive diagnostics.
+4.  [Case study: an SIR epidemic
+    model](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.html)
+    — the full Bayesian workflow on an applied problem.
+
+## License
+
+MIT
+
+# Package index
+
+## Priors
+
+Define the prior distribution over simulator parameters.
+
+- [`priors`](https://pedroliman.github.io/neural.sbi/reference/priors.md)
+  : Priors for neural simulation-based inference
+- [`prior_uniform()`](https://pedroliman.github.io/neural.sbi/reference/prior_uniform.md)
+  : Box-uniform (independent uniform) prior
+- [`prior_normal()`](https://pedroliman.github.io/neural.sbi/reference/prior_normal.md)
+  : Independent normal prior
+- [`prior_custom()`](https://pedroliman.github.io/neural.sbi/reference/prior_custom.md)
+  : Build a prior from arbitrary sampling / density functions
+- [`sample_prior()`](https://pedroliman.github.io/neural.sbi/reference/sample_prior.md)
+  : Draw samples from a prior
+- [`within_support()`](https://pedroliman.github.io/neural.sbi/reference/within_support.md)
+  : Test whether parameters lie within the prior support
+
+## Simulation and training
+
+Generate training data and fit a neural posterior estimator.
+
+- [`simulate_for_sbi()`](https://pedroliman.github.io/neural.sbi/reference/simulate_for_sbi.md)
+  : Run a simulator over prior draws
+- [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md) :
+  Neural Posterior Estimation (NPE)
+- [`npe_sequential()`](https://pedroliman.github.io/neural.sbi/reference/npe_sequential.md)
+  : Sequential NPE with truncated-prior proposals (TSNPE)
+- [`density_estimator`](https://pedroliman.github.io/neural.sbi/reference/density_estimator.md)
+  : Conditional density estimators
+
+## Working with the posterior
+
+Condition on data, then sample, evaluate, and summarize.
+
+- [`posterior()`](https://pedroliman.github.io/neural.sbi/reference/posterior.md)
+  : Posterior objects
+- [`sample()`](https://pedroliman.github.io/neural.sbi/reference/sample.md)
+  : Draw samples (S3 generic)
+- [`sample(`*`<nsbi_posterior>`*`)`](https://pedroliman.github.io/neural.sbi/reference/sample.nsbi_posterior.md)
+  : Sample from a posterior
+- [`sample_posterior()`](https://pedroliman.github.io/neural.sbi/reference/sample_posterior.md)
+  : Sample from a posterior (non-generic alias)
+- [`log_prob()`](https://pedroliman.github.io/neural.sbi/reference/log_prob.md)
+  : Posterior log-density
+- [`map_estimate()`](https://pedroliman.github.io/neural.sbi/reference/map_estimate.md)
+  : Maximum a posteriori (MAP) estimate
+- [`summary(`*`<nsbi_samples>`*`)`](https://pedroliman.github.io/neural.sbi/reference/summaries.md)
+  [`summary(`*`<nsbi_posterior>`*`)`](https://pedroliman.github.io/neural.sbi/reference/summaries.md)
+  [`summary(`*`<nsbi_npe>`*`)`](https://pedroliman.github.io/neural.sbi/reference/summaries.md)
+  [`as.data.frame(`*`<nsbi_samples>`*`)`](https://pedroliman.github.io/neural.sbi/reference/summaries.md)
+  : Summaries and tidy accessors
+
+## Diagnostics
+
+Calibration and predictive checks for a fitted posterior.
+
+- [`diagnostics`](https://pedroliman.github.io/neural.sbi/reference/diagnostics.md)
+  : Posterior diagnostics
+- [`sbc()`](https://pedroliman.github.io/neural.sbi/reference/sbc.md) :
+  Simulation-Based Calibration (SBC)
+- [`expected_coverage()`](https://pedroliman.github.io/neural.sbi/reference/expected_coverage.md)
+  : Expected coverage of central credible intervals
+- [`tarp()`](https://pedroliman.github.io/neural.sbi/reference/tarp.md)
+  : TARP expected coverage
+- [`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md)
+  : Classifier two-sample test (C2ST)
+- [`posterior_predictive()`](https://pedroliman.github.io/neural.sbi/reference/posterior_predictive.md)
+  : Posterior predictive draws
+
+## Plotting
+
+- [`pairplot()`](https://pedroliman.github.io/neural.sbi/reference/pairplot.md)
+  : Visualize posterior samples
+- [`plot_sbc()`](https://pedroliman.github.io/neural.sbi/reference/plot_sbc.md)
+  : Plot an SBC rank histogram
+- [`plot_coverage()`](https://pedroliman.github.io/neural.sbi/reference/plot_coverage.md)
+  : Plot nominal vs. empirical credible-interval coverage
+- [`plot_tarp()`](https://pedroliman.github.io/neural.sbi/reference/plot_tarp.md)
+  : Plot TARP expected coverage
+- [`plot_posterior_predictive()`](https://pedroliman.github.io/neural.sbi/reference/plot_posterior_predictive.md)
+  : Plot posterior predictive checks
+
+## Benchmark tasks
+
+Reference inference problems shared by the tests and benchmarks.
+
+- [`task_gaussian_linear()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md)
+  [`task_two_moons()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md)
+  [`task_slcp()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md)
+  [`task_sir()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md)
+  : Benchmark tasks
+
+# Articles
+
+### Learning the package
+
+- [Getting started with
+  neuralsbi](https://pedroliman.github.io/neural.sbi/articles/neuralsbi.md):
+- [Choosing a density
+  estimator](https://pedroliman.github.io/neural.sbi/articles/density-estimators.md):
+- [Checking the
+  posterior](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md):
+- [Case study: inferring epidemic parameters
+  (SIR)](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.md):

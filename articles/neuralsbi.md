@@ -1,0 +1,125 @@
+# Getting started with neuralsbi
+
+`neuralsbi` performs **Neural Posterior Estimation (NPE)**: given a
+prior and a simulator, it trains a neural network to approximate the
+Bayesian posterior `p(theta | x)` — no likelihood required. This
+vignette walks through the core workflow and shows how to check that the
+result is trustworthy.
+
+## The three ingredients
+
+Every SBI problem needs (1) a **prior**, (2) a **simulator**, and (3) an
+**observation**. Here is a small linear-Gaussian model whose posterior
+we happen to know in closed form, so we can check our answer.
+
+``` r
+
+library(neuralsbi)
+
+# (1) prior over two parameters
+prior <- prior_normal(mean = c(0, 0), sd = 1)
+
+# (2) simulator: an (n x 2) matrix of parameters -> an (n x 2) matrix of data
+sigma <- 0.5
+simulator <- function(theta) {
+  theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
+}
+
+# (3) the observation we want to explain
+x_obs <- c(1.0, -0.5)
+```
+
+## Train an amortized posterior
+
+[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+draws parameters from the prior, runs the simulator, and trains a
+conditional density estimator. The default is a **Mixture Density
+Network** (needs the `torch` back end).
+
+``` r
+
+fit <- npe(prior, simulator, n_simulations = 5000)
+fit
+```
+
+The fitted network approximates the posterior for *any* observation, not
+just the one at hand — this is what “amortized” means. You train once,
+then condition on new data without refitting.
+
+``` r
+
+post  <- posterior(fit, x_obs = x_obs)
+draws <- sample(post, 10000)
+
+colMeans(draws)          # posterior mean
+pairplot(draws)          # joint + marginal view
+map_estimate(post)       # MAP point estimate
+```
+
+## Did it work? Check against the truth
+
+For this model the posterior is a known Gaussian. Let us compare.
+
+``` r
+
+d <- 2
+Sigma <- solve(diag(d) + diag(d) / sigma^2)
+mu    <- as.numeric(Sigma %*% (x_obs / sigma^2))
+
+rbind(analytic = mu, estimated = colMeans(draws))
+
+# classifier two-sample test: ~0.5 => our samples look like analytic samples
+z <- matrix(rnorm(10000 * d), ncol = d)
+analytic_draws <- sweep(z %*% chol(Sigma), 2, mu, `+`)
+c2st(draws, analytic_draws)$accuracy
+```
+
+## Calibration when you *don’t* know the truth
+
+Usually there is no analytic posterior. **Simulation-based calibration
+(SBC)** still tells you whether the posterior is well calibrated: it
+should produce uniform rank statistics.
+
+``` r
+
+res <- sbc(fit, simulator, n_sbc = 300, n_posterior_samples = 500)
+plot_sbc(res)                 # flat histogram = calibrated
+expected_coverage(res)        # nominal vs empirical credible-interval coverage
+```
+
+## A torch-free baseline
+
+If you cannot install `torch`, or want a fast sanity check, use the
+closed-form conditional-Gaussian estimator. It is *exact* for
+linear-Gaussian models.
+
+``` r
+
+fit_lin <- npe(prior, simulator, n_simulations = 5000,
+               density_estimator = "linear_gaussian")
+```
+
+## Non-Gaussian posteriors
+
+The MDN is not limited to Gaussian posteriors: it recovers the bimodal,
+crescent-shaped posterior of the classic **two-moons** task, and the
+flow estimators (`"maf"`, `"nsf"`) go further still. That comparison is
+the subject of
+[`vignette("density-estimators")`](https://pedroliman.github.io/neural.sbi/articles/density-estimators.md).
+
+## Where to go next
+
+The vignettes build on each other:
+
+1.  [`vignette("density-estimators")`](https://pedroliman.github.io/neural.sbi/articles/density-estimators.md)
+    — which estimator to use, and when.
+2.  [`vignette("diagnostics")`](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md)
+    — calibration and predictive checks for a fitted posterior.
+3.  [`vignette("sir-epidemic")`](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.md)
+    — the complete Bayesian workflow on an applied epidemic-model
+    calibration.
+
+[`?npe`](https://pedroliman.github.io/neural.sbi/reference/npe.md),
+[`?posterior`](https://pedroliman.github.io/neural.sbi/reference/posterior.md),
+and [`?sbc`](https://pedroliman.github.io/neural.sbi/reference/sbc.md)
+document every argument.
