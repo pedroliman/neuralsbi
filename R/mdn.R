@@ -1,28 +1,24 @@
-#' Mixture Density Network (MDN) conditional density estimator
+#' Mixture Density Network (MDN) density estimator
 #'
-#' The MDN is the default neural density estimator in `neuralsbi`. A multilayer
-#' perceptron maps the data `x` to the parameters of a Gaussian mixture over the
-#' parameters \eqn{\theta}: mixture logits, component means, and (full)
-#' lower-triangular Cholesky factors of each component covariance. Training
-#' minimizes the negative log-likelihood of \eqn{\theta} under the mixture,
-#' which -- when simulations are drawn from the prior -- yields a direct
-#' amortized approximation of the posterior \eqn{p(\theta \mid x)}.
-#'
-#' This is a faithful R/`torch` reimplementation of the multivariate-Gaussian MDN
-#' used by the Python `sbi`/`pyknos` stack, not a wrapper around it.
+#' The default neural estimator. An MLP maps the data `x` to the parameters of a
+#' Gaussian mixture over \eqn{\theta}: mixture logits, component means, and
+#' full lower-triangular Cholesky factors. Training minimizes the negative
+#' log-likelihood of \eqn{\theta} under the mixture; with prior-drawn
+#' simulations this directly approximates \eqn{p(\theta\mid x)}. A faithful
+#' R/`torch` reimplementation of the multivariate-Gaussian MDN in the Python
+#' `sbi`/`pyknos` stack, not a wrapper.
 #'
 #' @keywords internal
-#' @name mdn
+#' @name mdn-internal
 NULL
 
 #' @keywords internal
 tril_indices <- function(p) {
   idx <- which(lower.tri(matrix(0, p, p), diag = TRUE), arr.ind = TRUE)
-  idx <- idx[order(idx[, 1], idx[, 2]), , drop = FALSE]  # row-major
+  idx <- idx[order(idx[, 1], idx[, 2]), , drop = FALSE]
   list(row = idx[, 1], col = idx[, 2], is_diag = idx[, 1] == idx[, 2])
 }
 
-#' Build the MDN torch module
 #' @keywords internal
 mdn_module <- function(dim_x, dim_theta, n_components, hidden) {
   torch::nn_module(
@@ -47,53 +43,42 @@ mdn_module <- function(dim_x, dim_theta, n_components, hidden) {
     forward = function(x) {
       h <- self$trunk(x)
       batch <- x$shape[1]
-      logits <- self$head_logits(h)                                # (b, K)
-      means <- self$head_means(h)$view(c(batch, self$K, self$dim_theta))
-      tril_flat <- self$head_tril(h)$view(c(batch, self$K, self$tril_size))
-      list(logits = logits, means = means, tril_flat = tril_flat)
+      list(
+        logits = self$head_logits(h),
+        means = self$head_means(h)$view(c(batch, self$K, self$dim_theta)),
+        tril_flat = self$head_tril(h)$view(c(batch, self$K, self$tril_size))
+      )
     }
   )
 }
 
-#' Assemble batched lower-triangular Cholesky factors from the flat head output.
-#' Diagonal entries are passed through softplus (+ eps) to stay positive.
-#' Returns a tensor of shape (batch, K, p, p).
 #' @keywords internal
 mdn_build_tril <- function(net, tril_flat) {
-  b <- tril_flat$shape[1]
-  K <- net$K
-  p <- net$dim_theta
+  b <- tril_flat$shape[1]; K <- net$K; p <- net$dim_theta
   L <- torch::torch_zeros(c(b, K, p, p), dtype = tril_flat$dtype)
   for (m in seq_len(net$tril_size)) {
     val <- tril_flat[, , m]
-    if (net$tri$is_diag[m]) {
-      val <- torch::nnf_softplus(val) + 1e-6
-    }
+    if (net$tri$is_diag[m]) val <- torch::nnf_softplus(val) + 1e-6
     L[, , net$tri$row[m], net$tri$col[m]] <- val
   }
   L
 }
 
-#' Per-row mixture log density (in standardized theta space), as a torch tensor.
-#' `theta`: (b, p) tensor, `x`: (b, q) tensor.
 #' @keywords internal
 mdn_log_prob_tensor <- function(net, theta, x) {
   params <- net(x)
-  L <- mdn_build_tril(net, params$tril_flat)                    # (b,K,p,p)
+  L <- mdn_build_tril(net, params$tril_flat)
   p <- net$dim_theta
-  diff <- theta$unsqueeze(2) - params$means                     # (b,K,p)
-  diff_col <- diff$unsqueeze(4)                                  # (b,K,p,1)
-  z <- torch::linalg_solve_triangular(L, diff_col, upper = FALSE) # (b,K,p,1)
-  quad <- z$pow(2)$sum(dim = c(3, 4))                            # (b,K)
-  diag_L <- torch::torch_diagonal(L, dim1 = 3, dim2 = 4)        # (b,K,p)
-  logdet <- 2 * torch::torch_log(diag_L)$sum(dim = 3)           # (b,K)
-  const <- p * log(2 * pi)
-  comp_lp <- -0.5 * (const + logdet + quad)                     # (b,K)
-  log_w <- torch::nnf_log_softmax(params$logits, dim = 2)       # (b,K)
-  torch::torch_logsumexp(log_w + comp_lp, dim = 2)              # (b,)
+  diff <- theta$unsqueeze(2) - params$means
+  z <- torch::linalg_solve_triangular(L, diff$unsqueeze(4), upper = FALSE)
+  quad <- z$pow(2)$sum(dim = c(3, 4))
+  diag_L <- torch::torch_diagonal(L, dim1 = 3, dim2 = 4)
+  logdet <- 2 * torch::torch_log(diag_L)$sum(dim = 3)
+  comp_lp <- -0.5 * (p * log(2 * pi) + logdet + quad)
+  log_w <- torch::nnf_log_softmax(params$logits, dim = 2)
+  torch::torch_logsumexp(log_w + comp_lp, dim = 2)
 }
 
-#' Train an MDN on standardized (theta, x)
 #' @keywords internal
 fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
                     max_epochs = 500L, batch_size = 100L, lr = 5e-4,
@@ -101,17 +86,12 @@ fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
                     seed = NULL, verbose = FALSE) {
   require_torch()
   if (!is.null(seed)) torch::torch_manual_seed(seed)
-  theta <- as_theta_matrix(theta)
-  x <- as_theta_matrix(x)
-  n <- nrow(theta)
-  dim_theta <- ncol(theta)
-  dim_x <- ncol(x)
+  theta <- as_theta_matrix(theta); x <- as_theta_matrix(x)
+  n <- nrow(theta); dim_theta <- ncol(theta); dim_x <- ncol(x)
 
-  # train / validation split
   n_val <- max(1L, floor(validation_fraction * n))
   perm <- sample.int(n)
-  val_idx <- perm[seq_len(n_val)]
-  tr_idx <- perm[-seq_len(n_val)]
+  val_idx <- perm[seq_len(n_val)]; tr_idx <- perm[-seq_len(n_val)]
 
   tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
   xt <- torch::torch_tensor(x, dtype = torch::torch_float())
@@ -121,27 +101,20 @@ fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
   net <- mdn_module(dim_x, dim_theta, n_components, hidden)()
   opt <- torch::optim_adam(net$parameters, lr = lr)
 
-  n_tr <- length(tr_idx)
-  best_val <- Inf
-  best_state <- NULL
+  n_tr <- length(tr_idx); best_val <- Inf; best_state <- NULL
   epochs_no_improve <- 0L
-
   for (epoch in seq_len(max_epochs)) {
     net$train()
     order <- sample.int(n_tr)
-    starts <- seq(1L, n_tr, by = batch_size)
-    for (s in starts) {
+    for (s in seq(1L, n_tr, by = batch_size)) {
       idx <- order[s:min(s + batch_size - 1L, n_tr)]
       opt$zero_grad()
-      lp <- mdn_log_prob_tensor(net, theta_tr[idx, ], x_tr[idx, ])
-      loss <- -lp$mean()
-      loss$backward()
-      opt$step()
+      loss <- -mdn_log_prob_tensor(net, theta_tr[idx, ], x_tr[idx, ])$mean()
+      loss$backward(); opt$step()
     }
     net$eval()
-    val_loss <- torch::with_no_grad({
-      as.numeric((-mdn_log_prob_tensor(net, theta_val, x_val)$mean())$item())
-    })
+    val_loss <- torch::with_no_grad(
+      as.numeric((-mdn_log_prob_tensor(net, theta_val, x_val)$mean())$item()))
     if (val_loss < best_val - 1e-4) {
       best_val <- val_loss
       best_state <- lapply(net$state_dict(), function(t) t$clone())
@@ -161,48 +134,43 @@ fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
   if (!is.null(best_state)) net$load_state_dict(best_state)
   net$eval()
 
-  structure(
-    list(net = net, dim_theta = dim_theta, dim_x = dim_x,
-         n_components = n_components, hidden = hidden,
-         best_val_loss = best_val),
-    class = c("nsbi_de_mdn", "nsbi_de")
-  )
+  MDN(n_dim_theta = dim_theta, n_dim_x = dim_x, net = net,
+      n_components = as.integer(n_components),
+      hidden = as.numeric(hidden), best_val_loss = best_val)
 }
 
-#' @export
-de_log_prob.nsbi_de_mdn <- function(de, theta, x) {
-  theta <- as_theta_matrix(theta, de$dim_theta)
-  x <- as_theta_matrix(x, de$dim_x)
+method(de_log_prob, MDN) <- function(de, theta, x) {
+  theta <- as_theta_matrix(theta, de@n_dim_theta)
+  x <- as_theta_matrix(x, de@n_dim_x)
   if (nrow(x) == 1L && nrow(theta) > 1L) {
     x <- matrix(x, nrow = nrow(theta), ncol = ncol(x), byrow = TRUE)
   }
   tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
   xt <- torch::torch_tensor(x, dtype = torch::torch_float())
-  torch::with_no_grad({
-    as.numeric(mdn_log_prob_tensor(de$net, tt, xt)$to(dtype = torch::torch_float64()))
-  })
+  torch::with_no_grad(
+    as.numeric(mdn_log_prob_tensor(de@net, tt, xt)$to(dtype = torch::torch_float64())))
 }
 
-#' @export
-de_sample.nsbi_de_mdn <- function(de, x, n) {
-  x <- as_theta_matrix(x, de$dim_x)[1, , drop = FALSE]
+method(de_sample, MDN) <- function(de, x, n) {
+  x <- as_theta_matrix(x, de@n_dim_x)[1, , drop = FALSE]
   xt <- torch::torch_tensor(x, dtype = torch::torch_float())
-  params <- torch::with_no_grad(de$net(xt))
-  L <- torch::with_no_grad(mdn_build_tril(de$net, params$tril_flat))
+  params <- torch::with_no_grad(de@net(xt))
+  L <- torch::with_no_grad(mdn_build_tril(de@net, params$tril_flat))
   logits <- as.numeric(torch::as_array(params$logits[1, ]))
-  means <- torch::as_array(params$means[1, , ])           # K x p
-  Larr <- torch::as_array(L[1, , , ])                      # K x p x p
-  if (de$n_components == 1L) {
+  means <- torch::as_array(params$means[1, , ])
+  Larr <- torch::as_array(L[1, , , ])
+  K <- de@n_components; p <- de@n_dim_theta
+  if (K == 1L) {
     means <- matrix(means, nrow = 1L)
-    Larr <- array(Larr, dim = c(1L, de$dim_theta, de$dim_theta))
+    Larr <- array(Larr, dim = c(1L, p, p))
   }
   w <- exp(logits - max(logits)); w <- w / sum(w)
-  comp <- sample.int(de$n_components, n, replace = TRUE, prob = w)
-  out <- matrix(0, nrow = n, ncol = de$dim_theta)
-  z <- matrix(stats::rnorm(n * de$dim_theta), nrow = n)
+  comp <- sample.int(K, n, replace = TRUE, prob = w)
+  out <- matrix(0, nrow = n, ncol = p)
+  z <- matrix(stats::rnorm(n * p), nrow = n)
   for (k in unique(comp)) {
     rows <- which(comp == k)
-    Lk <- matrix(Larr[k, , ], de$dim_theta, de$dim_theta)
+    Lk <- matrix(Larr[k, , ], p, p)
     out[rows, ] <- sweep(z[rows, , drop = FALSE] %*% t(Lk), 2, means[k, ], `+`)
   }
   out

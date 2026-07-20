@@ -1,30 +1,29 @@
-#' Draw samples (S3 generic)
+#' Draw samples
 #'
-#' `neuralsbi` turns [base::sample()] into an S3 generic so that
-#' `sample(posterior, n)` works in the style of the Python `sbi` package. For
-#' any object without a dedicated method (vectors, etc.) this falls back to
+#' `neuralsbi` promotes `sample()` to an S7 generic so that
+#' `sample(posterior, n)` works in the style of the Python `sbi` package. Any
+#' object without a dedicated method (vectors, etc.) falls back to
 #' [base::sample()] unchanged.
 #'
-#' @param x Object to sample from.
-#' @param ... Passed on to methods / [base::sample()].
+#' @param x Object to sample from (e.g. a [DirectPosterior]).
+#' @param ... Passed to methods / [base::sample()].
+#' @name sample
+#' @return For a posterior, an `n x n_dim` matrix of draws; otherwise whatever
+#'   [base::sample()] returns.
 #' @export
-sample <- function(x, ...) UseMethod("sample")
-
-#' @rdname sample
-#' @export
-sample.default <- function(x, ...) base::sample(x, ...)
+method(sample, class_any) <- function(x, ...) base::sample(x, ...)
 
 #' Sample from a posterior (non-generic alias)
 #'
 #' Identical to `sample(post, n)`; provided for users who prefer not to rely on
 #' the generic.
 #'
-#' @param post An `nsbi_posterior` object.
+#' @param post A [DirectPosterior] object.
 #' @param n Number of posterior draws.
 #' @param obs Observation to condition on (defaults to the posterior's `x_obs`).
-#' @param ... Passed to [sample.nsbi_posterior()].
-#' @return An `n x dim` matrix of posterior draws.
+#' @param ... Passed to the [sample()] method.
+#' @return An `n x n_dim` matrix of posterior draws.
 #' @export
 sample_posterior <- function(post, n = 1000, obs = NULL, ...) {
-  sample.nsbi_posterior(post, n = n, obs = obs, ...)
+  sample(post, n = n, obs = obs, ...)
 }

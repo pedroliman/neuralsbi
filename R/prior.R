@@ -1,34 +1,8 @@
-#' Priors for neural simulation-based inference
-#'
-#' A prior in `neuralsbi` is a lightweight object (class `nsbi_prior`) that knows
-#' how to (a) draw samples and (b) evaluate its log-density. Bounded priors also
-#' carry `lower`/`upper` support limits, which are used to reject out-of-support
-#' posterior samples ("leakage" correction).
-#'
-#' @name priors
-NULL
-
-#' @keywords internal
-new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
-                      type = "custom") {
-  structure(
-    list(
-      sample = sample_fn,
-      log_prob = log_prob_fn,
-      dim = as.integer(dim),
-      lower = lower,
-      upper = upper,
-      type = type
-    ),
-    class = "nsbi_prior"
-  )
-}
-
 #' Box-uniform (independent uniform) prior
 #'
 #' @param low Numeric vector of lower bounds (one per parameter).
 #' @param high Numeric vector of upper bounds (one per parameter).
-#' @return An `nsbi_prior` object.
+#' @return A [UniformPrior] object.
 #' @examples
 #' prior <- prior_uniform(low = c(-2, -2, -2), high = c(2, 2, 2))
 #' theta <- sample_prior(prior, 5)
@@ -43,28 +17,15 @@ prior_uniform <- function(low, high) {
     stop("Every `high` must be strictly greater than the matching `low`.",
          call. = FALSE)
   }
-  d <- length(low)
-  sample_fn <- function(n) {
-    out <- matrix(stats::runif(n * d), nrow = n, ncol = d)
-    sweep(sweep(out, 2, high - low, `*`), 2, low, `+`)
-  }
-  log_prob_fn <- function(theta) {
-    theta <- as_theta_matrix(theta, d)
-    inside <- rowSums(
-      sweep(theta, 2, low, `>=`) & sweep(theta, 2, high, `<=`)
-    ) == d
-    const <- -sum(log(high - low))
-    ifelse(inside, const, -Inf)
-  }
-  new_prior(sample_fn, log_prob_fn, d, lower = low, upper = high,
-            type = "uniform")
+  UniformPrior(n_dim = length(low), lower = low, upper = high,
+               low = low, high = high)
 }
 
 #' Independent normal prior
 #'
 #' @param mean Numeric vector of means (one per parameter).
 #' @param sd Numeric scalar or vector of standard deviations.
-#' @return An `nsbi_prior` object.
+#' @return A [NormalPrior] object.
 #' @examples
 #' prior <- prior_normal(mean = c(0, 0), sd = 1)
 #' @export
@@ -77,19 +38,7 @@ prior_normal <- function(mean, sd = 1) {
     stop("`sd` must be length 1 or the same length as `mean`.", call. = FALSE)
   }
   if (any(sd <= 0)) stop("`sd` must be positive.", call. = FALSE)
-  sample_fn <- function(n) {
-    z <- matrix(stats::rnorm(n * d), nrow = n, ncol = d)
-    sweep(sweep(z, 2, sd, `*`), 2, mean, `+`)
-  }
-  log_prob_fn <- function(theta) {
-    theta <- as_theta_matrix(theta, d)
-    lp <- matrix(stats::dnorm(theta, mean = rep(mean, each = nrow(theta)),
-                              sd = rep(sd, each = nrow(theta)), log = TRUE),
-                 nrow = nrow(theta))
-    rowSums(lp)
-  }
-  new_prior(sample_fn, log_prob_fn, d, lower = NULL, upper = NULL,
-            type = "normal")
+  NormalPrior(n_dim = d, mean = mean, sd = sd)
 }
 
 #' Build a prior from arbitrary sampling / density functions
@@ -100,56 +49,102 @@ prior_normal <- function(mean, sd = 1) {
 #' @param dim Number of parameters.
 #' @param lower,upper Optional support bounds (numeric vectors) enabling
 #'   out-of-support rejection.
-#' @return An `nsbi_prior` object.
+#' @return A [CustomPrior] object.
 #' @export
 prior_custom <- function(sample_fn, log_prob_fn = NULL, dim, lower = NULL,
                          upper = NULL) {
   if (is.null(log_prob_fn)) {
-    log_prob_fn <- function(theta) rep(NA_real_, nrow(as_theta_matrix(theta, dim)))
+    log_prob_fn <- function(theta) {
+      rep(NA_real_, nrow(as_theta_matrix(theta, dim)))
+    }
   }
-  new_prior(sample_fn, log_prob_fn, dim, lower = lower, upper = upper,
-            type = "custom")
+  CustomPrior(n_dim = as.integer(dim), lower = lower, upper = upper,
+              sample_fn = sample_fn, log_prob_fn = log_prob_fn)
 }
 
-#' Draw samples from a prior
-#'
-#' @param prior An `nsbi_prior` object.
-#' @param n Number of samples.
-#' @return An `n x dim` matrix of parameter draws.
-#' @export
-sample_prior <- function(prior, n) {
-  stopifnot(inherits(prior, "nsbi_prior"))
-  out <- prior$sample(n)
-  as_theta_matrix(out, prior$dim)
+# ---- draw_prior -----------------------------------------------------------
+
+method(draw_prior, UniformPrior) <- function(prior, n) {
+  d <- prior@n_dim
+  out <- matrix(stats::runif(n * d), nrow = n, ncol = d)
+  sweep(sweep(out, 2, prior@high - prior@low, `*`), 2, prior@low, `+`)
 }
 
-#' Test whether parameters lie within the prior support
-#'
-#' @param prior An `nsbi_prior` object.
-#' @param theta A matrix (or vector) of parameters.
-#' @return Logical vector, one entry per row of `theta`.
-#' @export
-within_support <- function(prior, theta) {
-  theta <- as_theta_matrix(theta, prior$dim)
-  if (is.null(prior$lower) && is.null(prior$upper)) {
+method(draw_prior, NormalPrior) <- function(prior, n) {
+  d <- prior@n_dim
+  z <- matrix(stats::rnorm(n * d), nrow = n, ncol = d)
+  sweep(sweep(z, 2, prior@sd, `*`), 2, prior@mean, `+`)
+}
+
+method(draw_prior, CustomPrior) <- function(prior, n) {
+  as_theta_matrix(prior@sample_fn(n), prior@n_dim)
+}
+
+# ---- prior_log_prob -------------------------------------------------------
+
+method(prior_log_prob, UniformPrior) <- function(prior, theta) {
+  theta <- as_theta_matrix(theta, prior@n_dim)
+  inside <- rowSums(sweep(theta, 2, prior@low, `>=`) &
+                      sweep(theta, 2, prior@high, `<=`)) == prior@n_dim
+  const <- -sum(log(prior@high - prior@low))
+  ifelse(inside, const, -Inf)
+}
+
+method(prior_log_prob, NormalPrior) <- function(prior, theta) {
+  theta <- as_theta_matrix(theta, prior@n_dim)
+  lp <- matrix(stats::dnorm(theta,
+                            mean = rep(prior@mean, each = nrow(theta)),
+                            sd = rep(prior@sd, each = nrow(theta)),
+                            log = TRUE), nrow = nrow(theta))
+  rowSums(lp)
+}
+
+method(prior_log_prob, CustomPrior) <- function(prior, theta) {
+  prior@log_prob_fn(as_theta_matrix(theta, prior@n_dim))
+}
+
+# ---- in_support (shared, uses box bounds) ---------------------------------
+
+method(in_support, Prior) <- function(prior, theta) {
+  theta <- as_theta_matrix(theta, prior@n_dim)
+  if (is.null(prior@lower) && is.null(prior@upper)) {
     return(rep(TRUE, nrow(theta)))
   }
   ok <- rep(TRUE, nrow(theta))
-  if (!is.null(prior$lower)) {
-    ok <- ok & rowSums(sweep(theta, 2, prior$lower, `>=`)) == prior$dim
+  if (!is.null(prior@lower)) {
+    ok <- ok & rowSums(sweep(theta, 2, prior@lower, `>=`)) == prior@n_dim
   }
-  if (!is.null(prior$upper)) {
-    ok <- ok & rowSums(sweep(theta, 2, prior$upper, `<=`)) == prior$dim
+  if (!is.null(prior@upper)) {
+    ok <- ok & rowSums(sweep(theta, 2, prior@upper, `<=`)) == prior@n_dim
   }
   ok
 }
 
+# ---- user-facing convenience wrappers -------------------------------------
+
+#' Draw samples from a prior
+#'
+#' @param prior A [Prior] object.
+#' @param n Number of samples.
+#' @return An `n x n_dim` matrix of parameter draws.
 #' @export
-print.nsbi_prior <- function(x, ...) {
-  cat(sprintf("<nsbi_prior> type=%s, dim=%d\n", x$type, x$dim))
-  if (!is.null(x$lower)) {
-    cat("  lower:", paste(signif(x$lower, 4), collapse = ", "), "\n")
-    cat("  upper:", paste(signif(x$upper, 4), collapse = ", "), "\n")
+sample_prior <- function(prior, n) {
+  as_theta_matrix(draw_prior(prior, n), prior@n_dim)
+}
+
+#' Test whether parameters lie within the prior support
+#'
+#' @param prior A [Prior] object.
+#' @param theta A matrix (or vector) of parameters.
+#' @return Logical vector, one entry per row of `theta`.
+#' @export
+within_support <- function(prior, theta) in_support(prior, theta)
+
+method(print, Prior) <- function(x, ...) {
+  cat(sprintf("<%s> n_dim=%d\n", S7_class(x)@name, x@n_dim))
+  if (!is.null(x@lower)) {
+    cat("  lower:", paste(signif(x@lower, 4), collapse = ", "), "\n")
+    cat("  upper:", paste(signif(x@upper, 4), collapse = ", "), "\n")
   }
   invisible(x)
 }

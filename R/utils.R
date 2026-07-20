@@ -5,6 +5,11 @@
 # declare it to silence a spurious "no visible binding" NOTE.
 utils::globalVariables("self")
 
+# S7 registers methods for base/S3 generics (e.g. print) at load time.
+.onLoad <- function(libname, pkgname) {
+  S7::methods_register()
+}
+
 #' Coerce parameters/data to a numeric matrix with a known column count
 #' @keywords internal
 as_theta_matrix <- function(x, d = NULL) {

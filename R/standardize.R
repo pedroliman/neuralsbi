@@ -19,6 +19,13 @@ fit_standardizer <- function(x, eps = 1e-8) {
   structure(list(center = center, scale = scale), class = "nsbi_standardizer")
 }
 
+#' A no-op standardizer (center 0, scale 1) of a given dimension.
+#' @keywords internal
+identity_standardizer <- function(d) {
+  structure(list(center = rep(0, d), scale = rep(1, d)),
+            class = "nsbi_standardizer")
+}
+
 #' @keywords internal
 apply_standardizer <- function(std, x) {
   x <- as_theta_matrix(x, length(std$center))
