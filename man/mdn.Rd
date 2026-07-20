@@ -13,7 +13,7 @@ which -- when simulations are drawn from the prior -- yields a direct
 amortized approximation of the posterior \eqn{p(\theta \mid x)}.
 }
 \details{
-This is a faithful R/\code{torch} reimplementation of the multivariate-Gaussian MDN
-used by the Python \code{sbi}/\code{pyknos} stack, not a wrapper around it.
+A native R/\code{torch} implementation of the multivariate-Gaussian mixture
+density network (Bishop, 1994).
 }
 \keyword{internal}

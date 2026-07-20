@@ -1,7 +1,7 @@
 #' Draw samples (S3 generic)
 #'
 #' `neuralsbi` turns [base::sample()] into an S3 generic so that
-#' `sample(posterior, n)` works in the style of the Python `sbi` package. For
+#' `sample(posterior, n)` reads the way statisticians expect. For
 #' any object without a dedicated method (vectors, etc.) this falls back to
 #' [base::sample()] unchanged.
 #'

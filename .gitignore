@@ -16,3 +16,6 @@ testthat-problems.rds
 
 # OS / editor
 .DS_Store
+
+# pkgdown rendered site
+site/

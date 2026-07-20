@@ -1,0 +1,99 @@
+url: https://pedroliman.github.io/neural.sbi/
+
+# `docs/` holds the package's design documents, so the rendered site goes to
+# `site/` (gitignored); CI deploys it to the gh-pages branch.
+destination: site
+
+template:
+  bootstrap: 5
+  light-switch: true
+  bslib:
+    primary: "#2c5f7c"
+    base_font: {google: "Source Sans 3"}
+    heading_font: {google: "Source Sans 3"}
+    code_font: {google: "JetBrains Mono"}
+
+home:
+  title: Neural simulation-based inference in R
+  description: >
+    Likelihood-free Bayesian inference with neural posterior estimation,
+    implemented natively in R on the torch back end.
+
+authors:
+  Pedro Nascimento de Lima:
+    href: https://pedrodelima.com/
+  footer:
+    roles: [cre]
+    text: "Developed by"
+
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [search, github, lightswitch]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: Choosing a density estimator
+        href: articles/density-estimators.html
+      - text: Checking the posterior
+        href: articles/diagnostics.html
+      - text: "Case study: an SIR epidemic model"
+        href: articles/sir-epidemic.html
+
+articles:
+- title: Learning the package
+  navbar: ~
+  contents:
+  - neuralsbi
+  - density-estimators
+  - diagnostics
+  - sir-epidemic
+
+reference:
+- title: Priors
+  desc: Define the prior distribution over simulator parameters.
+  contents:
+  - priors
+  - prior_uniform
+  - prior_normal
+  - prior_custom
+  - sample_prior
+  - within_support
+- title: Simulation and training
+  desc: Generate training data and fit a neural posterior estimator.
+  contents:
+  - simulate_for_sbi
+  - npe
+  - npe_sequential
+  - density_estimator
+- title: Working with the posterior
+  desc: Condition on data, then sample, evaluate, and summarize.
+  contents:
+  - posterior
+  - sample
+  - sample.nsbi_posterior
+  - sample_posterior
+  - log_prob
+  - map_estimate
+  - summaries
+- title: Diagnostics
+  desc: Calibration and predictive checks for a fitted posterior.
+  contents:
+  - diagnostics
+  - sbc
+  - expected_coverage
+  - tarp
+  - c2st
+  - posterior_predictive
+- title: Plotting
+  contents:
+  - pairplot
+  - plot_sbc
+  - plot_coverage
+  - plot_tarp
+  - plot_posterior_predictive
+- title: Benchmark tasks
+  desc: Reference inference problems shared by the tests and benchmarks.
+  contents:
+  - tasks

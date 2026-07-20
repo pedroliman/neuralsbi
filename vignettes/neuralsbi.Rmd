@@ -3,7 +3,7 @@ title: "Getting started with neuralsbi"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting started with neuralsbi}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
   %\VignetteEncoding{UTF-8}
 ---
 
@@ -49,8 +49,9 @@ fit <- npe(prior, simulator, n_simulations = 5000)
 fit
 ```
 
-The result is *amortized*: it approximates the posterior for **any** observation,
-so you only train once.
+The fitted network approximates the posterior for *any* observation, not just
+the one at hand — this is what "amortized" means. You train once, then
+condition on new data without refitting.
 
 ```{r}
 post  <- posterior(fit, x_obs = x_obs)
@@ -102,14 +103,19 @@ fit_lin <- npe(prior, simulator, n_simulations = 5000,
 
 ## Non-Gaussian posteriors
 
-The MDN is not limited to Gaussian posteriors. See
-`system.file("examples", "two_moons.R", package = "neuralsbi")` for the classic
-**two-moons** task, whose posterior is bimodal and crescent-shaped, and which the
-neural estimator recovers.
+The MDN is not limited to Gaussian posteriors: it recovers the bimodal,
+crescent-shaped posterior of the classic **two-moons** task, and the flow
+estimators (`"maf"`, `"nsf"`) go further still. That comparison is the subject
+of `vignette("density-estimators")`.
 
 ## Where to go next
 
-- `?npe`, `?posterior`, `?sbc` for full argument documentation.
-- `docs/implementation-plan.md` for the design.
-- `docs/verification-roadmap.md` for how methods are validated against Python
-  `sbi`.
+The vignettes build on each other:
+
+1. `vignette("density-estimators")` — which estimator to use, and when.
+2. `vignette("diagnostics")` — calibration and predictive checks for a fitted
+   posterior.
+3. `vignette("sir-epidemic")` — the complete Bayesian workflow on an applied
+   epidemic-model calibration.
+
+`?npe`, `?posterior`, and `?sbc` document every argument.

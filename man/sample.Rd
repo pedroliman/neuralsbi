@@ -16,7 +16,7 @@ sample(x, ...)
 }
 \description{
 \code{neuralsbi} turns \code{\link[base:sample]{base::sample()}} into an S3 generic so that
-\code{sample(posterior, n)} works in the style of the Python \code{sbi} package. For
+\code{sample(posterior, n)} reads the way statisticians expect. For
 any object without a dedicated method (vectors, etc.) this falls back to
 \code{\link[base:sample]{base::sample()}} unchanged.
 }
