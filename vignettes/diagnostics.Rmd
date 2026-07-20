@@ -11,11 +11,11 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-An NPE posterior is a trained approximation, and a badly trained one fails
-silently: it still returns samples, means, and credible intervals — they are
-just wrong. Checking the fit is therefore not optional polish; it is part of
-the workflow. `neuralsbi` ships the standard diagnostics, and this vignette
-works through them in the order you would use them in practice.
+An NPE posterior is an approximation, and a poor approximation gives no
+warning: it still produces samples, means, and credible intervals — they are
+just wrong. Checking the fit is part of the workflow, not an optional extra.
+This vignette works through the package's diagnostics in the order you would
+use them in practice.
 
 Throughout we use the linear-Gaussian benchmark task, because it has an
 analytic posterior we can compare against at the end.
@@ -51,7 +51,7 @@ Read the rank histogram like this:
 
 - **Flat** — calibrated.
 - **U-shaped** — the posterior is too narrow (overconfident). The most common
-  failure; usually fixed with more simulations or more training patience.
+  failure; usually fixed with more simulations or longer training.
 - **Hump-shaped** — too wide (underconfident).
 - **Sloped** — systematically biased in one direction.
 
@@ -84,9 +84,10 @@ plot_tarp(tr)   # ECP curve on the diagonal = calibrated
 
 ## Posterior predictive checks
 
-Calibration is a property of the ensemble; a predictive check interrogates the
-fit for *your* observation. Push posterior draws back through the simulator
-and ask whether the observed data look typical of what they generate.
+Calibration is an average over many simulated datasets; a predictive check
+asks about the observation you actually have. Push posterior draws back
+through the simulator and see whether the observed data look typical of the
+simulations they produce.
 
 ```{r}
 theta_true <- sample_prior(task$prior, 1)

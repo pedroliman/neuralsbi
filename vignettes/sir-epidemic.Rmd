@@ -14,16 +14,16 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 This vignette works an applied, likelihood-free problem end to end: recovering
 the transmission and recovery rates of an epidemic from a noisy incidence
 curve. There is no tractable likelihood — the data come from a stochastic
-compartmental simulator — which is exactly where simulation-based inference
-earns its keep.
+compartmental simulator — which is precisely the setting simulation-based
+inference was developed for.
 
 ## The model
 
 The classic **SIR** model splits a population of size `N` into Susceptible,
 Infected, and Recovered compartments. Two rates govern the dynamics: the
 contact rate \(\beta\) (how fast the infection spreads) and the recovery rate
-\(\gamma\) (how fast infected individuals recover). `neuralsbi` ships this as a
-built-in benchmark task.
+\(\gamma\) (how fast infected individuals recover). The package includes this
+model as a built-in task.
 
 ```{r}
 library(neuralsbi)
@@ -111,12 +111,12 @@ point estimate can give you.
 
 ## Spending simulations where they matter: sequential NPE
 
-Amortization is wasteful when you care about a *single* observation: most
-prior draws produce epidemics nothing like the one observed, and the network
-spends capacity learning posteriors you will never query. Sequential NPE
-(`npe_sequential()`, using truncated proposals) alternates training with
-simulation, restricting each new round of simulations to the region the
-current posterior considers plausible.
+An amortized fit spreads its simulation budget over the whole prior, but when
+a single outbreak is of interest, most of those simulations describe
+epidemics nothing like the observed one. Sequential NPE (`npe_sequential()`,
+using truncated proposals) alternates simulation and training, restricting
+each new round of simulations to the parameter region the current posterior
+considers plausible.
 
 ```{r}
 fit_seq <- npe_sequential(task$prior, task$simulator, x_obs = x_obs,
@@ -136,10 +136,9 @@ incidence curve means refitting.
 
 ## Where to go next
 
-This case study exercised the whole workflow: prior, simulator, amortized
+This case study covered the whole workflow: prior, simulator, amortized
 training, conditioning, calibration checks, predictive checks, and a
-sequential refinement. The earlier vignettes cover each stage in more depth —
-`vignette("neuralsbi")` for the core API,
-`vignette("density-estimators")` for when to reach for `"maf"` or `"nsf"`
-instead of the MDN, and `vignette("diagnostics")` for the full checking
-toolbox.
+sequential refinement. The earlier vignettes treat each stage in more depth —
+`vignette("neuralsbi")` for the core functions,
+`vignette("density-estimators")` for when to use `"maf"` or `"nsf"` instead
+of the MDN, and `vignette("diagnostics")` for the complete set of checks.
