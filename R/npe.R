@@ -18,8 +18,14 @@
 #'   or a function `function(theta, x)` returning a fitted estimator.
 #' @param n_components,hidden MDN settings: number of mixture components and a
 #'   vector of hidden-layer widths.
-#' @param max_epochs,batch_size,lr,validation_fraction,patience MDN training
+#' @param max_epochs,batch_size,lr,validation_fraction,patience Neural training
 #'   controls (Adam optimizer, early stopping on validation loss).
+#' @param n_restarts Train this many independently initialized networks and keep
+#'   the one with the best validation loss (guards against bad initializations
+#'   and MDN mode collapse).
+#' @param clip_grad_norm Maximum gradient norm during training (`Inf` disables
+#'   clipping). The learning rate also decays 2x after 10 epochs without
+#'   validation improvement.
 #' @param standardize Whether to z-score `theta` and `x` before training
 #'   (strongly recommended; default `TRUE`).
 #' @param seed Optional integer seed for reproducibility.
@@ -45,6 +51,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 n_components = 5L, hidden = c(50L, 50L),
                 max_epochs = 500L, batch_size = 100L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
+                n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE, ...) {
   stopifnot(inherits(prior, "nsbi_prior"))
 
@@ -80,7 +87,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
     density_estimator, theta_z, x_z,
     n_components = n_components, hidden = hidden, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
-    patience = patience, seed = seed, verbose = verbose, ...
+    patience = patience, n_restarts = n_restarts,
+    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose, ...
   )
 
   structure(
@@ -117,6 +125,8 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
                   lr = dots$lr %||% 5e-4,
                   validation_fraction = dots$validation_fraction %||% 0.1,
                   patience = dots$patience %||% 20L,
+                  n_restarts = dots$n_restarts %||% 1L,
+                  clip_grad_norm = dots$clip_grad_norm %||% 5,
                   seed = dots$seed, verbose = dots$verbose %||% FALSE),
     linear_gaussian = fit_linear_gaussian(theta_z, x_z,
                                            verbose = dots$verbose %||% FALSE)

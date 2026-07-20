@@ -95,14 +95,17 @@ leakage handling) and documented.
 - Tests: prior, linear-Gaussian pipeline (analytic), MDN (analytic), diagnostics.
 - Docs: implementation plan, this roadmap, README, getting-started vignette.
 
-### v0.2 — Robustness & ergonomics
+### v0.2 — Robustness & ergonomics (in progress)
 
-- Restart-best-of-`n` training; learning-rate scheduling; gradient clipping.
-- Better leakage handling (truncated proposals; log-prob normalization tests).
-- `summary()` methods; tidy (`data.frame`) accessors for samples/diagnostics.
-- `plot_coverage()`; TARP-style coverage; posterior-predictive plots.
-- Vignettes: an applied end-to-end case study (e.g. SIR epidemic).
-- CI with cached libtorch; `sbibm`-parity benchmark harness in `inst/benchmarks/`.
+- [x] Restart-best-of-`n` training; learning-rate decay on plateau; gradient
+      clipping. All neural estimators share one training engine:
+      `train_conditional_de()` in `R/train.R` (exposed via `npe(n_restarts =,
+      clip_grad_norm =)`); per-epoch loss history stored in `fit$de$history`.
+- [ ] Better leakage handling (truncated proposals; log-prob normalization tests).
+- [ ] `summary()` methods; tidy (`data.frame`) accessors for samples/diagnostics.
+- [ ] `plot_coverage()`; TARP-style coverage; posterior-predictive plots.
+- [ ] Vignettes: an applied end-to-end case study (e.g. SIR epidemic).
+- [ ] CI with cached libtorch; `sbibm`-parity benchmark harness in `inst/benchmarks/`.
 
 ### v0.3 — Normalizing-flow density estimators
 

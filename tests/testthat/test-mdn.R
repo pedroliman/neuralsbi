@@ -1,12 +1,6 @@
 # These tests exercise the neural (torch) MDN. They are skipped automatically
-# when torch / libtorch is not installed, so the suite still runs everywhere.
-
-skip_if_no_torch <- function() {
-  if (!requireNamespace("torch", quietly = TRUE) ||
-      !isTRUE(torch::torch_is_installed())) {
-    testthat::skip("torch/libtorch not available")
-  }
-}
+# when torch / libtorch is not installed (see helper-torch.R), so the suite
+# still runs everywhere.
 
 test_that("MDN log_prob and sampling shapes are correct", {
   skip_if_no_torch()

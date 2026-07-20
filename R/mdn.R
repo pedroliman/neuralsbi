@@ -98,73 +98,27 @@ mdn_log_prob_tensor <- function(net, theta, x) {
 fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
                     max_epochs = 500L, batch_size = 100L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
+                    n_restarts = 1L, clip_grad_norm = 5,
                     seed = NULL, verbose = FALSE) {
-  require_torch()
-  if (!is.null(seed)) torch::torch_manual_seed(seed)
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
-  n <- nrow(theta)
   dim_theta <- ncol(theta)
   dim_x <- ncol(x)
 
-  # train / validation split
-  n_val <- max(1L, floor(validation_fraction * n))
-  perm <- sample.int(n)
-  val_idx <- perm[seq_len(n_val)]
-  tr_idx <- perm[-seq_len(n_val)]
-
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
-  theta_tr <- tt[tr_idx, ]; x_tr <- xt[tr_idx, ]
-  theta_val <- tt[val_idx, ]; x_val <- xt[val_idx, ]
-
-  net <- mdn_module(dim_x, dim_theta, n_components, hidden)()
-  opt <- torch::optim_adam(net$parameters, lr = lr)
-
-  n_tr <- length(tr_idx)
-  best_val <- Inf
-  best_state <- NULL
-  epochs_no_improve <- 0L
-
-  for (epoch in seq_len(max_epochs)) {
-    net$train()
-    order <- sample.int(n_tr)
-    starts <- seq(1L, n_tr, by = batch_size)
-    for (s in starts) {
-      idx <- order[s:min(s + batch_size - 1L, n_tr)]
-      opt$zero_grad()
-      lp <- mdn_log_prob_tensor(net, theta_tr[idx, ], x_tr[idx, ])
-      loss <- -lp$mean()
-      loss$backward()
-      opt$step()
-    }
-    net$eval()
-    val_loss <- torch::with_no_grad({
-      as.numeric((-mdn_log_prob_tensor(net, theta_val, x_val)$mean())$item())
-    })
-    if (val_loss < best_val - 1e-4) {
-      best_val <- val_loss
-      best_state <- lapply(net$state_dict(), function(t) t$clone())
-      epochs_no_improve <- 0L
-    } else {
-      epochs_no_improve <- epochs_no_improve + 1L
-    }
-    if (verbose && (epoch %% 10L == 0L || epoch == 1L)) {
-      verbose_cat(TRUE, sprintf("[mdn] epoch %d  val_loss=%.4f  best=%.4f\n",
-                                epoch, val_loss, best_val))
-    }
-    if (epochs_no_improve >= patience) {
-      verbose_cat(verbose, sprintf("[mdn] early stop at epoch %d\n", epoch))
-      break
-    }
-  }
-  if (!is.null(best_state)) net$load_state_dict(best_state)
-  net$eval()
+  trained <- train_conditional_de(
+    build_net = function() mdn_module(dim_x, dim_theta, n_components, hidden)(),
+    log_prob_fn = mdn_log_prob_tensor,
+    theta = theta, x = x,
+    max_epochs = max_epochs, batch_size = batch_size, lr = lr,
+    validation_fraction = validation_fraction, patience = patience,
+    n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
+    seed = seed, verbose = verbose
+  )
 
   structure(
-    list(net = net, dim_theta = dim_theta, dim_x = dim_x,
+    list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x,
          n_components = n_components, hidden = hidden,
-         best_val_loss = best_val),
+         best_val_loss = trained$best_val_loss, history = trained$history),
     class = c("nsbi_de_mdn", "nsbi_de")
   )
 }
