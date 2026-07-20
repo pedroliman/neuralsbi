@@ -1,0 +1,23 @@
+---
+title: "Case study: calibrating an SIR epidemic model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Case study: calibrating an SIR epidemic model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+This is an end-to-end applied example: inferring the transmission dynamics of
+an epidemic from noisy surveillance data, where the model is a *simulator*
+(an SIR compartmental model) with no tractable likelihood.
+
+## The problem
+
+An SIR model tracks susceptible, infected, and recovered counts. Two
+parameters govern the dynamics: the contact rate $\beta$ and the recovery
+rate $\gamma$ (so $R_0 = \beta / \gamma$). We observe only noisy binomial
+subsamples of the infected fraction at 10 time points — ex

@@ -198,7 +198,7 @@ pick up the work. Last updated after the v0.2/v0.3 implementation push
 | MDN | `R/mdn.R` | done, trains via shared engine |
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |
 | NSF | `R/nsf.R` | done + tested; autoregressive (sbi uses coupling) |
-| Tasks | `R/tasks.R` | gaussian_linear (analytic ref), two_moons, slcp |
+| Tasks | `R/tasks.R` | gaussian_linear (analytic ref), two_moons, slcp, sir |
 | Benchmarks vs sbi | `inst/benchmarks/01..04` | scripted, **never executed** |
 | Summaries/tidy | `R/summaries.R` | done |
 | Coverage plot | `plot_coverage()` in `R/plotting.R` | done |
@@ -238,7 +238,8 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    correction (uniform prior on [-3,3]^5).
 5. **v0.2 leftovers**: truncated-proposal leakage handling; log-prob
    normalization tests; TARP coverage; posterior-predictive plots; SIR
-   vignette (add `task_sir()` — see sbibm's SIR definition).
+   vignette (`task_sir()` already exists and recovers true rates — the
+   vignette should walk prior → npe → posterior → sbc/coverage on it).
 6. **v0.4 embedding nets**: optional `embedding_net` argument to `npe()`;
    an nn_module mapping raw x → features trained jointly (append it in each
    estimator's `build_net`/forward; standardize at embedding output).
