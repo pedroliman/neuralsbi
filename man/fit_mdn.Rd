@@ -14,6 +14,8 @@ fit_mdn(
   lr = 5e-04,
   validation_fraction = 0.1,
   patience = 20L,
+  n_restarts = 1L,
+  clip_grad_norm = 5,
   seed = NULL,
   verbose = FALSE
 )
