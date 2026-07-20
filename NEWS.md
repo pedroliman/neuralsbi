@@ -1,4 +1,15 @@
-# neuralsbi 0.2.2.9000 (development)
+# neuralsbi 0.2.3.9000 (development)
+
+* Package website built with pkgdown, deployed from CI to
+  https://pedroliman.github.io/neural.sbi/.
+* Four vignettes that build on each other: getting started, choosing a
+  density estimator, checking the posterior, and the SIR case study (which
+  now also demonstrates `npe_sequential()`). Removed a truncated duplicate
+  of the SIR vignette.
+* README rewritten to the standard terse form; authorship recorded in
+  `DESCRIPTION` (Pedro Nascimento de Lima, with ORCID).
+
+# neuralsbi 0.2.2.9000
 
 * New `npe_sequential()`: multi-round NPE targeting a single observation via
   truncated-prior proposals (TSNPE, Deistler et al. 2022). Each round truncates
@@ -37,7 +48,7 @@
   the closed-form `linear_gaussian` baseline.
 * Benchmark tasks (`task_gaussian_linear()`, `task_two_moons()`,
   `task_slcp()`, `task_sir()`) shared between tests and the
-  `inst/benchmarks/` head-to-head harness against Python `sbi`.
+  `inst/benchmarks/` head-to-head benchmark harness.
 * `summary()` methods, `as.data.frame()` tidy accessor, `plot_coverage()`.
 * SIR applied case-study vignette.
 * CI: `R CMD check` plus a `test-torch` job with cached libtorch.

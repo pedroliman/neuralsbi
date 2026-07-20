@@ -1,11 +1,10 @@
 #' Benchmark tasks
 #'
-#' Standard simulation-based-inference benchmark tasks, matching the
-#' definitions in the `sbibm` suite that the Python `sbi` package benchmarks
-#' against. Each task bundles a prior, a simulator, and (where one exists) an
-#' analytic reference posterior, so the same object drives unit tests,
-#' calibration studies, and the head-to-head comparison with Python `sbi`
-#' (`inst/benchmarks/`).
+#' Standard simulation-based-inference benchmark tasks, following the
+#' definitions in the `sbibm` benchmark suite. Each task bundles a prior, a
+#' simulator, and (where one exists) an analytic reference posterior, so the
+#' same object drives unit tests, calibration studies, and the benchmark
+#' harness in `inst/benchmarks/`.
 #'
 #' * [task_gaussian_linear()] -- conjugate Gaussian; analytic posterior.
 #' * [task_two_moons()] -- crescent-shaped, bimodal posterior.
@@ -44,7 +43,7 @@ print.nsbi_task <- function(x, ...) {
 #' \eqn{x \mid \theta \sim N(\theta, 0.1 I)}. The posterior is conjugate
 #' Gaussian, so `reference_posterior()` is exact.
 #'
-#' @param dim Parameter/data dimension (sbibm uses 10).
+#' @param dim Parameter/data dimension (default 10).
 #' @param prior_var,noise_var Prior and likelihood variances.
 #' @rdname tasks
 #' @export

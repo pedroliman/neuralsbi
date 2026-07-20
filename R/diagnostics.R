@@ -1,7 +1,6 @@
 #' Posterior diagnostics
 #'
-#' Tools to check whether a trained posterior is trustworthy. These mirror the
-#' validation tools in the Python `sbi` package:
+#' Tools to check whether a trained posterior is trustworthy:
 #'
 #' * [sbc()] -- Simulation-Based Calibration rank statistics
 #' * [expected_coverage()] -- nominal vs. empirical credible-interval coverage
@@ -182,7 +181,7 @@ print.nsbi_tarp <- function(x, ...) {
 #' samples in `y` using cross-validation. A test accuracy near 0.5 means the two
 #' sample sets are indistinguishable (good); near 1.0 means they differ. This is
 #' the standard SBI metric for comparing an estimated posterior to a reference
-#' (e.g. an analytic posterior, or the Python `sbi` output).
+#' (e.g. an analytic posterior or long-run MCMC draws).
 #'
 #' @param x,y Matrices of samples (rows = draws, cols = dimensions).
 #' @param n_folds Number of cross-validation folds.
