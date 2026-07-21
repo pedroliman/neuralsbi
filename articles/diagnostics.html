@@ -92,7 +92,8 @@ an analytic posterior we can compare against at the end.</p>
 <span><span class="va">task</span></span>
 <span><span class="co">#&gt; &lt;nsbi_task&gt; gaussian_linear: 10 parameters -&gt; 10 data dims (analytic reference available)</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">10000</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>           density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="simulation-based-calibration">Simulation-based calibration<a class="anchor" aria-label="anchor" href="#simulation-based-calibration"></a>
 </h2>
@@ -103,7 +104,7 @@ and rank the true <code>theta</code> among posterior draws given
 <code>x</code>. If the posterior is calibrated, those ranks are
 uniform.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">300</span>, n_posterior_samples <span class="op">=</span> <span class="fl">1000</span>,</span>
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">50</span>, n_posterior_samples <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>           seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">res</span></span>
 <span><span class="co">#&gt; Per-parameter Kolmogorov-Smirnov p-values for rank uniformity;</span></span>
@@ -144,7 +145,7 @@ only 70% of the time.</p>
 coverage of the <em>joint</em> posterior using random reference points,
 and can detect miscalibration that per-parameter ranks miss.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tarp.html">tarp</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_tarp <span class="op">=</span> <span class="fl">200</span>, n_posterior_samples <span class="op">=</span> <span class="fl">1000</span>,</span>
+<code class="sourceCode R"><span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tarp.html">tarp</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_tarp <span class="op">=</span> <span class="fl">30</span>, n_posterior_samples <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>           seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">tr</span></span>
 <span><span class="fu"><a href="../reference/plot_tarp.html">plot_tarp</a></span><span class="op">(</span><span class="va">tr</span><span class="op">)</span>   <span class="co"># ECP curve on the diagonal = calibrated</span></span></code></pre></div>

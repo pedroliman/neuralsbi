@@ -33,12 +33,14 @@ x_obs <- c(1.0, -0.5)
 
 [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
 draws parameters from the prior, runs the simulator, and trains a
-conditional density estimator. The default is a **Mixture Density
-Network** (needs the `torch` back end).
+conditional density estimator. For this linear-Gaussian model, we use
+the closed-form conditional-Gaussian estimator, which is *exact* and
+requires no neural network training.
 
 ``` r
 
-fit <- npe(prior, simulator, n_simulations = 5000)
+fit <- npe(prior, simulator, n_simulations = 1000,
+           density_estimator = "linear_gaussian")
 fit
 ```
 
@@ -49,7 +51,7 @@ then condition on new data without refitting.
 ``` r
 
 post  <- posterior(fit, x_obs = x_obs)
-draws <- sample(post, 10000)
+draws <- sample(post, 1000)
 
 colMeans(draws)          # posterior mean
 pairplot(draws)          # joint + marginal view
@@ -69,7 +71,7 @@ mu    <- as.numeric(Sigma %*% (x_obs / sigma^2))
 rbind(analytic = mu, estimated = colMeans(draws))
 
 # classifier two-sample test: ~0.5 => our samples look like analytic samples
-z <- matrix(rnorm(10000 * d), ncol = d)
+z <- matrix(rnorm(1000 * d), ncol = d)
 analytic_draws <- sweep(z %*% chol(Sigma), 2, mu, `+`)
 c2st(draws, analytic_draws)$accuracy
 ```
@@ -82,21 +84,26 @@ should produce uniform rank statistics.
 
 ``` r
 
-res <- sbc(fit, simulator, n_sbc = 300, n_posterior_samples = 500)
+res <- sbc(fit, simulator, n_sbc = 50, n_posterior_samples = 100)
 plot_sbc(res)                 # flat histogram = calibrated
 expected_coverage(res)        # nominal vs empirical credible-interval coverage
 ```
 
-## A torch-free baseline
+## Neural estimators with torch
 
-If you cannot install `torch`, or want a fast sanity check, use the
-closed-form conditional-Gaussian estimator. It is *exact* for
-linear-Gaussian models.
+For non-Gaussian posteriors, you need a neural density estimator like
+the **Mixture Density Network (MDN)**. This requires `torch`.
 
 ``` r
 
-fit_lin <- npe(prior, simulator, n_simulations = 5000,
-               density_estimator = "linear_gaussian")
+if (requireNamespace("torch", quietly = TRUE)) {
+  fit_mdn <- npe(prior, simulator, n_simulations = 1000,
+                 density_estimator = "mdn", seed = 1)
+  # Compare the torch-based MDN fit to the analytic linear_gaussian fit above
+  print(fit_mdn)
+} else {
+  cat("torch not available; install with install.packages('torch') + torch::install_torch()\n")
+}
 ```
 
 ## Non-Gaussian posteriors

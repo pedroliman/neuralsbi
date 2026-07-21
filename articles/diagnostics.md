@@ -17,7 +17,8 @@ task <- task_gaussian_linear()
 task
 #> <nsbi_task> gaussian_linear: 10 parameters -> 10 data dims (analytic reference available)
 
-fit <- npe(task$prior, task$simulator, n_simulations = 10000, seed = 1)
+fit <- npe(task$prior, task$simulator, n_simulations = 2000,
+           density_estimator = "linear_gaussian", seed = 1)
 ```
 
 ## Simulation-based calibration
@@ -30,7 +31,7 @@ uniform.
 
 ``` r
 
-res <- sbc(fit, task$simulator, n_sbc = 300, n_posterior_samples = 1000,
+res <- sbc(fit, task$simulator, n_sbc = 50, n_posterior_samples = 200,
            seed = 2)
 res
 #> Per-parameter Kolmogorov-Smirnov p-values for rank uniformity;
@@ -71,7 +72,7 @@ detect miscalibration that per-parameter ranks miss.
 
 ``` r
 
-tr <- tarp(fit, task$simulator, n_tarp = 200, n_posterior_samples = 1000,
+tr <- tarp(fit, task$simulator, n_tarp = 30, n_posterior_samples = 100,
            seed = 3)
 tr
 plot_tarp(tr)   # ECP curve on the diagonal = calibrated
