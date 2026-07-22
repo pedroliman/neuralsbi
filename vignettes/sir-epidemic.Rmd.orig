@@ -50,9 +50,9 @@ Density Network is a good default here; the posterior is smooth and unimodal.
 
 ```{r}
 fit <- npe(task$prior, task$simulator,
-           n_simulations = 5000,
+           n_simulations = 3000,
            density_estimator = "mdn",
-           max_epochs = 300, seed = 1)
+           max_epochs = 250, seed = 1)
 ```
 
 Training is *amortized*: this one fit can be conditioned on any incidence curve
@@ -84,7 +84,7 @@ Simulation-Based Calibration and an expected-coverage plot, neither of which
 needs a reference posterior.
 
 ```{r fig.alt = "SBC rank histogram and expected-coverage plot for the SIR fit."}
-res <- sbc(fit, task$simulator, n_sbc = 150, n_posterior_samples = 500,
+res <- sbc(fit, task$simulator, n_sbc = 80, n_posterior_samples = 300,
            seed = 2)
 res                     # per-parameter uniformity p-values (large = good)
 
@@ -123,8 +123,8 @@ considers plausible.
 
 ```{r fig.alt = "Pairs plot of the sequential-NPE posterior with the true rates marked."}
 fit_seq <- npe_sequential(task$prior, task$simulator, x_obs = x_obs,
-                          n_rounds = 2, n_simulations = 2500,
-                          density_estimator = "mdn", max_epochs = 300, seed = 3)
+                          n_rounds = 2, n_simulations = 1500,
+                          density_estimator = "mdn", max_epochs = 200, seed = 3)
 fit_seq                    # per-round budgets and acceptance rates
 
 post_seq  <- posterior(fit_seq, x_obs = x_obs)

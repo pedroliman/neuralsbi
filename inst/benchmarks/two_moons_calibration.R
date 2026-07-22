@@ -23,11 +23,11 @@ task <- task_two_moons()
 
 # A neural spline flow captures the crescent most cleanly (see the
 # density-estimators vignette); the MDN is a cheaper alternative.
-fit <- npe(task$prior, task$simulator, n_simulations = 5000,
-           density_estimator = "nsf", max_epochs = 400, seed = 1)
+fit <- npe(task$prior, task$simulator, n_simulations = 2500,
+           density_estimator = "nsf", max_epochs = 150, seed = 1)
 
 # --- Simulation-based calibration + expected coverage ------------------------
-res <- sbc(fit, task$simulator, n_sbc = 300, n_posterior_samples = 500,
+res <- sbc(fit, task$simulator, n_sbc = 150, n_posterior_samples = 300,
            seed = 2)
 cat("SBC per-parameter uniformity p-values:",
     paste(sprintf("%.3f", res$uniformity_pvalue), collapse = "  "), "\n")
@@ -44,7 +44,7 @@ plot_coverage(res)
 dev.off()
 
 # --- TARP joint coverage -----------------------------------------------------
-tr <- tarp(fit, task$simulator, n_tarp = 300, n_posterior_samples = 500,
+tr <- tarp(fit, task$simulator, n_tarp = 150, n_posterior_samples = 300,
            seed = 3)
 png(file.path(out_dir, "two_moons_tarp.png"), width = 500, height = 500, res = 110)
 plot_tarp(tr)
