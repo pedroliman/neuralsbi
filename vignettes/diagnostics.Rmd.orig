@@ -1,0 +1,139 @@
+---
+title: "Checking the posterior"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Checking the posterior}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# This vignette is precomputed: see vignettes/precompute.R. Edit the .Rmd.orig,
+# re-run the precompute script, and commit the regenerated .Rmd and figures.
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>",
+  fig.path = "figures/diagnostics-", fig.width = 5, fig.height = 4,
+  dpi = 96, fig.retina = NULL
+)
+set.seed(1)
+```
+
+An NPE posterior is an approximation, and a poor approximation gives no
+warning: it still produces samples, means, and credible intervals — they are
+just wrong. Checking the fit is part of the workflow, not an optional extra.
+This vignette works through the package's diagnostics in the order you would
+use them in practice.
+
+Throughout we use the linear-Gaussian benchmark task, because it has an
+analytic posterior we can compare against at the end.
+
+```{r}
+library(neuralsbi)
+
+task <- task_gaussian_linear()
+task
+
+fit <- npe(task$prior, task$simulator, n_simulations = 3000,
+           density_estimator = "linear_gaussian", seed = 1)
+```
+
+## Simulation-based calibration
+
+Simulation-based calibration (SBC) checks the posterior *on average over the
+prior*, with no reference posterior needed. The idea: draw `theta` from the
+prior, simulate `x`, and rank the true `theta` among posterior draws given
+`x`. If the posterior is calibrated, those ranks are uniform.
+
+```{r fig.alt = "SBC rank histogram for the first parameter; flat means calibrated."}
+res <- sbc(fit, task$simulator, n_sbc = 100, n_posterior_samples = 200,
+           seed = 2)
+res
+
+plot_sbc(res, param = 1)
+```
+
+Read the rank histogram like this:
+
+- **Flat** — calibrated.
+- **U-shaped** — the posterior is too narrow (overconfident). The most common
+  failure; usually fixed with more simulations or longer training.
+- **Hump-shaped** — too wide (underconfident).
+- **Sloped** — systematically biased in one direction.
+
+## Expected coverage
+
+The same SBC ranks yield a coverage curve: how often does the `p`% credible
+interval actually contain the truth?
+
+```{r fig.alt = "Expected-coverage curve; points on the diagonal indicate calibration."}
+expected_coverage(res)
+plot_coverage(res)
+```
+
+A calibrated posterior hugs the diagonal. Points below the diagonal mean
+intervals are too narrow — a 90% interval that covers the truth only 70% of
+the time.
+
+## TARP: a sharper coverage test
+
+SBC checks each parameter's marginal. TARP (Lemos et al., 2023) tests coverage
+of the *joint* posterior using random reference points, and can detect
+miscalibration that per-parameter ranks miss.
+
+```{r fig.alt = "TARP expected-coverage-probability curve on the diagonal."}
+tr <- tarp(fit, task$simulator, n_tarp = 100, n_posterior_samples = 200,
+           seed = 3)
+tr
+plot_tarp(tr)   # ECP curve on the diagonal = calibrated
+```
+
+## Posterior predictive checks
+
+Calibration is an average over many simulated datasets; a predictive check
+asks about the observation you actually have. Push posterior draws back
+through the simulator and see whether the observed data look typical of the
+simulations they produce.
+
+```{r fig.alt = "Posterior-predictive histograms with the observed value marked."}
+theta_true <- sample_prior(task$prior, 1)
+x_obs <- task$simulator(theta_true)
+
+post <- posterior(fit, x_obs = x_obs)
+pred <- posterior_predictive(post, task$simulator, n = 500)
+plot_posterior_predictive(pred, x_obs)
+```
+
+If the observation sits in the tails of the predictive distribution, either
+the posterior fit is poor for this `x` or the simulator cannot reproduce the
+data at all — a model-misspecification signal that no calibration check
+provides.
+
+## Comparing against a reference posterior
+
+When a reference posterior exists — analytic, MCMC, or a long-run fit you
+trust — a classifier two-sample test gives a single accuracy score. A
+classifier that cannot distinguish estimated from reference draws (accuracy
+near 0.5) means the posteriors match.
+
+```{r}
+draws     <- sample(post, 5000)
+reference <- task$reference_posterior(x_obs, n = 5000)
+
+c2st(draws, reference)$accuracy   # ~0.5: indistinguishable from the exact posterior
+```
+
+As a rule of thumb, accuracies below about 0.55–0.6 indicate a close match;
+values near 1.0 mean the estimated posterior is badly off.
+
+## A suggested routine
+
+1. After every fit, run `sbc()` and look at `plot_sbc()` and
+   `plot_coverage()`. This is cheap relative to training and catches
+   overconfidence early.
+2. Before using a posterior for real conclusions, run a posterior predictive
+   check for the actual observation.
+3. When you change estimator or training settings, compare old and new draws
+   with `c2st()` to see whether the change moved the posterior at all.
+
+The case study in `vignette("sir-epidemic")` applies this routine end to end
+on an applied problem.
