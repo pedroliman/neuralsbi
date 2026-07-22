@@ -1,4 +1,17 @@
-# neuralsbi 0.2.3.9000 (development)
+# neuralsbi 0.2.4.9000 (development)
+
+* Vignettes now show real output. They are *precomputed*: each vignette's
+  evaluated source lives in `vignettes/<name>.Rmd.orig`, and
+  `vignettes/precompute.R` bakes it into a static `vignettes/<name>.Rmd`
+  (results, printed values, and figures inlined). CI and pkgdown re-render
+  that static Markdown with no torch at build time, so the expensive neural
+  training runs once, locally, instead of on every build. Re-run
+  `Rscript vignettes/precompute.R` after editing any `.Rmd.orig`.
+* Two-moons calibration study (`inst/benchmarks/two_moons_calibration.R`):
+  SBC, expected coverage, and TARP for a two-moons NSF fit, with figures
+  written to `docs/figures/` (roadmap milestone M2).
+
+# neuralsbi 0.2.3.9000
 
 * Package website built with pkgdown, deployed from CI to
   https://pedroliman.github.io/neural.sbi/.

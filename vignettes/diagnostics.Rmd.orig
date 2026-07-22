@@ -11,7 +11,7 @@ vignette: >
 # This vignette is precomputed: see vignettes/precompute.R. Edit the .Rmd.orig,
 # re-run the precompute script, and commit the regenerated .Rmd and figures.
 knitr::opts_chunk$set(
-  collapse = TRUE, comment = "#>",
+  collapse = TRUE, comment = "#>", error = FALSE,
   fig.path = "figures/diagnostics-", fig.width = 5, fig.height = 4,
   dpi = 96, fig.retina = NULL
 )

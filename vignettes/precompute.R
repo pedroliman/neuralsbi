@@ -44,6 +44,19 @@ for (orig in origs) {
   # Fresh knit env per vignette so seeds and `library()` calls do not leak.
   knitr::knit(orig, output = out, envir = new.env(parent = globalenv()),
               quiet = FALSE)
+
+  # The chunks set error = FALSE, so a genuine failure aborts knit() above.
+  # As a backstop, refuse to leave a baked vignette that carries an error
+  # trace (e.g. a torch chunk that silently degraded) -- better to fail here
+  # than to commit a broken article.
+  baked <- readLines(out, warn = FALSE)
+  bad <- grep("^#> Error|libtorch is not installed|not found$", baked)
+  if (length(bad)) {
+    stop(sprintf("%s still contains error output at line(s) %s. Fix the ",
+                 out, paste(head(bad, 5), collapse = ", ")),
+         "environment (torch installed? package up to date?) and re-run.",
+         call. = FALSE)
+  }
 }
 
 message("Done. Review the regenerated *.Rmd and figures/, then commit them.")
