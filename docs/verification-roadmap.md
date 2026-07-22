@@ -186,7 +186,9 @@ leakage handling) and documented.
 - [~] M1 CI configured with cached libtorch (`test-torch` job) — needs one
       green run on GitHub to confirm.
 - [~] M2 Two Moons bimodality test added (`test-two-moons.R`, torch-gated);
-      SBC calibration study on two moons still to run/plot.
+      SBC + coverage + TARP calibration study run and plotted
+      (`inst/benchmarks/two_moons_calibration.R` → `docs/figures/`). Remaining:
+      fold the figures into a short write-up / README section.
 - [~] M3 `sbi` head-to-head harness scripted (`inst/benchmarks/`); running it
       and recording C2ST ≤ 0.60 still open.
 - [~] M4 MAF and NSF estimators implemented + analytic parity tests; SLCP
@@ -201,8 +203,10 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated after the pkgdown-website push
-(branch `claude/r-package-website-pkgdown-wm24xp`, July 2026).*
+pick up the work. Last updated after the vignette-caching push
+(branch `claude/implementation-vignette-caching-7hgxh2`, July 2026):
+vignettes are now precomputed (real output baked in, torch-free CI) and the
+two-moons calibration study is scripted with figures in `docs/figures/`.*
 
 ### What exists right now
 
@@ -223,7 +227,8 @@ pick up the work. Last updated after the pkgdown-website push
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
 | Website | `_pkgdown.yml`, `.github/workflows/pkgdown.yaml` | pkgdown site deployed to gh-pages; builds locally into `site/` (gitignored, `docs/` stays for these design docs); `pkgdown/strip-internal.R` removes CLAUDE.md from the output. GitHub Pages must be set to serve from the `gh-pages` branch once. |
-| Vignettes | `vignettes/*.Rmd` (4) | neuralsbi (intro) → density-estimators → diagnostics → sir-epidemic; all `eval = FALSE` with `knitr::rmarkdown_notangle` engine so `R CMD check` does not execute torch code |
+| Vignettes | `vignettes/*.Rmd` (4) + `*.Rmd.orig` sources | neuralsbi (intro) → density-estimators → diagnostics → sir-epidemic. **Precomputed**: the evaluated source is `vignettes/<name>.Rmd.orig`; `vignettes/precompute.R` bakes it (with a working torch install) into a static `vignettes/<name>.Rmd` (results + figures inlined, figures under `vignettes/figures/`). CI and pkgdown re-render that static Markdown with no torch. Re-run `Rscript vignettes/precompute.R` after editing any `.Rmd.orig`; `.Rbuildignore` keeps the sources and the script out of the tarball. |
+| Two-moons calibration | `inst/benchmarks/two_moons_calibration.R` | SBC + expected coverage + TARP on a two-moons NSF fit; figures in `docs/figures/two_moons_{sbc,coverage,tarp}.png` (M2) |
 
 Key contract: every estimator implements `de_log_prob(de, theta, x)` and
 `de_sample(de, x, n)` in **standardized** space (`R/density_estimator.R`);
@@ -253,10 +258,12 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
    CSVs + a short summary to `docs/benchmarks/`. Acceptance: C2ST ≤ 0.60.
-3. **Two-moons calibration study** (finishes M2): run `sbc()` +
-   `plot_coverage()` + `tarp()` on the two-moons MDN/NSF fit; save figures
-   to `docs/figures/`; add a README section. TARP matters here: two-moons
-   marginals hide the crescent structure that the joint test sees.
+3. **Two-moons calibration study** (finishes M2): done via
+   `inst/benchmarks/two_moons_calibration.R` — `sbc()` + `plot_coverage()` +
+   `tarp()` on a two-moons NSF fit, figures saved to `docs/figures/`. TARP
+   matters here: two-moons marginals hide the crescent structure that the
+   joint test sees. Remaining: a short README/vignette section embedding the
+   figures.
 4. **SLCP with NSF** (finishes M4): `task_slcp()` exists; train NSF at 10k
    sims, compare to `sbi` via the harness. Expect this to stress leakage
    correction (uniform prior on [-3,3]^5).
