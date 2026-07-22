@@ -93,18 +93,35 @@ pairplot(draws_nsf)
 ## Comparing estimators quantitatively
 
 A classifier two-sample test (`c2st()`) measures how distinguishable two sets
-of samples are: 0.5 means a classifier cannot tell them apart, 1.0 means it
-always can. Comparing each estimator's draws against the flow's shows how much
-posterior structure the simpler models miss:
+of samples are: 0.5 means the classifier cannot tell them apart, 1.0 means it
+always can. The MDN and the flow agree closely here — both recover the two
+moons, so a classifier is near chance:
 
 ```{r}
-c2st(draws_mdn, draws_nsf)$accuracy   # closer to 0.5: MDN and NSF broadly agree
-c2st(draws_lg,  draws_nsf)$accuracy   # well above 0.5: the Gaussian misses modes
+c2st(draws_mdn, draws_nsf, seed = 1)$accuracy   # near 0.5: MDN and NSF agree
 ```
 
-When an analytic reference posterior exists — as for
-`task_gaussian_linear()` — the same test scores an estimator against the exact
-answer; that is how the package's own accuracy tests work.
+The linear-Gaussian fit is visibly wrong — one blob instead of two crescents —
+yet `c2st()` does *not* flag it:
+
+```{r}
+c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
+```
+
+That number is a trap worth understanding. `c2st()` trains a *linear*
+classifier, so it separates samples by their mean and covariance alone. The
+two moons are symmetric about the origin — the same centre and roughly the
+same spread as the Gaussian blob — so no straight decision boundary can tell
+the two sets apart, even though one is bimodal and the other is not. The
+pairplots above show exactly the difference the score misses. The lesson: a
+two-sample score is only as sharp as its classifier, and a linear one is blind
+to multimodality. For that, trust the picture, or a calibration check
+(`vignette("diagnostics")`).
+
+When two posteriors differ in their mean or covariance — as an estimated and
+an exact posterior do for `task_gaussian_linear()` — the linear classifier
+detects the gap well, and `c2st()` is the right tool. That is how the
+package's own accuracy tests score estimators against analytic references.
 
 ## Adjusting flexibility
 
