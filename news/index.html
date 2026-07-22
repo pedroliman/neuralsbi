@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,12 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.3.9000" id="neuralsbi-0239000-development">neuralsbi 0.2.3.9000 (development)<a class="anchor" aria-label="anchor" href="#neuralsbi-0239000-development"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.4.9000" id="neuralsbi-0249000-development">neuralsbi 0.2.4.9000 (development)<a class="anchor" aria-label="anchor" href="#neuralsbi-0249000-development"></a></h2>
+<ul><li>Vignettes now show real output. They are <em>precomputed</em>: each vignette’s evaluated source lives in <code>vignettes/&lt;name&gt;.Rmd.orig</code>, and <code>vignettes/precompute.R</code> bakes it into a static <code>vignettes/&lt;name&gt;.Rmd</code> (results, printed values, and figures inlined). CI and pkgdown re-render that static Markdown with no torch at build time, so the expensive neural training runs once, locally, instead of on every build. Re-run <code>Rscript vignettes/precompute.R</code> after editing any <code>.Rmd.orig</code>.</li>
+<li>Two-moons calibration study (<code>inst/benchmarks/two_moons_calibration.R</code>): SBC, expected coverage, and TARP for a two-moons NSF fit, with figures written to <code>docs/figures/</code> (roadmap milestone M2).</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.3.9000" id="neuralsbi-0239000">neuralsbi 0.2.3.9000<a class="anchor" aria-label="anchor" href="#neuralsbi-0239000"></a></h2>
 <ul><li>Package website built with pkgdown, deployed from CI to <a href="https://pedroliman.github.io/neural.sbi/" class="uri">https://pedroliman.github.io/neural.sbi/</a>.</li>
 <li>Four vignettes that build on each other: getting started, choosing a density estimator, checking the posterior, and the SIR case study (which now also demonstrates <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code>). Removed a truncated duplicate of the SIR vignette.</li>
 <li>README rewritten to the standard terse form; authorship recorded in <code>DESCRIPTION</code> (Pedro Nascimento de Lima, with ORCID).</li>

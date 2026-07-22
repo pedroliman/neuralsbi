@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -113,9 +113,9 @@ Mixture Density Network is a good default here; the posterior is smooth
 and unimodal.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>,</span>
-<span>           n_simulations <span class="op">=</span> <span class="fl">10000</span>,</span>
+<span>           n_simulations <span class="op">=</span> <span class="fl">3000</span>,</span>
 <span>           density_estimator <span class="op">=</span> <span class="st">"mdn"</span>,</span>
-<span>           seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<span>           max_epochs <span class="op">=</span> <span class="fl">250</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Training is <em>amortized</em>: this one fit can be conditioned on
 any incidence curve without re-simulating.</p>
 </div>
@@ -132,12 +132,20 @@ any incidence curve without re-simulating.</p>
 <span></span>
 <span><span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">post</span>, n <span class="op">=</span> <span class="fl">5000</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   parameter  mean     sd   q2.5   q50  q97.5</span></span>
-<span><span class="co">#&gt; 1    theta1 0.40.. 0.0... ...    ...   ...</span></span>
-<span><span class="co">#&gt; 2    theta2 0.12.. 0.0... ...    ...   ...</span></span>
+<span><span class="co">#&gt;   parameter      mean          sd      q2.5       q25       q50       q75</span></span>
+<span><span class="co">#&gt; 1    theta1 0.4007750 0.006536198 0.3897076 0.3967231 0.4005885 0.4044068</span></span>
+<span><span class="co">#&gt; 2    theta2 0.1300866 0.007765928 0.1168075 0.1254525 0.1300085 0.1347168</span></span>
+<span><span class="co">#&gt;       q97.5</span></span>
+<span><span class="co">#&gt; 1 0.4124505</span></span>
+<span><span class="co">#&gt; 2 0.1436619</span></span>
 <span></span>
 <span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">10000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/sir-epidemic-unnamed-chunk-4-1.png" alt="Pairs plot of the SIR posterior with the true rates marked."><p class="caption">
+plot of chunk unnamed-chunk-4
+</p>
+</div>
 <p>The posterior concentrates around the true rates, and — importantly —
 reports its own uncertainty.</p>
 </div>
@@ -148,12 +156,28 @@ reports its own uncertainty.</p>
 check with Simulation-Based Calibration and an expected-coverage plot,
 neither of which needs a reference posterior.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">300</span>, n_posterior_samples <span class="op">=</span> <span class="fl">1000</span>,</span>
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">80</span>, n_posterior_samples <span class="op">=</span> <span class="fl">300</span>,</span>
 <span>           seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in stats::chisq.test(tab): Chi-squared approximation may be incorrect</span></span>
+<span><span class="co">#&gt; Warning in stats::chisq.test(tab): Chi-squared approximation may be incorrect</span></span>
 <span><span class="va">res</span>                     <span class="co"># per-parameter uniformity p-values (large = good)</span></span>
+<span><span class="co">#&gt; &lt;nsbi_sbc&gt; 80 trials, 300 posterior samples each</span></span>
+<span><span class="co">#&gt;   per-parameter uniformity p-values (large = calibrated):</span></span>
+<span><span class="co">#&gt;     0.522  0.940</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span>, param <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>   <span class="co"># rank histogram: flat = calibrated</span></span>
-<span><span class="fu"><a href="../reference/plot_coverage.html">plot_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>         <span class="co"># empirical vs nominal coverage: on the diagonal = good</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span>, param <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>   <span class="co"># rank histogram: flat = calibrated</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/sir-epidemic-unnamed-chunk-5-1.png" alt="SBC rank histogram and expected-coverage plot for the SIR fit."><p class="caption">
+plot of chunk unnamed-chunk-5
+</p>
+</div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_coverage.html">plot_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>         <span class="co"># empirical vs nominal coverage: on the diagonal = good</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/sir-epidemic-unnamed-chunk-5-2.png" alt="SBC rank histogram and expected-coverage plot for the SIR fit."><p class="caption">
+plot of chunk unnamed-chunk-5
+</p>
+</div>
 <p>If the rank histograms are flat and the coverage curve hugs the
 diagonal, the posterior’s credible intervals mean what they say: a 90%
 interval contains the truth about 90% of the time.</p>
@@ -163,11 +187,16 @@ interval contains the truth about 90% of the time.</p>
 </h2>
 <p>Finally, push posterior draws back through the simulator and compare
 the predicted incidence curves to the observation.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior_predictive.html">posterior_predictive</a></span><span class="op">(</span><span class="va">post</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/matplot.html" class="external-link">matplot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">pp</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"l"</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/adjustcolor.html" class="external-link">adjustcolor</a></span><span class="op">(</span><span class="st">"grey"</span>, <span class="fl">0.3</span><span class="op">)</span>,</span>
 <span>        xlab <span class="op">=</span> <span class="st">"observation time"</span>, ylab <span class="op">=</span> <span class="st">"infected fraction"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">x_obs</span><span class="op">)</span>, col <span class="op">=</span> <span class="st">"firebrick"</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/sir-epidemic-unnamed-chunk-6-1.png" alt="Posterior-predictive incidence curves with the observation overlaid."><p class="caption">
+plot of chunk unnamed-chunk-6
+</p>
+</div>
 <p>The observed curve should sit comfortably within the cloud of
 predictive draws. A systematic mismatch would flag model
 misspecification — a signal no point estimate can give you.</p>
@@ -181,20 +210,32 @@ describe epidemics nothing like the observed one. Sequential NPE
 (<code><a href="../reference/npe_sequential.html">npe_sequential()</a></code>, using truncated proposals) alternates
 simulation and training, restricting each new round of simulations to
 the parameter region the current posterior considers plausible.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_seq</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe_sequential.html">npe_sequential</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span>,</span>
-<span>                          n_rounds <span class="op">=</span> <span class="fl">3</span>, n_simulations <span class="op">=</span> <span class="fl">3000</span>,</span>
-<span>                          density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span>                          n_rounds <span class="op">=</span> <span class="fl">2</span>, n_simulations <span class="op">=</span> <span class="fl">1500</span>,</span>
+<span>                          density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, max_epochs <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">fit_seq</span>                    <span class="co"># per-round budgets and acceptance rates</span></span>
+<span><span class="co">#&gt; &lt;nsbi_snpe&gt; Sequential NPE fit (TSNPE, truncated-prior proposals)</span></span>
+<span><span class="co">#&gt;   density estimator : mdn</span></span>
+<span><span class="co">#&gt;   rounds            : 2</span></span>
+<span><span class="co">#&gt;   simulations       : 3000</span></span>
+<span><span class="co">#&gt;   acceptance/round  : 1.00, 0.32</span></span>
+<span><span class="co">#&gt;   targeted x_obs    : 0, 0, 0.004, 0.241, 0.139, 0.025, 0.004, 0.002, 0, 0</span></span>
+<span><span class="co">#&gt;   NOT amortized: only valid at (or near) the targeted x_obs.</span></span>
+<span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span>
 <span></span>
 <span><span class="va">post_seq</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_seq</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
 <span><span class="va">draws_seq</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post_seq</span>, <span class="fl">10000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws_seq</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
-<p>With the same total simulation budget (here 9,000 vs. 10,000), the
-sequential fit typically yields a tighter posterior around this
-particular outbreak. The trade-off: the result is specific to
-<code>x_obs</code>, so conditioning on a different incidence curve means
-refitting.</p>
+<div class="figure">
+<img src="figures/sir-epidemic-unnamed-chunk-7-1.png" alt="Pairs plot of the sequential-NPE posterior with the true rates marked."><p class="caption">
+plot of chunk unnamed-chunk-7
+</p>
+</div>
+<p>With a comparable total simulation budget, the sequential fit
+typically yields a tighter posterior around this particular outbreak.
+The trade-off: the result is specific to <code>x_obs</code>, so
+conditioning on a different incidence curve means refitting.</p>
 </div>
 <div class="section level2">
 <h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>

@@ -40,6 +40,11 @@ posterior. It is built into the package:
 ``` r
 
 library(neuralsbi)
+#> 
+#> Attaching package: 'neuralsbi'
+#> The following object is masked from 'package:base':
+#> 
+#>     sample
 
 task <- task_two_moons()
 task
@@ -53,51 +58,93 @@ single wide Gaussian that averages across both:
 
 ``` r
 
-fit_lg <- npe(task$prior, task$simulator, n_simulations = 10000,
+fit_lg <- npe(task$prior, task$simulator, n_simulations = 2000,
               density_estimator = "linear_gaussian", seed = 1)
-draws_lg <- sample(posterior(fit_lg, x_obs = x_obs), 5000)
+draws_lg <- sample(posterior(fit_lg, x_obs = x_obs), 3000)
 pairplot(draws_lg)
 ```
+
+![Pairs plot of a unimodal Gaussian posterior spanning both
+moons.](figures/density-estimators-unnamed-chunk-3-1.png)
+
+plot of chunk unnamed-chunk-3
 
 The MDN, with its mixture components, recovers both moons:
 
 ``` r
 
-fit_mdn <- npe(task$prior, task$simulator, n_simulations = 10000,
-               density_estimator = "mdn", n_components = 10, seed = 1)
-draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 5000)
+fit_mdn <- npe(task$prior, task$simulator, n_simulations = 2000,
+               density_estimator = "mdn", n_components = 10,
+               max_epochs = 200, seed = 1)
+draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 3000)
 pairplot(draws_mdn)
 ```
+
+![Pairs plot showing two separated posterior modes recovered by the
+MDN.](figures/density-estimators-unnamed-chunk-4-1.png)
+
+plot of chunk unnamed-chunk-4
 
 And a spline flow captures the sharp crescent edges most cleanly:
 
 ``` r
 
-fit_nsf <- npe(task$prior, task$simulator, n_simulations = 10000,
-               density_estimator = "nsf", seed = 1)
-draws_nsf <- sample(posterior(fit_nsf, x_obs = x_obs), 5000)
+fit_nsf <- npe(task$prior, task$simulator, n_simulations = 2000,
+               density_estimator = "nsf", max_epochs = 150, seed = 1)
+draws_nsf <- sample(posterior(fit_nsf, x_obs = x_obs), 3000)
 pairplot(draws_nsf)
 ```
+
+![Pairs plot of the two-moons posterior captured by a neural spline
+flow.](figures/density-estimators-unnamed-chunk-5-1.png)
+
+plot of chunk unnamed-chunk-5
 
 ## Comparing estimators quantitatively
 
 A classifier two-sample test
 ([`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md))
-measures how distinguishable two sets of samples are: 0.5 means a
-classifier cannot tell them apart, 1.0 means it always can. Comparing
-each estimator’s draws against the flow’s shows how much posterior
-structure the simpler models miss:
+measures how distinguishable two sets of samples are: 0.5 means the
+classifier cannot tell them apart, 1.0 means it always can. The MDN and
+the flow agree closely here — both recover the two moons, so a
+classifier is near chance:
 
 ``` r
 
-c2st(draws_mdn, draws_nsf)$accuracy   # close to 0.5: MDN and NSF agree
-c2st(draws_lg,  draws_nsf)$accuracy   # well above 0.5: the Gaussian misses modes
+c2st(draws_mdn, draws_nsf, seed = 1)$accuracy   # near 0.5: MDN and NSF agree
+#> [1] 0.5091667
 ```
 
-When an analytic reference posterior exists — as for
+The linear-Gaussian fit is visibly wrong — one blob instead of two
+crescents — yet
+[`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md)
+does *not* flag it:
+
+``` r
+
+c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
+#> [1] 0.5121667
+```
+
+That number is a trap worth understanding.
+[`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md)
+trains a *linear* classifier, so it separates samples by their mean and
+covariance alone. The two moons are symmetric about the origin — the
+same centre and roughly the same spread as the Gaussian blob — so no
+straight decision boundary can tell the two sets apart, even though one
+is bimodal and the other is not. The pairplots above show exactly the
+difference the score misses. The lesson: a two-sample score is only as
+sharp as its classifier, and a linear one is blind to multimodality. For
+that, trust the picture, or a calibration check
+([`vignette("diagnostics")`](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md)).
+
+When two posteriors differ in their mean or covariance — as an estimated
+and an exact posterior do for
 [`task_gaussian_linear()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md)
-— the same test scores an estimator against the exact answer; that is
-how the package’s own accuracy tests work.
+— the linear classifier detects the gap well, and
+[`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md) is
+the right tool. That is how the package’s own accuracy tests score
+estimators against analytic references.
 
 ## Adjusting flexibility
 

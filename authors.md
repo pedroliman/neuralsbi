@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/pedroliman/neural.sbi/blob/main/DESCRIPTION)
 
 Nascimento de Lima P (2026). *neuralsbi: Neural Simulation-Based
-Inference in R*. R package version 0.2.3.9000,
+Inference in R*. R package version 0.2.4.9000,
 <https://pedroliman.github.io/neural.sbi/>.
 
     @Manual{,
       title = {neuralsbi: Neural Simulation-Based Inference in R},
       author = {Pedro {Nascimento de Lima}},
       year = {2026},
-      note = {R package version 0.2.3.9000},
+      note = {R package version 0.2.4.9000},
       url = {https://pedroliman.github.io/neural.sbi/},
     }

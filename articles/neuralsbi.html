@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -114,19 +114,32 @@ linear-Gaussian model, we use the closed-form conditional-Gaussian
 estimator, which is <em>exact</em> and requires no neural network
 training.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>           density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span><span class="op">)</span></span>
-<span><span class="va">fit</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>           density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fit</span></span>
+<span><span class="co">#&gt; &lt;nsbi_npe&gt; Neural Posterior Estimation fit</span></span>
+<span><span class="co">#&gt;   density estimator : linear_gaussian</span></span>
+<span><span class="co">#&gt;   parameters (dim)  : 2</span></span>
+<span><span class="co">#&gt;   data (dim)        : 2</span></span>
+<span><span class="co">#&gt;   simulations       : 2000</span></span>
+<span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span></code></pre></div>
 <p>The fitted network approximates the posterior for <em>any</em>
 observation, not just the one at hand — this is what “amortized” means.
 You train once, then condition on new data without refitting.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
-<span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">2000</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span>          <span class="co"># posterior mean</span></span>
-<span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span>          <span class="co"># joint + marginal view</span></span>
-<span><span class="fu"><a href="../reference/map_estimate.html">map_estimate</a></span><span class="op">(</span><span class="va">post</span><span class="op">)</span>       <span class="co"># MAP point estimate</span></span></code></pre></div>
+<span><span class="co">#&gt; [1]  0.8043282 -0.3931149</span></span>
+<span><span class="fu"><a href="../reference/map_estimate.html">map_estimate</a></span><span class="op">(</span><span class="va">post</span><span class="op">)</span>       <span class="co"># MAP point estimate</span></span>
+<span><span class="co">#&gt; [1]  0.8071431 -0.3851586</span></span>
+<span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span>          <span class="co"># joint + marginal view</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/neuralsbi-unnamed-chunk-4-1.png" alt="Pairs plot of posterior draws for the two parameters."><p class="caption">
+plot of chunk unnamed-chunk-4
+</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="did-it-work-check-against-the-truth">Did it work? Check against the truth<a class="anchor" aria-label="anchor" href="#did-it-work-check-against-the-truth"></a>
@@ -138,11 +151,15 @@ You train once, then condition on new data without refitting.</p>
 <span><span class="va">mu</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">Sigma</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="op">(</span><span class="va">x_obs</span> <span class="op">/</span> <span class="va">sigma</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>analytic <span class="op">=</span> <span class="va">mu</span>, estimated <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                [,1]       [,2]</span></span>
+<span><span class="co">#&gt; analytic  0.8000000 -0.4000000</span></span>
+<span><span class="co">#&gt; estimated 0.8043282 -0.3931149</span></span>
 <span></span>
 <span><span class="co"># classifier two-sample test: ~0.5 =&gt; our samples look like analytic samples</span></span>
-<span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span> <span class="op">*</span> <span class="va">d</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span>
+<span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2000</span> <span class="op">*</span> <span class="va">d</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span>
 <span><span class="va">analytic_draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep</a></span><span class="op">(</span><span class="va">z</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/chol.html" class="external-link">chol</a></span><span class="op">(</span><span class="va">Sigma</span><span class="op">)</span>, <span class="fl">2</span>, <span class="va">mu</span>, <span class="va">`+`</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws</span>, <span class="va">analytic_draws</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws</span>, <span class="va">analytic_draws</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
+<span><span class="co">#&gt; [1] 0.50425</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="calibration-when-you-dont-know-the-truth">Calibration when you <em>don’t</em> know the truth<a class="anchor" aria-label="anchor" href="#calibration-when-you-dont-know-the-truth"></a>
@@ -151,9 +168,34 @@ You train once, then condition on new data without refitting.</p>
 calibration (SBC)</strong> still tells you whether the posterior is well
 calibrated: it should produce uniform rank statistics.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">50</span>, n_posterior_samples <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>                 <span class="co"># flat histogram = calibrated</span></span>
-<span><span class="fu"><a href="../reference/expected_coverage.html">expected_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>        <span class="co"># nominal vs empirical credible-interval coverage</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">100</span>, n_posterior_samples <span class="op">=</span> <span class="fl">100</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/expected_coverage.html">expected_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>        <span class="co"># nominal vs empirical credible-interval coverage</span></span>
+<span><span class="co">#&gt;    nominal param1 param2</span></span>
+<span><span class="co">#&gt; 1     0.05   0.05   0.10</span></span>
+<span><span class="co">#&gt; 2     0.10   0.11   0.10</span></span>
+<span><span class="co">#&gt; 3     0.15   0.14   0.19</span></span>
+<span><span class="co">#&gt; 4     0.20   0.18   0.22</span></span>
+<span><span class="co">#&gt; 5     0.25   0.21   0.28</span></span>
+<span><span class="co">#&gt; 6     0.30   0.27   0.31</span></span>
+<span><span class="co">#&gt; 7     0.35   0.30   0.38</span></span>
+<span><span class="co">#&gt; 8     0.40   0.33   0.43</span></span>
+<span><span class="co">#&gt; 9     0.45   0.38   0.50</span></span>
+<span><span class="co">#&gt; 10    0.50   0.42   0.51</span></span>
+<span><span class="co">#&gt; 11    0.55   0.49   0.56</span></span>
+<span><span class="co">#&gt; 12    0.60   0.54   0.61</span></span>
+<span><span class="co">#&gt; 13    0.65   0.57   0.65</span></span>
+<span><span class="co">#&gt; 14    0.70   0.63   0.71</span></span>
+<span><span class="co">#&gt; 15    0.75   0.66   0.74</span></span>
+<span><span class="co">#&gt; 16    0.80   0.73   0.81</span></span>
+<span><span class="co">#&gt; 17    0.85   0.83   0.84</span></span>
+<span><span class="co">#&gt; 18    0.90   0.88   0.94</span></span>
+<span><span class="co">#&gt; 19    0.95   0.92   0.96</span></span>
+<span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>                 <span class="co"># flat histogram = calibrated</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/neuralsbi-unnamed-chunk-6-1.png" alt="SBC rank histogram; a flat histogram indicates calibration."><p class="caption">
+plot of chunk unnamed-chunk-6
+</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="neural-estimators-with-torch">Neural estimators with torch<a class="anchor" aria-label="anchor" href="#neural-estimators-with-torch"></a>
@@ -162,14 +204,25 @@ calibrated: it should produce uniform rank statistics.</p>
 the <strong>Mixture Density Network (MDN)</strong>. This requires
 <code>torch</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"torch"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">fit_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>                 density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span>  <span class="co"># Compare the torch-based MDN fit to the analytic linear_gaussian fit above</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_mdn</span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"torch not available; install with install.packages('torch') + torch::install_torch()\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>               density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, max_epochs <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">fit_mdn</span></span>
+<span><span class="co">#&gt; &lt;nsbi_npe&gt; Neural Posterior Estimation fit</span></span>
+<span><span class="co">#&gt;   density estimator : mdn</span></span>
+<span><span class="co">#&gt;   parameters (dim)  : 2</span></span>
+<span><span class="co">#&gt;   data (dim)        : 2</span></span>
+<span><span class="co">#&gt;   simulations       : 2000</span></span>
+<span><span class="co">#&gt;   best val loss     : 1.2668</span></span>
+<span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span>
+<span></span>
+<span><span class="co"># on this Gaussian model the MDN matches the exact linear_gaussian posterior</span></span>
+<span><span class="va">draws_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_mdn</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">2000</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>analytic <span class="op">=</span> <span class="va">mu</span>, mdn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws_mdn</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;               [,1]      [,2]</span></span>
+<span><span class="co">#&gt; analytic 0.8000000 -0.400000</span></span>
+<span><span class="co">#&gt; mdn      0.8304641 -0.368187</span></span>
+<span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws_mdn</span>, <span class="va">analytic_draws</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
+<span><span class="co">#&gt; [1] 0.526</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="non-gaussian-posteriors">Non-Gaussian posteriors<a class="anchor" aria-label="anchor" href="#non-gaussian-posteriors"></a>
