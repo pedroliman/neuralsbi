@@ -2,6 +2,10 @@
 # The neural (torch) tests skip themselves when libtorch is absent, so the
 # check job stays fast; the test-torch job installs libtorch (cached between
 # runs) and exercises the full neural suite (MDN, MAF).
+#
+# Vignettes are precomputed: vignettes/*.Rmd is baked static Markdown (built
+# from *.Rmd.orig by vignettes/precompute.R), so the vignette rebuild during
+# R CMD check runs no torch code and stays fast.
 name: R-CMD-check
 
 on:

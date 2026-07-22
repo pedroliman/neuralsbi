@@ -1,0 +1,136 @@
+---
+title: "Getting started with neuralsbi"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with neuralsbi}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# This vignette is precomputed: see vignettes/precompute.R. Edit the .Rmd.orig,
+# re-run the precompute script, and commit the regenerated .Rmd and figures.
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>",
+  fig.path = "figures/neuralsbi-", fig.width = 5, fig.height = 4,
+  dpi = 96, fig.retina = NULL
+)
+set.seed(1)
+```
+
+`neuralsbi` performs **Neural Posterior Estimation (NPE)**: given a prior and a
+simulator, it trains a neural network to approximate the Bayesian posterior
+`p(theta | x)` — no likelihood required. This vignette walks through the core
+workflow and shows how to check that the result is trustworthy.
+
+## The three ingredients
+
+Every SBI problem needs (1) a **prior**, (2) a **simulator**, and (3) an
+**observation**. Here is a small linear-Gaussian model whose posterior we happen
+to know in closed form, so we can check our answer.
+
+```{r}
+library(neuralsbi)
+
+# (1) prior over two parameters
+prior <- prior_normal(mean = c(0, 0), sd = 1)
+
+# (2) simulator: an (n x 2) matrix of parameters -> an (n x 2) matrix of data
+sigma <- 0.5
+simulator <- function(theta) {
+  theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
+}
+
+# (3) the observation we want to explain
+x_obs <- c(1.0, -0.5)
+```
+
+## Train an amortized posterior
+
+`npe()` draws parameters from the prior, runs the simulator, and trains a
+conditional density estimator. For this linear-Gaussian model, we use the
+closed-form conditional-Gaussian estimator, which is *exact* and requires no
+neural network training.
+
+```{r}
+fit <- npe(prior, simulator, n_simulations = 2000,
+           density_estimator = "linear_gaussian", seed = 1)
+fit
+```
+
+The fitted network approximates the posterior for *any* observation, not just
+the one at hand — this is what "amortized" means. You train once, then
+condition on new data without refitting.
+
+```{r fig.alt = "Pairs plot of posterior draws for the two parameters."}
+post  <- posterior(fit, x_obs = x_obs)
+draws <- sample(post, 2000)
+
+colMeans(draws)          # posterior mean
+map_estimate(post)       # MAP point estimate
+pairplot(draws)          # joint + marginal view
+```
+
+## Did it work? Check against the truth
+
+For this model the posterior is a known Gaussian. Let us compare.
+
+```{r}
+d <- 2
+Sigma <- solve(diag(d) + diag(d) / sigma^2)
+mu    <- as.numeric(Sigma %*% (x_obs / sigma^2))
+
+rbind(analytic = mu, estimated = colMeans(draws))
+
+# classifier two-sample test: ~0.5 => our samples look like analytic samples
+z <- matrix(rnorm(2000 * d), ncol = d)
+analytic_draws <- sweep(z %*% chol(Sigma), 2, mu, `+`)
+c2st(draws, analytic_draws)$accuracy
+```
+
+## Calibration when you *don't* know the truth
+
+Usually there is no analytic posterior. **Simulation-based calibration (SBC)**
+still tells you whether the posterior is well calibrated: it should produce
+uniform rank statistics.
+
+```{r fig.alt = "SBC rank histogram; a flat histogram indicates calibration."}
+res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 100, seed = 2)
+expected_coverage(res)        # nominal vs empirical credible-interval coverage
+plot_sbc(res)                 # flat histogram = calibrated
+```
+
+## Neural estimators with torch
+
+For non-Gaussian posteriors, you need a neural density estimator like the
+**Mixture Density Network (MDN)**. This requires `torch`.
+
+```{r}
+fit_mdn <- npe(prior, simulator, n_simulations = 2000,
+               density_estimator = "mdn", max_epochs = 200, seed = 1)
+fit_mdn
+
+# on this Gaussian model the MDN matches the exact linear_gaussian posterior
+draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 2000)
+rbind(analytic = mu, mdn = colMeans(draws_mdn))
+c2st(draws_mdn, analytic_draws)$accuracy
+```
+
+## Non-Gaussian posteriors
+
+The MDN is not limited to Gaussian posteriors: it recovers the bimodal,
+crescent-shaped posterior of the classic **two-moons** task, and the flow
+estimators (`"maf"`, `"nsf"`) go further still. That comparison is the subject
+of `vignette("density-estimators")`.
+
+## Where to go next
+
+The vignettes build on each other:
+
+1. `vignette("density-estimators")` — which estimator to use, and when.
+2. `vignette("diagnostics")` — calibration and predictive checks for a fitted
+   posterior.
+3. `vignette("sir-epidemic")` — the complete Bayesian workflow on an applied
+   epidemic-model calibration.
+
+`?npe`, `?posterior`, and `?sbc` document every argument.
