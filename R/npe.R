@@ -22,6 +22,10 @@
 #'   transforms.
 #' @param n_components,hidden MDN settings: number of mixture components and a
 #'   vector of hidden-layer widths.
+#' @param embedding_net Optional summary network built with [embedding_mlp()].
+#'   When supplied, the neural estimators condition on the learned features
+#'   \eqn{f_\psi(x)} instead of the raw data, training the embedding jointly.
+#'   Ignored (with a warning) by `"linear_gaussian"`.
 #' @param max_epochs,batch_size,lr,validation_fraction,patience Neural training
 #'   controls (Adam optimizer, early stopping on validation loss).
 #' @param n_restarts Train this many independently initialized networks and keep
@@ -52,11 +56,20 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 theta = NULL, x = NULL,
                 density_estimator = c("mdn", "maf", "nsf", "linear_gaussian"),
                 n_components = 5L, n_transforms = 5L, hidden = c(50L, 50L),
+                embedding_net = NULL,
                 max_epochs = 500L, batch_size = 100L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE, ...) {
   stopifnot(inherits(prior, "nsbi_prior"))
+  if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
+    stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
+  }
+  if (!is.null(embedding_net) && is.character(density_estimator) &&
+      density_estimator[1] == "linear_gaussian") {
+    warning("`embedding_net` is ignored by the linear_gaussian estimator.",
+            call. = FALSE)
+  }
 
   if (is.null(theta) || is.null(x)) {
     if (is.null(simulator)) {
@@ -89,7 +102,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   de <- fit_density_estimator(
     density_estimator, theta_z, x_z,
     n_components = n_components, n_transforms = n_transforms,
-    hidden = hidden, max_epochs = max_epochs,
+    hidden = hidden, embedding_net = embedding_net, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
     patience = patience, n_restarts = n_restarts,
     clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose, ...
@@ -131,6 +144,7 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
                   patience = dots$patience %||% 20L,
                   n_restarts = dots$n_restarts %||% 1L,
                   clip_grad_norm = dots$clip_grad_norm %||% 5,
+                  embedding = dots$embedding_net,
                   seed = dots$seed, verbose = dots$verbose %||% FALSE),
     maf = fit_maf(theta_z, x_z,
                   n_transforms = dots$n_transforms %||% 5L,
@@ -142,6 +156,7 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
                   patience = dots$patience %||% 20L,
                   n_restarts = dots$n_restarts %||% 1L,
                   clip_grad_norm = dots$clip_grad_norm %||% 5,
+                  embedding = dots$embedding_net,
                   seed = dots$seed, verbose = dots$verbose %||% FALSE),
     nsf = fit_nsf(theta_z, x_z,
                   n_transforms = dots$n_transforms %||% 5L,
@@ -155,6 +170,7 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
                   patience = dots$patience %||% 20L,
                   n_restarts = dots$n_restarts %||% 1L,
                   clip_grad_norm = dots$clip_grad_norm %||% 5,
+                  embedding = dots$embedding_net,
                   seed = dots$seed, verbose = dots$verbose %||% FALSE),
     linear_gaussian = fit_linear_gaussian(theta_z, x_z,
                                            verbose = dots$verbose %||% FALSE)
@@ -186,6 +202,10 @@ print.nsbi_npe <- function(x, ...) {
   cat(sprintf("  density estimator : %s\n", x$density_estimator))
   cat(sprintf("  parameters (dim)  : %d\n", x$dim_theta))
   cat(sprintf("  data (dim)        : %d\n", x$dim_x))
+  if (!is.null(x$de$embedding)) {
+    cat(sprintf("  embedding (mlp)   : %d -> %d features\n",
+                x$dim_x, x$de$embedding$output_dim))
+  }
   cat(sprintf("  simulations       : %d\n", x$n_simulations))
   if (!is.null(x$de$best_val_loss) && is.finite(x$de$best_val_loss)) {
     cat(sprintf("  best val loss     : %.4f\n", x$de$best_val_loss))

@@ -24,7 +24,8 @@ tril_indices <- function(p) {
 
 #' Build the MDN torch module
 #' @keywords internal
-mdn_module <- function(dim_x, dim_theta, n_components, hidden) {
+mdn_module <- function(dim_x, dim_theta, n_components, hidden,
+                       embedding = NULL) {
   torch::nn_module(
     classname = "nsbi_mdn_net",
     initialize = function() {
@@ -32,8 +33,12 @@ mdn_module <- function(dim_x, dim_theta, n_components, hidden) {
       self$K <- n_components
       self$tri <- tril_indices(dim_theta)
       self$tril_size <- length(self$tri$row)
+      self$has_embedding <- !is.null(embedding)
+      if (self$has_embedding) {
+        self$embedding <- build_embedding_module(embedding, dim_x)
+      }
       layers <- list()
-      prev <- dim_x
+      prev <- embedding_output_dim(embedding, dim_x)
       for (h in hidden) {
         layers[[length(layers) + 1L]] <- torch::nn_linear(prev, h)
         layers[[length(layers) + 1L]] <- torch::nn_relu()
@@ -45,6 +50,7 @@ mdn_module <- function(dim_x, dim_theta, n_components, hidden) {
       self$head_tril <- torch::nn_linear(prev, self$K * self$tril_size)
     },
     forward = function(x) {
+      if (self$has_embedding) x <- self$embedding(x)
       h <- self$trunk(x)
       batch <- x$shape[1]
       logits <- self$head_logits(h)                                # (b, K)
@@ -98,7 +104,7 @@ mdn_log_prob_tensor <- function(net, theta, x) {
 fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
                     max_epochs = 500L, batch_size = 100L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
-                    n_restarts = 1L, clip_grad_norm = 5,
+                    n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
@@ -106,7 +112,8 @@ fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
   dim_x <- ncol(x)
 
   trained <- train_conditional_de(
-    build_net = function() mdn_module(dim_x, dim_theta, n_components, hidden)(),
+    build_net = function()
+      mdn_module(dim_x, dim_theta, n_components, hidden, embedding)(),
     log_prob_fn = mdn_log_prob_tensor,
     theta = theta, x = x,
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
@@ -117,7 +124,7 @@ fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
 
   structure(
     list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x,
-         n_components = n_components, hidden = hidden,
+         n_components = n_components, hidden = hidden, embedding = embedding,
          best_val_loss = trained$best_val_loss, history = trained$history),
     class = c("nsbi_de_mdn", "nsbi_de")
   )

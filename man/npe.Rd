@@ -14,6 +14,7 @@ npe(
   n_components = 5L,
   n_transforms = 5L,
   hidden = c(50L, 50L),
+  embedding_net = NULL,
   max_epochs = 500L,
   batch_size = 100L,
   lr = 5e-04,
@@ -50,6 +51,11 @@ vector of hidden-layer widths.}
 
 \item{n_transforms}{MAF/NSF setting: number of stacked autoregressive
 transforms.}
+
+\item{embedding_net}{Optional summary network built with \code{\link[=embedding_mlp]{embedding_mlp()}}.
+When supplied, the neural estimators condition on the learned features
+\eqn{f_\psi(x)} instead of the raw data, training the embedding jointly.
+Ignored (with a warning) by \code{"linear_gaussian"}.}
 
 \item{max_epochs, batch_size, lr, validation_fraction, patience}{Neural training
 controls (Adam optimizer, early stopping on validation loss).}

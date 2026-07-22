@@ -152,11 +152,25 @@ leakage handling) and documented.
 - [ ] Verify MAF/NSF against Python `sbi` on SLCP and Two Moons via
       `inst/benchmarks/` (harness is ready; needs a Python env with sbi).
 
-### v0.4 — Embedding networks & structured data
+### v0.4 — Embedding networks & structured data (in progress)
 
-- Optional learned summary network (MLP/CNN/RNN) mapping raw `x` → features,
-  trained jointly. Enables time series / image-like observations.
-- Standardization moves to embedding output.
+- [x] Optional learned summary network mapping raw `x` → features, trained
+      jointly. `embedding_mlp(output_dim, hidden)` returns a torch-free
+      `nsbi_embedding` spec; `npe(..., embedding_net = )` threads it into the
+      MDN/MAF/NSF builders, which condition on the features. The embedding is
+      a submodule of the fitted network (`embed_x()` applies it once per
+      forward/inverse), so its parameters train with the estimator and travel
+      in the `state_dict`; `de_log_prob`/`de_sample` still receive raw
+      standardized `x` (`dim_x` unchanged). Implemented in `R/embedding.R`,
+      wired through `R/mdn.R`, `R/flows.R`, `R/nsf.R`, `R/npe.R`. Tested in
+      `tests/testthat/test-embedding.R` (spec validation torch-free; module
+      shape, joint-training param registration, and linear-Gaussian parity
+      with an embedded MAF under torch).
+- [ ] CNN/RNN embeddings for image- and sequence-structured `x`; a
+      structured-data case study (e.g. a time-series simulator).
+- [ ] Standardize at the embedding output instead of the raw input (currently
+      the embedding consumes the z-scored data; feature-space standardization
+      would need a warm-up pass).
 
 ### v0.5 — Sequential / multi-round NPE (in progress)
 
@@ -193,7 +207,9 @@ leakage handling) and documented.
       and recording C2ST ≤ 0.60 still open.
 - [~] M4 MAF and NSF estimators implemented + analytic parity tests; SLCP
       parity with `sbi` still open.
-- [ ] M5 Embedding nets; a structured-data case study.
+- [~] M5 MLP embedding net implemented (`embedding_mlp()`, `embedding_net`
+      argument) + tests; CNN/RNN embeddings and a structured-data case study
+      still open.
 - [~] M6 Sequential NPE: TSNPE implemented + analytic parity test; NPE-C and
       efficiency parity with `sbi` still open.
 - [ ] M7 CRAN-ready: full docs, vignettes, `R CMD check` clean.
@@ -203,10 +219,11 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated after the vignette-caching push
-(branch `claude/implementation-vignette-caching-7hgxh2`, July 2026):
-vignettes are now precomputed (real output baked in, torch-free CI) and the
-two-moons calibration study is scripted with figures in `docs/figures/`.*
+pick up the work. Last updated after adding MLP embedding networks
+(branch `claude/implementation-plan-xjh9bt`, July 2026): `embedding_mlp()` +
+the `embedding_net` argument to `npe()` land the first piece of v0.4, trained
+jointly inside the MDN/MAF/NSF estimators. CI (including `test-torch`) is
+green on `main`.*
 
 ### What exists right now
 
@@ -224,6 +241,7 @@ two-moons calibration study is scripted with figures in `docs/figures/`.*
 | Posterior-predictive plot | `plot_posterior_predictive()` | done |
 | Leakage normalization | tests in `test-posterior-normalization.R` | done |
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
+| Embedding net | `embedding_mlp()` in `R/embedding.R` | MLP done + tested; wired into MDN/MAF/NSF via `embedding_net`; CNN/RNN open |
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
 | Website | `_pkgdown.yml`, `.github/workflows/pkgdown.yaml` | pkgdown site deployed to gh-pages; builds locally into `site/` (gitignored, `docs/` stays for these design docs); `pkgdown/strip-internal.R` removes CLAUDE.md from the output. GitHub Pages must be set to serve from the `gh-pages` branch once. |
@@ -247,13 +265,9 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 
 ### Next actions, in priority order
 
-1. **Confirm CI is green** (finishes M1). The first runs failed and the
-   causes are fixed on this branch: codoc drift in `npe.Rd`/`fit_mdn.Rd`,
-   the `npe()` donttest example needing libtorch, `CLAUDE.md` missing from
-   `.Rbuildignore`, and `install_torch()` rejecting a nonexistent
-   `TORCH_HOME`. The workflow only triggers on pushes/PRs to `main`, so
-   open the PR and watch its run. Longer term, consider generating
-   NAMESPACE/man with roxygen2 so drift can't recur.
+1. **CI is green on `main`** (M1 done) — the R-CMD-check workflow, including
+   the `test-torch` job, last passed on the `main` merge commit. Longer term,
+   consider generating NAMESPACE/man with roxygen2 so codoc drift can't recur.
 2. **Run the sbi head-to-head** (finishes M3, headline claim). Needs
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
@@ -270,9 +284,11 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 5. **v0.2 leftovers**: none — log-prob normalization tests, TARP,
    posterior-predictive plots, the SIR vignette, and truncated proposals
    (via TSNPE) are all done.
-6. **v0.4 embedding nets**: optional `embedding_net` argument to `npe()`;
-   an nn_module mapping raw x → features trained jointly (append it in each
-   estimator's `build_net`/forward; standardize at embedding output).
+6. **v0.4 embedding nets**: MLP done — `embedding_mlp()` + the `embedding_net`
+   argument to `npe()` (`R/embedding.R`), trained jointly inside each
+   estimator. Still open: CNN/RNN embeddings for image/sequence `x`, a
+   structured-data case study, and (optionally) standardizing at the
+   embedding output rather than the raw input.
 7. **v0.5 sequential NPE**: TSNPE is done (`npe_sequential()`,
    `R/sequential.R`) and doubles as the truncated-proposal leakage
    handling. Still open: APT/NPE-C with the atomic loss correction, and a

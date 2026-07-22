@@ -91,14 +91,21 @@ made_module <- function(dim_x, dim_theta, hidden) {
 
 #' The full MAF: a stack of MADE transforms with order reversal in between
 #' @keywords internal
-maf_module <- function(dim_x, dim_theta, n_transforms, hidden) {
+maf_module <- function(dim_x, dim_theta, n_transforms, hidden,
+                       embedding = NULL) {
   torch::nn_module(
     classname = "nsbi_maf_net",
     initialize = function() {
       self$dim_theta <- dim_theta
       self$n_transforms <- n_transforms
+      self$has_embedding <- !is.null(embedding)
+      if (self$has_embedding) {
+        self$embedding <- build_embedding_module(embedding, dim_x)
+      }
+      cond_dim <- embedding_output_dim(embedding, dim_x)
       self$mades <- torch::nn_module_list(
-        lapply(seq_len(n_transforms), function(k) made_module(dim_x, dim_theta, hidden)())
+        lapply(seq_len(n_transforms),
+               function(k) made_module(cond_dim, dim_theta, hidden)())
       )
     },
     forward = function(theta, x) {
@@ -112,6 +119,7 @@ maf_module <- function(dim_x, dim_theta, n_transforms, hidden) {
 #' @keywords internal
 maf_forward <- function(net, theta, x) {
   p <- net$dim_theta
+  x <- embed_x(net, x)
   rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long())
   z <- theta
   logdet <- torch::torch_zeros(theta$shape[1])
@@ -128,6 +136,7 @@ maf_forward <- function(net, theta, x) {
 #' @keywords internal
 maf_inverse <- function(net, u, x) {
   p <- net$dim_theta
+  x <- embed_x(net, x)
   rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long())
   z <- u
   for (k in rev(seq_len(net$n_transforms))) {
@@ -156,7 +165,7 @@ maf_log_prob_tensor <- function(net, theta, x) {
 fit_maf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
                     max_epochs = 500L, batch_size = 100L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
-                    n_restarts = 1L, clip_grad_norm = 5,
+                    n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
@@ -164,7 +173,8 @@ fit_maf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
   dim_x <- ncol(x)
 
   trained <- train_conditional_de(
-    build_net = function() maf_module(dim_x, dim_theta, n_transforms, hidden)(),
+    build_net = function()
+      maf_module(dim_x, dim_theta, n_transforms, hidden, embedding)(),
     log_prob_fn = maf_log_prob_tensor,
     theta = theta, x = x,
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
@@ -175,7 +185,7 @@ fit_maf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
 
   structure(
     list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x,
-         n_transforms = n_transforms, hidden = hidden,
+         n_transforms = n_transforms, hidden = hidden, embedding = embedding,
          best_val_loss = trained$best_val_loss, history = trained$history),
     class = c("nsbi_de_maf", "nsbi_de")
   )

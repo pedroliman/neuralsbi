@@ -145,7 +145,7 @@ nsf_made_module <- function(dim_x, dim_theta, hidden, n_bins) {
 #' The full NSF: stacked spline-autoregressive transforms with order reversal
 #' @keywords internal
 nsf_module <- function(dim_x, dim_theta, n_transforms, hidden, n_bins,
-                       tail_bound) {
+                       tail_bound, embedding = NULL) {
   torch::nn_module(
     classname = "nsbi_nsf_net",
     initialize = function() {
@@ -153,9 +153,14 @@ nsf_module <- function(dim_x, dim_theta, n_transforms, hidden, n_bins,
       self$n_transforms <- n_transforms
       self$n_bins <- n_bins
       self$tail_bound <- tail_bound
+      self$has_embedding <- !is.null(embedding)
+      if (self$has_embedding) {
+        self$embedding <- build_embedding_module(embedding, dim_x)
+      }
+      cond_dim <- embedding_output_dim(embedding, dim_x)
       self$mades <- torch::nn_module_list(
         lapply(seq_len(n_transforms),
-               function(k) nsf_made_module(dim_x, dim_theta, hidden, n_bins)())
+               function(k) nsf_made_module(cond_dim, dim_theta, hidden, n_bins)())
       )
     },
     forward = function(theta, x) {
@@ -187,6 +192,7 @@ nsf_apply <- function(net, made, z, x, inverse = FALSE, values = z) {
 #' @keywords internal
 nsf_log_prob_tensor <- function(net, theta, x) {
   p <- net$dim_theta
+  x <- embed_x(net, x)
   rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long())
   z <- theta
   logdet <- torch::torch_zeros(theta$shape[1])
@@ -204,6 +210,7 @@ nsf_log_prob_tensor <- function(net, theta, x) {
 #' @keywords internal
 nsf_inverse <- function(net, u, x) {
   p <- net$dim_theta
+  x <- embed_x(net, x)
   rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long())
   z <- u
   for (k in rev(seq_len(net$n_transforms))) {
@@ -225,7 +232,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
                     n_bins = 8L, tail_bound = 3,
                     max_epochs = 500L, batch_size = 100L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
-                    n_restarts = 1L, clip_grad_norm = 5,
+                    n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
@@ -234,7 +241,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
 
   trained <- train_conditional_de(
     build_net = function() nsf_module(dim_x, dim_theta, n_transforms, hidden,
-                                      n_bins, tail_bound)(),
+                                      n_bins, tail_bound, embedding)(),
     log_prob_fn = nsf_log_prob_tensor,
     theta = theta, x = x,
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
@@ -246,7 +253,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
   structure(
     list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x,
          n_transforms = n_transforms, hidden = hidden, n_bins = n_bins,
-         tail_bound = tail_bound,
+         tail_bound = tail_bound, embedding = embedding,
          best_val_loss = trained$best_val_loss, history = trained$history),
     class = c("nsbi_de_nsf", "nsbi_de")
   )
