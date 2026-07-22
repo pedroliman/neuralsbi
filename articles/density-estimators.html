@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -123,6 +123,11 @@ pick.</p>
 crescent-shaped posterior. It is built into the package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedroliman.github.io/neural.sbi/">neuralsbi</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'neuralsbi'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:base':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     sample</span></span>
 <span></span>
 <span><span class="va">task</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tasks.html">task_two_moons</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">task</span></span>
@@ -132,38 +137,71 @@ crescent-shaped posterior. It is built into the package:</p>
 <p>The linear-Gaussian estimator cannot represent two modes; it returns
 a single wide Gaussian that averages across both:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_lg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">10000</span>,</span>
+<code class="sourceCode R"><span><span class="va">fit_lg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>              density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">draws_lg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_lg</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span></span>
+<span><span class="va">draws_lg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_lg</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">3000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws_lg</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/density-estimators-unnamed-chunk-3-1.png" alt="Pairs plot of a unimodal Gaussian posterior spanning both moons."><p class="caption">
+plot of chunk unnamed-chunk-3
+</p>
+</div>
 <p>The MDN, with its mixture components, recovers both moons:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">10000</span>,</span>
-<span>               density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, n_components <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">draws_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_mdn</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fit_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>               density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, n_components <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>               max_epochs <span class="op">=</span> <span class="fl">200</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">draws_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_mdn</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">3000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws_mdn</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/density-estimators-unnamed-chunk-4-1.png" alt="Pairs plot showing two separated posterior modes recovered by the MDN."><p class="caption">
+plot of chunk unnamed-chunk-4
+</p>
+</div>
 <p>And a spline flow captures the sharp crescent edges most cleanly:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_nsf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">10000</span>,</span>
-<span>               density_estimator <span class="op">=</span> <span class="st">"nsf"</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">draws_nsf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_nsf</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fit_nsf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>               density_estimator <span class="op">=</span> <span class="st">"nsf"</span>, max_epochs <span class="op">=</span> <span class="fl">150</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">draws_nsf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_nsf</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">3000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws_nsf</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/density-estimators-unnamed-chunk-5-1.png" alt="Pairs plot of the two-moons posterior captured by a neural spline flow."><p class="caption">
+plot of chunk unnamed-chunk-5
+</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="comparing-estimators-quantitatively">Comparing estimators quantitatively<a class="anchor" aria-label="anchor" href="#comparing-estimators-quantitatively"></a>
 </h2>
 <p>A classifier two-sample test (<code><a href="../reference/c2st.html">c2st()</a></code>) measures how
-distinguishable two sets of samples are: 0.5 means a classifier cannot
-tell them apart, 1.0 means it always can. Comparing each estimator’s
-draws against the flow’s shows how much posterior structure the simpler
-models miss:</p>
+distinguishable two sets of samples are: 0.5 means the classifier cannot
+tell them apart, 1.0 means it always can. The MDN and the flow agree
+closely here — both recover the two moons, so a classifier is near
+chance:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws_mdn</span>, <span class="va">draws_nsf</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span>   <span class="co"># close to 0.5: MDN and NSF agree</span></span>
-<span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws_lg</span>,  <span class="va">draws_nsf</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span>   <span class="co"># well above 0.5: the Gaussian misses modes</span></span></code></pre></div>
-<p>When an analytic reference posterior exists — as for
-<code><a href="../reference/tasks.html">task_gaussian_linear()</a></code> — the same test scores an estimator
-against the exact answer; that is how the package’s own accuracy tests
-work.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws_mdn</span>, <span class="va">draws_nsf</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span>   <span class="co"># near 0.5: MDN and NSF agree</span></span>
+<span><span class="co">#&gt; [1] 0.5091667</span></span></code></pre></div>
+<p>The linear-Gaussian fit is visibly wrong — one blob instead of two
+crescents — yet <code><a href="../reference/c2st.html">c2st()</a></code> does <em>not</em> flag it:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws_lg</span>, <span class="va">draws_nsf</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span>    <span class="co"># also near 0.5 (see below)</span></span>
+<span><span class="co">#&gt; [1] 0.5121667</span></span></code></pre></div>
+<p>That number is a trap worth understanding. <code><a href="../reference/c2st.html">c2st()</a></code> trains
+a <em>linear</em> classifier, so it separates samples by their mean and
+covariance alone. The two moons are symmetric about the origin — the
+same centre and roughly the same spread as the Gaussian blob — so no
+straight decision boundary can tell the two sets apart, even though one
+is bimodal and the other is not. The pairplots above show exactly the
+difference the score misses. The lesson: a two-sample score is only as
+sharp as its classifier, and a linear one is blind to multimodality. For
+that, trust the picture, or a calibration check
+(<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>).</p>
+<p>When two posteriors differ in their mean or covariance — as an
+estimated and an exact posterior do for
+<code><a href="../reference/tasks.html">task_gaussian_linear()</a></code> — the linear classifier detects the
+gap well, and <code><a href="../reference/c2st.html">c2st()</a></code> is the right tool. That is how the
+package’s own accuracy tests score estimators against analytic
+references.</p>
 </div>
 <div class="section level2">
 <h2 id="adjusting-flexibility">Adjusting flexibility<a class="anchor" aria-label="anchor" href="#adjusting-flexibility"></a>

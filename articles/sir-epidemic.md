@@ -36,9 +36,9 @@ and unimodal.
 ``` r
 
 fit <- npe(task$prior, task$simulator,
-           n_simulations = 10000,
+           n_simulations = 3000,
            density_estimator = "mdn",
-           seed = 1)
+           max_epochs = 250, seed = 1)
 ```
 
 Training is *amortized*: this one fit can be conditioned on any
@@ -57,13 +57,21 @@ x_obs <- task$simulator(matrix(theta_true, nrow = 1))
 
 post <- posterior(fit, x_obs = x_obs)
 summary(post, n = 5000)
-#>   parameter  mean     sd   q2.5   q50  q97.5
-#> 1    theta1 0.40.. 0.0... ...    ...   ...
-#> 2    theta2 0.12.. 0.0... ...    ...   ...
+#>   parameter      mean          sd      q2.5       q25       q50       q75
+#> 1    theta1 0.4007750 0.006536198 0.3897076 0.3967231 0.4005885 0.4044068
+#> 2    theta2 0.1300866 0.007765928 0.1168075 0.1254525 0.1300085 0.1347168
+#>       q97.5
+#> 1 0.4124505
+#> 2 0.1436619
 
 draws <- sample(post, 10000)
 pairplot(draws, truth = theta_true)
 ```
+
+![Pairs plot of the SIR posterior with the true rates
+marked.](figures/sir-epidemic-unnamed-chunk-4-1.png)
+
+plot of chunk unnamed-chunk-4
 
 The posterior concentrates around the true rates, and — importantly —
 reports its own uncertainty.
@@ -76,13 +84,32 @@ which needs a reference posterior.
 
 ``` r
 
-res <- sbc(fit, task$simulator, n_sbc = 300, n_posterior_samples = 1000,
+res <- sbc(fit, task$simulator, n_sbc = 80, n_posterior_samples = 300,
            seed = 2)
+#> Warning in stats::chisq.test(tab): Chi-squared approximation may be incorrect
+#> Warning in stats::chisq.test(tab): Chi-squared approximation may be incorrect
 res                     # per-parameter uniformity p-values (large = good)
+#> <nsbi_sbc> 80 trials, 300 posterior samples each
+#>   per-parameter uniformity p-values (large = calibrated):
+#>     0.522  0.940
 
 plot_sbc(res, param = 1)   # rank histogram: flat = calibrated
+```
+
+![SBC rank histogram and expected-coverage plot for the SIR
+fit.](figures/sir-epidemic-unnamed-chunk-5-1.png)
+
+plot of chunk unnamed-chunk-5
+
+``` r
+
 plot_coverage(res)         # empirical vs nominal coverage: on the diagonal = good
 ```
+
+![SBC rank histogram and expected-coverage plot for the SIR
+fit.](figures/sir-epidemic-unnamed-chunk-5-2.png)
+
+plot of chunk unnamed-chunk-5
 
 If the rank histograms are flat and the coverage curve hugs the
 diagonal, the posterior’s credible intervals mean what they say: a 90%
@@ -101,6 +128,11 @@ matplot(t(pp), type = "l", col = adjustcolor("grey", 0.3),
 lines(as.numeric(x_obs), col = "firebrick", lwd = 2)
 ```
 
+![Posterior-predictive incidence curves with the observation
+overlaid.](figures/sir-epidemic-unnamed-chunk-6-1.png)
+
+plot of chunk unnamed-chunk-6
+
 The observed curve should sit comfortably within the cloud of predictive
 draws. A systematic mismatch would flag model misspecification — a
 signal no point estimate can give you.
@@ -118,19 +150,32 @@ current posterior considers plausible.
 ``` r
 
 fit_seq <- npe_sequential(task$prior, task$simulator, x_obs = x_obs,
-                          n_rounds = 3, n_simulations = 3000,
-                          density_estimator = "mdn", seed = 3)
+                          n_rounds = 2, n_simulations = 1500,
+                          density_estimator = "mdn", max_epochs = 200, seed = 3)
 fit_seq                    # per-round budgets and acceptance rates
+#> <nsbi_snpe> Sequential NPE fit (TSNPE, truncated-prior proposals)
+#>   density estimator : mdn
+#>   rounds            : 2
+#>   simulations       : 3000
+#>   acceptance/round  : 1.00, 0.32
+#>   targeted x_obs    : 0, 0, 0.004, 0.241, 0.139, 0.025, 0.004, 0.002, 0, 0
+#>   NOT amortized: only valid at (or near) the targeted x_obs.
+#>   -> build a posterior with posterior(fit, x_obs = ...)
 
 post_seq  <- posterior(fit_seq, x_obs = x_obs)
 draws_seq <- sample(post_seq, 10000)
 pairplot(draws_seq, truth = theta_true)
 ```
 
-With the same total simulation budget (here 9,000 vs. 10,000), the
-sequential fit typically yields a tighter posterior around this
-particular outbreak. The trade-off: the result is specific to `x_obs`,
-so conditioning on a different incidence curve means refitting.
+![Pairs plot of the sequential-NPE posterior with the true rates
+marked.](figures/sir-epidemic-unnamed-chunk-7-1.png)
+
+plot of chunk unnamed-chunk-7
+
+With a comparable total simulation budget, the sequential fit typically
+yields a tighter posterior around this particular outbreak. The
+trade-off: the result is specific to `x_obs`, so conditioning on a
+different incidence curve means refitting.
 
 ## Where to go next
 
