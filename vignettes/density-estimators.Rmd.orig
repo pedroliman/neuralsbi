@@ -65,28 +65,28 @@ The linear-Gaussian estimator cannot represent two modes; it returns a single
 wide Gaussian that averages across both:
 
 ```{r fig.alt = "Pairs plot of a unimodal Gaussian posterior spanning both moons."}
-fit_lg <- npe(task$prior, task$simulator, n_simulations = 4000,
+fit_lg <- npe(task$prior, task$simulator, n_simulations = 2000,
               density_estimator = "linear_gaussian", seed = 1)
-draws_lg <- sample(posterior(fit_lg, x_obs = x_obs), 4000)
+draws_lg <- sample(posterior(fit_lg, x_obs = x_obs), 3000)
 pairplot(draws_lg)
 ```
 
 The MDN, with its mixture components, recovers both moons:
 
 ```{r fig.alt = "Pairs plot showing two separated posterior modes recovered by the MDN."}
-fit_mdn <- npe(task$prior, task$simulator, n_simulations = 4000,
+fit_mdn <- npe(task$prior, task$simulator, n_simulations = 2000,
                density_estimator = "mdn", n_components = 10,
-               max_epochs = 300, seed = 1)
-draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 4000)
+               max_epochs = 200, seed = 1)
+draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 3000)
 pairplot(draws_mdn)
 ```
 
 And a spline flow captures the sharp crescent edges most cleanly:
 
 ```{r fig.alt = "Pairs plot of the two-moons posterior captured by a neural spline flow."}
-fit_nsf <- npe(task$prior, task$simulator, n_simulations = 4000,
-               density_estimator = "nsf", max_epochs = 300, seed = 1)
-draws_nsf <- sample(posterior(fit_nsf, x_obs = x_obs), 4000)
+fit_nsf <- npe(task$prior, task$simulator, n_simulations = 2000,
+               density_estimator = "nsf", max_epochs = 150, seed = 1)
+draws_nsf <- sample(posterior(fit_nsf, x_obs = x_obs), 3000)
 pairplot(draws_nsf)
 ```
 
