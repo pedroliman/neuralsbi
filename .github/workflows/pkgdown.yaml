@@ -37,7 +37,10 @@ jobs:
           needs: website
 
       - name: Build site
-        # Vignettes set eval = FALSE, so no torch runtime is needed here.
+        # Vignettes are precomputed (vignettes/*.Rmd are baked static Markdown
+        # produced from *.Rmd.orig by vignettes/precompute.R), so no torch
+        # runtime is needed here -- pkgdown only re-renders Markdown and reuses
+        # the committed figures under vignettes/figures/.
         # strip-internal.R removes CLAUDE.md, which pkgdown would otherwise
         # publish along with every other root-level .md file.
         run: |
