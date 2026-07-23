@@ -4,7 +4,8 @@
 \alias{mdn}
 \title{Mixture Density Network (MDN) conditional density estimator}
 \description{
-The MDN is the default neural density estimator in \code{neuralsbi}. A multilayer
+The MDN is one of the neural density estimators in \code{neuralsbi} (the default
+is the MAF, matching Python \code{sbi}). A multilayer
 perceptron maps the data \code{x} to the parameters of a Gaussian mixture over the
 parameters \eqn{\theta}: mixture logits, component means, and (full)
 lower-triangular Cholesky factors of each component covariance. Training

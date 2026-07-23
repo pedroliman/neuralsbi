@@ -14,6 +14,11 @@ sample(x, ...)
 
 \item{...}{Passed on to methods / \code{\link[base:sample]{base::sample()}}.}
 }
+\value{
+Whatever the dispatched method returns. The default method returns
+the result of \code{\link[base:sample]{base::sample()}}; \code{\link[=sample.nsbi_posterior]{sample.nsbi_posterior()}} returns an
+\verb{n x dim} matrix of posterior draws.
+}
 \description{
 \code{neuralsbi} turns \code{\link[base:sample]{base::sample()}} into an S3 generic so that
 \code{sample(posterior, n)} reads the way statisticians expect. For

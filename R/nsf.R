@@ -229,8 +229,8 @@ nsf_inverse <- function(net, u, x) {
 #' Train an NSF on standardized (theta, x)
 #' @keywords internal
 fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
-                    n_bins = 8L, tail_bound = 3,
-                    max_epochs = 500L, batch_size = 100L, lr = 5e-4,
+                    n_bins = 10L, tail_bound = 3,
+                    max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {
