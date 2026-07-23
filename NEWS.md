@@ -1,3 +1,13 @@
+# neuralsbi 0.2.5.9000 (development)
+
+* Embedding networks (roadmap v0.4). `embedding_mlp()` builds a learned
+  summary network that maps raw observations to a low-dimensional feature
+  vector; pass it to `npe(..., embedding_net = )` and the MDN, MAF, and NSF
+  estimators condition on the features instead of the raw data, training the
+  embedding jointly. The estimators still take raw `x` at the `de_*` boundary
+  (`dim_x` is unchanged), so sampling and `log_prob` route through the
+  embedding automatically. Ignored, with a warning, by `linear_gaussian`.
+
 # neuralsbi 0.2.4.9000 (development)
 
 * Vignettes now show real output. They are *precomputed*: each vignette's
