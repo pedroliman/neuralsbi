@@ -12,8 +12,18 @@ template:
     base_font: {google: "Source Sans 3"}
     heading_font: {google: "Source Sans 3"}
     code_font: {google: "JetBrains Mono"}
+  includes:
+    in_header: |
+       <!-- Global site tag (gtag.js) - Google Analytics -->
+       <script async src="https://www.googletagmanager.com/gtag/js?id=G-2ZH21CKEW9" ></script>
+       <script>
+         window.dataLayer = window.dataLayer || [];
+         function gtag(){dataLayer.push(arguments);}
+         gtag('js', new Date());
 
-ga: G-2ZH21CKEW9
+         gtag('config', 'G-2ZH21CKEW9');
+       </script>
+       <!-- Google tag (gtag.js) -->
 
 home:
   title: Neural simulation-based inference in R
