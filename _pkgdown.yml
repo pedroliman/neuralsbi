@@ -19,6 +19,9 @@ template:
     image:
       src: og-card.png
       alt: "neuralsbi: neural simulation-based inference in R"
+    twitter:
+      creator: "@PedroNdeLima"
+      card: summary_large_image
   includes:
     in_header: |
        <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -72,8 +75,8 @@ home:
   description: >
     Amortized, likelihood-free Bayesian inference in R. neuralsbi trains neural
     posterior estimators (MDN, MAF, NSF) from a prior and a simulator to
-    approximate the Bayesian posterior, with built-in calibration diagnostics —
-    no likelihood and no Python required.
+    approximate the Bayesian posterior, with built-in calibration diagnostics.
+    No likelihood and no Python required.
 
 authors:
   Pedro Nascimento de Lima:

@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file, then run rmarkdown::render("README.Rmd"). -->
 
-# neuralsbi
+# neuralsbi <img src="man/figures/logo.png" align="right" height="139" alt="neuralsbi hex logo: a neural network feeding a posterior density" />
 
 <!-- badges: start -->
 
@@ -12,7 +12,7 @@
 `neuralsbi` brings [neural simulation-based
 inference](https://simulation-based-inference.org) (SBI) to R. Given a
 prior over parameters and a simulator, it trains a neural network to
-approximate the Bayesian posterior `p(theta | x)` — amortized,
+approximate the Bayesian posterior `p(theta | x)`: amortized,
 likelihood-free Bayesian inference, with no likelihood function and no
 Python. It mirrors the workflow of the Python
 [`sbi`](https://github.com/sbi-dev/sbi) package, but is a native R
@@ -23,7 +23,7 @@ package (libtorch), not through a Python bridge.
 
 It targets applied researchers rather than ML engineers: a familiar
 prior/simulator/posterior workflow, sensible defaults, and built-in
-posterior diagnostics — simulation-based calibration, expected coverage,
+posterior diagnostics: simulation-based calibration, expected coverage,
 TARP, and posterior predictive checks.
 
 ## Installation
