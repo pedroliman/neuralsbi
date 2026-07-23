@@ -1,3 +1,7 @@
+# neuralsbi 0.3.4
+
+* Fixed the hex logo (`man/figures/logo.png`): the "neuralsbi" wordmark was set low enough to clip against the hexagon's bottom point. Moved it up so it clears the border with margin.
+
 # neuralsbi 0.3.3
 
 * pkgdown site SEO. The site now emits Open Graph tags and a generated social-share card (`pkgdown/assets/og-card.png`), schema.org `SoftwareSourceCode` structured data, a `robots.txt` pointing at the sitemap, and a self-referencing `<link rel="canonical">` on every page (injected by `pkgdown/strip-internal.R`, since pkgdown does not emit one). Each vignette carries a unique `description` for its meta tag, and the home page copy names the concepts a reader would search for (neural simulation-based inference, amortized and likelihood-free Bayesian inference, neural posterior estimation) without keyword stuffing. Adds a hex logo. The sitemap continues to be built by pkgdown.
