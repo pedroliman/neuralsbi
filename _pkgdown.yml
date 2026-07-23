@@ -1,4 +1,4 @@
-url: https://pedroliman.github.io/neural.sbi/
+url: https://pedroliman.github.io/neuralsbi/
 
 # `docs/` holds the package's design documents, so the rendered site goes to
 # `site/` (gitignored); CI deploys it to the gh-pages branch.

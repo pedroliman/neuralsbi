@@ -37,7 +37,7 @@
 # neuralsbi 0.2.3.9000
 
 * Package website built with pkgdown, deployed from CI to
-  https://pedroliman.github.io/neural.sbi/.
+  https://pedroliman.github.io/neuralsbi/.
 * Four vignettes that build on each other: getting started, choosing a
   density estimator, checking the posterior, and the SIR case study (which
   now also demonstrates `npe_sequential()`). Removed a truncated duplicate

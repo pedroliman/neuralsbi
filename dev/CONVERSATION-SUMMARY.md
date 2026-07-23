@@ -65,7 +65,7 @@ verified against analytic ground truth.
 
 ## 3. Decisions taken this conversation
 
-1. **Package name** = `neuralsbi` (repo stays `neural.sbi`). Dotted package
+1. **Package name** = `neuralsbi` (repo stays `neuralsbi`). Dotted package
    names cause `library()`/install friction. Revisit only if the user insists on
    matching the repo name.
 2. **Backend** = R `torch` (native libtorch), never a Python bridge. Keep the
@@ -204,5 +204,5 @@ Prioritized milestones:
 ```bash
 Rscript -e 'library(testthat); library(neuralsbi); test_dir("tests/testthat")'
 Rscript inst/examples/pilot_demo.R      # regenerates both figures
-R CMD build neural.sbi && R CMD check neuralsbi_0.1.0.tar.gz
+R CMD build neuralsbi && R CMD check neuralsbi_0.1.0.tar.gz
 ```
