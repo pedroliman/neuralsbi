@@ -45,19 +45,25 @@ set.seed(1)
 N <- 50
 x <- seq(-1, 1, length.out = N)
 
-# Simulator: given (alpha, beta, sigma), draw one response vector y from
-# y ~ Normal(alpha + beta * x, sigma). It only generates data — no fitting here.
+# Simulator: given rows of (alpha, beta, sigma), draw one response vector y each
+# from y ~ Normal(alpha + beta * x, sigma). Fully vectorised over the rows of
+# theta, and it only generates data — no fitting happens here.
 simulator <- function(theta) {
-  t(apply(theta, 1, function(p) rnorm(N, mean = p[1] + p[2] * x, sd = p[3])))
+  alpha <- theta[, 1]
+  beta  <- theta[, 2]
+  sigma <- theta[, 3]
+  mu <- outer(beta, x) + alpha                       # row i is the line alpha_i + beta_i * x
+  mu + matrix(rnorm(length(mu)), nrow(mu)) * sigma   # add row-specific Gaussian noise
 }
 
 # Priors over the intercept, slope, and noise scale, then train the posterior.
 prior <- prior_uniform(low = c(-3, -3, 0.1), high = c(3, 3, 2))
-fit   <- npe(prior, simulator, n_simulations = 5000, seed = 1)
+fit   <- npe(prior, simulator, n_simulations = 10000, seed = 1)
 
 # Simulate one data set from known coefficients, then infer them back. The
 # observation the posterior conditions on is the response vector y.
 theta_true <- c(alpha = 2, beta = -1, sigma = 0.5)
+set.seed(38)                       # a fixed, representative data set
 y_obs      <- simulator(rbind(theta_true))
 post       <- posterior(fit, x_obs = y_obs)
 draws      <- sample(post, 10000)
@@ -69,7 +75,7 @@ The posterior mean recovers the coefficients that generated the data:
 rbind(truth = theta_true, posterior_mean = colMeans(draws))
 #>                   alpha      beta     sigma
 #> truth          2.000000 -1.000000 0.5000000
-#> posterior_mean 1.989139 -1.047011 0.5194744
+#> posterior_mean 2.003668 -1.041009 0.5003288
 ```
 
 ``` r
@@ -83,7 +89,7 @@ simulation-based calibration live in `vignette("diagnostics")`.
 
 ``` r
 map_estimate(post)     # posterior mode
-#> [1]  1.9931949 -1.0567096  0.4637602
+#> [1]  1.9989619 -1.0442036  0.4702335
 ```
 
 If you’re interested in sbi in other languages or functionality not
