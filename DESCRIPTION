@@ -1,17 +1,10 @@
 Package: neuralsbi
 Title: Neural Simulation-Based Inference
-Version: 0.3.1
+Version: 0.3.2
 Authors@R:
     person("Pedro", "Nascimento de Lima", email = "plima@rand.org",
            role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9057-198X"))
-Description: A native R implementation of neural simulation-based inference,
-    focused on Neural Posterior Estimation. Given a prior over
-    parameters and a simulator, 'neuralsbi' trains a conditional neural
-    density estimator to approximate the Bayesian posterior, enabling
-    amortized, likelihood-free inference. Neural estimators run on the
-    'torch' back end, with no Python dependency. It targets applied
-    researchers who want an approachable interface with sensible defaults
-    and built-in posterior diagnostics.
+Description: A native R implementation of neural simulation-based inference, focused on Neural Posterior Estimation. Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator to approximate the Bayesian posterior, enabling amortized, likelihood-free inference. Neural estimators run on the 'torch' back end. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

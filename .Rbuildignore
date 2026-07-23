@@ -1,5 +1,7 @@
 ^docs$
 ^dev$
+^README\.Rmd$
+^README\.html$
 ^\.github$
 ^LICENSE\.md$
 ^.*\.Rproj$

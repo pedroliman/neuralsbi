@@ -161,3 +161,4 @@ human engineer, not a language model.
 - Don't over-explain the obvious or restate the code in prose. Comment the
   non-obvious *why*.
 - Avoid title-case headings that read like marketing; use sentence case.
+- Don't hand-wrap prose with manual line breaks. Write each paragraph as one continuous line (README/`.Rmd`, `NEWS.md`, the `DESCRIPTION` Description field, `cran-comments.md`, roxygen, commit bodies) and let the editor or renderer soft-wrap. Automatic wrapping by tooling (e.g. pandoc's `github_document` default) is fine — that is the renderer's choice, not yours.
