@@ -2,8 +2,8 @@
 title: "Choosing a density estimator"
 description: >
   Compare the conditional density estimators behind neural posterior estimation
-  in R — mixture density network (MDN), masked autoregressive flow (MAF), and
-  neural spline flow (NSF) — and pick one for your simulator.
+  in R (mixture density network, masked autoregressive flow, and neural spline
+  flow) and pick one for your simulator.
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Choosing a density estimator}
