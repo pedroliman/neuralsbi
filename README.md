@@ -30,57 +30,54 @@ torch::install_torch()
 
 Simulation-based inference recovers parameters from a model you can
 simulate but whose likelihood you would rather not write down. To make
-that concrete, here is a plain linear regression, `y = X beta + noise`.
-We know the answer (ordinary least squares), so we can check that the
-posterior lands on the truth.
+that concrete, take a noisy exponential decay measured at ten time
+points — a cooling object, a clearing drug — with an amplitude `a` and a
+decay rate `b` to recover. We know the parameters that generated the
+data, so we can check that the posterior lands on them.
 
 ``` r
 library(neuralsbi)
 set.seed(1)
 
-# A linear regression: intercept + two covariates, 100 observations.
-N <- 100
-X <- cbind(1, matrix(rnorm(N * 2), N, 2))   # design matrix
-beta_true <- c(1, -2, 0.5)                  # the coefficients to recover
-sigma <- 0.5                                # noise standard deviation
-
-# Simulator: given coefficients, simulate a data set and summarise it by the
-# least-squares fit. Those fitted coefficients are the "data" the posterior sees.
-fit_ols   <- function(y) lm.fit(X, y)$coefficients
+# Simulator: given (a, b), measure the decay curve a * exp(-b * t) at ten times,
+# with observation noise. It only generates data — no fitting happens here.
+times     <- seq(0, 2, length.out = 10)
 simulator <- function(theta) {
-  t(apply(theta, 1, function(beta) fit_ols(X %*% beta + rnorm(N, sd = sigma))))
+  t(apply(theta, 1, function(p) p[1] * exp(-p[2] * times) + rnorm(length(times), sd = 0.05)))
 }
 
-# Prior over the three coefficients, then train the neural posterior.
-prior <- prior_uniform(low = rep(-3, 3), high = rep(3, 3))
-fit   <- npe(prior, simulator, n_simulations = 3000)
+# Prior over the amplitude and decay rate, then train the neural posterior.
+prior <- prior_uniform(low = c(0, 0), high = c(3, 3))
+fit   <- npe(prior, simulator, n_simulations = 3000, seed = 1)
 
-# Observe one data set generated from beta_true, then infer the coefficients.
-y_obs <- X %*% beta_true + rnorm(N, sd = sigma)
-post  <- posterior(fit, x_obs = fit_ols(y_obs))
-draws <- sample(post, 10000)
+# Measure one curve from known parameters, then infer them back.
+theta_true <- c(a = 1.5, b = 1.0)
+x_obs      <- simulator(rbind(theta_true))
+post       <- posterior(fit, x_obs = x_obs)
+draws      <- sample(post, 10000)
 ```
 
-The posterior mean recovers the ground-truth coefficients:
+The posterior mean recovers the parameters that generated the curve:
 
 ``` r
-rbind(truth = beta_true, posterior_mean = colMeans(draws))
-#>                     [,1]      [,2]      [,3]
-#> truth          1.0000000 -2.000000 0.5000000
-#> posterior_mean 0.9862805 -2.080193 0.5313938
+rbind(truth = theta_true, posterior_mean = colMeans(draws))
+#>                       a        b
+#> truth          1.500000 1.000000
+#> posterior_mean 1.543212 1.050659
 ```
 
 ``` r
-pairplot(draws)     # joint and marginal views of the posterior
+pairplot(draws, truth = theta_true, labels = c("a", "b"))
 ```
 
-<img src="man/figures/README-pairplot-1.png" alt="Pairwise posterior over the three regression coefficients." width="100%" />
+<img src="man/figures/README-pairplot-1.png" alt="Pairwise posterior over the decay amplitude and rate." width="100%" />
 
-The same posterior supports point estimates and calibration checks:
+The same posterior gives a point estimate; calibration checks such as
+simulation-based calibration live in `vignette("diagnostics")`.
 
 ``` r
 map_estimate(post)     # posterior mode
-sbc(fit, simulator)    # simulation-based calibration
+#> [1] 1.539072 1.048587
 ```
 
 If you’re interested in sbi in other languages or functionality not
