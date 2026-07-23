@@ -28,59 +28,68 @@ torch::install_torch()
 
 ## Usage
 
-Simulation-based inference recovers parameters from a model you can
-simulate but whose likelihood you would rather not write down. To make
-that concrete, here is a plain linear regression, `y = X beta + noise`.
-We know the answer (ordinary least squares), so we can check that the
-posterior lands on the truth.
+Simulation-based inference fits a posterior from a prior and a
+simulator, with no likelihood required. To keep the setup familiar, here
+is ordinary linear regression written as a simulator: a response `y`
+scattered around a line, `y ~ Normal(alpha + beta * x, sigma)` — the
+same model you might write in Stan. Its likelihood is easy to write
+down, which is exactly what makes it a good check: we know the
+coefficients that generated the data, so we can confirm the posterior
+recovers them.
 
 ``` r
 library(neuralsbi)
 set.seed(1)
 
-# A linear regression: intercept + two covariates, 100 observations.
-N <- 100
-X <- cbind(1, matrix(rnorm(N * 2), N, 2))   # design matrix
-beta_true <- c(1, -2, 0.5)                  # the coefficients to recover
-sigma <- 0.5                                # noise standard deviation
+# Regression design: a single covariate x, measured at 50 fixed points.
+N <- 50
+x <- seq(-1, 1, length.out = N)
 
-# Simulator: given coefficients, simulate a data set and summarise it by the
-# least-squares fit. Those fitted coefficients are the "data" the posterior sees.
-fit_ols   <- function(y) lm.fit(X, y)$coefficients
+# Simulator: given rows of (alpha, beta, sigma), draw one response vector y each
+# from y ~ Normal(alpha + beta * x, sigma). Fully vectorised over the rows of
+# theta, and it only generates data — no fitting happens here.
 simulator <- function(theta) {
-  t(apply(theta, 1, function(beta) fit_ols(X %*% beta + rnorm(N, sd = sigma))))
+  alpha <- theta[, 1]
+  beta  <- theta[, 2]
+  sigma <- theta[, 3]
+  mu <- outer(beta, x) + alpha                       # row i is the line alpha_i + beta_i * x
+  mu + matrix(rnorm(length(mu)), nrow(mu)) * sigma   # add row-specific Gaussian noise
 }
 
-# Prior over the three coefficients, then train the neural posterior.
-prior <- prior_uniform(low = rep(-3, 3), high = rep(3, 3))
-fit   <- npe(prior, simulator, n_simulations = 3000)
+# Priors over the intercept, slope, and noise scale, then train the posterior.
+prior <- prior_uniform(low = c(-3, -3, 0.1), high = c(3, 3, 2))
+fit   <- npe(prior, simulator, n_simulations = 10000, seed = 1)
 
-# Observe one data set generated from beta_true, then infer the coefficients.
-y_obs <- X %*% beta_true + rnorm(N, sd = sigma)
-post  <- posterior(fit, x_obs = fit_ols(y_obs))
-draws <- sample(post, 10000)
+# Simulate one data set from known coefficients, then infer them back. The
+# observation the posterior conditions on is the response vector y.
+theta_true <- c(alpha = 2, beta = -1, sigma = 0.5)
+set.seed(38)                       # a fixed, representative data set
+y_obs      <- simulator(rbind(theta_true))
+post       <- posterior(fit, x_obs = y_obs)
+draws      <- sample(post, 10000)
 ```
 
-The posterior mean recovers the ground-truth coefficients:
+The posterior mean recovers the coefficients that generated the data:
 
 ``` r
-rbind(truth = beta_true, posterior_mean = colMeans(draws))
-#>                     [,1]      [,2]      [,3]
-#> truth          1.0000000 -2.000000 0.5000000
-#> posterior_mean 0.9862805 -2.080193 0.5313938
+rbind(truth = theta_true, posterior_mean = colMeans(draws))
+#>                   alpha      beta     sigma
+#> truth          2.000000 -1.000000 0.5000000
+#> posterior_mean 2.003668 -1.041009 0.5003288
 ```
 
 ``` r
-pairplot(draws)     # joint and marginal views of the posterior
+pairplot(draws, truth = theta_true, labels = c("alpha", "beta", "sigma"))
 ```
 
-<img src="man/figures/README-pairplot-1.png" alt="Pairwise posterior over the three regression coefficients." width="100%" />
+<img src="man/figures/README-pairplot-1.png" alt="Pairwise posterior over the regression intercept, slope, and noise scale." width="100%" />
 
-The same posterior supports point estimates and calibration checks:
+The same posterior gives a point estimate; calibration checks such as
+simulation-based calibration live in `vignette("diagnostics")`.
 
 ``` r
 map_estimate(post)     # posterior mode
-sbc(fit, simulator)    # simulation-based calibration
+#> [1]  1.9989619 -1.0442036  0.4702335
 ```
 
 If you’re interested in sbi in other languages or functionality not
