@@ -1,5 +1,9 @@
 ---
 title: "Checking the posterior"
+description: >
+  Validate a neural posterior in R with simulation-based calibration (SBC),
+  expected coverage, TARP, and posterior predictive checks before you trust its
+  credible intervals.
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Checking the posterior}
