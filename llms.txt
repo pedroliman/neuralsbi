@@ -1,10 +1,21 @@
 # neuralsbi
 
-`neuralsbi` is an R-native package for [Neural Simulation-based
-inference](https://simulation-based-inference.org).
+`neuralsbi` brings [neural simulation-based
+inference](https://simulation-based-inference.org) (SBI) to R. Given a
+prior over parameters and a simulator, it trains a neural network to
+approximate the Bayesian posterior `p(theta | x)`: amortized,
+likelihood-free Bayesian inference, with no likelihood function and no
+Python. It mirrors the workflow of the Python
+[`sbi`](https://github.com/sbi-dev/sbi) package, but is a native R
+implementation: the neural density estimators for posterior estimation
+(mixture density networks, masked autoregressive flows, neural spline
+flows) run directly on the [`torch`](https://torch.mlverse.org/) R
+package (libtorch), not through a Python bridge.
 
-Neural estimators are implemented directly in R on the
-[`torch`](https://torch.mlverse.org/) R package.
+It targets applied researchers rather than ML engineers: a familiar
+prior/simulator/posterior workflow, sensible defaults, and built-in
+posterior diagnostics: simulation-based calibration, expected coverage,
+TARP, and posterior predictive checks.
 
 ## Installation
 
@@ -219,9 +230,28 @@ Reference inference problems shared by the tests and benchmarks.
 
 - [Getting started with
   neuralsbi](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.md):
+
+  Train a neural posterior estimator from a prior and a simulator to
+  perform amortized, likelihood-free Bayesian inference in R, then check
+  that the fit is trustworthy.
+
 - [Choosing a density
   estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.md):
+
+  Compare the conditional density estimators behind neural posterior
+  estimation in R (mixture density network, masked autoregressive flow,
+  and neural spline flow) and pick one for your simulator.
+
 - [Checking the
   posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md):
+
+  Validate a neural posterior in R with simulation-based calibration
+  (SBC), expected coverage, TARP, and posterior predictive checks before
+  you trust its credible intervals.
+
 - [Case study: inferring epidemic parameters
   (SIR)](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md):
+
+  A worked simulation-based inference case study in R: recover the
+  transmission and recovery rates of a stochastic SIR epidemic model
+  from a noisy incidence curve, with no tractable likelihood.
