@@ -5,7 +5,7 @@
 [![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neuralsbi/)
 <!-- badges: end -->
 
-`neuralsbi` is an R package for [Neural Simulation-based inference](https://simulation-based-inference.org).
+`neuralsbi` is an R-native package for [Neural Simulation-based inference](https://simulation-based-inference.org).
 
 Neural estimators are implemented directly in R on the torch [`torch`](https://torch.mlverse.org/) R package.
 
@@ -38,6 +38,8 @@ pairplot(draws)                # joint and marginal views
 map_estimate(post)             # point estimate
 sbc(fit, simulator)            # calibration check
 ```
+
+If you're interested in sbi in other languages or functionality not available here, see the [awesome neural SBI repo](https://github.com/smsharma/awesome-neural-sbi); there are some good implementations in python and in Julia.
 
 ## Learn more
 
