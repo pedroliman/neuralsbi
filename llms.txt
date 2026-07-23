@@ -41,13 +41,6 @@ map_estimate(post)             # point estimate
 sbc(fit, simulator)            # calibration check
 ```
 
-The neural estimators handle genuinely non-Gaussian posteriors — here
-the bimodal two-moons task:
-
-![Two-moons posterior](reference/figures/two_moons_posterior.png)
-
-Two-moons posterior
-
 ## Learn more
 
 The [package website](https://pedroliman.github.io/neuralsbi/) has four
