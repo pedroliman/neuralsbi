@@ -16,7 +16,7 @@ expected_coverage(sbc_result, levels = seq(0.05, 0.95, by = 0.05))
 - sbc_result:
 
   An `nsbi_sbc` object from
-  [`sbc()`](https://pedroliman.github.io/neural.sbi/reference/sbc.md).
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md).
 
 - levels:
 

@@ -1,7 +1,7 @@
 # Sequential NPE with truncated-prior proposals (TSNPE)
 
 Multi-round NPE targeting a single observation `x_obs`. Single-round
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
 spends its simulation budget across the whole prior; when only one
 observation matters, most of those simulations land in regions the
 posterior never visits. `npe_sequential()` implements truncated
@@ -37,8 +37,8 @@ npe_sequential(
 - prior:
 
   An `nsbi_prior` (see
-  [`prior_uniform()`](https://pedroliman.github.io/neural.sbi/reference/prior_uniform.md),
-  [`prior_normal()`](https://pedroliman.github.io/neural.sbi/reference/prior_normal.md)).
+  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md),
+  [`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md)).
 
 - simulator:
 
@@ -62,7 +62,7 @@ npe_sequential(
 - density_estimator:
 
   Passed to
-  [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
   each round.
 
 - epsilon:
@@ -89,7 +89,7 @@ npe_sequential(
 - ...:
 
   Passed to
-  [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
   (estimator and training settings).
 
 ## Value
@@ -102,8 +102,8 @@ recording per-round budgets, acceptance rates, and thresholds.
 The rounds accumulate: each round's estimator is trained on all
 simulations so far. The final fit is returned as an `nsbi_npe` (subclass
 `nsbi_snpe`) and works with
-[`posterior()`](https://pedroliman.github.io/neural.sbi/reference/posterior.md),
-[`sample()`](https://pedroliman.github.io/neural.sbi/reference/sample.md)
+[`posterior()`](https://pedroliman.github.io/neuralsbi/reference/posterior.md),
+[`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md)
 and the diagnostics, but unlike single-round NPE it is *not* amortized:
 it is only trustworthy at (or very near) `x_obs`.
 

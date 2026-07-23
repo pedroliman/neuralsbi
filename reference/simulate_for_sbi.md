@@ -18,8 +18,8 @@ simulate_for_sbi(simulator, prior, n, seed = NULL, verbose = FALSE)
 - prior:
 
   An `nsbi_prior` (see
-  [`prior_uniform()`](https://pedroliman.github.io/neural.sbi/reference/prior_uniform.md),
-  [`prior_normal()`](https://pedroliman.github.io/neural.sbi/reference/prior_normal.md)).
+  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md),
+  [`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md)).
 
 - n:
 

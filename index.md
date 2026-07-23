@@ -14,7 +14,7 @@ all.
 ``` r
 
 # install.packages("remotes")
-remotes::install_github("pedroliman/neural.sbi")
+remotes::install_github("pedroliman/neuralsbi")
 
 # the neural back end (once)
 install.packages("torch")
@@ -50,20 +50,20 @@ Two-moons posterior
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neural.sbi/) has four
+The [package website](https://pedroliman.github.io/neuralsbi/) has four
 vignettes that build on each other:
 
 1.  [Getting
-    started](https://pedroliman.github.io/neural.sbi/articles/neuralsbi.html)
+    started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html)
     — the core prior/simulator/posterior workflow.
 2.  [Choosing a density
-    estimator](https://pedroliman.github.io/neural.sbi/articles/density-estimators.html)
+    estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html)
     — MDN, MAF, NSF, and the torch-free baseline.
 3.  [Checking the
-    posterior](https://pedroliman.github.io/neural.sbi/articles/diagnostics.html)
+    posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html)
     — calibration and predictive diagnostics.
 4.  [Case study: an SIR epidemic
-    model](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.html)
+    model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html)
     — the full Bayesian workflow on an applied problem.
 
 ## License

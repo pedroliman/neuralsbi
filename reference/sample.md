@@ -30,5 +30,5 @@ sample(x, ...)
 
 Whatever the dispatched method returns. The default method returns the
 result of [`base::sample()`](https://rdrr.io/r/base/sample.html);
-[`sample.nsbi_posterior()`](https://pedroliman.github.io/neural.sbi/reference/sample.nsbi_posterior.md)
+[`sample.nsbi_posterior()`](https://pedroliman.github.io/neuralsbi/reference/sample.nsbi_posterior.md)
 returns an `n x dim` matrix of posterior draws.

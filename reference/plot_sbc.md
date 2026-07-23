@@ -14,7 +14,7 @@ plot_sbc(sbc_result, param = 1L, bins = 20L)
 - sbc_result:
 
   An `nsbi_sbc` object from
-  [`sbc()`](https://pedroliman.github.io/neural.sbi/reference/sbc.md).
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md).
 
 - param:
 

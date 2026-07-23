@@ -37,13 +37,13 @@ network is built lazily at fit time), so it is safe to construct without
 `embedding_mlp()` builds a multilayer-perceptron summary network: a
 stack of fully connected ReLU layers mapping the (standardized) data to
 a vector of `output_dim` features. Pass the result to
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md) via
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md) via
 `embedding_net`; it is trained end to end with the estimator and its
 parameters live inside the fitted network, so sampling and `log_prob`
 route through it automatically.
 
 The embedding consumes the standardized data (the same z-scoring
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
 applies to `x` without an embedding), which keeps the summary network's
 inputs on a common scale. Standardization of the *features* is
 intentionally left to the network itself; the estimators operate on the
@@ -51,7 +51,7 @@ raw embedding output.
 
 ## See also
 
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
 
 ## Examples
 

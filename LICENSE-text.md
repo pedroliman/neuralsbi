@@ -1,4 +1,4 @@
 # License
 
     YEAR: 2026
-    COPYRIGHT HOLDER: neural.sbi authors
+    COPYRIGHT HOLDER: neuralsbi authors

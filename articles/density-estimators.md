@@ -1,6 +1,6 @@
 # Choosing a density estimator
 
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
 approximates the posterior with a *conditional density estimator*: a
 model of `p(theta | x)` trained on simulated `(theta, x)` pairs. The
 `density_estimator` argument picks which one, and the choice matters
@@ -29,7 +29,7 @@ four options and when each is the right choice.
 All three neural estimators need the `torch` back end
 (`install.packages("torch"); torch::install_torch()`) and share one
 training loop, so the training arguments to
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md) —
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md) —
 `max_epochs`, `patience`, `n_restarts`, and so on — mean the same thing
 whichever you pick.
 
@@ -104,7 +104,7 @@ plot of chunk unnamed-chunk-5
 ## Comparing estimators quantitatively
 
 A classifier two-sample test
-([`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md))
+([`c2st()`](https://pedroliman.github.io/neuralsbi/reference/c2st.md))
 measures how distinguishable two sets of samples are: 0.5 means the
 classifier cannot tell them apart, 1.0 means it always can. The MDN and
 the flow agree closely here — both recover the two moons, so a
@@ -118,7 +118,7 @@ c2st(draws_mdn, draws_nsf, seed = 1)$accuracy   # near 0.5: MDN and NSF agree
 
 The linear-Gaussian fit is visibly wrong — one blob instead of two
 crescents — yet
-[`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md)
+[`c2st()`](https://pedroliman.github.io/neuralsbi/reference/c2st.md)
 does *not* flag it:
 
 ``` r
@@ -128,7 +128,7 @@ c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
 ```
 
 That number is a trap worth understanding.
-[`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md)
+[`c2st()`](https://pedroliman.github.io/neuralsbi/reference/c2st.md)
 trains a *linear* classifier, so it separates samples by their mean and
 covariance alone. The two moons are symmetric about the origin — the
 same centre and roughly the same spread as the Gaussian blob — so no
@@ -137,21 +137,21 @@ is bimodal and the other is not. The pairplots above show exactly the
 difference the score misses. The lesson: a two-sample score is only as
 sharp as its classifier, and a linear one is blind to multimodality. For
 that, trust the picture, or a calibration check
-([`vignette("diagnostics")`](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md)).
+([`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md)).
 
 When two posteriors differ in their mean or covariance — as an estimated
 and an exact posterior do for
-[`task_gaussian_linear()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md)
+[`task_gaussian_linear()`](https://pedroliman.github.io/neuralsbi/reference/tasks.md)
 — the linear classifier detects the gap well, and
-[`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md) is
+[`c2st()`](https://pedroliman.github.io/neuralsbi/reference/c2st.md) is
 the right tool. That is how the package’s own accuracy tests score
 estimators against analytic references.
 
 ## Adjusting flexibility
 
 Each estimator has a few settings, passed through
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md),
-that control how flexible it is:
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md), that
+control how flexible it is:
 
 | Estimator | Arguments | Default |
 |----|----|----|
@@ -175,6 +175,6 @@ simulations usually helps more than enlarging the network.
   near-instant baseline, or when the model really is linear-Gaussian —
   then it is exact.
 - Whatever you choose, check it.
-  [`vignette("diagnostics")`](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md)
+  [`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md)
   shows how to verify a fitted posterior with calibration and predictive
   checks.

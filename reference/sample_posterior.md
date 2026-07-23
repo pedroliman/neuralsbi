@@ -26,7 +26,7 @@ sample_posterior(post, n = 1000, obs = NULL, ...)
 - ...:
 
   Passed to
-  [`sample.nsbi_posterior()`](https://pedroliman.github.io/neural.sbi/reference/sample.nsbi_posterior.md).
+  [`sample.nsbi_posterior()`](https://pedroliman.github.io/neuralsbi/reference/sample.nsbi_posterior.md).
 
 ## Value
 

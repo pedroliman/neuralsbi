@@ -31,10 +31,10 @@ x_obs <- c(1.0, -0.5)
 
 ## Train an amortized posterior
 
-[`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
-draws parameters from the prior, runs the simulator, and trains a
-conditional density estimator. For this linear-Gaussian model, we use
-the closed-form conditional-Gaussian estimator, which is *exact* and
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md) draws
+parameters from the prior, runs the simulator, and trains a conditional
+density estimator. For this linear-Gaussian model, we use the
+closed-form conditional-Gaussian estimator, which is *exact* and
 requires no neural network training.
 
 ``` r
@@ -165,21 +165,21 @@ The MDN is not limited to Gaussian posteriors: it recovers the bimodal,
 crescent-shaped posterior of the classic **two-moons** task, and the
 flow estimators (`"maf"`, `"nsf"`) go further still. That comparison is
 the subject of
-[`vignette("density-estimators")`](https://pedroliman.github.io/neural.sbi/articles/density-estimators.md).
+[`vignette("density-estimators")`](https://pedroliman.github.io/neuralsbi/articles/density-estimators.md).
 
 ## Where to go next
 
 The vignettes build on each other:
 
-1.  [`vignette("density-estimators")`](https://pedroliman.github.io/neural.sbi/articles/density-estimators.md)
+1.  [`vignette("density-estimators")`](https://pedroliman.github.io/neuralsbi/articles/density-estimators.md)
     — which estimator to use, and when.
-2.  [`vignette("diagnostics")`](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md)
+2.  [`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md)
     — calibration and predictive checks for a fitted posterior.
-3.  [`vignette("sir-epidemic")`](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.md)
+3.  [`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md)
     — the complete Bayesian workflow on an applied epidemic-model
     calibration.
 
-[`?npe`](https://pedroliman.github.io/neural.sbi/reference/npe.md),
-[`?posterior`](https://pedroliman.github.io/neural.sbi/reference/posterior.md),
-and [`?sbc`](https://pedroliman.github.io/neural.sbi/reference/sbc.md)
+[`?npe`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
+[`?posterior`](https://pedroliman.github.io/neuralsbi/reference/posterior.md),
+and [`?sbc`](https://pedroliman.github.io/neuralsbi/reference/sbc.md)
 document every argument.

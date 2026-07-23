@@ -13,11 +13,11 @@ diagnostics.
 
 Useful links:
 
-- <https://pedroliman.github.io/neural.sbi/>
+- <https://pedroliman.github.io/neuralsbi/>
 
-- <https://github.com/pedroliman/neural.sbi>
+- <https://github.com/pedroliman/neuralsbi>
 
-- Report bugs at <https://github.com/pedroliman/neural.sbi/issues>
+- Report bugs at <https://github.com/pedroliman/neuralsbi/issues>
 
 ## Author
 

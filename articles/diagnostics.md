@@ -186,19 +186,19 @@ match; values near 1.0 mean the estimated posterior is badly off.
 ## A suggested routine
 
 1.  After every fit, run
-    [`sbc()`](https://pedroliman.github.io/neural.sbi/reference/sbc.md)
+    [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md)
     and look at
-    [`plot_sbc()`](https://pedroliman.github.io/neural.sbi/reference/plot_sbc.md)
+    [`plot_sbc()`](https://pedroliman.github.io/neuralsbi/reference/plot_sbc.md)
     and
-    [`plot_coverage()`](https://pedroliman.github.io/neural.sbi/reference/plot_coverage.md).
+    [`plot_coverage()`](https://pedroliman.github.io/neuralsbi/reference/plot_coverage.md).
     This is cheap relative to training and catches overconfidence early.
 2.  Before using a posterior for real conclusions, run a posterior
     predictive check for the actual observation.
 3.  When you change estimator or training settings, compare old and new
     draws with
-    [`c2st()`](https://pedroliman.github.io/neural.sbi/reference/c2st.md)
+    [`c2st()`](https://pedroliman.github.io/neuralsbi/reference/c2st.md)
     to see whether the change moved the posterior at all.
 
 The case study in
-[`vignette("sir-epidemic")`](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.md)
+[`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md)
 applies this routine end to end on an applied problem.

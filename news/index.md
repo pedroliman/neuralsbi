@@ -4,7 +4,7 @@
 
 - Defaults now match Python `sbi`, so a workflow reads the same in both
   packages and results can be cross-checked. Changes to
-  [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
   defaults: the density estimator is now `"maf"` (was `"mdn"`); MDN
   mixture components default to 10 (was 5); NSF spline bins default to
   10 (was 8); the training batch size is 200 (was 100). `max_epochs` is
@@ -19,7 +19,7 @@
   `Authors@R`), and tidied the package title.
 
 - Embedding networks (roadmap v0.4).
-  [`embedding_mlp()`](https://pedroliman.github.io/neural.sbi/reference/embedding_mlp.md)
+  [`embedding_mlp()`](https://pedroliman.github.io/neuralsbi/reference/embedding_mlp.md)
   builds a learned summary network that maps raw observations to a
   low-dimensional feature vector; pass it to
   `npe(..., embedding_net = )` and the MDN, MAF, and NSF estimators
@@ -47,11 +47,11 @@
 ## neuralsbi 0.2.3.9000
 
 - Package website built with pkgdown, deployed from CI to
-  <https://pedroliman.github.io/neural.sbi/>.
+  <https://pedroliman.github.io/neuralsbi/>.
 - Four vignettes that build on each other: getting started, choosing a
   density estimator, checking the posterior, and the SIR case study
   (which now also demonstrates
-  [`npe_sequential()`](https://pedroliman.github.io/neural.sbi/reference/npe_sequential.md)).
+  [`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md)).
   Removed a truncated duplicate of the SIR vignette.
 - README rewritten to the standard terse form; authorship recorded in
   `DESCRIPTION` (Pedro Nascimento de Lima, with ORCID).
@@ -59,40 +59,40 @@
 ## neuralsbi 0.2.2.9000
 
 - New
-  [`npe_sequential()`](https://pedroliman.github.io/neural.sbi/reference/npe_sequential.md):
+  [`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md):
   multi-round NPE targeting a single observation via truncated-prior
   proposals (TSNPE, Deistler et al. 2022). Each round truncates the
   prior to the highest-probability region of the current posterior and
   retrains on all accumulated simulations; the standard NPE loss stays
   valid, so no importance correction is needed. Returns an `nsbi_snpe`
   fit that works with
-  [`posterior()`](https://pedroliman.github.io/neural.sbi/reference/posterior.md),
-  [`sample()`](https://pedroliman.github.io/neural.sbi/reference/sample.md),
+  [`posterior()`](https://pedroliman.github.io/neuralsbi/reference/posterior.md),
+  [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md),
   and the diagnostics, but is only valid at the targeted `x_obs`.
   Verified against the analytic linear-Gaussian posterior.
 
 ## neuralsbi 0.2.1.9000
 
 - New
-  [`tarp()`](https://pedroliman.github.io/neural.sbi/reference/tarp.md)
+  [`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md)
   diagnostic and
-  [`plot_tarp()`](https://pedroliman.github.io/neural.sbi/reference/plot_tarp.md)
+  [`plot_tarp()`](https://pedroliman.github.io/neuralsbi/reference/plot_tarp.md)
   (Lemos et al. 2023): a *joint* expected-coverage test using random
   reference points, complementing the per-parameter
-  [`sbc()`](https://pedroliman.github.io/neural.sbi/reference/sbc.md)
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md)
   ranks. Detects posteriors with calibrated marginals but wrong
   correlation structure.
 - New
-  [`plot_posterior_predictive()`](https://pedroliman.github.io/neural.sbi/reference/plot_posterior_predictive.md):
+  [`plot_posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/plot_posterior_predictive.md):
   marginal predictive histograms with the observation marked; returns
   the observation’s predictive quantiles.
 - Leakage correction is now under test: with a bounded prior, the
   renormalized
-  [`log_prob()`](https://pedroliman.github.io/neural.sbi/reference/log_prob.md)
+  [`log_prob()`](https://pedroliman.github.io/neuralsbi/reference/log_prob.md)
   integrates to one over the support and returns `-Inf` outside it
   (`test-posterior-normalization.R`).
 - Fixed CI. `R CMD check` failed on three counts: the
-  [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
   example required libtorch (it now uses the torch-free
   `linear_gaussian` estimator and runs unconditionally), the
   hand-maintained `npe.Rd`/`fit_mdn.Rd` usage sections had drifted
@@ -111,24 +111,24 @@
   Spline Flow (`"nsf"`, autoregressive rational-quadratic splines) join
   the MDN and the closed-form `linear_gaussian` baseline.
 - Benchmark tasks
-  ([`task_gaussian_linear()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md),
-  [`task_two_moons()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md),
-  [`task_slcp()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md),
-  [`task_sir()`](https://pedroliman.github.io/neural.sbi/reference/tasks.md))
+  ([`task_gaussian_linear()`](https://pedroliman.github.io/neuralsbi/reference/tasks.md),
+  [`task_two_moons()`](https://pedroliman.github.io/neuralsbi/reference/tasks.md),
+  [`task_slcp()`](https://pedroliman.github.io/neuralsbi/reference/tasks.md),
+  [`task_sir()`](https://pedroliman.github.io/neuralsbi/reference/tasks.md))
   shared between tests and the `inst/benchmarks/` head-to-head benchmark
   harness.
 - [`summary()`](https://rdrr.io/r/base/summary.html) methods,
   [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) tidy
   accessor,
-  [`plot_coverage()`](https://pedroliman.github.io/neural.sbi/reference/plot_coverage.md).
+  [`plot_coverage()`](https://pedroliman.github.io/neuralsbi/reference/plot_coverage.md).
 - SIR applied case-study vignette.
 - CI: `R CMD check` plus a `test-torch` job with cached libtorch.
 
 ## neuralsbi 0.1.0
 
 - First pilot release: priors, single-round amortized
-  [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md),
+  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
   `linear_gaussian` and MDN estimators, posterior sampling with leakage
   correction, SBC, expected coverage, C2ST, posterior-predictive checks,
-  [`pairplot()`](https://pedroliman.github.io/neural.sbi/reference/pairplot.md),
-  [`plot_sbc()`](https://pedroliman.github.io/neural.sbi/reference/plot_sbc.md).
+  [`pairplot()`](https://pedroliman.github.io/neuralsbi/reference/pairplot.md),
+  [`plot_sbc()`](https://pedroliman.github.io/neuralsbi/reference/plot_sbc.md).

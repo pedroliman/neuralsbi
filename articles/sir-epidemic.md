@@ -142,7 +142,7 @@ signal no point estimate can give you.
 An amortized fit spreads its simulation budget over the whole prior, but
 when a single outbreak is of interest, most of those simulations
 describe epidemics nothing like the observed one. Sequential NPE
-([`npe_sequential()`](https://pedroliman.github.io/neural.sbi/reference/npe_sequential.md),
+([`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md),
 using truncated proposals) alternates simulation and training,
 restricting each new round of simulations to the parameter region the
 current posterior considers plausible.
@@ -183,9 +183,9 @@ This case study covered the whole workflow: prior, simulator, amortized
 training, conditioning, calibration checks, predictive checks, and a
 sequential refinement. The earlier vignettes treat each stage in more
 depth —
-[`vignette("neuralsbi")`](https://pedroliman.github.io/neural.sbi/articles/neuralsbi.md)
+[`vignette("neuralsbi")`](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.md)
 for the core functions,
-[`vignette("density-estimators")`](https://pedroliman.github.io/neural.sbi/articles/density-estimators.md)
+[`vignette("density-estimators")`](https://pedroliman.github.io/neuralsbi/articles/density-estimators.md)
 for when to use `"maf"` or `"nsf"` instead of the MDN, and
-[`vignette("diagnostics")`](https://pedroliman.github.io/neural.sbi/articles/diagnostics.md)
+[`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md)
 for the complete set of checks.

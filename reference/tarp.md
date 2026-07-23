@@ -59,12 +59,12 @@ tarp(
 
 An object of class `nsbi_tarp` with the per-trial coverage values and
 the ECP curve. Plot it with
-[`plot_tarp()`](https://pedroliman.github.io/neural.sbi/reference/plot_tarp.md).
+[`plot_tarp()`](https://pedroliman.github.io/neuralsbi/reference/plot_tarp.md).
 
 ## Details
 
 Unlike
-[`sbc()`](https://pedroliman.github.io/neural.sbi/reference/sbc.md),
+[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
 which ranks each parameter marginally, TARP is a *joint* test: it can
 detect posteriors whose marginals are calibrated but whose correlation
 structure is wrong. Distances are computed after z-scoring each

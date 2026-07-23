@@ -1,7 +1,7 @@
 # Plot TARP expected coverage
 
 Draws the expected coverage probability (ECP) curve from
-[`tarp()`](https://pedroliman.github.io/neural.sbi/reference/tarp.md)
+[`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md)
 against the nominal credibility level. A calibrated posterior lies on
 the diagonal; a curve above the diagonal means the posterior is too wide
 (conservative), below means overconfident. The shaded band shows the
@@ -18,7 +18,7 @@ plot_tarp(tarp_result)
 - tarp_result:
 
   An `nsbi_tarp` object from
-  [`tarp()`](https://pedroliman.github.io/neural.sbi/reference/tarp.md).
+  [`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md).
 
 ## Value
 
