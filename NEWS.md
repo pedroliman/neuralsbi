@@ -1,3 +1,12 @@
+# neuralsbi 0.3.1
+
+* CRAN resubmission fixes. Routed the `summary()` and `as.data.frame()`
+  methods into the single `summaries` help topic (they had drifted into
+  separate `.Rd` files with duplicated `\alias` entries, which also produced
+  duplicate HTML anchors). Wrapped `theta_{<d}` in `\eqn{}` in the
+  `made_masks` docs so the Rd no longer drops braces. Dropped the bare "NPE"
+  acronym from the `DESCRIPTION` to avoid the spurious misspelling note.
+
 # neuralsbi 0.3.0
 
 * Defaults now match Python `sbi`, so a workflow reads the same in both

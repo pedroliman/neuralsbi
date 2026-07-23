@@ -4,9 +4,21 @@
 #' `as.data.frame()` for posterior draws so results drop straight into
 #' data-frame workflows (dplyr, ggplot2, ...).
 #'
+#' @param object An `nsbi_samples` matrix from [sample()], an `nsbi_posterior`,
+#'   or an `nsbi_npe` fit.
+#' @param probs Quantiles to report.
+#' @param n Number of draws used to summarize a posterior.
+#' @param x Observation to condition on (defaults to the posterior's `x_obs`);
+#'   for `as.data.frame()`, the samples object.
+#' @param row.names,optional Standard [as.data.frame()] arguments.
+#' @param ... Additional arguments passed to methods.
+#' @return For samples and posteriors, a data frame with one row per parameter
+#'   (mean, sd, and quantiles). For fits, an invisible list of training
+#'   metadata.
 #' @name summaries
 NULL
 
+#' @rdname summaries
 #' @export
 as.data.frame.nsbi_samples <- function(x, row.names = NULL, optional = FALSE, ...) {
   m <- unclass(x)
@@ -15,12 +27,7 @@ as.data.frame.nsbi_samples <- function(x, row.names = NULL, optional = FALSE, ..
   as.data.frame(m, row.names = row.names, optional = optional, ...)
 }
 
-#' Summarize posterior samples
-#'
-#' @param object An `nsbi_samples` matrix from [sample()].
-#' @param probs Quantiles to report.
-#' @param ... Unused.
-#' @return A data frame with one row per parameter: mean, sd, and quantiles.
+#' @rdname summaries
 #' @export
 summary.nsbi_samples <- function(object,
                                  probs = c(0.025, 0.25, 0.5, 0.75, 0.975),
@@ -37,19 +44,14 @@ summary.nsbi_samples <- function(object,
   out
 }
 
-#' Summarize a posterior by drawing samples
-#'
-#' @param object An `nsbi_posterior`.
-#' @param n Number of draws used for the summary.
-#' @param x Observation to condition on (defaults to the posterior's `x_obs`).
-#' @param ... Passed to [summary.nsbi_samples()].
-#' @return A data frame as in [summary.nsbi_samples()].
+#' @rdname summaries
 #' @export
 summary.nsbi_posterior <- function(object, n = 1000L, x = NULL, ...) {
   draws <- sample.nsbi_posterior(object, n = n, obs = x)
   summary(draws, ...)
 }
 
+#' @rdname summaries
 #' @export
 summary.nsbi_npe <- function(object, ...) {
   info <- list(
