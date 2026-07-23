@@ -3,7 +3,7 @@
 `neuralsbi` is an R-native package for [Neural Simulation-based
 inference](https://simulation-based-inference.org).
 
-Neural estimators are implemented directly in R on the torch
+Neural estimators are implemented directly in R on the
 [`torch`](https://torch.mlverse.org/) R package.
 
 ## Installation
@@ -20,22 +20,64 @@ torch::install_torch()
 
 ## Usage
 
+Simulation-based inference recovers parameters from a model you can
+simulate but whose likelihood you would rather not write down. To make
+that concrete, here is a plain linear regression, `y = X beta + noise`.
+We know the answer (ordinary least squares), so we can check that the
+posterior lands on the truth.
+
 ``` r
 
 library(neuralsbi)
+set.seed(1)
 
-prior <- prior_uniform(low = c(-2, -2, -2), high = c(2, 2, 2))
+# A linear regression: intercept + two covariates, 100 observations.
+N <- 100
+X <- cbind(1, matrix(rnorm(N * 2), N, 2))   # design matrix
+beta_true <- c(1, -2, 0.5)                  # the coefficients to recover
+sigma <- 0.5                                # noise standard deviation
+
+# Simulator: given coefficients, simulate a data set and summarise it by the
+# least-squares fit. Those fitted coefficients are the "data" the posterior sees.
+fit_ols   <- function(y) lm.fit(X, y)$coefficients
 simulator <- function(theta) {
-  theta + 1 + matrix(rnorm(length(theta), sd = 0.1), nrow = nrow(theta))
+  t(apply(theta, 1, function(beta) fit_ols(X %*% beta + rnorm(N, sd = sigma))))
 }
 
-fit   <- npe(prior, simulator, n_simulations = 2000)
-post  <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
-draws <- sample(post, 10000)
+# Prior over the three coefficients, then train the neural posterior.
+prior <- prior_uniform(low = rep(-3, 3), high = rep(3, 3))
+fit   <- npe(prior, simulator, n_simulations = 3000)
 
-pairplot(draws)                # joint and marginal views
-map_estimate(post)             # point estimate
-sbc(fit, simulator)            # calibration check
+# Observe one data set generated from beta_true, then infer the coefficients.
+y_obs <- X %*% beta_true + rnorm(N, sd = sigma)
+post  <- posterior(fit, x_obs = fit_ols(y_obs))
+draws <- sample(post, 10000)
+```
+
+The posterior mean recovers the ground-truth coefficients:
+
+``` r
+
+rbind(truth = beta_true, posterior_mean = colMeans(draws))
+#>                     [,1]      [,2]      [,3]
+#> truth          1.0000000 -2.000000 0.5000000
+#> posterior_mean 0.9862805 -2.080193 0.5313938
+```
+
+``` r
+
+pairplot(draws)     # joint and marginal views of the posterior
+```
+
+![Pairwise posterior over the three regression
+coefficients.](reference/figures/README-pairplot-1.png)
+
+The same posterior supports point estimates and calibration checks:
+
+``` r
+
+map_estimate(post)     # posterior mode
+sbc(fit, simulator)    # simulation-based calibration
 ```
 
 If you’re interested in sbi in other languages or functionality not
