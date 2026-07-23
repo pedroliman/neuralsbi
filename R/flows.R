@@ -11,8 +11,9 @@
 #' dimension at a time. Between transforms the parameter order is reversed so
 #' every dimension gets conditioned on every other across the stack.
 #'
-#' This is `sbi`'s default flow family and handles non-Gaussian posteriors that
-#' the MDN struggles with. Select it with `npe(..., density_estimator = "maf")`.
+#' This is `sbi`'s default flow family, and the default estimator in `neuralsbi`
+#' too. It handles non-Gaussian posteriors that the MDN struggles with. It is
+#' selected by default, or explicitly with `npe(..., density_estimator = "maf")`.
 #'
 #' @keywords internal
 #' @name maf
@@ -163,7 +164,7 @@ maf_log_prob_tensor <- function(net, theta, x) {
 #' Train a MAF on standardized (theta, x)
 #' @keywords internal
 fit_maf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
-                    max_epochs = 500L, batch_size = 100L, lr = 5e-4,
+                    max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {

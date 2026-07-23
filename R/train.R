@@ -4,8 +4,8 @@
 #' robustness features are implemented once: train/validation split, Adam,
 #' minibatching, early stopping on validation loss, learning-rate decay on
 #' plateau, gradient clipping, and best-of-`n_restarts` reinitialization.
-#' The defaults (batch 100, lr 5e-4, 10% validation, patience 20, clip norm 5)
-#' follow common practice in the NPE literature.
+#' The defaults (batch 200, lr 5e-4, 10% validation, patience 20, clip norm 5)
+#' match Python `sbi`, so results are comparable across the two packages.
 #'
 #' @param build_net A zero-argument function returning a *fresh* torch module.
 #'   Called once per restart so each restart gets new initial weights.
@@ -22,7 +22,7 @@
 #'   of per-epoch train/validation losses for the winning restart.
 #' @keywords internal
 train_conditional_de <- function(build_net, log_prob_fn, theta, x,
-                                 max_epochs = 500L, batch_size = 100L,
+                                 max_epochs = 2000L, batch_size = 200L,
                                  lr = 5e-4, validation_fraction = 0.1,
                                  patience = 20L, n_restarts = 1L,
                                  clip_grad_norm = 5,

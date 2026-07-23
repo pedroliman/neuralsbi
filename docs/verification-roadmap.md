@@ -219,11 +219,29 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated after adding MLP embedding networks
-(branch `claude/implementation-plan-xjh9bt`, July 2026): `embedding_mlp()` +
-the `embedding_net` argument to `npe()` land the first piece of v0.4, trained
-jointly inside the MDN/MAF/NSF estimators. CI (including `test-torch`) is
-green on `main`.*
+pick up the work. Last updated for the 0.3.0 CRAN-prep pass (branch
+`claude/sbi-cran-compliance-x1gtow`, July 2026): the `npe()` defaults were
+aligned with Python `sbi` (density estimator `"maf"`, MDN `n_components = 10`,
+NSF `n_bins = 10`, `batch_size = 200`, `max_epochs = 2000` as an early-stopping
+guard), and the package was made CRAN-clean — `R CMD check --as-cran` reports
+no package-level WARNINGs or NOTEs (only environmental ones: `torch`/qpdf/locale
+absent, no network clock, badge 403 through the proxy). Version dropped its
+`.9000` dev suffix to `0.3.0`; the redundant `Author`/`Maintainer` DESCRIPTION
+fields now derive from `Authors@R`. The prior pass added MLP embedding networks
+(`embedding_mlp()` + `embedding_net`), trained jointly inside MDN/MAF/NSF.*
+
+### sbi default parity (0.3.0)
+
+`npe()` and the `fit_*` estimators now default to the same hyperparameters as
+Python `sbi`, so a workflow reads the same in both packages and results can be
+cross-checked: estimator `"maf"`, `n_transforms = 5`, `hidden = c(50, 50)`,
+MDN `n_components = 10`, NSF `n_bins = 10`/`tail_bound = 3`, `batch_size = 200`,
+`lr = 5e-4`, `validation_fraction = 0.1`, `patience = 20`, `clip_grad_norm = 5`.
+`max_epochs = 2000` is a guard cap; `sbi`'s epoch budget is effectively
+unbounded and governed by early stopping, which the guard normally reaches
+first. When changing a default, update the mirror in `fit_density_estimator()`
+(the `%||%` fallbacks), the `fit_*` signatures, and the hand-written `.Rd`
+`\usage` (codoc is checked).
 
 ### What exists right now
 
