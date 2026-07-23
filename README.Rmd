@@ -52,7 +52,7 @@ simulator <- function(theta) {
 
 # Prior over the amplitude and decay rate, then train the neural posterior.
 prior <- prior_uniform(low = c(0, 0), high = c(3, 3))
-fit   <- npe(prior, simulator, n_simulations = 3000)
+fit   <- npe(prior, simulator, n_simulations = 3000, seed = 1)
 
 # Measure one curve from known parameters, then infer them back.
 theta_true <- c(a = 1.5, b = 1.0)
@@ -71,11 +71,10 @@ rbind(truth = theta_true, posterior_mean = colMeans(draws))
 pairplot(draws, truth = theta_true, labels = c("a", "b"))
 ```
 
-The same posterior supports point estimates and calibration checks:
+The same posterior gives a point estimate; calibration checks such as simulation-based calibration live in `vignette("diagnostics")`.
 
-```{r diagnostics, message = FALSE, results = "hide"}
+```{r diagnostics, message = FALSE, warning = FALSE}
 map_estimate(post)     # posterior mode
-sbc(fit, simulator)    # simulation-based calibration
 ```
 
 If you're interested in sbi in other languages or functionality not available here, see the [awesome neural SBI repo](https://github.com/smsharma/awesome-neural-sbi); there are some good implementations in python and in Julia.
