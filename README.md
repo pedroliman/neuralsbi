@@ -5,13 +5,9 @@
 [![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neuralsbi/)
 <!-- badges: end -->
 
-`neuralsbi` does Bayesian inference for models with a simulator but no
-tractable likelihood. Give it a prior and a function that turns parameters
-into simulated data; it trains a neural conditional density estimator
-(Neural Posterior Estimation) and returns a posterior you can sample from,
-evaluate, and check. Neural estimators run on the
-[`torch`](https://torch.mlverse.org/) R package — no Python required — and a
-closed-form linear-Gaussian estimator works without `torch` at all.
+`neuralsbi` is an R package for [Neural Simulation-based inference](https://simulation-based-inference.org).
+
+Neural estimators are implemented directly in R on the torch [`torch`](https://torch.mlverse.org/) R package.
 
 ## Installation
 
