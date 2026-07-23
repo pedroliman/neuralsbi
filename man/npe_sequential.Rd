@@ -10,7 +10,7 @@ npe_sequential(
   x_obs,
   n_rounds = 2L,
   n_simulations = 1000L,
-  density_estimator = c("mdn", "maf", "nsf", "linear_gaussian"),
+  density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
   epsilon = 1e-04,
   n_truncation_samples = 5000L,
   max_proposal_batches = 200L,

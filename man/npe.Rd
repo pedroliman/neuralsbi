@@ -10,13 +10,13 @@ npe(
   n_simulations = 1000,
   theta = NULL,
   x = NULL,
-  density_estimator = c("mdn", "maf", "nsf", "linear_gaussian"),
-  n_components = 5L,
+  density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
+  n_components = 10L,
   n_transforms = 5L,
   hidden = c(50L, 50L),
   embedding_net = NULL,
-  max_epochs = 500L,
-  batch_size = 100L,
+  max_epochs = 2000L,
+  batch_size = 200L,
   lr = 5e-04,
   validation_fraction = 0.1,
   patience = 20L,
@@ -40,17 +40,17 @@ used and \code{theta}/\code{x} are not supplied.}
 \item{theta, x}{Optional pre-computed simulations. If supplied, \code{simulator}
 and \code{n_simulations} are ignored.}
 
-\item{density_estimator}{One of \code{"mdn"} (neural Mixture Density Network,
-needs \code{torch}), \code{"maf"} (Masked Autoregressive Flow, needs \code{torch}),
-\code{"nsf"} (Neural Spline Flow, needs \code{torch}), or \code{"linear_gaussian"}
-(closed-form baseline, no \code{torch}), or a function \verb{function(theta, x)}
-returning a fitted estimator.}
+\item{density_estimator}{One of \code{"maf"} (Masked Autoregressive Flow, needs
+\code{torch}; the default, matching Python \code{sbi}), \code{"mdn"} (neural Mixture
+Density Network, needs \code{torch}), \code{"nsf"} (Neural Spline Flow, needs
+\code{torch}), or \code{"linear_gaussian"} (closed-form baseline, no \code{torch}), or a
+function \verb{function(theta, x)} returning a fitted estimator.}
 
-\item{n_components, hidden}{MDN settings: number of mixture components and a
-vector of hidden-layer widths.}
+\item{n_components, hidden}{MDN settings: number of mixture components
+(default 10, as in \code{sbi}) and a vector of hidden-layer widths.}
 
 \item{n_transforms}{MAF/NSF setting: number of stacked autoregressive
-transforms.}
+transforms (default 5, as in \code{sbi}).}
 
 \item{embedding_net}{Optional summary network built with \code{\link[=embedding_mlp]{embedding_mlp()}}.
 When supplied, the neural estimators condition on the learned features
@@ -58,7 +58,10 @@ When supplied, the neural estimators condition on the learned features
 Ignored (with a warning) by \code{"linear_gaussian"}.}
 
 \item{max_epochs, batch_size, lr, validation_fraction, patience}{Neural training
-controls (Adam optimizer, early stopping on validation loss).}
+controls (Adam optimizer, early stopping on validation loss). The defaults
+(\code{batch_size = 200}, \code{lr = 5e-4}, \code{validation_fraction = 0.1},
+\code{patience = 20}) match Python \code{sbi}; \code{max_epochs} is a high guard cap that
+early stopping normally reaches first.}
 
 \item{n_restarts}{Train this many independently initialized networks and keep
 the one with the best validation loss (guards against bad initializations

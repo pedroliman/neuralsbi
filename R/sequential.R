@@ -61,7 +61,7 @@
 #' @export
 npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
                            n_simulations = 1000L,
-                           density_estimator = c("mdn", "maf", "nsf",
+                           density_estimator = c("maf", "mdn", "nsf",
                                                  "linear_gaussian"),
                            epsilon = 1e-4, n_truncation_samples = 5000L,
                            max_proposal_batches = 200L,

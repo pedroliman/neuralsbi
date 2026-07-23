@@ -1,6 +1,7 @@
 #' Mixture Density Network (MDN) conditional density estimator
 #'
-#' The MDN is the default neural density estimator in `neuralsbi`. A multilayer
+#' The MDN is one of the neural density estimators in `neuralsbi` (the default
+#' is the MAF, matching Python `sbi`). A multilayer
 #' perceptron maps the data `x` to the parameters of a Gaussian mixture over the
 #' parameters \eqn{\theta}: mixture logits, component means, and (full)
 #' lower-triangular Cholesky factors of each component covariance. Training
@@ -100,9 +101,12 @@ mdn_log_prob_tensor <- function(net, theta, x) {
 }
 
 #' Train an MDN on standardized (theta, x)
+#'
+#' @param embedding Optional embedding-network spec (see [embedding_mlp()]); the
+#'   MDN then conditions on the learned features instead of the raw `x`.
 #' @keywords internal
-fit_mdn <- function(theta, x, n_components = 5L, hidden = c(50L, 50L),
-                    max_epochs = 500L, batch_size = 100L, lr = 5e-4,
+fit_mdn <- function(theta, x, n_components = 10L, hidden = c(50L, 50L),
+                    max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {

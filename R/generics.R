@@ -7,6 +7,9 @@
 #'
 #' @param x Object to sample from.
 #' @param ... Passed on to methods / [base::sample()].
+#' @return Whatever the dispatched method returns. The default method returns
+#'   the result of [base::sample()]; [sample.nsbi_posterior()] returns an
+#'   `n x dim` matrix of posterior draws.
 #' @export
 sample <- function(x, ...) UseMethod("sample")
 
