@@ -1,5 +1,9 @@
 ---
 title: "Case study: inferring epidemic parameters (SIR)"
+description: >
+  A worked simulation-based inference case study in R: recover the transmission
+  and recovery rates of a stochastic SIR epidemic model from a noisy incidence
+  curve, with no tractable likelihood.
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Case study: inferring epidemic parameters (SIR)}

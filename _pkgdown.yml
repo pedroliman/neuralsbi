@@ -12,6 +12,13 @@ template:
     base_font: {google: "Source Sans 3"}
     heading_font: {google: "Source Sans 3"}
     code_font: {google: "JetBrains Mono"}
+  # Social-share card and Twitter/X preview. pkgdown turns the relative image
+  # path into an absolute og:image against `url`; og-card.png ships from
+  # pkgdown/assets/.
+  opengraph:
+    image:
+      src: og-card.png
+      alt: "neuralsbi: neural simulation-based inference in R"
   includes:
     in_header: |
        <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -24,12 +31,49 @@ template:
          gtag('config', 'G-2ZH21CKEW9');
        </script>
        <!-- Google tag (gtag.js) -->
+       <!-- Structured data: describe the package to search engines so it can
+            surface as a software result rather than a generic web page. -->
+       <script type="application/ld+json">
+       {
+         "@context": "https://schema.org",
+         "@type": "SoftwareSourceCode",
+         "name": "neuralsbi",
+         "description": "A native R implementation of neural simulation-based inference (SBI). Trains neural posterior estimators on a prior and simulator for amortized, likelihood-free Bayesian inference, running on the torch back end.",
+         "url": "https://pedroliman.github.io/neuralsbi/",
+         "codeRepository": "https://github.com/pedroliman/neuralsbi",
+         "programmingLanguage": {
+           "@type": "ComputerLanguage",
+           "name": "R"
+         },
+         "runtimePlatform": "R",
+         "applicationCategory": "Statistical software",
+         "license": "https://opensource.org/licenses/MIT",
+         "keywords": [
+           "neural simulation-based inference",
+           "simulation-based inference",
+           "amortized Bayesian inference",
+           "likelihood-free inference",
+           "neural posterior estimation",
+           "approximate Bayesian computation",
+           "R package",
+           "torch"
+         ],
+         "author": {
+           "@type": "Person",
+           "name": "Pedro Nascimento de Lima",
+           "url": "https://pedrodelima.com/",
+           "identifier": "https://orcid.org/0000-0001-9057-198X"
+         }
+       }
+       </script>
 
 home:
   title: Neural simulation-based inference in R
   description: >
-    Likelihood-free Bayesian inference with neural posterior estimation,
-    implemented natively in R on the torch back end.
+    Amortized, likelihood-free Bayesian inference in R. neuralsbi trains neural
+    posterior estimators (MDN, MAF, NSF) from a prior and a simulator to
+    approximate the Bayesian posterior, with built-in calibration diagnostics —
+    no likelihood and no Python required.
 
 authors:
   Pedro Nascimento de Lima:
