@@ -20,6 +20,50 @@ install.packages("torch")
 torch::install_torch()
 ```
 
+After `torch::install_torch()`, confirm the back end actually loads before
+running a fit:
+
+```r
+torch::torch_tensor(1)  # should print a tensor, not an error
+```
+
+If that errors, see the troubleshooting notes below. The `linear_gaussian`
+density estimator runs without torch, so you can still use the package while
+you sort out the back end.
+
+### Troubleshooting torch on macOS
+
+On some Macs `torch::install_torch()` succeeds but the first tensor operation
+fails with a message like:
+
+```
+Error: Lantern is not loaded.
+... liblantern.dylib ... Symbol not found: __ZNSt13exception_ptr...
+... libtorch_cpu.dylib (built for macOS 15.0 which is newer than running OS)
+... Expected in: /usr/lib/libc++.1.dylib
+```
+
+The bundled libtorch was built against a newer macOS than the one you are
+running, so it references a C++ standard-library symbol your system's
+`libc++.1.dylib` does not have. `install_torch(reinstall = TRUE)` downloads the
+same incompatible binary, so it does not help. Two things that do:
+
+1. **Update macOS** to the version libtorch was built for (the "built for
+   macOS X" line tells you which), then restart R.
+2. **Install an earlier `torch`** whose libtorch targets your macOS:
+
+   ```r
+   # install.packages("remotes")
+   remotes::install_version("torch", "0.13.0")
+   torch::install_torch(reinstall = TRUE)
+   # restart R, then: torch::torch_tensor(1)
+   ```
+
+   Try progressively older versions until `torch_tensor(1)` prints a tensor.
+
+`neuralsbi` now detects this failure up front and prints these steps, rather
+than crashing mid-fit.
+
 ## Usage
 
 ```r
