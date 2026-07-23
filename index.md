@@ -1,10 +1,21 @@
 # neuralsbi
 
-`neuralsbi` is an R-native package for [Neural Simulation-based
-inference](https://simulation-based-inference.org).
+`neuralsbi` brings [neural simulation-based
+inference](https://simulation-based-inference.org) (SBI) to R. Given a
+prior over parameters and a simulator, it trains a neural network to
+approximate the Bayesian posterior `p(theta | x)`: amortized,
+likelihood-free Bayesian inference, with no likelihood function and no
+Python. It mirrors the workflow of the Python
+[`sbi`](https://github.com/sbi-dev/sbi) package, but is a native R
+implementation: the neural density estimators for posterior estimation
+(mixture density networks, masked autoregressive flows, neural spline
+flows) run directly on the [`torch`](https://torch.mlverse.org/) R
+package (libtorch), not through a Python bridge.
 
-Neural estimators are implemented directly in R on the
-[`torch`](https://torch.mlverse.org/) R package.
+It targets applied researchers rather than ML engineers: a familiar
+prior/simulator/posterior workflow, sensible defaults, and built-in
+posterior diagnostics: simulation-based calibration, expected coverage,
+TARP, and posterior predictive checks.
 
 ## Installation
 
