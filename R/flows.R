@@ -43,7 +43,7 @@ masked_linear <- function(in_features, out_features, mask) {
 #' hidden units cycle through 1..(p-1) (or 0 when p = 1). A connection
 #' into a hidden unit requires hidden_degree >= input_degree; a connection into
 #' output dimension d requires d > hidden_degree. This makes output d a function
-#' of theta_{<d} and x only.
+#' of \eqn{\theta_{<d}} and x only.
 #' @keywords internal
 made_masks <- function(dim_theta, dim_x, hidden) {
   p <- dim_theta

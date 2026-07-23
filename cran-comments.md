@@ -1,7 +1,21 @@
 ## Submission summary
 
-This is a new submission of neuralsbi, a native R implementation of neural
+This is a resubmission of neuralsbi, a native R implementation of neural
 simulation-based inference (Neural Posterior Estimation) built on 'torch'.
+
+The previous submission (0.3.0) was flagged by the incoming pre-tests. This
+version (0.3.1) fixes all reported problems:
+
+* WARNING, duplicated aliases `summary.nsbi_posterior` and
+  `summary.nsbi_samples` across two Rd files: the `summary()` and
+  `as.data.frame()` methods are now documented in the single `summaries`
+  topic via `@rdname`, so each alias is defined once. This also clears the
+  related HTML-manual NOTE about duplicate `<span>` anchors.
+* NOTE, `made_masks.Rd` "Lost braces": `theta_{<d}` is now wrapped in
+  `\eqn{}` in the source roxygen block.
+* NOTE, "possibly misspelled words: NPE" in DESCRIPTION: the bare acronym has
+  been dropped; the Description still spells out "Neural Posterior
+  Estimation".
 
 ## Test environments
 

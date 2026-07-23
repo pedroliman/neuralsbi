@@ -6,7 +6,7 @@
 \alias{neuralsbi-package}
 \title{neuralsbi: Neural Simulation-Based Inference}
 \description{
-A native R implementation of neural simulation-based inference, focused on Neural Posterior Estimation (NPE). Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator to approximate the Bayesian posterior, enabling amortized, likelihood-free inference. Neural estimators run on the 'torch' back end, with no Python dependency. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
+A native R implementation of neural simulation-based inference, focused on Neural Posterior Estimation. Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator to approximate the Bayesian posterior, enabling amortized, likelihood-free inference. Neural estimators run on the 'torch' back end, with no Python dependency. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
 }
 \seealso{
 Useful links:
@@ -19,5 +19,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Pedro Nascimento de Lima \email{plima@rand.org} (\href{https://orcid.org/0000-0001-9057-198X}{ORCID})
+
+Authors:
+\itemize{
+  \item Pedro Nascimento de Lima \email{plima@rand.org} (\href{https://orcid.org/0000-0001-9057-198X}{ORCID})
+}
+
 }
 \keyword{internal}
