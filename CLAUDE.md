@@ -127,7 +127,10 @@ section — **keep it current as you work.**
   a body explaining the *why*. Run `devtools::check()` (or at least
   `devtools::test()`) before pushing.
 - Keep `NEWS.md`/roadmap updated alongside code so the next contributor can pick
-  up from the docs alone.
+  up from the docs alone. **`NEWS.md` and version bumps are for substantive
+  package code changes** — new features, behavior changes, bug fixes in `R/`.
+  Cosmetic/tooling changes (README wording, the hex logo, pkgdown/SEO
+  metadata, CI config) don't get a `NEWS.md` entry or a version bump.
 
 ## Writing style (docs, roxygen, commits, PRs, vignettes, comments)
 

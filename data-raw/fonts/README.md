@@ -1,0 +1,1 @@
+`Roboto-Bold.ttf` is redistributed from the [Roboto](https://github.com/google/roboto) project, Copyright 2015 Google Inc., licensed [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0). Bundled here (rather than depended on as a system font) so `data-raw/logo.R` renders the same wordmark on any machine, regardless of which fonts are installed.
