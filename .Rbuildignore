@@ -11,6 +11,8 @@
 ^site$
 ^pkgdown$
 ^\.claude$
+^cran-comments\.md$
+^CRAN-SUBMISSION$
 # Vignette precompute sources: the .Rmd.orig files are evaluated locally by
 # vignettes/precompute.R and their baked .Rmd output is what ships. Keep the
 # sources and the build script out of the tarball.
