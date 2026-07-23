@@ -1,5 +1,17 @@
 # Changelog
 
+## neuralsbi 0.3.1
+
+- CRAN resubmission fixes. Routed the
+  [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) methods
+  into the single `summaries` help topic (they had drifted into separate
+  `.Rd` files with duplicated `\alias` entries, which also produced
+  duplicate HTML anchors). Wrapped `theta_{<d}` in `\eqn{}` in the
+  `made_masks` docs so the Rd no longer drops braces. Dropped the bare
+  “NPE” acronym from the `DESCRIPTION` to avoid the spurious misspelling
+  note.
+
 ## neuralsbi 0.3.0
 
 - Defaults now match Python `sbi`, so a workflow reads the same in both
@@ -105,8 +117,9 @@
 ## neuralsbi 0.2.0.9000
 
 - Shared training engine for all neural estimators
-  (`train_conditional_de()`): best-of-n restarts, learning-rate decay on
-  plateau, gradient clipping, per-epoch loss history.
+  ([`train_conditional_de()`](https://pedroliman.github.io/neuralsbi/reference/train_conditional_de.md)):
+  best-of-n restarts, learning-rate decay on plateau, gradient clipping,
+  per-epoch loss history.
 - Masked Autoregressive Flow (`density_estimator = "maf"`) and Neural
   Spline Flow (`"nsf"`, autoregressive rational-quadratic splines) join
   the MDN and the closed-form `linear_gaussian` baseline.

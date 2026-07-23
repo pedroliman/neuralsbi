@@ -48,10 +48,10 @@ Condition on data, then sample, evaluate, and summarize.
   : Posterior log-density
 - [`map_estimate()`](https://pedroliman.github.io/neuralsbi/reference/map_estimate.md)
   : Maximum a posteriori (MAP) estimate
-- [`summary(`*`<nsbi_samples>`*`)`](https://pedroliman.github.io/neuralsbi/reference/summaries.md)
+- [`as.data.frame(`*`<nsbi_samples>`*`)`](https://pedroliman.github.io/neuralsbi/reference/summaries.md)
+  [`summary(`*`<nsbi_samples>`*`)`](https://pedroliman.github.io/neuralsbi/reference/summaries.md)
   [`summary(`*`<nsbi_posterior>`*`)`](https://pedroliman.github.io/neuralsbi/reference/summaries.md)
   [`summary(`*`<nsbi_npe>`*`)`](https://pedroliman.github.io/neuralsbi/reference/summaries.md)
-  [`as.data.frame(`*`<nsbi_samples>`*`)`](https://pedroliman.github.io/neuralsbi/reference/summaries.md)
   : Summaries and tidy accessors
 
 ## Diagnostics
