@@ -1,3 +1,7 @@
+# neuralsbi 0.3.2
+
+* README is now generated from `README.Rmd`, so the usage example runs at render time and its output cannot drift from the code. The example is a plain linear regression: the posterior recovers the ground-truth coefficients, which the reader can check against ordinary least squares.
+
 # neuralsbi 0.3.1
 
 * CRAN resubmission fixes. Routed the `summary()` and `as.data.frame()`
