@@ -69,6 +69,7 @@ reference:
   - npe
   - npe_sequential
   - density_estimator
+  - embedding_mlp
 - title: Working with the posterior
   desc: Condition on data, then sample, evaluate, and summarize.
   contents:
