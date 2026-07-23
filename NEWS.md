@@ -1,3 +1,15 @@
+# neuralsbi 0.3.2
+
+* Clearer errors when libtorch is installed but cannot load. `torch_is_installed()`
+  only checks that the library files exist on disk, not that they load, so a
+  broken back end (most often a macOS libtorch built for a newer OS than the
+  one running) previously surfaced as a cryptic "Lantern is not loaded" crash
+  in the middle of `npe()`. `require_torch()` now probes the actual load once
+  and, on failure, reports the underlying error with platform-specific fixes
+  (on macOS: update the OS, or install an earlier `torch` whose libtorch
+  targets your macOS). Neural tests skip cleanly in this state instead of
+  erroring. Added a macOS troubleshooting section to the README.
+
 # neuralsbi 0.3.1
 
 * CRAN resubmission fixes. Routed the `summary()` and `as.data.frame()`
