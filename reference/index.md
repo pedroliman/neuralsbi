@@ -29,6 +29,8 @@ Generate training data and fit a neural posterior estimator.
   : Sequential NPE with truncated-prior proposals (TSNPE)
 - [`density_estimator`](https://pedroliman.github.io/neural.sbi/reference/density_estimator.md)
   : Conditional density estimators
+- [`embedding_mlp()`](https://pedroliman.github.io/neural.sbi/reference/embedding_mlp.md)
+  : Embedding (summary) networks for structured observations
 
 ## Working with the posterior
 

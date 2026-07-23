@@ -16,12 +16,13 @@ npe(
   n_simulations = 1000,
   theta = NULL,
   x = NULL,
-  density_estimator = c("mdn", "maf", "nsf", "linear_gaussian"),
-  n_components = 5L,
+  density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
+  n_components = 10L,
   n_transforms = 5L,
   hidden = c(50L, 50L),
-  max_epochs = 500L,
-  batch_size = 100L,
+  embedding_net = NULL,
+  max_epochs = 2000L,
+  batch_size = 200L,
   lr = 5e-04,
   validation_fraction = 0.1,
   patience = 20L,
@@ -59,25 +60,37 @@ npe(
 
 - density_estimator:
 
-  One of `"mdn"` (neural Mixture Density Network, needs `torch`),
-  `"maf"` (Masked Autoregressive Flow, needs `torch`), `"nsf"` (Neural
-  Spline Flow, needs `torch`), or `"linear_gaussian"` (closed-form
-  baseline, no `torch`), or a function `function(theta, x)` returning a
-  fitted estimator.
+  One of `"maf"` (Masked Autoregressive Flow, needs `torch`; the
+  default, matching Python `sbi`), `"mdn"` (neural Mixture Density
+  Network, needs `torch`), `"nsf"` (Neural Spline Flow, needs `torch`),
+  or `"linear_gaussian"` (closed-form baseline, no `torch`), or a
+  function `function(theta, x)` returning a fitted estimator.
 
 - n_components, hidden:
 
-  MDN settings: number of mixture components and a vector of
-  hidden-layer widths.
+  MDN settings: number of mixture components (default 10, as in `sbi`)
+  and a vector of hidden-layer widths.
 
 - n_transforms:
 
-  MAF/NSF setting: number of stacked autoregressive transforms.
+  MAF/NSF setting: number of stacked autoregressive transforms (default
+  5, as in `sbi`).
+
+- embedding_net:
+
+  Optional summary network built with
+  [`embedding_mlp()`](https://pedroliman.github.io/neural.sbi/reference/embedding_mlp.md).
+  When supplied, the neural estimators condition on the learned features
+  \\f\_\psi(x)\\ instead of the raw data, training the embedding
+  jointly. Ignored (with a warning) by `"linear_gaussian"`.
 
 - max_epochs, batch_size, lr, validation_fraction, patience:
 
   Neural training controls (Adam optimizer, early stopping on validation
-  loss).
+  loss). The defaults (`batch_size = 200`, `lr = 5e-4`,
+  `validation_fraction = 0.1`, `patience = 20`) match Python `sbi`;
+  `max_epochs` is a high guard cap that early stopping normally reaches
+  first.
 
 - n_restarts:
 

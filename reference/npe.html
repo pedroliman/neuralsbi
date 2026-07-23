@@ -15,7 +15,7 @@ once, you can condition on any observation without re-simulating."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,12 +70,13 @@ once, you can condition on any observation without re-simulating.</p>
 <span>  n_simulations <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  theta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  x <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  density_estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mdn"</span>, <span class="st">"maf"</span>, <span class="st">"nsf"</span>, <span class="st">"linear_gaussian"</span><span class="op">)</span>,</span>
-<span>  n_components <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>  density_estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"maf"</span>, <span class="st">"mdn"</span>, <span class="st">"nsf"</span>, <span class="st">"linear_gaussian"</span><span class="op">)</span>,</span>
+<span>  n_components <span class="op">=</span> <span class="fl">10L</span>,</span>
 <span>  n_transforms <span class="op">=</span> <span class="fl">5L</span>,</span>
 <span>  hidden <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50L</span>, <span class="fl">50L</span><span class="op">)</span>,</span>
-<span>  max_epochs <span class="op">=</span> <span class="fl">500L</span>,</span>
-<span>  batch_size <span class="op">=</span> <span class="fl">100L</span>,</span>
+<span>  embedding_net <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  max_epochs <span class="op">=</span> <span class="fl">2000L</span>,</span>
+<span>  batch_size <span class="op">=</span> <span class="fl">200L</span>,</span>
 <span>  lr <span class="op">=</span> <span class="fl">5e-04</span>,</span>
 <span>  validation_fraction <span class="op">=</span> <span class="fl">0.1</span>,</span>
 <span>  patience <span class="op">=</span> <span class="fl">20L</span>,</span>
@@ -112,26 +113,36 @@ and <code>n_simulations</code> are ignored.</p></dd>
 
 
 <dt id="arg-density-estimator">density_estimator<a class="anchor" aria-label="anchor" href="#arg-density-estimator"></a></dt>
-<dd><p>One of <code>"mdn"</code> (neural Mixture Density Network,
-needs <code>torch</code>), <code>"maf"</code> (Masked Autoregressive Flow, needs <code>torch</code>),
-<code>"nsf"</code> (Neural Spline Flow, needs <code>torch</code>), or <code>"linear_gaussian"</code>
-(closed-form baseline, no <code>torch</code>), or a function <code>function(theta, x)</code>
-returning a fitted estimator.</p></dd>
+<dd><p>One of <code>"maf"</code> (Masked Autoregressive Flow, needs
+<code>torch</code>; the default, matching Python <code>sbi</code>), <code>"mdn"</code> (neural Mixture
+Density Network, needs <code>torch</code>), <code>"nsf"</code> (Neural Spline Flow, needs
+<code>torch</code>), or <code>"linear_gaussian"</code> (closed-form baseline, no <code>torch</code>), or a
+function <code>function(theta, x)</code> returning a fitted estimator.</p></dd>
 
 
 <dt id="arg-n-components-hidden">n_components, hidden<a class="anchor" aria-label="anchor" href="#arg-n-components-hidden"></a></dt>
-<dd><p>MDN settings: number of mixture components and a
-vector of hidden-layer widths.</p></dd>
+<dd><p>MDN settings: number of mixture components
+(default 10, as in <code>sbi</code>) and a vector of hidden-layer widths.</p></dd>
 
 
 <dt id="arg-n-transforms">n_transforms<a class="anchor" aria-label="anchor" href="#arg-n-transforms"></a></dt>
 <dd><p>MAF/NSF setting: number of stacked autoregressive
-transforms.</p></dd>
+transforms (default 5, as in <code>sbi</code>).</p></dd>
+
+
+<dt id="arg-embedding-net">embedding_net<a class="anchor" aria-label="anchor" href="#arg-embedding-net"></a></dt>
+<dd><p>Optional summary network built with <code><a href="embedding_mlp.html">embedding_mlp()</a></code>.
+When supplied, the neural estimators condition on the learned features
+\(f_\psi(x)\) instead of the raw data, training the embedding jointly.
+Ignored (with a warning) by <code>"linear_gaussian"</code>.</p></dd>
 
 
 <dt id="arg-max-epochs-batch-size-lr-validation-fraction-patience">max_epochs, batch_size, lr, validation_fraction, patience<a class="anchor" aria-label="anchor" href="#arg-max-epochs-batch-size-lr-validation-fraction-patience"></a></dt>
 <dd><p>Neural training
-controls (Adam optimizer, early stopping on validation loss).</p></dd>
+controls (Adam optimizer, early stopping on validation loss). The defaults
+(<code>batch_size = 200</code>, <code>lr = 5e-4</code>, <code>validation_fraction = 0.1</code>,
+<code>patience = 20</code>) match Python <code>sbi</code>; <code>max_epochs</code> is a high guard cap that
+early stopping normally reaches first.</p></dd>
 
 
 <dt id="arg-n-restarts">n_restarts<a class="anchor" aria-label="anchor" href="#arg-n-restarts"></a></dt>

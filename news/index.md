@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.3.0
+
+- Defaults now match Python `sbi`, so a workflow reads the same in both
+  packages and results can be cross-checked. Changes to
+  [`npe()`](https://pedroliman.github.io/neural.sbi/reference/npe.md)
+  defaults: the density estimator is now `"maf"` (was `"mdn"`); MDN
+  mixture components default to 10 (was 5); NSF spline bins default to
+  10 (was 8); the training batch size is 200 (was 100). `max_epochs` is
+  raised to 2000 as a guard cap that early stopping (`patience = 20`)
+  normally reaches first, mirroring `sbi`’s effectively-unbounded epoch
+  budget. `lr`, `validation_fraction`, `patience`, `clip_grad_norm`,
+  `n_transforms`, and `hidden` already matched. Pass any of these
+  explicitly to recover the previous behavior.
+
+- First CRAN submission. Dropped the development `.9000` version suffix,
+  removed the redundant `Author`/`Maintainer` fields (now derived from
+  `Authors@R`), and tidied the package title.
+
+- Embedding networks (roadmap v0.4).
+  [`embedding_mlp()`](https://pedroliman.github.io/neural.sbi/reference/embedding_mlp.md)
+  builds a learned summary network that maps raw observations to a
+  low-dimensional feature vector; pass it to
+  `npe(..., embedding_net = )` and the MDN, MAF, and NSF estimators
+  condition on the features instead of the raw data, training the
+  embedding jointly. The estimators still take raw `x` at the `de_*`
+  boundary (`dim_x` is unchanged), so sampling and `log_prob` route
+  through the embedding automatically. Ignored, with a warning, by
+  `linear_gaussian`.
+
 ## neuralsbi 0.2.4.9000 (development)
 
 - Vignettes now show real output. They are *precomputed*: each

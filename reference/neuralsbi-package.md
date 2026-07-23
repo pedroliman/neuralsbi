@@ -1,4 +1,4 @@
-# neuralsbi: Neural Simulation-Based Inference in R
+# neuralsbi: Neural Simulation-Based Inference
 
 A native R implementation of neural simulation-based inference, focused
 on Neural Posterior Estimation (NPE). Given a prior over parameters and

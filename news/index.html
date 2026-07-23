@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,12 @@
       <small>Source: <a href="https://github.com/pedroliman/neural.sbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="neuralsbi-030">neuralsbi 0.3.0<a class="anchor" aria-label="anchor" href="#neuralsbi-030"></a></h2>
+<ul><li><p>Defaults now match Python <code>sbi</code>, so a workflow reads the same in both packages and results can be cross-checked. Changes to <code><a href="../reference/npe.html">npe()</a></code> defaults: the density estimator is now <code>"maf"</code> (was <code>"mdn"</code>); MDN mixture components default to 10 (was 5); NSF spline bins default to 10 (was 8); the training batch size is 200 (was 100). <code>max_epochs</code> is raised to 2000 as a guard cap that early stopping (<code>patience = 20</code>) normally reaches first, mirroring <code>sbi</code>’s effectively-unbounded epoch budget. <code>lr</code>, <code>validation_fraction</code>, <code>patience</code>, <code>clip_grad_norm</code>, <code>n_transforms</code>, and <code>hidden</code> already matched. Pass any of these explicitly to recover the previous behavior.</p></li>
+<li><p>First CRAN submission. Dropped the development <code>.9000</code> version suffix, removed the redundant <code>Author</code>/<code>Maintainer</code> fields (now derived from <code>Authors@R</code>), and tidied the package title.</p></li>
+<li><p>Embedding networks (roadmap v0.4). <code><a href="../reference/embedding_mlp.html">embedding_mlp()</a></code> builds a learned summary network that maps raw observations to a low-dimensional feature vector; pass it to <code>npe(..., embedding_net = )</code> and the MDN, MAF, and NSF estimators condition on the features instead of the raw data, training the embedding jointly. The estimators still take raw <code>x</code> at the <code>de_*</code> boundary (<code>dim_x</code> is unchanged), so sampling and <code>log_prob</code> route through the embedding automatically. Ignored, with a warning, by <code>linear_gaussian</code>.</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.4.9000" id="neuralsbi-0249000-development">neuralsbi 0.2.4.9000 (development)<a class="anchor" aria-label="anchor" href="#neuralsbi-0249000-development"></a></h2>
 <ul><li>Vignettes now show real output. They are <em>precomputed</em>: each vignette’s evaluated source lives in <code>vignettes/&lt;name&gt;.Rmd.orig</code>, and <code>vignettes/precompute.R</code> bakes it into a static <code>vignettes/&lt;name&gt;.Rmd</code> (results, printed values, and figures inlined). CI and pkgdown re-render that static Markdown with no torch at build time, so the expensive neural training runs once, locally, instead of on every build. Re-run <code>Rscript vignettes/precompute.R</code> after editing any <code>.Rmd.orig</code>.</li>
