@@ -1,0 +1,5 @@
+# neuralsbi documentation site
+User-agent: *
+Allow: /
+
+Sitemap: https://pedroliman.github.io/neuralsbi/sitemap.xml

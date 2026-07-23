@@ -41,8 +41,9 @@ jobs:
         # produced from *.Rmd.orig by vignettes/precompute.R), so no torch
         # runtime is needed here -- pkgdown only re-renders Markdown and reuses
         # the committed figures under vignettes/figures/.
-        # strip-internal.R removes CLAUDE.md, which pkgdown would otherwise
-        # publish along with every other root-level .md file.
+        # strip-internal.R post-processes the built site: it removes CLAUDE.md
+        # (which pkgdown would otherwise publish with every root-level .md file)
+        # and injects a canonical <link> into each page for SEO.
         run: |
           pkgdown::build_site(new_process = FALSE, install = FALSE)
           source("pkgdown/strip-internal.R")

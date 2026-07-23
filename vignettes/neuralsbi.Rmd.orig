@@ -1,5 +1,9 @@
 ---
 title: "Getting started with neuralsbi"
+description: >
+  Train a neural posterior estimator from a prior and a simulator to perform
+  amortized, likelihood-free Bayesian inference in R, then check that the fit is
+  trustworthy.
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting started with neuralsbi}
