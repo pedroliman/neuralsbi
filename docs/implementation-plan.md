@@ -122,7 +122,7 @@ Standardization and the change-of-variables Jacobian live in `posterior.R`, so
 estimators stay simple and interchangeable. Adding a normalizing flow later
 means implementing exactly these two methods.
 
-### The MDN (default neural estimator)
+### The MDN (a neural estimator; the default is the MAF, matching `sbi`)
 
 - MLP trunk (`hidden` widths, ReLU) maps `x` → shared features.
 - Three linear heads output, per mixture component `k`:

@@ -13,21 +13,24 @@
 #'   used and `theta`/`x` are not supplied.
 #' @param theta,x Optional pre-computed simulations. If supplied, `simulator`
 #'   and `n_simulations` are ignored.
-#' @param density_estimator One of `"mdn"` (neural Mixture Density Network,
-#'   needs `torch`), `"maf"` (Masked Autoregressive Flow, needs `torch`),
-#'   `"nsf"` (Neural Spline Flow, needs `torch`), or `"linear_gaussian"`
-#'   (closed-form baseline, no `torch`), or a function `function(theta, x)`
-#'   returning a fitted estimator.
+#' @param density_estimator One of `"maf"` (Masked Autoregressive Flow, needs
+#'   `torch`; the default, matching Python `sbi`), `"mdn"` (neural Mixture
+#'   Density Network, needs `torch`), `"nsf"` (Neural Spline Flow, needs
+#'   `torch`), or `"linear_gaussian"` (closed-form baseline, no `torch`), or a
+#'   function `function(theta, x)` returning a fitted estimator.
 #' @param n_transforms MAF/NSF setting: number of stacked autoregressive
-#'   transforms.
-#' @param n_components,hidden MDN settings: number of mixture components and a
-#'   vector of hidden-layer widths.
+#'   transforms (default 5, as in `sbi`).
+#' @param n_components,hidden MDN settings: number of mixture components
+#'   (default 10, as in `sbi`) and a vector of hidden-layer widths.
 #' @param embedding_net Optional summary network built with [embedding_mlp()].
 #'   When supplied, the neural estimators condition on the learned features
 #'   \eqn{f_\psi(x)} instead of the raw data, training the embedding jointly.
 #'   Ignored (with a warning) by `"linear_gaussian"`.
 #' @param max_epochs,batch_size,lr,validation_fraction,patience Neural training
-#'   controls (Adam optimizer, early stopping on validation loss).
+#'   controls (Adam optimizer, early stopping on validation loss). The defaults
+#'   (`batch_size = 200`, `lr = 5e-4`, `validation_fraction = 0.1`,
+#'   `patience = 20`) match Python `sbi`; `max_epochs` is a high guard cap that
+#'   early stopping normally reaches first.
 #' @param n_restarts Train this many independently initialized networks and keep
 #'   the one with the best validation loss (guards against bad initializations
 #'   and MDN mode collapse).
@@ -54,10 +57,10 @@
 #' @export
 npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 theta = NULL, x = NULL,
-                density_estimator = c("mdn", "maf", "nsf", "linear_gaussian"),
-                n_components = 5L, n_transforms = 5L, hidden = c(50L, 50L),
+                density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
+                n_components = 10L, n_transforms = 5L, hidden = c(50L, 50L),
                 embedding_net = NULL,
-                max_epochs = 500L, batch_size = 100L, lr = 5e-4,
+                max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE, ...) {
@@ -130,15 +133,15 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
     return(density_estimator(theta_z, x_z))
   }
   density_estimator <- match.arg(density_estimator,
-                                 c("mdn", "maf", "nsf", "linear_gaussian"))
+                                 c("maf", "mdn", "nsf", "linear_gaussian"))
   dots <- list(...)
   switch(
     density_estimator,
     mdn = fit_mdn(theta_z, x_z,
-                  n_components = dots$n_components %||% 5L,
+                  n_components = dots$n_components %||% 10L,
                   hidden = dots$hidden %||% c(50L, 50L),
-                  max_epochs = dots$max_epochs %||% 500L,
-                  batch_size = dots$batch_size %||% 100L,
+                  max_epochs = dots$max_epochs %||% 2000L,
+                  batch_size = dots$batch_size %||% 200L,
                   lr = dots$lr %||% 5e-4,
                   validation_fraction = dots$validation_fraction %||% 0.1,
                   patience = dots$patience %||% 20L,
@@ -149,8 +152,8 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
     maf = fit_maf(theta_z, x_z,
                   n_transforms = dots$n_transforms %||% 5L,
                   hidden = dots$hidden %||% c(50L, 50L),
-                  max_epochs = dots$max_epochs %||% 500L,
-                  batch_size = dots$batch_size %||% 100L,
+                  max_epochs = dots$max_epochs %||% 2000L,
+                  batch_size = dots$batch_size %||% 200L,
                   lr = dots$lr %||% 5e-4,
                   validation_fraction = dots$validation_fraction %||% 0.1,
                   patience = dots$patience %||% 20L,
@@ -161,10 +164,10 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
     nsf = fit_nsf(theta_z, x_z,
                   n_transforms = dots$n_transforms %||% 5L,
                   hidden = dots$hidden %||% c(50L, 50L),
-                  n_bins = dots$n_bins %||% 8L,
+                  n_bins = dots$n_bins %||% 10L,
                   tail_bound = dots$tail_bound %||% 3,
-                  max_epochs = dots$max_epochs %||% 500L,
-                  batch_size = dots$batch_size %||% 100L,
+                  max_epochs = dots$max_epochs %||% 2000L,
+                  batch_size = dots$batch_size %||% 200L,
                   lr = dots$lr %||% 5e-4,
                   validation_fraction = dots$validation_fraction %||% 0.1,
                   patience = dots$patience %||% 20L,

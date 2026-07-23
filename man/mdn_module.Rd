@@ -4,7 +4,7 @@
 \alias{mdn_module}
 \title{Build the MDN torch module}
 \usage{
-mdn_module(dim_x, dim_theta, n_components, hidden)
+mdn_module(dim_x, dim_theta, n_components, hidden, embedding = NULL)
 }
 \description{
 Build the MDN torch module
