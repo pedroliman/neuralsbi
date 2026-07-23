@@ -22,7 +22,7 @@ simulation-based inference (Neural Posterior Estimation) built on 'torch'.
 
 * checking CRAN incoming feasibility ... NOTE
   Found the following (possibly) invalid URLs:
-    URL: https://github.com/pedroliman/neural.sbi/actions/workflows/R-CMD-check.yaml
+    URL: https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml
       From: README.md
       Status: 403
 

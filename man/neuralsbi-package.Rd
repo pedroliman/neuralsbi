@@ -11,9 +11,9 @@ A native R implementation of neural simulation-based inference, focused on Neura
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://pedroliman.github.io/neural.sbi/}
-  \item \url{https://github.com/pedroliman/neural.sbi}
-  \item Report bugs at \url{https://github.com/pedroliman/neural.sbi/issues}
+  \item \url{https://pedroliman.github.io/neuralsbi/}
+  \item \url{https://github.com/pedroliman/neuralsbi}
+  \item Report bugs at \url{https://github.com/pedroliman/neuralsbi/issues}
 }
 
 }

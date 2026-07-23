@@ -27,6 +27,6 @@ Suggests:
     rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-URL: https://pedroliman.github.io/neural.sbi/, https://github.com/pedroliman/neural.sbi
-BugReports: https://github.com/pedroliman/neural.sbi/issues
+URL: https://pedroliman.github.io/neuralsbi/, https://github.com/pedroliman/neuralsbi
+BugReports: https://github.com/pedroliman/neuralsbi/issues
 Config/roxygen2/version: 8.0.0

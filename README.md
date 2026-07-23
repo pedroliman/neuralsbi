@@ -1,8 +1,8 @@
 # neuralsbi
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/pedroliman/neural.sbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neural.sbi/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/pedroliman/neural.sbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neural.sbi/)
+[![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neuralsbi/)
 <!-- badges: end -->
 
 `neuralsbi` does Bayesian inference for models with a simulator but no
@@ -17,7 +17,7 @@ closed-form linear-Gaussian estimator works without `torch` at all.
 
 ```r
 # install.packages("remotes")
-remotes::install_github("pedroliman/neural.sbi")
+remotes::install_github("pedroliman/neuralsbi")
 
 # the neural back end (once)
 install.packages("torch")
@@ -50,13 +50,13 @@ bimodal two-moons task:
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neural.sbi/) has four
+The [package website](https://pedroliman.github.io/neuralsbi/) has four
 vignettes that build on each other:
 
-1. [Getting started](https://pedroliman.github.io/neural.sbi/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
-2. [Choosing a density estimator](https://pedroliman.github.io/neural.sbi/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
-3. [Checking the posterior](https://pedroliman.github.io/neural.sbi/articles/diagnostics.html) — calibration and predictive diagnostics.
-4. [Case study: an SIR epidemic model](https://pedroliman.github.io/neural.sbi/articles/sir-epidemic.html) — the full Bayesian workflow on an applied problem.
+1. [Getting started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
+2. [Choosing a density estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
+3. [Checking the posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html) — calibration and predictive diagnostics.
+4. [Case study: an SIR epidemic model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html) — the full Bayesian workflow on an applied problem.
 
 ## License
 
