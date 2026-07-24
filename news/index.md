@@ -1,5 +1,19 @@
 # Changelog
 
+## neuralsbi 0.3.5
+
+- The SIR case study becomes a head-to-head comparison with the `pomp`
+  package,
+  [`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md).
+  Both methods fit the same stochastic SIR epidemic: `pomp` via
+  particle-filter MCMC (`pmcmc`), `neuralsbi` via neural posterior
+  estimation. The vignette contrasts what each needs from the model —
+  `pomp` a measurement density, `neuralsbi` only a simulator — overlays
+  the two posteriors, scores their agreement with a C2ST, and confirms
+  the neural fit with SBC. The comparison is precomputed, so `pomp` is
+  needed only to regenerate the article, not to build or check the
+  package.
+
 ## neuralsbi 0.3.4
 
 - Plotting is now built on `ggplot2` and

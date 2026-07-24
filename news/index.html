@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
     <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Case study: an SIR epidemic model</a></li>
+    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,6 +85,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.5" id="neuralsbi-035">neuralsbi 0.3.5<a class="anchor" aria-label="anchor" href="#neuralsbi-035"></a></h2>
+<ul><li>The SIR case study becomes a head-to-head comparison with the <code>pomp</code> package, <code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code>. Both methods fit the same stochastic SIR epidemic: <code>pomp</code> via particle-filter MCMC (<code>pmcmc</code>), <code>neuralsbi</code> via neural posterior estimation. The vignette contrasts what each needs from the model — <code>pomp</code> a measurement density, <code>neuralsbi</code> only a simulator — overlays the two posteriors, scores their agreement with a C2ST, and confirms the neural fit with SBC. The comparison is precomputed, so <code>pomp</code> is needed only to regenerate the article, not to build or check the package.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.4" id="neuralsbi-034">neuralsbi 0.3.4<a class="anchor" aria-label="anchor" href="#neuralsbi-034"></a></h2>
 <ul><li>Plotting is now built on <code>ggplot2</code> and <code><a href="https://ggobi.github.io/ggally/reference/ggpairs.html" class="external-link">GGally::ggpairs()</a></code> instead of base graphics. <code><a href="../reference/pairplot.html">pairplot()</a></code>, <code><a href="../reference/plot_sbc.html">plot_sbc()</a></code>, <code><a href="../reference/plot_coverage.html">plot_coverage()</a></code>, <code><a href="../reference/plot_tarp.html">plot_tarp()</a></code>, and <code><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive()</a></code> keep their signatures (<code><a href="../reference/pairplot.html">pairplot()</a></code> gains an <code>alpha</code> argument) but now build and print a <code>ggplot</code>/<code>ggmatrix</code> object, returned invisibly for further customization. <code>ggplot2</code> and <code>GGally</code> move to <code>Suggests</code>, following the same graceful-degradation pattern as <code>torch</code>: call any plotting function without them installed and you get an informative error, not a crash.</li>

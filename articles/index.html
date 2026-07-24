@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
     <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Case study: an SIR epidemic model</a></li>
+    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -96,8 +96,8 @@
         <dd><p>Compare the conditional density estimators behind neural posterior estimation in R (mixture density network, masked autoregressive flow, and neural spline flow) and pick one for your simulator.</p>
         </dd><dt><a href="diagnostics.html">Checking the posterior</a></dt>
         <dd><p>Validate a neural posterior in R with simulation-based calibration (SBC), expected coverage, TARP, and posterior predictive checks before you trust its credible intervals.</p>
-        </dd><dt><a href="sir-epidemic.html">Case study: inferring epidemic parameters (SIR)</a></dt>
-        <dd><p>A worked simulation-based inference case study in R: recover the transmission and recovery rates of a stochastic SIR epidemic model from a noisy incidence curve, with no tractable likelihood.</p>
+        </dd><dt><a href="sir-epidemic.html">neuralsbi and pomp: two routes to an SIR posterior</a></dt>
+        <dd><p>A side-by-side comparison on a stochastic SIR epidemic: infer the transmission and recovery rates with pomp’s particle-filter MCMC and with neuralsbi’s neural posterior estimation, and check whether the two posteriors agree.</p>
       </dd></dl></div>
   </main></div>
 
