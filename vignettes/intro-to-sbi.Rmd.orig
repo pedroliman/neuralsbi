@@ -219,7 +219,16 @@ plot_sbc(res, param = 1)   # rank histogram for A: flat = calibrated
 plot_coverage(res)         # empirical vs. nominal credible-interval coverage
 ```
 
-SBC_PROSE_PLACEHOLDER
+$A$'s ranks are close to flat, with a uniformity p-value of 0.130, and its
+coverage curve tracks the diagonal within Monte Carlo error. $B$ is
+borderline: its p-value is 0.083, above the conventional 0.05 cutoff, but its
+coverage curve sits modestly below the diagonal through the middle of the
+range, where a nominal 65% interval covers about 55% empirically. That is the
+signature of mild residual overconfidence, not a clear failure. It is a
+realistic outcome for a first pass: with only ten draws per data set, scale is
+harder to pin down than location, and the standard remedy is more simulations
+before reaching for a bigger network. `vignette("diagnostics")` covers the
+full set of checks, including what to do when a fit does not pass one.
 
 ## Posterior predictive check
 
