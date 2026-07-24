@@ -99,7 +99,7 @@ navbar:
         href: articles/density-estimators.html
       - text: Checking the posterior
         href: articles/diagnostics.html
-      - text: "Case study: an SIR epidemic model"
+      - text: "Comparison with pomp: an SIR epidemic model"
         href: articles/sir-epidemic.html
 
 articles:
