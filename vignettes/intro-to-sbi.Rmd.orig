@@ -217,18 +217,18 @@ res                # per-parameter uniformity p-values (large = calibrated)
 
 plot_sbc(res, param = 1)   # rank histogram for A: flat = calibrated
 plot_coverage(res)         # empirical vs. nominal credible-interval coverage
+expected_coverage(res)     # the numbers behind that plot
 ```
 
-$A$'s ranks are close to flat, with a uniformity p-value of 0.130, and its
-coverage curve tracks the diagonal within Monte Carlo error. $B$ is
-borderline: its p-value is 0.083, above the conventional 0.05 cutoff, but its
-coverage curve sits modestly below the diagonal through the middle of the
-range, where a nominal 65% interval covers about 55% empirically. That is the
-signature of mild residual overconfidence, not a clear failure. It is a
-realistic outcome for a first pass: with only ten draws per data set, scale is
-harder to pin down than location, and the standard remedy is more simulations
-before reaching for a bigger network. `vignette("diagnostics")` covers the
-full set of checks, including what to do when a fit does not pass one.
+$A$'s p-value is 0.076, just above the conventional 0.05 cutoff; $B$'s is
+0.119, comfortably above it. Neither is a clean pass, and neither is a clear
+failure. Both coverage curves sit modestly below the diagonal through the
+middle of the range: a nominal 65% interval covers about 58% of the time for
+$A$ and 56% for $B$, the signature of mild overconfidence in both
+parameters. That is a realistic outcome for a first pass at ten draws per
+data set; the standard remedy is more simulations before reaching for a
+bigger network. `vignette("diagnostics")` covers the full set of checks,
+including what to do when a fit does not pass one.
 
 ## Posterior predictive check
 
