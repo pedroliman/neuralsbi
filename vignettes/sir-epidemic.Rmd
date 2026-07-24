@@ -14,14 +14,7 @@ vignette: >
 
 
 
-[`pomp`](https://kingaa.github.io/pomp/) is the established R toolkit for
-partially observed Markov process models — the stochastic dynamical systems
-common in epidemiology and ecology. It fits them by *particle filtering*: a
-sequential Monte Carlo scheme that only ever *simulates* the latent state
-process, so you never write down its transition density. That makes `pomp`
-simulation-based in the same spirit as `neuralsbi`. The two packages differ in
-what they do next, and this vignette puts them on the same problem to see
-whether their posteriors agree.
+[`pomp`](https://kingaa.github.io/pomp/) is the established R toolkit for partially observed Markov process models — the stochastic dynamical systems common in epidemiology and ecology. It fits them by *particle filtering*: a sequential Monte Carlo scheme that only ever *simulates* the latent state process, so you never write down its transition density. That makes `pomp` simulation-based in the same spirit as `neuralsbi`. The two packages differ in what they do next, and this vignette puts them on the same problem to see whether their posteriors agree.
 
 The problem is a stochastic **SIR** epidemic. A population of size `N` splits
 into Susceptible, Infected, and Recovered; the contact rate \(\beta\) drives
@@ -36,10 +29,7 @@ series.)
 
 ## The model, written twice
 
-Both packages need the same generative model. `pomp` wants it as C snippets;
-`neuralsbi` wants a vectorized R function. The dynamics are identical: an
-Euler step with binomial transitions, and reported cases drawn as a binomial
-thinning of the true weekly incidence.
+Both packages need the same generative model. `pomp` wants it as C snippets; `neuralsbi` wants a vectorized R function. The dynamics are identical: an Euler step with binomial transitions, and reported cases drawn as a binomial thinning of the true weekly incidence.
 
 
 ``` r
@@ -173,18 +163,13 @@ sir_simulator <- function(theta) {
 }
 ```
 
-Neural Posterior Estimation (NPE) trains a conditional density estimator
-\(q_\phi(\boldsymbol{\theta} \mid \mathbf{x})\) on simulated
-\((\boldsymbol{\theta}, \mathbf{x})\) pairs, then conditions it on the observed
-curve. Training is *amortized*: one fit works for any incidence curve, not just
-this one. A mixture density network suits this smooth, unimodal posterior.
+Neural Posterior Estimation (NPE) trains a conditional density estimator \(q_\phi(\boldsymbol{\theta} \mid \mathbf{x})\) on simulated \((\boldsymbol{\theta}, \mathbf{x})\) pairs, then conditions it on the observed curve. Training is *amortized*: one fit works for any incidence curve, not just this one. A mixture density network suits this smooth, unimodal posterior.
 
 
 ``` r
 prior <- prior_uniform(low = c(0.5, 0.2), high = c(5, 3))   # same as pomp's dprior
 
-# 8000 simulations to train a 2-parameter posterior. If it comes out too wide,
-# add simulations before enlarging the network.
+# 8000 simulations to train a 2-parameter posterior. If it comes out too wide, add simulations before enlarging the network.
 fit <- npe(prior, sir_simulator, n_simulations = 8000,
            density_estimator = "mdn", max_epochs = 400,
            n_restarts = 2, seed = 1)
@@ -229,19 +214,9 @@ c2st(as.matrix(draws_npe), as.matrix(post_pomp), seed = 1)$accuracy
 #> [1] 0.7272727
 ```
 
-The two posteriors sit on top of each other: same location, same
-\(\beta\)–\(\gamma\) ridge (the two rates trade off because the data mostly pin
-down their ratio \(R_0\)). The C2ST lands well above 0.5, and the plot shows
-why — the `neuralsbi` cloud is a little broader. That is the expected
-signature of the trade-off. `pomp`'s particle filter exploits the *known*
-binomial measurement density to extract the sharpest posterior this dataset
-supports; NPE is handed only simulations and, at an 8000-simulation budget,
-stays slightly more cautious. More simulations tighten it toward `pomp`.
+The two posteriors sit on top of each other: same location, same \(\beta\)–\(\gamma\) ridge (the two rates trade off because the data mostly pin down their ratio \(R_0\)). The C2ST lands well above 0.5, and the plot shows why — the `neuralsbi` cloud is a little broader. That is the expected signature of the trade-off. `pomp`'s particle filter exploits the *known* binomial measurement density to extract the sharpest posterior this dataset supports; NPE is handed only simulations and, at an 8000-simulation budget, stays slightly more cautious. More simulations tighten it toward `pomp`.
 
-Is that extra width honest or a bug? Simulation-based calibration answers it
-without a reference posterior: draw \(\boldsymbol{\theta}\) from the prior,
-simulate, and rank the truth among the posterior draws. Calibrated posteriors
-give uniform ranks.
+Is that extra width honest or a bug? Simulation-based calibration answers it without a reference posterior: draw \(\boldsymbol{\theta}\) from the prior, simulate, and rank the truth among the posterior draws. Calibrated posteriors give uniform ranks.
 
 
 ``` r
@@ -259,9 +234,7 @@ plot_sbc(sbc_res, param = 1)
 <p class="caption">plot of chunk unnamed-chunk-10</p>
 </div>
 
-The ranks are flat and the p-values large: NPE's wider intervals are
-calibrated, not broken. `neuralsbi` and `pomp` give the same answer here, and
-NPE simply reports a touch more uncertainty for the simulations it was given.
+The ranks are flat and the p-values large: NPE's wider intervals are calibrated, not broken. `neuralsbi` and `pomp` give the same answer here, and NPE simply reports a touch more uncertainty for the simulations it was given.
 
 ## Similarities and differences
 
@@ -274,14 +247,6 @@ NPE simply reports a touch more uncertainty for the simulations it was given.
 | Cost structure | cheap setup, rerun per dataset | expensive training, then instant |
 | Exactness | exact in the MCMC limit | approximate; **must** be calibration-checked |
 
-Reach for `pomp` when you can write the measurement density and have one or a
-few datasets to fit — it will give the sharpest, best-understood posterior.
-Reach for `neuralsbi` when the measurement model itself is a black box, or when
-you need to condition on many datasets and amortization pays for the training
-up front. On this problem they agree, which is the reassuring outcome: two
-different simulation-based machines, pointed at the same stochastic model,
-recover the same rates.
+Reach for `pomp` when you can write the measurement density and have one or a few datasets to fit — it will give the sharpest, best-understood posterior. Reach for `neuralsbi` when the measurement model itself is a black box, or when you need to condition on many datasets and amortization pays for the training up front. On this problem they agree, which is the reassuring outcome: two different simulation-based machines, pointed at the same stochastic model, recover the same rates.
 
-For the `neuralsbi` workflow in more depth, see `vignette("neuralsbi")` and
-`vignette("diagnostics")`; for `pomp`, the
-[package tutorials](https://kingaa.github.io/pomp/docs.html).
+For the `neuralsbi` workflow in more depth, see `vignette("neuralsbi")` and `vignette("diagnostics")`; for `pomp`, the [package tutorials](https://kingaa.github.io/pomp/docs.html).
