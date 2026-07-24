@@ -69,11 +69,11 @@ x_obs <- task$simulator(matrix(theta_true, nrow = 1))
 post <- posterior(fit, x_obs = x_obs)
 summary(post, n = 5000)
 #>   parameter      mean          sd      q2.5       q25       q50       q75
-#> 1    theta1 0.4007750 0.006536198 0.3897076 0.3967231 0.4005885 0.4044068
-#> 2    theta2 0.1300866 0.007765928 0.1168075 0.1254525 0.1300085 0.1347168
+#> 1    theta1 0.3994986 0.008617038 0.3876099 0.3951481 0.3992741 0.4032756
+#> 2    theta2 0.1291057 0.007482159 0.1145163 0.1242678 0.1292441 0.1340240
 #>       q97.5
-#> 1 0.4124505
-#> 2 0.1436619
+#> 1 0.4106381
+#> 2 0.1433673
 
 draws <- sample(post, 10000)
 pairplot(draws, truth = theta_true)
@@ -102,7 +102,7 @@ res <- sbc(fit, task$simulator, n_sbc = 80, n_posterior_samples = 300,
 res                     # per-parameter uniformity p-values (large = good)
 #> <nsbi_sbc> 80 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     0.522  0.940
+#>     0.337  0.886
 
 plot_sbc(res, param = 1)   # rank histogram: flat = calibrated
 ```
@@ -166,8 +166,8 @@ fit_seq                    # per-round budgets and acceptance rates
 #>   density estimator : mdn
 #>   rounds            : 2
 #>   simulations       : 3000
-#>   acceptance/round  : 1.00, 0.32
-#>   targeted x_obs    : 0, 0, 0.004, 0.241, 0.139, 0.025, 0.004, 0.002, 0, 0
+#>   acceptance/round  : 1.00, 0.65
+#>   targeted x_obs    : 0, 0, 0.005, 0.234, 0.155, 0.019, 0.003, 0, 0, 0
 #>   NOT amortized: only valid at (or near) the targeted x_obs.
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 

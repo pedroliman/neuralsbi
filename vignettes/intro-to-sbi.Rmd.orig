@@ -1,0 +1,210 @@
+---
+title: "Introduction to neural simulation-based inference in R"
+description: >
+  The basics of amortized, likelihood-free Bayesian inference: prior,
+  simulator, observation, and how neuralsbi turns them into a posterior --
+  illustrated with a simulator whose likelihood cannot be written down.
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to neural simulation-based inference in R}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# This vignette is precomputed: see vignettes/precompute.R. Edit the .Rmd.orig,
+# re-run the precompute script, and commit the regenerated .Rmd and figures.
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>", error = FALSE,
+  fig.path = "figures/intro-to-sbi-", fig.width = 5, fig.height = 4,
+  dpi = 96, fig.retina = NULL
+)
+set.seed(1)
+```
+
+This is the first in a short series of tutorials on neural simulation-based
+inference (SBI) in R. It covers the basics: what problem SBI solves, the three
+ingredients every analysis needs, and what it means for a fit to be
+*amortized*. Later tutorials go deeper on density estimators, calibration, and
+applied case studies -- this one stays small on purpose.
+
+## The problem
+
+Ordinary Bayesian inference needs a likelihood, `p(x | theta)`: a formula for
+how likely the data are, given the parameters. For a simulator -- code that
+generates synthetic data by drawing random numbers internally -- that formula
+often does not exist. The simulator can produce data all day long; it just
+cannot tell you the probability of any particular output. SBI sidesteps the
+likelihood entirely: it learns the posterior directly from (parameter,
+simulated-data) pairs.
+
+A concrete example. The **g-and-k distribution** is a flexible model for
+skewed, heavy-tailed data -- rainfall totals, incomes, financial returns --
+defined not by a density but by its quantile function: transform a standard
+normal draw `z` through
+
+```
+Q(z) = A + B * (1 + 0.8 * tanh(g * z / 2)) * (1 + z^2)^k * z
+```
+
+and the result is a draw from the distribution. `A` and `B` are location and
+scale; `g` and `k` control skew and tail weight. Simulating is a one-liner.
+But writing down the density means inverting `Q()`, which has no closed form
+-- so the likelihood genuinely is not available, even though generating data
+is trivial. This is exactly the setting SBI targets, and it is why the
+distribution is a standard test case in the likelihood-free literature
+(Rayner & MacGillivray, 2002; Prangle, 2020).
+
+We will treat `g` and `k` as known (2 and 0.5) and infer the location `A` and
+scale `B` from a small sample of observations.
+
+## The three ingredients
+
+Every SBI problem needs a **prior**, a **simulator**, and an **observation**.
+
+```{r}
+library(neuralsbi)   # note: masks base::sample -- see below
+
+# (1) prior over the two parameters we want to infer
+prior <- prior_uniform(low = c(0, 0.3), high = c(10, 2))
+
+# (2) simulator: an (n x 2) matrix of parameters -> an (n x 10) matrix of data.
+# Each row draws 10 i.i.d. observations from the g-and-k distribution at that
+# row's (A, B), with g = 2 and k = 0.5 fixed.
+rgk <- function(n, A, B, g = 2, k = 0.5, c = 0.8) {
+  z <- rnorm(n)
+  A + B * (1 + c * tanh(g * z / 2)) * (1 + z^2)^k * z
+}
+simulator <- function(theta) {
+  t(apply(theta, 1, function(th) rgk(10, th[1], th[2])))
+}
+
+# (3) the observation: 10 measurements from a population with A = 3, B = 1
+theta_true <- c(A = 3, B = 1)
+x_obs <- simulator(rbind(theta_true))
+```
+
+`neuralsbi` masks `base::sample()` with an S3 generic so that `sample(post,
+n)` can dispatch on a fitted posterior; `sample(1:10, 3)` still works as
+usual, and `sample_posterior()` is a non-generic alias if the masking gets in
+the way in a script.
+
+One more thing worth flagging up front, especially if you come from
+regression or Stan: SBI writes the *observed data* as `x`, the role your
+outcome variable `y` usually plays. Covariates, if you have any, are absorbed
+into the simulator. It takes a page or two to stop mentally substituting `y`.
+
+## Training an amortized posterior estimator
+
+`npe()` (Neural Posterior Estimation) draws parameters from the prior, runs
+the simulator, and trains a **density estimator** -- here a masked
+autoregressive flow (Papamakarios et al., 2017), the package default -- to
+approximate `p(theta | x)` directly from those pairs. No likelihood function
+appears anywhere in this call.
+
+```{r}
+# 5000 simulations for a 2-parameter posterior. If the fit below looks too
+# wide or the calibration check is off, add simulations before reaching for a
+# bigger network.
+fit <- npe(prior, simulator, n_simulations = 5000, seed = 1)
+fit
+```
+
+This fit is **amortized**: trained once, over the whole prior, it can be
+conditioned on *any* observation afterwards -- no re-simulating, no
+retraining. That is the central practical payoff of NPE over MCMC-based
+approaches, which restart from scratch for every new data set.
+
+## Conditioning on the observation
+
+```{r fig.alt = "Pairs plot of the posterior over A and B, with the true values marked."}
+post   <- posterior(fit, x_obs = x_obs)
+draws  <- sample(post, 5000)
+colnames(draws) <- c("A", "B")
+
+summary(draws)
+pairplot(draws, truth = theta_true)
+```
+
+The posterior concentrates around `A = 3, B = 1` -- the values that generated
+`x_obs` -- with honest uncertainty from only 10 observations per data set.
+
+## What amortization buys you
+
+Condition the *same* fit on a second, unrelated observation. There is no
+simulation and no training here -- just a forward pass through the network
+already trained above.
+
+```{r fig.alt = "Pairs plot of the posterior for a second observation, from the same fitted estimator."}
+theta_true2 <- c(A = 6, B = 0.6)
+x_obs2      <- simulator(rbind(theta_true2))
+
+draws2 <- sample(posterior(fit, x_obs = x_obs2), 5000)
+pairplot(draws2, truth = theta_true2, labels = c("A", "B"))
+```
+
+Reusing `fit` here is the point: an MCMC sampler would need to re-run its
+chains for `x_obs2`; the amortized posterior just looks up a new conditional
+density.
+
+## Checking the fit
+
+A trained estimator always returns *something* -- samples, a mean, credible
+intervals -- whether or not the fit is any good. Checking calibration is part
+of the workflow, not an optional extra. **Simulation-based calibration
+(SBC)** does this without needing a known answer: draw `theta` from the
+prior, simulate `x`, and see where the true `theta` ranks among posterior
+draws given that `x`. Calibrated posteriors put the truth anywhere in that
+ranking with equal probability, so the ranks come out uniform.
+
+```{r fig.alt = "SBC rank histogram and expected-coverage plot for the fit."}
+res <- sbc(fit, simulator, n_sbc = 200, n_posterior_samples = 300, seed = 2)
+res                # per-parameter uniformity p-values (large = calibrated)
+
+plot_sbc(res, param = 1)   # rank histogram for A: flat = calibrated
+plot_coverage(res)         # empirical vs. nominal credible-interval coverage
+```
+
+`A`'s ranks are close to flat and its coverage curve tracks the diagonal
+throughout. `B` is not quite there: its coverage dips modestly below the
+diagonal over the middle of the range -- a nominal 65% interval covers closer
+to 55% -- the signature of mild overconfidence. That is a realistic outcome
+for a first pass, not a failure: with only 10 observations per data set,
+scale is harder to pin down than location, and the fix is more simulations
+before reaching for a bigger network. `vignette("diagnostics")` covers the
+full set of checks, including what to do when a fit does not pass one.
+
+## Where to go next
+
+This tutorial covered the minimum: prior, simulator, observation, an
+amortized fit, and one calibration check. It deliberately skipped almost
+everything else --
+
+- `vignette("neuralsbi")` walks the same workflow again with a
+  linear-Gaussian model, where you can check the estimated posterior against
+  an exact analytic answer.
+- `vignette("density-estimators")` compares the mixture-density-network,
+  flow, and closed-form estimators, and when each is worth using.
+- `vignette("diagnostics")` covers the complete diagnostic toolkit: SBC,
+  expected coverage, TARP, and posterior predictive checks.
+- `vignette("sir-epidemic")` is a full applied case study, including
+  sequential inference when simulations are expensive and only one
+  observation matters.
+
+For the ideas behind the method: Cranmer, Brehmer & Louppe (2020), ["The
+frontier of simulation-based
+inference"](https://www.pnas.org/doi/10.1073/pnas.1912789117), is a short,
+readable review. Papamakarios & Murray (2016), ["Fast
+&epsilon;-free inference of simulation models with Bayesian
+conditional density
+estimation"](https://arxiv.org/abs/1605.06376), introduced the approach NPE
+descends from. Talts et al. (2018), ["Validating Bayesian inference
+algorithms with simulation-based
+calibration"](https://arxiv.org/abs/1804.06788), is the reference for the SBC
+check used above. Lueckmann et al. (2021), ["Benchmarking simulation-based
+inference"](https://arxiv.org/abs/2101.04653), compares NPE against the
+other neural SBI algorithms this package does not implement (NLE, NRE) --
+useful context for where `neuralsbi` sits in the broader landscape. Rayner &
+MacGillivray (2002) and Prangle (2020) -- the latter's
+[`gk`](https://journal.r-project.org/articles/RJ-2020-010/) package -- cover
+the g-and-k distribution itself.

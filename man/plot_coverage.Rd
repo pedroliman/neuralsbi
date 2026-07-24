@@ -11,7 +11,7 @@ plot_coverage(sbc_result, levels = seq(0.05, 0.95, by = 0.05))
 \item{levels}{Nominal credibility levels to evaluate.}
 }
 \value{
-Invisibly, the coverage data frame from \code{\link{expected_coverage}()}.
+A \code{ggplot} object (also drawn as a side effect), invisibly.
 }
 \description{
 Well-calibrated posteriors lie on the diagonal. Curves above the diagonal

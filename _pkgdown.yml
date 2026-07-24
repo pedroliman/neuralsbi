@@ -93,6 +93,8 @@ navbar:
     articles:
       text: Articles
       menu:
+      - text: Introduction to neural simulation-based inference in R
+        href: articles/intro-to-sbi.html
       - text: Choosing a density estimator
         href: articles/density-estimators.html
       - text: Checking the posterior
@@ -104,6 +106,7 @@ articles:
 - title: Learning the package
   navbar: ~
   contents:
+  - intro-to-sbi
   - neuralsbi
   - density-estimators
   - diagnostics

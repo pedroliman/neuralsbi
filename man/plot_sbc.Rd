@@ -14,7 +14,7 @@ plot_sbc(sbc_result, param = 1L, bins = 20L)
 \item{bins}{Number of histogram bins.}
 }
 \value{
-Invisibly, the rank vector.
+A \code{ggplot} object (also drawn as a side effect), invisibly.
 }
 \description{
 Uniform bars indicate calibration; a U shape means the posterior is too

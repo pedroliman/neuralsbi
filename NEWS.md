@@ -1,3 +1,8 @@
+# neuralsbi 0.3.4
+
+* Plotting is now built on `ggplot2` and `GGally::ggpairs()` instead of base graphics. `pairplot()`, `plot_sbc()`, `plot_coverage()`, `plot_tarp()`, and `plot_posterior_predictive()` keep their signatures (`pairplot()` gains an `alpha` argument) but now build and print a `ggplot`/`ggmatrix` object, returned invisibly for further customization. `ggplot2` and `GGally` move to `Suggests`, following the same graceful-degradation pattern as `torch`: call any plotting function without them installed and you get an informative error, not a crash.
+* New vignette, `vignette("intro-to-sbi")`: a short beginner tutorial covering the three ingredients (prior, simulator, observation), amortized training, and a first calibration check, using a g-and-k distribution simulator whose likelihood has no closed form.
+
 # neuralsbi 0.3.2
 
 * README is now generated from `README.Rmd`, so the usage example runs at render time and its output cannot drift from the code. The example is a plain linear regression: the posterior recovers the ground-truth coefficients, which the reader can check against ordinary least squares.
