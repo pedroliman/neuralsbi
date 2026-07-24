@@ -122,9 +122,10 @@ vignettes that build on each other:
 3.  [Checking the
     posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html)
     — calibration and predictive diagnostics.
-4.  [Case study: an SIR epidemic
+4.  [Comparison with pomp: an SIR epidemic
     model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html)
-    — the full Bayesian workflow on an applied problem.
+    — neural posterior estimation and pomp’s particle-filter MCMC on the
+    same stochastic epidemic.
 
 ## License
 

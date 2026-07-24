@@ -96,7 +96,7 @@ The [package website](https://pedroliman.github.io/neuralsbi/) has four vignette
 1. [Getting started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
 2. [Choosing a density estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
 3. [Checking the posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html) — calibration and predictive diagnostics.
-4. [Case study: an SIR epidemic model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html) — the full Bayesian workflow on an applied problem.
+4. [Comparison with pomp: an SIR epidemic model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html) — neural posterior estimation and pomp's particle-filter MCMC on the same stochastic epidemic.
 
 ## License
 
