@@ -1,3 +1,7 @@
+# neuralsbi 0.3.5
+
+* The SIR case study becomes a head-to-head comparison with the `pomp` package, `vignette("sir-epidemic")`. Both methods fit the same stochastic SIR epidemic: `pomp` via particle-filter MCMC (`pmcmc`), `neuralsbi` via neural posterior estimation. The vignette contrasts what each needs from the model — `pomp` a measurement density, `neuralsbi` only a simulator — overlays the two posteriors, scores their agreement with a C2ST, and confirms the neural fit with SBC. The comparison is precomputed, so `pomp` is needed only to regenerate the article, not to build or check the package.
+
 # neuralsbi 0.3.4
 
 * Plotting is now built on `ggplot2` and `GGally::ggpairs()` instead of base graphics. `pairplot()`, `plot_sbc()`, `plot_coverage()`, `plot_tarp()`, and `plot_posterior_predictive()` keep their signatures (`pairplot()` gains an `alpha` argument) but now build and print a `ggplot`/`ggmatrix` object, returned invisibly for further customization. `ggplot2` and `GGally` move to `Suggests`, following the same graceful-degradation pattern as `torch`: call any plotting function without them installed and you get an informative error, not a crash.
