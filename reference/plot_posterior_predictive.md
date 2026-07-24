@@ -34,4 +34,4 @@ plot_posterior_predictive(pred, x_obs, labels = NULL, bins = 30L)
 
 ## Value
 
-Invisibly, the per-dimension predictive quantile of the observation.
+A `ggplot` object (also drawn as a side effect), invisibly.

@@ -1,9 +1,10 @@
 # Visualize posterior samples
 
-A dependency-free (base graphics) pair plot: 1-D marginal densities on
-the diagonal and 2-D scatter/contours off-diagonal, with optional
-markers for a reference (e.g. true) parameter value. Analogous to
-`sbi`'s `pairplot`.
+A pair plot built on
+[`GGally::ggpairs()`](https://ggobi.github.io/ggally/reference/ggpairs.html):
+1-D marginal densities on the diagonal and 2-D scatter in the lower
+triangle, with optional markers for a reference (e.g. true) parameter
+value. Analogous to Python `sbi`'s `pairplot`.
 
 ## Usage
 
@@ -13,7 +14,8 @@ pairplot(
   truth = NULL,
   labels = NULL,
   limits = NULL,
-  col = grDevices::adjustcolor("steelblue", 0.4),
+  col = "steelblue",
+  alpha = 0.4,
   ...
 )
 ```
@@ -35,16 +37,23 @@ pairplot(
 
 - limits:
 
-  Optional list/matrix of per-parameter c(lo, hi) axis limits.
+  Optional list (one `c(lo, hi)` per parameter, in column order) or
+  matrix of per-parameter axis limits.
 
 - col:
 
-  Point colour.
+  Point and density fill colour.
+
+- alpha:
+
+  Point and density fill transparency.
 
 - ...:
 
-  Passed to plotting calls.
+  Passed to the lower-triangle
+  [`ggplot2::geom_point()`](https://ggplot2.tidyverse.org/reference/geom_point.html)
+  layer.
 
 ## Value
 
-Invisibly, the samples.
+A `ggmatrix` object (also drawn as a side effect), invisibly.

@@ -1,5 +1,31 @@
 # Changelog
 
+## neuralsbi 0.3.4
+
+- Plotting is now built on `ggplot2` and
+  [`GGally::ggpairs()`](https://ggobi.github.io/ggally/reference/ggpairs.html)
+  instead of base graphics.
+  [`pairplot()`](https://pedroliman.github.io/neuralsbi/reference/pairplot.md),
+  [`plot_sbc()`](https://pedroliman.github.io/neuralsbi/reference/plot_sbc.md),
+  [`plot_coverage()`](https://pedroliman.github.io/neuralsbi/reference/plot_coverage.md),
+  [`plot_tarp()`](https://pedroliman.github.io/neuralsbi/reference/plot_tarp.md),
+  and
+  [`plot_posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/plot_posterior_predictive.md)
+  keep their signatures
+  ([`pairplot()`](https://pedroliman.github.io/neuralsbi/reference/pairplot.md)
+  gains an `alpha` argument) but now build and print a
+  `ggplot`/`ggmatrix` object, returned invisibly for further
+  customization. `ggplot2` and `GGally` move to `Suggests`, following
+  the same graceful-degradation pattern as `torch`: call any plotting
+  function without them installed and you get an informative error, not
+  a crash.
+- New vignette,
+  [`vignette("intro-to-sbi")`](https://pedroliman.github.io/neuralsbi/articles/intro-to-sbi.md):
+  a short beginner tutorial covering the three ingredients (prior,
+  simulator, observation), amortized training, and a first calibration
+  check, using a g-and-k distribution simulator whose likelihood has no
+  closed form.
+
 ## neuralsbi 0.3.2
 
 - README is now generated from `README.Rmd`, so the usage example runs

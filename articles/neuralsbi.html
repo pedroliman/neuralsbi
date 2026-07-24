@@ -77,7 +77,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,7 +90,8 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
+<li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
+    <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
     <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Case study: an SIR epidemic model</a></li>
   </ul>
@@ -266,17 +267,17 @@ the <strong>Mixture Density Network (MDN)</strong>. This requires
 <span><span class="co">#&gt;   parameters (dim)  : 2</span></span>
 <span><span class="co">#&gt;   data (dim)        : 2</span></span>
 <span><span class="co">#&gt;   simulations       : 2000</span></span>
-<span><span class="co">#&gt;   best val loss     : 1.2668</span></span>
+<span><span class="co">#&gt;   best val loss     : 1.2831</span></span>
 <span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span>
 <span></span>
 <span><span class="co"># on this Gaussian model the MDN matches the exact linear_gaussian posterior</span></span>
 <span><span class="va">draws_mdn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit_mdn</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">2000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>analytic <span class="op">=</span> <span class="va">mu</span>, mdn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws_mdn</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;               [,1]      [,2]</span></span>
-<span><span class="co">#&gt; analytic 0.8000000 -0.400000</span></span>
-<span><span class="co">#&gt; mdn      0.8304641 -0.368187</span></span>
+<span><span class="co">#&gt;               [,1]       [,2]</span></span>
+<span><span class="co">#&gt; analytic 0.8000000 -0.4000000</span></span>
+<span><span class="co">#&gt; mdn      0.8476796 -0.3540663</span></span>
 <span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">draws_mdn</span>, <span class="va">analytic_draws</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
-<span><span class="co">#&gt; [1] 0.526</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.535</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="non-gaussian-posteriors">Non-Gaussian posteriors<a class="anchor" aria-label="anchor" href="#non-gaussian-posteriors"></a>

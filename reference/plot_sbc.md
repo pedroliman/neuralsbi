@@ -26,4 +26,4 @@ plot_sbc(sbc_result, param = 1L, bins = 20L)
 
 ## Value
 
-Invisibly, the rank vector.
+A `ggplot` object (also drawn as a side effect), invisibly.

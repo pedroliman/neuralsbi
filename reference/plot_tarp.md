@@ -22,4 +22,4 @@ plot_tarp(tarp_result)
 
 ## Value
 
-Invisibly, a data frame with `nominal` and `ecp` columns.
+A `ggplot` object (also drawn as a side effect), invisibly.

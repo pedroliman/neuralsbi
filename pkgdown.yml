@@ -4,9 +4,10 @@ pkgdown_sha: ~
 articles:
   density-estimators: density-estimators.html
   diagnostics: diagnostics.html
+  intro-to-sbi: intro-to-sbi.html
   neuralsbi: neuralsbi.html
   sir-epidemic: sir-epidemic.html
-last_built: 2026-07-23T23:35Z
+last_built: 2026-07-24T06:42Z
 urls:
   reference: https://pedroliman.github.io/neuralsbi/reference
   article: https://pedroliman.github.io/neuralsbi/articles

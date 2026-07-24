@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,7 +58,8 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/neuralsbi.html">Get started</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
+    <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
     <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
     <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Case study: an SIR epidemic model</a></li>
   </ul></li>
@@ -84,6 +85,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.4" id="neuralsbi-034">neuralsbi 0.3.4<a class="anchor" aria-label="anchor" href="#neuralsbi-034"></a></h2>
+<ul><li>Plotting is now built on <code>ggplot2</code> and <code><a href="https://ggobi.github.io/ggally/reference/ggpairs.html" class="external-link">GGally::ggpairs()</a></code> instead of base graphics. <code><a href="../reference/pairplot.html">pairplot()</a></code>, <code><a href="../reference/plot_sbc.html">plot_sbc()</a></code>, <code><a href="../reference/plot_coverage.html">plot_coverage()</a></code>, <code><a href="../reference/plot_tarp.html">plot_tarp()</a></code>, and <code><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive()</a></code> keep their signatures (<code><a href="../reference/pairplot.html">pairplot()</a></code> gains an <code>alpha</code> argument) but now build and print a <code>ggplot</code>/<code>ggmatrix</code> object, returned invisibly for further customization. <code>ggplot2</code> and <code>GGally</code> move to <code>Suggests</code>, following the same graceful-degradation pattern as <code>torch</code>: call any plotting function without them installed and you get an informative error, not a crash.</li>
+<li>New vignette, <code><a href="../articles/intro-to-sbi.html">vignette("intro-to-sbi")</a></code>: a short beginner tutorial covering the three ingredients (prior, simulator, observation), amortized training, and a first calibration check, using a g-and-k distribution simulator whose likelihood has no closed form.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.2" id="neuralsbi-032">neuralsbi 0.3.2<a class="anchor" aria-label="anchor" href="#neuralsbi-032"></a></h2>
 <ul><li>README is now generated from <code>README.Rmd</code>, so the usage example runs at render time and its output cannot drift from the code. The example is a plain linear regression: the posterior recovers the ground-truth coefficients, which the reader can check against ordinary least squares.</li>

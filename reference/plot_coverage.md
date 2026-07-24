@@ -24,5 +24,4 @@ plot_coverage(sbc_result, levels = seq(0.05, 0.95, by = 0.05))
 
 ## Value
 
-Invisibly, the coverage data frame from
-[`expected_coverage()`](https://pedroliman.github.io/neuralsbi/reference/expected_coverage.md).
+A `ggplot` object (also drawn as a side effect), invisibly.

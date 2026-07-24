@@ -113,7 +113,7 @@ classifier is near chance:
 ``` r
 
 c2st(draws_mdn, draws_nsf, seed = 1)$accuracy   # near 0.5: MDN and NSF agree
-#> [1] 0.5091667
+#> [1] 0.513
 ```
 
 The linear-Gaussian fit is visibly wrong — one blob instead of two
@@ -124,7 +124,7 @@ does *not* flag it:
 ``` r
 
 c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
-#> [1] 0.5121667
+#> [1] 0.5025
 ```
 
 That number is a trap worth understanding.

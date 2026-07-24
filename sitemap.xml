@@ -5,6 +5,7 @@
 <url><loc>https://pedroliman.github.io/neuralsbi/articles/density-estimators.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/articles/diagnostics.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/articles/index.html</loc></url>
+<url><loc>https://pedroliman.github.io/neuralsbi/articles/intro-to-sbi.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/authors.html</loc></url>
@@ -58,6 +59,7 @@
 <url><loc>https://pedroliman.github.io/neuralsbi/reference/prior_normal.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/reference/prior_uniform.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/reference/priors.html</loc></url>
+<url><loc>https://pedroliman.github.io/neuralsbi/reference/require_ggplot2.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/reference/require_torch.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/reference/rq_spline.html</loc></url>
 <url><loc>https://pedroliman.github.io/neuralsbi/reference/sample.html</loc></url>
