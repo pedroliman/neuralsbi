@@ -16,7 +16,7 @@ plot_posterior_predictive(pred, x_obs, labels = NULL, bins = 30L)
 \item{bins}{Number of histogram bins.}
 }
 \value{
-Invisibly, the per-dimension predictive quantile of the observation.
+A \code{ggplot} object (also drawn as a side effect), invisibly.
 }
 \description{
 Compares data simulated from posterior parameter draws (see

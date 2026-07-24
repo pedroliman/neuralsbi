@@ -9,7 +9,8 @@ pairplot(
   truth = NULL,
   labels = NULL,
   limits = NULL,
-  col = grDevices::adjustcolor("steelblue", 0.4),
+  col = "steelblue",
+  alpha = 0.4,
   ...
 )
 }
@@ -21,17 +22,21 @@ pairplot(
 
 \item{labels}{Optional parameter labels.}
 
-\item{limits}{Optional list/matrix of per-parameter c(lo, hi) axis limits.}
+\item{limits}{Optional list (one \code{c(lo, hi)} per parameter, in column
+order) or matrix of per-parameter axis limits.}
 
-\item{col}{Point colour.}
+\item{col}{Point and density fill colour.}
 
-\item{...}{Passed to plotting calls.}
+\item{alpha}{Point and density fill transparency.}
+
+\item{...}{Passed to the lower-triangle \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}} layer.}
 }
 \value{
-Invisibly, the samples.
+A \code{ggmatrix} object (also drawn as a side effect), invisibly.
 }
 \description{
-A dependency-free (base graphics) pair plot: 1-D marginal densities on the
-diagonal and 2-D scatter/contours off-diagonal, with optional markers for a
-reference (e.g. true) parameter value. Analogous to \code{sbi}'s \code{pairplot}.
+A pair plot built on \code{\link[GGally:ggpairs]{GGally::ggpairs()}}: 1-D marginal densities on the
+diagonal and 2-D scatter in the lower triangle, with optional markers for a
+reference (e.g. true) parameter value. Analogous to Python \code{sbi}'s
+\code{pairplot}.
 }

@@ -1,6 +1,6 @@
 Package: neuralsbi
 Title: Neural Simulation-Based Inference
-Version: 0.3.3
+Version: 0.3.4
 Authors@R:
     person("Pedro", "Nascimento de Lima", email = "plima@rand.org",
            role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9057-198X"))
@@ -15,6 +15,9 @@ Imports:
     utils
 Suggests:
     torch (>= 0.11.0),
+    ggplot2 (>= 3.4.0),
+    GGally (>= 2.2.0),
+    rlang,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown

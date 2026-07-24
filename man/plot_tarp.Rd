@@ -10,7 +10,7 @@ plot_tarp(tarp_result)
 \item{tarp_result}{An \code{nsbi_tarp} object from \code{\link[=tarp]{tarp()}}.}
 }
 \value{
-Invisibly, a data frame with \code{nominal} and \code{ecp} columns.
+A \code{ggplot} object (also drawn as a side effect), invisibly.
 }
 \description{
 Draws the expected coverage probability (ECP) curve from \code{\link[=tarp]{tarp()}} against
