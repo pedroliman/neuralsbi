@@ -18,9 +18,9 @@
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Introduction to neural simulation-based inference in R">
-<meta name="description" content="The basics of amortized, likelihood-free Bayesian inference: prior, simulator, observation, and how neuralsbi turns them into a posterior -- illustrated with a simulator whose likelihood cannot be written down.
+<meta name="description" content="The basics of amortized, likelihood-free Bayesian inference: prior, simulator, observation, and how neuralsbi turns them into a posterior, illustrated with a simulator whose likelihood has no closed form.
 ">
-<meta property="og:description" content="The basics of amortized, likelihood-free Bayesian inference: prior, simulator, observation, and how neuralsbi turns them into a posterior -- illustrated with a simulator whose likelihood cannot be written down.
+<meta property="og:description" content="The basics of amortized, likelihood-free Bayesian inference: prior, simulator, observation, and how neuralsbi turns them into a posterior, illustrated with a simulator whose likelihood has no closed form.
 ">
 <meta property="og:image" content="https://pedroliman.github.io/neuralsbi/og-card.png">
 <meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R">
@@ -136,89 +136,162 @@
 <p>This is the first in a short series of tutorials on neural
 simulation-based inference (SBI) in R. It covers the basics: what
 problem SBI solves, the three ingredients every analysis needs, and what
-it means for a fit to be <em>amortized</em>. Later tutorials go deeper
-on density estimators, calibration, and applied case studies – this one
-stays small on purpose.</p>
+it means for a fit to be <em>amortized</em>. If you would rather see SBI
+recover a posterior you can verify by hand first, start with
+<code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code>, which runs the same workflow on a
+linear-Gaussian model with a closed-form answer. Later tutorials go
+deeper on density estimators, calibration, and applied case studies;
+this one stays small on purpose.</p>
 <div class="section level2">
 <h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
 <p>Ordinary Bayesian inference needs a likelihood,
-<code>p(x | theta)</code>: a formula for how likely the data are, given
-the parameters. For a simulator – code that generates synthetic data by
-drawing random numbers internally – that formula often does not exist.
-The simulator can produce data all day long; it just cannot tell you the
-probability of any particular output. SBI sidesteps the likelihood
-entirely: it learns the posterior directly from (parameter,
-simulated-data) pairs.</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>𝐱</mi><mo>∣</mo><mi>𝛉</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\mathbf{x} \mid \boldsymbol{\theta})</annotation></semantics></math>:
+a formula for how likely the data are, given the parameters. A simulator
+is code that generates synthetic data by drawing random numbers
+internally. It can sample from that data-generating process without
+effort; it just cannot evaluate the probability of any particular
+output, because doing so would mean integrating over every random draw
+the simulator makes internally. SBI replaces likelihood
+<em>evaluation</em> with simulation. Several methods do this in
+different ways; the one this package implements, neural posterior
+estimation, learns
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>𝛉</mi><mo>∣</mo><mi>𝐱</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\boldsymbol{\theta} \mid \mathbf{x})</annotation></semantics></math>
+directly from (parameter, simulated-data) pairs.</p>
 <p>A concrete example. The <strong>g-and-k distribution</strong> is a
-flexible model for skewed, heavy-tailed data – rainfall totals, incomes,
-financial returns – defined not by a density but by its quantile
-function: transform a standard normal draw <code>z</code> through</p>
-<pre><code><span><span class="fu">Q</span><span class="op">(</span><span class="va">z</span><span class="op">)</span> <span class="op">=</span> <span class="va">A</span> <span class="op">+</span> <span class="va">B</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fl">0.8</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">g</span> <span class="op">*</span> <span class="va">z</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">z</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">^</span><span class="va">k</span> <span class="op">*</span> <span class="va">z</span></span></code></pre>
-<p>and the result is a draw from the distribution. <code>A</code> and
-<code>B</code> are location and scale; <code>g</code> and <code>k</code>
-control skew and tail weight. Simulating is a one-liner. But writing
-down the density means inverting <code>Q()</code>, which has no closed
-form – so the likelihood genuinely is not available, even though
-generating data is trivial. This is exactly the setting SBI targets, and
-it is why the distribution is a standard test case in the
-likelihood-free literature (Rayner &amp; MacGillivray, 2002; Prangle,
-2020).</p>
-<p>We will treat <code>g</code> and <code>k</code> as known (2 and 0.5)
-and infer the location <code>A</code> and scale <code>B</code> from a
-small sample of observations.</p>
+flexible model for skewed, heavy-tailed data such as rainfall totals,
+incomes, and financial returns, defined not by a density but by its
+quantile function:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Q</mi><mo stretchy="false" form="prefix">(</mo><mi>r</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>A</mi><mo>+</mo><mi>B</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>+</mo><mi>c</mi><mspace width="0.167em"></mspace><mi mathvariant="normal">tanh</mi><mspace width="-0.167em"></mspace><mrow><mo stretchy="true" form="prefix">(</mo><mfrac><mrow><mi>g</mi><mi>z</mi></mrow><mn>2</mn></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><msup><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>+</mo><msup><mi>z</mi><mn>2</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow><mi>k</mi></msup><mi>z</mi><mo>,</mo><mspace width="2.0em"></mspace><mi>z</mi><mo>=</mo><msup><mi mathvariant="normal">Φ</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><mi>r</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><mi>c</mi><mo>=</mo><mn>0.8</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">Q(r) = A + B\left(1 + c\,\tanh\!\left(\frac{g z}{2}\right)\right)\left(1 + z^{2}\right)^{k} z,
+\qquad z = \Phi^{-1}(r), \qquad c = 0.8.</annotation></semantics></math></p>
+<p>Here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo>∈</mo><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">r \in (0,1)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi mathvariant="normal">Φ</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><annotation encoding="application/x-tex">\Phi^{-1}</annotation></semantics></math>
+is the standard normal quantile function. Because this is an inverse-CDF
+construction, simulating is simply a matter of drawing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math>
+from a standard normal and evaluating the expression, which is what
+<code>rgk()</code> below does.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>
+are location and scale;
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+control skewness and tail weight;
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
+is a fixed asymmetry constant conventionally set to 0.8.</p>
+<p>But writing down the density means inverting
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Q</mi><annotation encoding="application/x-tex">Q</annotation></semantics></math>,
+which has no closed form. The density can be recovered numerically, one
+root-find per observation, which is how <code>gk::dgk()</code> works and
+how Rayner and MacGillivray (2002) computed maximum likelihood
+estimates. That is exactly the position SBI is built for: a likelihood
+that is either impossible or impractical to evaluate, paired with a
+simulator that is trivial. It also makes the g-and-k a useful teaching
+case, because a likelihood-based answer exists to check against if you
+want one.</p>
+<p>We will treat
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+as known (2 and 0.5) and infer the location
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
+and scale
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>
+from a small sample of observations.</p>
 </div>
 <div class="section level2">
 <h2 id="the-three-ingredients">The three ingredients<a class="anchor" aria-label="anchor" href="#the-three-ingredients"></a>
 </h2>
 <p>Every SBI problem needs a <strong>prior</strong>, a
 <strong>simulator</strong>, and an <strong>observation</strong>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedroliman.github.io/neuralsbi/">neuralsbi</a></span><span class="op">)</span>   <span class="co"># note: masks base::sample -- see below</span></span>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedroliman.github.io/neuralsbi/">neuralsbi</a></span><span class="op">)</span>   <span class="co"># note: masks base::sample(); see below</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'neuralsbi'</span></span>
 <span><span class="co">#&gt; The following object is masked from 'package:base':</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     sample</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2024</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># (1) prior over the two parameters we want to infer</span></span>
+<span><span class="co"># (1) prior over the two parameters we want to infer. B is a scale parameter</span></span>
+<span><span class="co"># and must be positive; 0.3 to 2 brackets the plausible range for this</span></span>
+<span><span class="co"># example. A is location, so it gets a wide box.</span></span>
 <span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span>, high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># (2) simulator: an (n x 2) matrix of parameters -&gt; an (n x 10) matrix of data.</span></span>
-<span><span class="co"># Each row draws 10 i.i.d. observations from the g-and-k distribution at that</span></span>
-<span><span class="co"># row's (A, B), with g = 2 and k = 0.5 fixed.</span></span>
-<span><span class="va">rgk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">A</span>, <span class="va">B</span>, <span class="va">g</span> <span class="op">=</span> <span class="fl">2</span>, <span class="va">k</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">c</span> <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="co"># (2) simulator: an (n x 2) matrix of parameters -&gt; an (n x 10) matrix of</span></span>
+<span><span class="co"># data. Each row draws 10 i.i.d. observations from the g-and-k distribution</span></span>
+<span><span class="co"># at that row's (A, B), with g = 2 and k = 0.5 fixed, then sorts them (see</span></span>
+<span><span class="co"># below for why).</span></span>
+<span><span class="va">rgk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">A</span>, <span class="va">B</span>, <span class="va">g</span> <span class="op">=</span> <span class="fl">2</span>, <span class="va">k</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">c_asym</span> <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span>  <span class="va">A</span> <span class="op">+</span> <span class="va">B</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">c</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">g</span> <span class="op">*</span> <span class="va">z</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">z</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">^</span><span class="va">k</span> <span class="op">*</span> <span class="va">z</span></span>
+<span>  <span class="va">A</span> <span class="op">+</span> <span class="va">B</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">c_asym</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">g</span> <span class="op">*</span> <span class="va">z</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">z</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">^</span><span class="va">k</span> <span class="op">*</span> <span class="va">z</span></span>
 <span><span class="op">}</span></span>
 <span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">theta</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">th</span><span class="op">)</span> <span class="fu">rgk</span><span class="op">(</span><span class="fl">10</span>, <span class="va">th</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">th</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">theta</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">th</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">rgk</span><span class="op">(</span><span class="fl">10</span>, <span class="va">th</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">th</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">simulator</span><span class="op">(</span><span class="fu"><a href="../reference/sample_prior.html">sample_prior</a></span><span class="op">(</span><span class="va">prior</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># (3) the observation: 10 measurements from a population with A = 3, B = 1</span></span>
+<span><span class="co"># (3) the observation: 10 draws from the g-and-k distribution with A = 3, B = 1</span></span>
 <span><span class="va">theta_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">3</span>, B <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">x_obs</span> <span class="op">&lt;-</span> <span class="fu">simulator</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">theta_true</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> matters more than it looks. The ten draws are
+exchangeable, so their ordering carries no information about
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛉</mi><annotation encoding="application/x-tex">\boldsymbol{\theta}</annotation></semantics></math>,
+but the density estimator does not know that and would otherwise spend
+part of its budget learning it. Sorting imposes the symmetry for free:
+for an i.i.d. sample the order statistics are sufficient, so nothing is
+lost. The general rule is to impose the symmetries you know and learn
+only the features you do not.</p>
+<p>Note what we are <em>not</em> doing: reducing the sample to summary
+statistics. ABC needed those, because it compared simulated and observed
+data through a distance threshold that fails in high dimensions. NPE
+conditions on the data directly and learns which features matter.
+Insufficient summaries are also invisible: a posterior conditioned on
+them stays perfectly calibrated, and simply comes out wider than it
+needed to be, so SBC will not warn you.</p>
 <p><code>neuralsbi</code> masks <code><a href="https://rdrr.io/r/base/sample.html" class="external-link">base::sample()</a></code> with an S3
 generic so that <code>sample(post, n)</code> can dispatch on a fitted
 posterior; <code>sample(1:10, 3)</code> still works as usual, and
 <code><a href="../reference/sample_posterior.html">sample_posterior()</a></code> is a non-generic alias if the masking
 gets in the way in a script.</p>
 <p>One more thing worth flagging up front, especially if you come from
-regression or Stan: SBI writes the <em>observed data</em> as
-<code>x</code>, the role your outcome variable <code>y</code> usually
-plays. Covariates, if you have any, are absorbed into the simulator. It
-takes a page or two to stop mentally substituting <code>y</code>.</p>
+regression or econometrics: SBI writes the <em>observed data</em> as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>,
+the role your outcome variable
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+usually plays; covariates, if you have any, are absorbed into the
+simulator. The package README shows this collision directly: its
+regression example has a covariate <code>x</code> living inside the
+simulator, a response <code>y_obs</code>, and then passes
+<code>y_obs</code> to the argument <code>x_obs</code>. Expect to
+translate for a while: SBI’s
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>
+is what a regression course calls the response. (Talts et al. and the
+Stan literature generally write the data as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>,
+so following those citations you will meet both conventions.)</p>
 </div>
 <div class="section level2">
 <h2 id="training-an-amortized-posterior-estimator">Training an amortized posterior estimator<a class="anchor" aria-label="anchor" href="#training-an-amortized-posterior-estimator"></a>
 </h2>
 <p><code><a href="../reference/npe.html">npe()</a></code> (Neural Posterior Estimation) draws parameters
 from the prior, runs the simulator, and trains a <strong>density
-estimator</strong> – here a masked autoregressive flow (Papamakarios et
-al., 2017), the package default – to approximate
-<code>p(theta | x)</code> directly from those pairs. No likelihood
-function appears anywhere in this call.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+estimator</strong>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>𝛉</mi><mo>∣</mo><mi>𝐱</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(\boldsymbol{\theta} \mid \mathbf{x})</annotation></semantics></math>,
+a flexible conditional density with neural weights
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϕ</mi><annotation encoding="application/x-tex">\phi</annotation></semantics></math>,
+to approximate the posterior. Here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>q</mi><mi>ϕ</mi></msub><annotation encoding="application/x-tex">q_\phi</annotation></semantics></math>
+is a <strong>masked autoregressive flow</strong> (Papamakarios et al.,
+2017): a standard normal pushed through a sequence of invertible
+transformations until it has the required shape, which is what lets the
+estimator both sample and evaluate its own density. It is the package
+default. No likelihood function appears anywhere in this call.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 5000 simulations for a 2-parameter posterior. If the fit below looks too</span></span>
 <span><span class="co"># wide or the calibration check is off, add simulations before reaching for a</span></span>
 <span><span class="co"># bigger network.</span></span>
@@ -229,48 +302,59 @@ function appears anywhere in this call.</p>
 <span><span class="co">#&gt;   parameters (dim)  : 2</span></span>
 <span><span class="co">#&gt;   data (dim)        : 10</span></span>
 <span><span class="co">#&gt;   simulations       : 5000</span></span>
-<span><span class="co">#&gt;   best val loss     : 0.3304</span></span>
+<span><span class="co">#&gt;   best val loss     : -0.4382</span></span>
 <span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span></code></pre></div>
+<p><code>best val loss</code> above is the average negative log density,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>𝛉</mi><mo>∣</mo><mi>𝐱</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">-\log q_\phi(\boldsymbol{\theta} \mid \mathbf{x})</annotation></semantics></math>,
+on held-out simulations. It is useful for comparing fits on the same
+problem and means nothing compared across problems.</p>
 <p>This fit is <strong>amortized</strong>: trained once, over the whole
-prior, it can be conditioned on <em>any</em> observation afterwards – no
-re-simulating, no retraining. That is the central practical payoff of
-NPE over MCMC-based approaches, which restart from scratch for every new
-data set.</p>
+prior, it can be conditioned afterwards on any observation the prior
+predictive distribution could plausibly have produced, with no
+re-simulating and no retraining. That is the central practical payoff of
+NPE over likelihood-based MCMC, which restarts from scratch for every
+new data set. The caveat matters: an observation unlike anything in
+training still returns posterior draws, and they are not to be trusted.
+That is one of the things a posterior predictive check catches, which is
+why one appears below.</p>
 </div>
 <div class="section level2">
 <h2 id="conditioning-on-the-observation">Conditioning on the observation<a class="anchor" aria-label="anchor" href="#conditioning-on-the-observation"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
 <span><span class="va">draws</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">5000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   parameter     mean        sd      q2.5       q25      q50      q75    q97.5</span></span>
-<span><span class="co">#&gt; 1         A 3.159921 0.3320365 2.5628756 2.9303117 3.136674 3.361319 3.893551</span></span>
-<span><span class="co">#&gt; 2         B 1.070528 0.3944906 0.4336798 0.7381527 1.039410 1.392737 1.810212</span></span>
+<span><span class="co">#&gt;   parameter     mean        sd      q2.5      q25      q50      q75    q97.5</span></span>
+<span><span class="co">#&gt; 1         A 3.547952 0.3502057 2.9275815 3.297965 3.529138 3.781315 4.263523</span></span>
+<span><span class="co">#&gt; 2         B 1.413960 0.3090027 0.7708583 1.203194 1.446074 1.650534 1.921025</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/intro-to-sbi-unnamed-chunk-4-1.png" alt="Pairs plot of the posterior over A and B, with the true values marked."><p class="caption">
 plot of chunk unnamed-chunk-4
 </p>
 </div>
-<p>The posterior concentrates around <code>A = 3, B = 1</code> – the
-values that generated <code>x_obs</code> – with honest uncertainty from
-only 10 observations per data set.</p>
+<p>The posterior concentrates around
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>A</mi><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">A = 3</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">B = 1</annotation></semantics></math>,
+the values that generated <code>x_obs</code>. How much to trust that
+width is the subject of the calibration check below.</p>
 </div>
 <div class="section level2">
 <h2 id="what-amortization-buys-you">What amortization buys you<a class="anchor" aria-label="anchor" href="#what-amortization-buys-you"></a>
 </h2>
 <p>Condition the <em>same</em> fit on a second, unrelated observation.
-There is no simulation and no training here – just a forward pass
-through the network already trained above.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+There is no simulation and no training here: just a forward pass through
+the network already trained above.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">theta_true2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">6</span>, B <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span></span>
 <span><span class="va">x_obs2</span>      <span class="op">&lt;-</span> <span class="fu">simulator</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">theta_true2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">draws2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs2</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws2</span>, truth <span class="op">=</span> <span class="va">theta_true2</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">draws2</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws2</span>, truth <span class="op">=</span> <span class="va">theta_true2</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/intro-to-sbi-unnamed-chunk-5-1.png" alt="Pairs plot of the posterior for a second observation, from the same fitted estimator."><p class="caption">
 plot of chunk unnamed-chunk-5
@@ -278,26 +362,32 @@ plot of chunk unnamed-chunk-5
 </div>
 <p>Reusing <code>fit</code> here is the point: an MCMC sampler would
 need to re-run its chains for <code>x_obs2</code>; the amortized
-posterior just looks up a new conditional density.</p>
+posterior just evaluates the trained estimator at the new
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>.</p>
 </div>
 <div class="section level2">
 <h2 id="checking-the-fit">Checking the fit<a class="anchor" aria-label="anchor" href="#checking-the-fit"></a>
 </h2>
-<p>A trained estimator always returns <em>something</em> – samples, a
-mean, credible intervals – whether or not the fit is any good. Checking
+<p>A trained estimator always returns <em>something</em>: samples, a
+mean, credible intervals, whether or not the fit is any good. Checking
 calibration is part of the workflow, not an optional extra.
 <strong>Simulation-based calibration (SBC)</strong> does this without
-needing a known answer: draw <code>theta</code> from the prior, simulate
-<code>x</code>, and see where the true <code>theta</code> ranks among
-posterior draws given that <code>x</code>. Calibrated posteriors put the
-truth anywhere in that ranking with equal probability, so the ranks come
-out uniform.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+needing a reference posterior to compare against. Draw
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛉</mi><annotation encoding="application/x-tex">\boldsymbol{\theta}</annotation></semantics></math>
+from the prior, simulate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>
+from it, and record where that known
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛉</mi><annotation encoding="application/x-tex">\boldsymbol{\theta}</annotation></semantics></math>
+ranks among posterior draws conditioned on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>.
+A calibrated posterior puts the truth anywhere in that ranking with
+equal probability, so the ranks come out uniform.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">200</span>, n_posterior_samples <span class="op">=</span> <span class="fl">300</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">res</span>                <span class="co"># per-parameter uniformity p-values (large = calibrated)</span></span>
 <span><span class="co">#&gt; &lt;nsbi_sbc&gt; 200 trials, 300 posterior samples each</span></span>
 <span><span class="co">#&gt;   per-parameter uniformity p-values (large = calibrated):</span></span>
-<span><span class="co">#&gt;     0.142  0.003</span></span>
+<span><span class="co">#&gt;     0.076  0.119</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span>, param <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>   <span class="co"># rank histogram for A: flat = calibrated</span></span></code></pre></div>
 <div class="figure">
@@ -305,29 +395,77 @@ out uniform.</p>
 plot of chunk unnamed-chunk-6
 </p>
 </div>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_coverage.html">plot_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>         <span class="co"># empirical vs. nominal credible-interval coverage</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/intro-to-sbi-unnamed-chunk-6-2.png" alt="SBC rank histogram and expected-coverage plot for the fit."><p class="caption">
 plot of chunk unnamed-chunk-6
 </p>
 </div>
-<p><code>A</code>’s ranks are close to flat and its coverage curve
-tracks the diagonal throughout. <code>B</code> is not quite there: its
-coverage dips modestly below the diagonal over the middle of the range –
-a nominal 65% interval covers closer to 55% – the signature of mild
-overconfidence. That is a realistic outcome for a first pass, not a
-failure: with only 10 observations per data set, scale is harder to pin
-down than location, and the fix is more simulations before reaching for
-a bigger network. <code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> covers the full
-set of checks, including what to do when a fit does not pass one.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/expected_coverage.html">expected_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>     <span class="co"># the numbers behind that plot</span></span>
+<span><span class="co">#&gt;    nominal param1 param2</span></span>
+<span><span class="co">#&gt; 1     0.05  0.025  0.060</span></span>
+<span><span class="co">#&gt; 2     0.10  0.085  0.100</span></span>
+<span><span class="co">#&gt; 3     0.15  0.120  0.135</span></span>
+<span><span class="co">#&gt; 4     0.20  0.150  0.160</span></span>
+<span><span class="co">#&gt; 5     0.25  0.185  0.195</span></span>
+<span><span class="co">#&gt; 6     0.30  0.235  0.250</span></span>
+<span><span class="co">#&gt; 7     0.35  0.300  0.280</span></span>
+<span><span class="co">#&gt; 8     0.40  0.375  0.330</span></span>
+<span><span class="co">#&gt; 9     0.45  0.430  0.390</span></span>
+<span><span class="co">#&gt; 10    0.50  0.465  0.420</span></span>
+<span><span class="co">#&gt; 11    0.55  0.495  0.455</span></span>
+<span><span class="co">#&gt; 12    0.60  0.530  0.500</span></span>
+<span><span class="co">#&gt; 13    0.65  0.585  0.555</span></span>
+<span><span class="co">#&gt; 14    0.70  0.635  0.620</span></span>
+<span><span class="co">#&gt; 15    0.75  0.685  0.690</span></span>
+<span><span class="co">#&gt; 16    0.80  0.730  0.710</span></span>
+<span><span class="co">#&gt; 17    0.85  0.790  0.750</span></span>
+<span><span class="co">#&gt; 18    0.90  0.835  0.835</span></span>
+<span><span class="co">#&gt; 19    0.95  0.910  0.880</span></span></code></pre></div>
+<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>’s
+p-value is 0.076, just above the conventional 0.05 cutoff;
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>’s
+is 0.119, comfortably above it. Neither is a clean pass, and neither is
+a clear failure. Both coverage curves sit modestly below the diagonal
+through the middle of the range: a nominal 65% interval covers about 58%
+of the time for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
+and 56% for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>,
+the signature of mild overconfidence in both parameters. That is a
+realistic outcome for a first pass at ten draws per data set; the
+standard remedy is more simulations before reaching for a bigger
+network. <code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> covers the full set of
+checks, including what to do when a fit does not pass one.</p>
+</div>
+<div class="section level2">
+<h2 id="posterior-predictive-check">Posterior predictive check<a class="anchor" aria-label="anchor" href="#posterior-predictive-check"></a>
+</h2>
+<p>The checks so far never look at <code>x_obs</code> itself. A
+<strong>posterior predictive check</strong> does: push posterior draws
+back through the simulator and compare the simulated data against the
+observation that produced the fit.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior_predictive.html">posterior_predictive</a></span><span class="op">(</span><span class="va">post</span>, <span class="va">simulator</span>, n <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive</a></span><span class="op">(</span><span class="va">pred</span>, <span class="va">x_obs</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/intro-to-sbi-unnamed-chunk-7-1.png" alt="Posterior predictive check: simulated data from posterior draws, with the observed value marked."><p class="caption">
+plot of chunk unnamed-chunk-7
+</p>
+</div>
+<p>This one cannot fail interestingly: <code>x_obs</code> came from the
+simulator itself, so it is guaranteed to look typical of the posterior
+predictive distribution. With real data it can fail, and that is when it
+earns its place, flagging a model that does not describe the data no
+matter how the parameters are set, which SBC cannot detect on its
+own.</p>
 </div>
 <div class="section level2">
 <h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
 </h2>
-<p>This tutorial covered the minimum: prior, simulator, observation, an
-amortized fit, and one calibration check. It deliberately skipped almost
-everything else –</p>
+<p>This tutorial deliberately skipped almost everything else:</p>
 <ul>
 <li>
 <code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code> walks the same workflow again
@@ -355,10 +493,10 @@ introduced the approach NPE descends from. Talts et al. (2018), <a href="https:
 algorithms with simulation-based calibration”</a>, is the reference for
 the SBC check used above. Lueckmann et al. (2021), <a href="https://arxiv.org/abs/2101.04653" class="external-link">“Benchmarking simulation-based
 inference”</a>, compares NPE against the other neural SBI algorithms
-this package does not implement (NLE, NRE) – useful context for where
-<code>neuralsbi</code> sits in the broader landscape. Rayner &amp;
-MacGillivray (2002) and Prangle (2020) – the latter’s <a href="https://journal.r-project.org/articles/RJ-2020-010/" class="external-link"><code>gk</code></a>
-package – cover the g-and-k distribution itself.</p>
+this package does not implement (NLE, NRE). That is useful context for
+where <code>neuralsbi</code> sits in the broader landscape. Rayner &amp;
+MacGillivray (2002) and Prangle (2020), via the latter’s <a href="https://journal.r-project.org/articles/RJ-2020-010/" class="external-link"><code>gk</code></a>
+package, cover the g-and-k distribution itself.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
