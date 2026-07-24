@@ -292,9 +292,7 @@ transformations until it has the required shape, which is what lets the
 estimator both sample and evaluate its own density. It is the package
 default. No likelihood function appears anywhere in this call.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 5000 simulations for a 2-parameter posterior. If the fit below looks too</span></span>
-<span><span class="co"># wide or the calibration check is off, add simulations before reaching for a</span></span>
-<span><span class="co"># bigger network.</span></span>
+<code class="sourceCode R"><span><span class="co"># 5000 simulations for a 2-parameter posterior. If the fit below looks too wide or the calibration check is off, add simulations before reaching for a bigger network.</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">5000</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
 <span><span class="co">#&gt; &lt;nsbi_npe&gt; Neural Posterior Estimation fit</span></span>

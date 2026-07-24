@@ -140,9 +140,7 @@ default. No likelihood function appears anywhere in this call.
 
 ``` r
 
-# 5000 simulations for a 2-parameter posterior. If the fit below looks too
-# wide or the calibration check is off, add simulations before reaching for a
-# bigger network.
+# 5000 simulations for a 2-parameter posterior. If the fit below looks too wide or the calibration check is off, add simulations before reaching for a bigger network.
 fit <- npe(prior, simulator, n_simulations = 5000, seed = 1)
 fit
 #> <nsbi_npe> Neural Posterior Estimation fit

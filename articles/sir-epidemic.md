@@ -172,8 +172,7 @@ unimodal posterior.
 
 prior <- prior_uniform(low = c(0.5, 0.2), high = c(5, 3))   # same as pomp's dprior
 
-# 8000 simulations to train a 2-parameter posterior. If it comes out too wide,
-# add simulations before enlarging the network.
+# 8000 simulations to train a 2-parameter posterior. If it comes out too wide, add simulations before enlarging the network.
 fit <- npe(prior, sir_simulator, n_simulations = 8000,
            density_estimator = "mdn", max_epochs = 400,
            n_restarts = 2, seed = 1)

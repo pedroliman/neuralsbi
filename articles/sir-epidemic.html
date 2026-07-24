@@ -297,8 +297,7 @@ posterior.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.2</span><span class="op">)</span>, high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>   <span class="co"># same as pomp's dprior</span></span>
 <span></span>
-<span><span class="co"># 8000 simulations to train a 2-parameter posterior. If it comes out too wide,</span></span>
-<span><span class="co"># add simulations before enlarging the network.</span></span>
+<span><span class="co"># 8000 simulations to train a 2-parameter posterior. If it comes out too wide, add simulations before enlarging the network.</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">sir_simulator</span>, n_simulations <span class="op">=</span> <span class="fl">8000</span>,</span>
 <span>           density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, max_epochs <span class="op">=</span> <span class="fl">400</span>,</span>
 <span>           n_restarts <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
