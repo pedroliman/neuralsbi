@@ -53,6 +53,26 @@ torch_available <- function() {
   requireNamespace("torch", quietly = TRUE) && isTRUE(torch::torch_is_installed())
 }
 
+#' Check that ggplot2 (and, for [pairplot()], GGally) are available
+#' @keywords internal
+require_ggplot2 <- function(ggally = FALSE) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop(
+      "This plotting function needs the 'ggplot2' package.\n",
+      "Install it with install.packages('ggplot2').",
+      call. = FALSE
+    )
+  }
+  if (ggally && !requireNamespace("GGally", quietly = TRUE)) {
+    stop(
+      "pairplot() needs the 'GGally' package (for ggpairs()).\n",
+      "Install it with install.packages('GGally').",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
 #' @keywords internal
 verbose_cat <- function(verbose, ...) {
   if (isTRUE(verbose)) cat(...)
