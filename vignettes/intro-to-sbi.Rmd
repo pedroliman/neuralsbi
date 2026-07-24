@@ -11,16 +11,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
-# This vignette is precomputed: see vignettes/precompute.R. Edit the .Rmd.orig,
-# re-run the precompute script, and commit the regenerated .Rmd and figures.
-knitr::opts_chunk$set(
-  collapse = TRUE, comment = "#>", error = FALSE,
-  fig.path = "figures/intro-to-sbi-", fig.width = 5, fig.height = 4,
-  dpi = 96, fig.retina = NULL
-)
-set.seed(1)
-```
+
 
 This is the first in a short series of tutorials on neural simulation-based
 inference (SBI) in R. It covers the basics: what problem SBI solves, the three
@@ -62,8 +53,14 @@ scale `B` from a small sample of observations.
 
 Every SBI problem needs a **prior**, a **simulator**, and an **observation**.
 
-```{r}
+
+``` r
 library(neuralsbi)   # note: masks base::sample -- see below
+#> 
+#> Attaching package: 'neuralsbi'
+#> The following object is masked from 'package:base':
+#> 
+#>     sample
 
 # (1) prior over the two parameters we want to infer
 prior <- prior_uniform(low = c(0, 0.3), high = c(10, 2))
@@ -102,12 +99,20 @@ autoregressive flow (Papamakarios et al., 2017), the package default -- to
 approximate `p(theta | x)` directly from those pairs. No likelihood function
 appears anywhere in this call.
 
-```{r}
+
+``` r
 # 5000 simulations for a 2-parameter posterior. If the fit below looks too
 # wide or the calibration check is off, add simulations before reaching for a
 # bigger network.
 fit <- npe(prior, simulator, n_simulations = 5000, seed = 1)
 fit
+#> <nsbi_npe> Neural Posterior Estimation fit
+#>   density estimator : maf
+#>   parameters (dim)  : 2
+#>   data (dim)        : 10
+#>   simulations       : 5000
+#>   best val loss     : 0.3304
+#>   -> build a posterior with posterior(fit, x_obs = ...)
 ```
 
 This fit is **amortized**: trained once, over the whole prior, it can be
@@ -117,14 +122,23 @@ approaches, which restart from scratch for every new data set.
 
 ## Conditioning on the observation
 
-```{r fig.alt = "Pairs plot of the posterior over A and B, with the true values marked."}
+
+``` r
 post   <- posterior(fit, x_obs = x_obs)
 draws  <- sample(post, 5000)
 colnames(draws) <- c("A", "B")
 
 summary(draws)
+#>   parameter     mean        sd      q2.5       q25      q50      q75    q97.5
+#> 1         A 3.159921 0.3320365 2.5628756 2.9303117 3.136674 3.361319 3.893551
+#> 2         B 1.070528 0.3944906 0.4336798 0.7381527 1.039410 1.392737 1.810212
 pairplot(draws, truth = theta_true)
 ```
+
+<div class="figure">
+<img src="figures/intro-to-sbi-unnamed-chunk-4-1.png" alt="Pairs plot of the posterior over A and B, with the true values marked."  />
+<p class="caption">plot of chunk unnamed-chunk-4</p>
+</div>
 
 The posterior concentrates around `A = 3, B = 1` -- the values that generated
 `x_obs` -- with honest uncertainty from only 10 observations per data set.
@@ -135,13 +149,19 @@ Condition the *same* fit on a second, unrelated observation. There is no
 simulation and no training here -- just a forward pass through the network
 already trained above.
 
-```{r fig.alt = "Pairs plot of the posterior for a second observation, from the same fitted estimator."}
+
+``` r
 theta_true2 <- c(A = 6, B = 0.6)
 x_obs2      <- simulator(rbind(theta_true2))
 
 draws2 <- sample(posterior(fit, x_obs = x_obs2), 5000)
 pairplot(draws2, truth = theta_true2, labels = c("A", "B"))
 ```
+
+<div class="figure">
+<img src="figures/intro-to-sbi-unnamed-chunk-5-1.png" alt="Pairs plot of the posterior for a second observation, from the same fitted estimator."  />
+<p class="caption">plot of chunk unnamed-chunk-5</p>
+</div>
 
 Reusing `fit` here is the point: an MCMC sampler would need to re-run its
 chains for `x_obs2`; the amortized posterior just looks up a new conditional
@@ -157,13 +177,30 @@ prior, simulate `x`, and see where the true `theta` ranks among posterior
 draws given that `x`. Calibrated posteriors put the truth anywhere in that
 ranking with equal probability, so the ranks come out uniform.
 
-```{r fig.alt = "SBC rank histogram and expected-coverage plot for the fit."}
+
+``` r
 res <- sbc(fit, simulator, n_sbc = 200, n_posterior_samples = 300, seed = 2)
 res                # per-parameter uniformity p-values (large = calibrated)
+#> <nsbi_sbc> 200 trials, 300 posterior samples each
+#>   per-parameter uniformity p-values (large = calibrated):
+#>     0.142  0.003
 
 plot_sbc(res, param = 1)   # rank histogram for A: flat = calibrated
+```
+
+<div class="figure">
+<img src="figures/intro-to-sbi-unnamed-chunk-6-1.png" alt="SBC rank histogram and expected-coverage plot for the fit."  />
+<p class="caption">plot of chunk unnamed-chunk-6</p>
+</div>
+
+``` r
 plot_coverage(res)         # empirical vs. nominal credible-interval coverage
 ```
+
+<div class="figure">
+<img src="figures/intro-to-sbi-unnamed-chunk-6-2.png" alt="SBC rank histogram and expected-coverage plot for the fit."  />
+<p class="caption">plot of chunk unnamed-chunk-6</p>
+</div>
 
 `A`'s ranks are close to flat and its coverage curve tracks the diagonal
 throughout. `B` is not quite there: its coverage dips modestly below the

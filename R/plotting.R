@@ -25,7 +25,7 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
     labels <- colnames(X) %||% paste0("theta[", seq_len(d), "]")
   }
   colnames(X) <- labels
-  df <- as.data.frame(X)
+  df <- as.data.frame(X, check.names = FALSE)
 
   lims <- NULL
   if (!is.null(limits)) {
@@ -36,7 +36,8 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
   }
   truth_df <- NULL
   if (!is.null(truth)) {
-    truth_df <- as.data.frame(as.list(stats::setNames(as.numeric(truth), labels)))
+    truth_df <- as.data.frame(as.list(stats::setNames(as.numeric(truth), labels)),
+                              check.names = FALSE)
   }
 
   lower_fn <- function(data, mapping, ...) {

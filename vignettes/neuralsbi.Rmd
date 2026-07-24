@@ -157,17 +157,17 @@ fit_mdn
 #>   parameters (dim)  : 2
 #>   data (dim)        : 2
 #>   simulations       : 2000
-#>   best val loss     : 1.2668
+#>   best val loss     : 1.2831
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 
 # on this Gaussian model the MDN matches the exact linear_gaussian posterior
 draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 2000)
 rbind(analytic = mu, mdn = colMeans(draws_mdn))
-#>               [,1]      [,2]
-#> analytic 0.8000000 -0.400000
-#> mdn      0.8304641 -0.368187
+#>               [,1]       [,2]
+#> analytic 0.8000000 -0.4000000
+#> mdn      0.8476796 -0.3540663
 c2st(draws_mdn, analytic_draws)$accuracy
-#> [1] 0.526
+#> [1] 0.535
 ```
 
 ## Non-Gaussian posteriors
