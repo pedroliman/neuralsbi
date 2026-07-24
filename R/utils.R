@@ -2,8 +2,11 @@
 "_PACKAGE"
 
 # `self` is injected by torch::nn_module() inside initialize()/forward();
-# declare it to silence a spurious "no visible binding" NOTE.
-utils::globalVariables("self")
+# `.data` is rlang/ggplot2's tidy-eval pronoun, used inside aes() in
+# plotting.R. Declare both to silence spurious "no visible binding" NOTEs.
+# ggplot2 is a Suggests, not an Imports, so this -- not @importFrom -- is the
+# dependency-safe way to quiet the check.
+utils::globalVariables(c("self", ".data"))
 
 #' Coerce parameters/data to a numeric matrix with a known column count
 #' @keywords internal
