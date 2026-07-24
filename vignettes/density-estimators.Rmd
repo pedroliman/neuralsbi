@@ -13,35 +13,16 @@ vignette: >
 
 
 
-`npe()` approximates the posterior with a *conditional density estimator*: a
-model of `p(theta | x)` trained on simulated `(theta, x)` pairs. The
-`density_estimator` argument picks which one, and the choice matters most when
-the posterior is non-Gaussian. This vignette describes the four options and
-when each is the right choice.
+`npe()` approximates the posterior with a *conditional density estimator*: a model of `p(theta | x)` trained on simulated `(theta, x)` pairs. The `density_estimator` argument picks which one, and the choice matters most when the posterior is non-Gaussian. This vignette describes the four options and when each is the right choice.
 
 ## The four estimators
 
-- `"linear_gaussian"` — a closed-form conditional Gaussian fit by linear
-  regression. No neural network and no `torch`. It is *exact* when the true
-  posterior is Gaussian in the parameters, which makes it both a fast baseline
-  and a sanity check for the neural estimators.
-- `"mdn"` — a mixture density network: a small neural network
-  that maps `x` to the weights, means, and covariances of a Gaussian mixture.
-  Mixtures can represent multimodal and skewed posteriors, and training is
-  quick.
-- `"maf"` (the default) — a masked autoregressive flow (Papamakarios et al.,
-  2017): builds the posterior density from a sequence of invertible
-  transformations of a Gaussian. More flexible than a mixture when the
-  parameters have strong nonlinear dependence. This is also the default in
-  Python `sbi`.
-- `"nsf"` — a neural spline flow (Durkan et al., 2019): a flow whose
-  transformations are monotonic splines. The most flexible of the three, at
-  somewhat higher training cost.
+- `"linear_gaussian"` — a closed-form conditional Gaussian fit by linear regression. No neural network and no `torch`. It is *exact* when the true posterior is Gaussian in the parameters, which makes it both a fast baseline and a sanity check for the neural estimators.
+- `"mdn"` — a mixture density network: a small neural network that maps `x` to the weights, means, and covariances of a Gaussian mixture. Mixtures can represent multimodal and skewed posteriors, and training is quick.
+- `"maf"` (the default) — a masked autoregressive flow (Papamakarios et al., 2017): builds the posterior density from a sequence of invertible transformations of a Gaussian. More flexible than a mixture when the parameters have strong nonlinear dependence. This is also the default in Python `sbi`.
+- `"nsf"` — a neural spline flow (Durkan et al., 2019): a flow whose transformations are monotonic splines. The most flexible of the three, at somewhat higher training cost.
 
-All three neural estimators need the `torch` back end
-(`install.packages("torch"); torch::install_torch()`) and share one training
-loop, so the training arguments to `npe()` — `max_epochs`, `patience`,
-`n_restarts`, and so on — mean the same thing whichever you pick.
+All three neural estimators need the `torch` back end (`install.packages("torch"); torch::install_torch()`) and share one training loop, so the training arguments to `npe()` — `max_epochs`, `patience`, `n_restarts`, and so on — mean the same thing whichever you pick.
 
 ## A posterior no Gaussian can fit
 
@@ -133,20 +114,9 @@ c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
 #> [1] 0.5025
 ```
 
-That number is a trap worth understanding. `c2st()` trains a *linear*
-classifier, so it separates samples by their mean and covariance alone. The
-two moons are symmetric about the origin — the same centre and roughly the
-same spread as the Gaussian blob — so no straight decision boundary can tell
-the two sets apart, even though one is bimodal and the other is not. The
-pairplots above show exactly the difference the score misses. The lesson: a
-two-sample score is only as sharp as its classifier, and a linear one is blind
-to multimodality. For that, trust the picture, or a calibration check
-(`vignette("diagnostics")`).
+That number is a trap worth understanding. `c2st()` trains a *linear* classifier, so it separates samples by their mean and covariance alone. The two moons are symmetric about the origin — the same centre and roughly the same spread as the Gaussian blob — so no straight decision boundary can tell the two sets apart, even though one is bimodal and the other is not. The pairplots above show exactly the difference the score misses. The lesson: a two-sample score is only as sharp as its classifier, and a linear one is blind to multimodality. For that, trust the picture, or a calibration check (`vignette("diagnostics")`).
 
-When two posteriors differ in their mean or covariance — as an estimated and
-an exact posterior do for `task_gaussian_linear()` — the linear classifier
-detects the gap well, and `c2st()` is the right tool. That is how the
-package's own accuracy tests score estimators against analytic references.
+When two posteriors differ in their mean or covariance — as an estimated and an exact posterior do for `task_gaussian_linear()` — the linear classifier detects the gap well, and `c2st()` is the right tool. That is how the package's own accuracy tests score estimators against analytic references.
 
 ## Adjusting flexibility
 
@@ -166,13 +136,7 @@ helps more than enlarging the network.
 
 ## Practical guidance
 
-- The default `"maf"` matches Python `sbi` and handles strong nonlinear
-  dependence between parameters. `"mdn"` trains a little faster and can
-  represent multiple modes.
-- If the posterior has sharp features that the MAF or MDN smooth over, switch
-  to `"nsf"`.
-- Use `"linear_gaussian"` when `torch` is unavailable, when you want a
-  near-instant baseline, or when the model really is linear-Gaussian — then it
-  is exact.
-- Whatever you choose, check it. `vignette("diagnostics")` shows how to verify
-  a fitted posterior with calibration and predictive checks.
+- The default `"maf"` matches Python `sbi` and handles strong nonlinear dependence between parameters. `"mdn"` trains a little faster and can represent multiple modes.
+- If the posterior has sharp features that the MAF or MDN smooth over, switch to `"nsf"`.
+- Use `"linear_gaussian"` when `torch` is unavailable, when you want a near-instant baseline, or when the model really is linear-Gaussian — then it is exact.
+- Whatever you choose, check it. `vignette("diagnostics")` shows how to verify a fitted posterior with calibration and predictive checks.
