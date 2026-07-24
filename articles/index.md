@@ -30,9 +30,10 @@
   (SBC), expected coverage, TARP, and posterior predictive checks before
   you trust its credible intervals.
 
-- [Case study: inferring epidemic parameters
-  (SIR)](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md):
+- [neuralsbi and pomp: two routes to an SIR
+  posterior](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md):
 
-  A worked simulation-based inference case study in R: recover the
-  transmission and recovery rates of a stochastic SIR epidemic model
-  from a noisy incidence curve, with no tractable likelihood.
+  A side-by-side comparison on a stochastic SIR epidemic: infer the
+  transmission and recovery rates with pomp’s particle-filter MCMC and
+  with neuralsbi’s neural posterior estimation, and check whether the
+  two posteriors agree.
