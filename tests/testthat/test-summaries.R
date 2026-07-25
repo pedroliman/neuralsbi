@@ -39,6 +39,7 @@ test_that("summary of a fit returns training info invisibly", {
 })
 
 test_that("plot_coverage runs on an sbc result and returns coverage", {
+  skip_if_no_ggplot2()
   fit <- fit_lg()
   simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.5),
                                               nrow = nrow(theta))
