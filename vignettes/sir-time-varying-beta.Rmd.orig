@@ -31,9 +31,9 @@ behavior change, and depleting susceptibles all move the transmission rate
 over the course of an outbreak. This vignette lets \(\beta\) vary with time,
 \(\beta(t)\), and asks the question public-health teams actually care about:
 how did the **effective reproduction number**
-\(R(t) = \beta(t) / \gamma\) evolve? We answer it for all 50 US states plus
-Washington, DC, over the first 120 days of the SARS-CoV-2 pandemic
-(2020-01-21 to 2020-05-19), training **one** amortized posterior and
+\(R_e(t) = \beta(t) S(t) / (N \gamma)\) evolve? We answer it for all 50 US
+states plus Washington, DC, over the first 120 days of the SARS-CoV-2
+pandemic (2020-01-21 to 2020-05-19), training **one** amortized posterior and
 conditioning it on each state's reported-case curve in turn.
 
 Two modeling questions have to be answered before any of that: how many
@@ -215,53 +215,17 @@ abline(v = start_date + knot_days - 1, col = "firebrick", lty = 2, lwd = 2)
 
 ## The model: a stochastic SIR with a piecewise-constant \(\log \beta(t)\)
 
-The dynamics are the same discrete-time, binomial-transition SIR used in
-`vignette("sir-epidemic")` — susceptible, infected, and recovered counts
-update via `rbinom()`, so the process is genuinely stochastic and there is no
-tractable likelihood for the reported-case curve. What is new: \(\beta\) is no
-longer a scalar. Between each pair of adjacent breakpoints, \(\beta(t)\) is
-**held constant** at a free parameter \(\beta_k\) — a flat contact rate for
-the duration of a regime. At the 3 interior breakpoints the level either side
-blends into the other over a smooth, roughly one-week **logistic** transition
-rather than switching in a single day: behavior change and policy roll-out
-(school closures, stay-at-home orders) unfold over days, not instantaneously,
-and a hard step would force that transition through whatever handful of days
-straddle the breakpoint.
+The dynamics are the same discrete-time, binomial-transition SIR used in `vignette("sir-epidemic")` — susceptible, infected, and recovered counts update via `rbinom()`, so the process is genuinely stochastic and there is no tractable likelihood for the reported-case curve. Susceptibles deplete: every infection removes someone from \(S\), and that feedback is what separates the *effective* reproduction number from the contact rate. Three things are new relative to the constant-\(\beta\) vignette.
 
-The breakpoint days themselves also get **wiggle room per state**: the
-national BIC search picks a shared, nominal set of breakpoints, but
-community transmission did not take hold, and stay-at-home orders did not
-land, on the same calendar day in every state. Rather than move each
-breakpoint independently -- which risks two adjacent breakpoints crossing,
-collapsing a regime to zero width or reversing its order -- we put a prior
-on each **regime's duration** \(d_k\) (how many days segment \(k\) lasts),
-not on the breakpoints' absolute positions. Each \(d_k\) is log-normal around
-its nominal (national) duration, and the 4 sampled durations are rescaled to
-sum to exactly the 119 days between day 1 and day 120. Breakpoints are then
-the cumulative sums of those durations, which are positive by construction,
-so the regimes tile the window in order for every draw -- collision is
-impossible rather than merely unlikely. The recovery rate \(\gamma\) is
-**fixed**, not inferred: with only case counts (no recovery or serology data)
-the generation interval is not separately identifiable from \(\beta(t)\), so
-we set \(1/\gamma = 7\) days, in line with early estimates of the COVID-19
-serial interval (Li et al. 2020, *NEJM*). \(R(t) = \beta(t)/\gamma\) is
-therefore the *basic* reproduction ratio implied by the contact rate at time
-\(t\); with cumulative incidence staying well under a few percent of any
-state's population over 120 days, the susceptible-depletion correction
-\(S(t)/N\) that separates \(R_0\) from the *effective* reproduction number
-stays close to 1 and we do not model it separately.
+**\(\beta\) is piecewise constant in time.** Between each pair of adjacent breakpoints \(\beta(t)\) is held at a free parameter \(\beta_k\) — a flat contact rate for the duration of a regime. At the 3 interior breakpoints the level either side blends into the other over a smooth, roughly one-week **logistic** transition rather than switching in a single day: behavior change and policy roll-out (school closures, stay-at-home orders) unfold over days, not instantaneously.
 
-Two more pieces reflect real surveillance data rather than the clean
-simulated curves of the earlier vignette:
+The breakpoint days get **wiggle room per state**: the national BIC search picks a shared, nominal set of breakpoints, but community transmission did not take hold, and stay-at-home orders did not land, on the same calendar day everywhere. Rather than move each breakpoint independently — which risks two adjacent breakpoints crossing — we put a prior on each **regime's duration** \(d_k\) and take the breakpoints as cumulative sums, so the regimes tile the window in order for every draw. Only 3 of the 4 durations are free: the simulator rescales the durations to span exactly the 119 days between day 1 and day 120, so their common scale does nothing. Parameterizing the free directions directly (three log-ratios against the last regime, which acts as the reference) keeps every coordinate of \(\theta\) identified. A fourth coordinate would be pure noise for the flow to model.
 
-* **Ascertainment.** Only a fraction \(\rho\) of infections became a
-  confirmed, reported case in spring 2020, when testing capacity was scarce.
-  \(\rho\) is inferred jointly with \(\beta(t)\) rather than fixed.
-* **Population size \(N\)** is a *known* covariate, not a free parameter: the
-  simulator draws it from a distribution spanning the range of actual state
-  populations, and the density estimator conditions on it directly (as
-  \(\log N\), passed alongside the case-count data) so that one trained
-  network generalizes from Wyoming to California.
+**The epidemic starts when it starts.** The single most consequential change from a naive version of this model: the day the virus arrives, \(t_0\), and the number of infections \(I_0\) that arrive with it are **inferred**, not fixed. Seeding every state with a couple of infections on 2020-01-21 gets the epidemiology wrong twice over. It is wrong about the world — Washington's outbreak was seeded in January, West Virginia did not report a case until March 17 — and it is wrong about what a two-infection seed does to a 120-day simulation. A supercritical branching process started from two individuals has a substantial extinction probability and, conditional on survival, a final size spread over orders of magnitude; the *timing* of takeoff then wanders by weeks. Run that forward and the posterior predictive is a smear whose mean sits far above any actual epidemic. Inferring \((t_0, I_0)\) pins the phase with a parameter rather than leaving it to luck, and it is the more faithful model besides: states were seeded by many independent importations, not by a single index case.
+
+**Ascertainment is pinned by seroprevalence, not left free.** Only a fraction \(\rho\) of infections became a confirmed case in spring 2020. \(\rho\) is inferred, but with an *informative* prior, and that is not optional. Reported case counts identify the product \(\rho \times \text{incidence}\), not either factor: a small epidemic that is well ascertained and an enormous one that is barely ascertained produce the same curve. Left to itself, the fit takes the second branch — it buys a broad, flat-topped epidemic peak cheaply by burning through the susceptible pool, which requires \(\rho\) in the low thousandths and an attack rate near 1. Serological surveys settle it from outside the case data: CDC's large-scale commercial-lab study put spring-2020 infections at roughly 6 to 24 times reported cases across 10 US sites (Havers et al. 2020, *JAMA Internal Medicine*), i.e. \(\rho\) between about 0.04 and 0.17. We encode that as a logit-normal prior centered at 0.10 with 95% mass in \([0.05, 0.19]\).
+
+Finally, **population size \(N\)** is a *known* covariate, not a free parameter: the simulator draws it from a distribution spanning the range of actual state populations, and the density estimator conditions on it directly (as \(\log N\), passed alongside the case-count data) so that one trained network generalizes from Wyoming to California. The recovery rate \(\gamma\) is **fixed**: with only case counts (no recovery or serology time series) the generation interval is not separately identifiable from \(\beta(t)\), so we set \(1/\gamma = 7\) days, in line with early estimates of the COVID-19 serial interval (Li et al. 2020, *NEJM*).
 
 ```{r}
 library(neuralsbi)
@@ -272,162 +236,190 @@ nominal_dur <- diff(knot_days)           # nominal (national) duration of each r
 total_days <- sum(nominal_dur)           # 119: span covered day 1 -> day 120
 transition_days <- 7                     # ~1-week logistic transition per breakpoint
 transition_scale <- transition_days / 4
-dur_log_sd <- 0.35                       # per-state wiggle room on each regime's duration (log scale)
 gamma_fixed <- 1 / 7
+t_grid <- seq_len(days)
+bin_idx <- rep(seq_len(n_bins), each = bin_len)
 
 param_names <- c(paste0("beta[", seq_len(n_segments), "]"),
-                 paste0("d[", seq_len(n_segments), "]"), "rho")
+                 paste0("d[", seq_len(n_segments - 1L), "]"),
+                 "t[0]", "I[0]", "rho")
 prior <- prior_normal(
-  mean = stats::setNames(c(rep(log(0.3), n_segments), log(nominal_dur), qlogis(0.1)),
-                         param_names),
-  sd   = c(rep(0.5, n_segments), rep(dur_log_sd, n_segments), 1)
+  mean = stats::setNames(
+    c(rep(log(0.28), n_segments),                                   # R = beta/gamma ~ 2
+      log(nominal_dur[-n_segments] / nominal_dur[n_segments]),      # regime durations
+      qlogis(35 / days),                                            # introduction day
+      log(30),                                                      # infections seeded
+      qlogis(0.10)),                                                # ascertainment
+    param_names),
+  sd = c(rep(0.6, n_segments), rep(0.35, n_segments - 1L), 1.1, 1.2, 0.4)
 )
+```
 
-sir_rt_simulator <- function(theta, N_fixed = NULL) {
-  theta <- matrix(as.numeric(theta), ncol = 2L * n_segments + 1L)
+\(\theta\) is 10-dimensional and unconstrained on \(\mathbb{R}^{10}\) — the log/logit transforms mean a single Gaussian prior with no truncated support, so the posterior needs no rejection sampling for leakage. Naming `prior`'s `mean` vector carries those names through every posterior draw, SBC result, and diagnostic plot below.
+
+The prior on each \(\log \beta_k\) is centered on \(R = \beta/\gamma = 2\) with 95% mass between 0.6 and 6.4. That is deliberately wide in both directions: a regime may be an unmitigated wild-type epidemic (\(R \approx 3\)) or a suppressed one (\(R \approx 0.8\)), and which is which is exactly what we are asking the data. The introduction day has 95% prior mass between roughly 2020-01-26 and 2020-04-20, and the seed size between about 3 and 300 infections.
+
+```{r}
+sir_rt_simulator <- function(theta, N_fixed = NULL, full = FALSE) {
+  theta <- matrix(as.numeric(theta), ncol = 2L * n_segments + 2L)
   n <- nrow(theta)
   log_beta_segments <- theta[, seq_len(n_segments), drop = FALSE]
-  log_dur <- theta[, n_segments + seq_len(n_segments), drop = FALSE]
-  rho <- plogis(theta[, 2L * n_segments + 1])
+  log_dur_ratio <- theta[, n_segments + seq_len(n_segments - 1L), drop = FALSE]
+  t0 <- 1 + (days - 1) * plogis(theta[, 2L * n_segments])
+  seed_mean <- exp(theta[, 2L * n_segments + 1L])
+  rho <- plogis(theta[, 2L * n_segments + 2L])
 
   # population: a known covariate, drawn to span real US state sizes during
   # training and fixed to the observed state's population at inference time
   N <- if (is.null(N_fixed)) exp(stats::runif(n, log(5e5), log(4e7))) else rep(N_fixed, n)
 
-  # regime durations: exp() keeps them positive, then rescaling each draw's 4
-  # durations to sum to total_days pins the breakpoints to the same 119-day
-  # span the data cover. Their cumulative sum is therefore always increasing
-  # -- breakpoints cannot collide or cross for any draw -- while the prior
-  # on log_dur still lets each regime run a little longer or shorter, and
-  # start a little earlier or later, than the national placement.
-  dur <- exp(log_dur)
-  dur <- dur / rowSums(dur) * total_days                    # n x n_segments, rows sum to total_days
-  tau <- knot_days[1] + t(apply(dur, 1, cumsum))[, seq_len(n_segments - 1), drop = FALSE]
+  # regime durations from 3 free log-ratios (the last regime is the reference),
+  # rescaled so the 4 regimes tile the 119-day window exactly. Their cumulative
+  # sum is increasing by construction, so breakpoints cannot collide or cross.
+  w <- cbind(exp(log_dur_ratio), 1)
+  dur <- w / rowSums(w) * total_days
+  tau <- knot_days[1] + t(apply(dur, 1, cumsum))[, seq_len(n_segments - 1L), drop = FALSE]
 
-  t_grid <- seq_len(days)
   w_ext <- c(list(matrix(1, n, days)),
-            lapply(seq_len(n_segments - 1), function(k) {
-              outer(tau[, k], t_grid, function(t0, t) plogis((t - t0) / transition_scale))
-            }),
-            list(matrix(0, n, days)))
-  log_beta_t <- Reduce(`+`, lapply(seq_len(n_segments), function(j) {
+             lapply(seq_len(n_segments - 1L), function(k) {
+               outer(tau[, k], t_grid, function(a, t) plogis((t - a) / transition_scale))
+             }),
+             list(matrix(0, n, days)))
+  beta_t <- exp(Reduce(`+`, lapply(seq_len(n_segments), function(j) {
     (w_ext[[j]] - w_ext[[j + 1]]) * log_beta_segments[, j]
-  }))
-  beta_t <- exp(log_beta_t)   # n x days
+  })))
 
-  I0 <- 1 + stats::rpois(n, 1.5)           # a handful of independent introductions
-  S <- N - I0; I <- I0; R <- rep(0, n)
-  new_daily <- matrix(0, n, days)
+  S <- N; I <- rep(0, n); seeded <- rep(FALSE, n)
+  incidence <- matrix(0, n, days); S_frac <- matrix(0, n, days)
   n_sub <- 2L; dt <- 1 / n_sub
-  for (t in seq_len(days)) {
-    H <- rep(0, n)
-    beta <- beta_t[, t]
+  p_rec <- 1 - exp(-gamma_fixed * dt)
+  for (t in t_grid) {
+    fresh <- !seeded & (t >= t0)                 # the state's introduction
+    if (any(fresh)) {
+      s0 <- pmin(stats::rpois(sum(fresh), seed_mean[fresh]), S[fresh])
+      I[fresh] <- I[fresh] + s0
+      S[fresh] <- S[fresh] - s0
+      seeded[fresh] <- TRUE
+    }
+    H <- rep(0, n); beta <- beta_t[, t]
     for (s in seq_len(n_sub)) {
       p_inf <- pmin(pmax(1 - exp(-beta * I / N * dt), 0), 1)
-      p_rec <- pmin(pmax(1 - exp(-gamma_fixed * dt), 0), 1)
       dN_SI <- stats::rbinom(n, pmax(round(S), 0), p_inf)
       dN_IR <- stats::rbinom(n, pmax(round(I), 0), p_rec)
-      S <- S - dN_SI; I <- I + dN_SI - dN_IR; R <- R + dN_IR
+      S <- S - dN_SI; I <- I + dN_SI - dN_IR    # susceptibles deplete
       H <- H + dN_SI
     }
-    new_daily[, t] <- stats::rbinom(n, pmax(round(H), 0), rho)
+    incidence[, t] <- H
+    S_frac[, t] <- S / N
   }
-
-  bin <- rep(seq_len(n_bins), each = bin_len)
-  x_bins <- t(apply(new_daily, 1, function(row) tapply(row, bin, sum)))
-  cbind(log(N), log1p(x_bins))   # log(N) + 15 binned, log1p-compressed case counts
+  reported <- matrix(stats::rbinom(n * days, pmax(round(incidence), 0), rho), n, days)
+  x_bins <- t(apply(reported, 1, function(row) tapply(row, bin_idx, sum)))
+  x <- cbind(log(N), log1p(x_bins))   # log(N) + 15 binned, log1p-compressed counts
+  if (!full) return(x)
+  # `full = TRUE` also returns the latent paths, so R(t) below can use the same
+  # simulator rather than a re-implementation of beta(t) that could drift from it
+  list(x = x, beta_t = beta_t, S_frac = S_frac, incidence = incidence)
 }
 ```
 
-\(\theta = (\log \beta_1, \dots, \log \beta_4, \log d_1, \dots, \log d_4,
-\operatorname{logit} \rho)\) is 9-dimensional and unconstrained on
-\(\mathbb{R}^9\) — the log/logit transforms mean we can use a single
-Gaussian prior with no truncated support, so the posterior needs no
-rejection sampling for leakage, and the rescaling inside the simulator (not
-the prior) is what keeps the regimes from colliding. Naming `prior`'s `mean`
-vector (`beta[1]`, ..., `d[1]`, ..., `rho`) carries those names through
-every posterior draw, SBC result, and diagnostic plot below.
+## Check the prior predictive before training anything
+
+Amortized NPE learns \(p(\theta \mid x)\) over the *prior predictive* distribution of \(x\). Data that the prior predictive essentially never produces sit in a region where the trained network is extrapolating, and its posterior there is not to be trusted — no amount of training fixes it. So before spending a simulation budget, check that the model can produce curves like the ones we intend to condition on.
+
+```{r prior-predictive}
+bin_mid <- (seq_len(n_bins) - 1) * bin_len + (bin_len + 1) / 2
+bin_date <- start_date + bin_mid - 1
+
+set.seed(11)
+n_pp <- 2000
+theta_pp <- sample_prior(prior, n_pp)
+
+pp_for <- function(state) {
+  x <- sir_rt_simulator(theta_pp, N_fixed = pop[[state]])
+  expm1(x[, -1, drop = FALSE])
+}
+
+check_state <- function(state) {
+  cnt <- pp_for(state)
+  d <- rowMeans(abs(log1p(cnt) - rep(log1p(case_bins[state, ]), each = n_pp)))
+  c(within_e = mean(d < 1), best = min(d))
+}
+round(t(sapply(c("Michigan", "West Virginia", "New York"), check_state)), 3)
+```
+
+A few percent of prior draws land within a factor of \(e\) of each observed curve, averaged over the 15 bins. That is the number to watch: it is small — the prior is deliberately vague — but it is not a rounding error, so the observations sit inside the bulk of the prior predictive rather than out in its tail.
+
+```{r prior-pred-plot, fig.width = 7, fig.height = 4, fig.alt = "Prior predictive envelope on a log scale with two observed state curves inside it."}
+mi <- pp_for("Michigan")
+env <- apply(log1p(mi), 2, stats::quantile, c(0.05, 0.5, 0.95))
+plot(bin_date, env[2, ], type = "n", ylim = range(env), xlab = "date (2020)",
+     ylab = "log(1 + cases per 8-day bin)",
+     main = "Prior predictive, Michigan-sized population")
+polygon(c(bin_date, rev(bin_date)), c(env[1, ], rev(env[3, ])),
+        col = "grey85", border = NA)
+lines(bin_date, env[2, ], lwd = 2, col = "grey40")
+lines(bin_date, log1p(case_bins["Michigan", ]), lwd = 2, col = "firebrick")
+lines(bin_date, log1p(case_bins["West Virginia", ]), lwd = 2, col = "steelblue")
+legend("topleft", bty = "n", lwd = 2, col = c("grey40", "firebrick", "steelblue"),
+       legend = c("prior predictive median (90% band)", "Michigan", "West Virginia"))
+```
+
+Both observed curves stay inside the 90% prior predictive band for their whole length. Fixing the seeding day at day 1 instead of inferring it fails exactly this check: West Virginia's seven empty bins can then only be produced by a sub-threshold contact rate, which usually means extinction, so the observed curve drops out of the band's lower edge.
 
 ## Training the amortized posterior
 
-One MAF is trained across the whole prior — including the full range of
-state population sizes — and reused for every state below. This is what
-*amortized* buys: train once, then condition on 51 different observations for
-the price of a forward pass each.
+One MAF is trained across the whole prior — including the full range of state population sizes — and reused for every state below. This is what *amortized* buys: train once, then condition on 51 different observations for the price of a forward pass each.
 
 ```{r fit-npe}
-fit <- npe(prior, sir_rt_simulator, n_simulations = 12000,
-           density_estimator = "maf", max_epochs = 200, n_restarts = 1,
+fit <- npe(prior, sir_rt_simulator, n_simulations = 20000,
+           density_estimator = "maf", max_epochs = 300, n_restarts = 1,
            seed = 1, verbose = FALSE)
 fit
 ```
 
 ## Validate before trusting a single R(t) curve
 
-Simulation-based calibration (SBC) checks that the posterior's credible
-intervals have the coverage they claim, using fresh prior draws the network
-never saw during training. For each of many simulated "true" parameter
-values we compute where that true value ranks among posterior draws
-conditioned on the resulting simulated data; if the posterior is calibrated,
-that rank is equally likely to fall anywhere, so the histogram of ranks
-across trials should come out flat. A histogram skewed toward the edges
-means the posterior is overconfident (true value often falls outside the
-bulk of the posterior); skewed toward the middle means underconfident. The
-red dashed line marks the count expected under perfect calibration, and the
-dotted lines mark a 99% band around it, so any bar that pokes outside the
-dotted lines is a genuine, not just noisy, departure from flat.
+Simulation-based calibration (SBC) checks that the posterior's credible intervals have the coverage they claim, using fresh prior draws the network never saw during training. For each of many simulated "true" parameter values we compute where that true value ranks among posterior draws conditioned on the resulting simulated data; if the posterior is calibrated, that rank is equally likely to fall anywhere, so the histogram of ranks across trials should come out flat. A histogram skewed toward the edges means the posterior is overconfident (true value often falls outside the bulk of the posterior); skewed toward the middle means underconfident. The red dashed line marks the count expected under perfect calibration, and the dotted lines mark a 99% band around it, so any bar that pokes outside the dotted lines is a genuine, not just noisy, departure from flat.
 
 ```{r sbc}
 sbc_res <- sbc(fit, sir_rt_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
-sbc_res    # one uniformity p-value per parameter: 4 log-beta regimes, 4 regime durations, then rho
+sbc_res    # one uniformity p-value per parameter
 ```
 
-Three parameters are worth looking at directly: \(\log \beta\) in the final
-regime (day 120 — the most policy-relevant point, closest to "now" in this
-window), the duration \(d_2\) of the regime nearest the WHO's pandemic
-declaration and the first stay-at-home orders (the new, previously-fixed
-piece of the model), and the ascertainment rate \(\rho\), which is the
-parameter most likely to trade off against \(\beta(t)\) if the two were
-poorly identified. Because `prior`'s `mean` was a named vector, `sbc_res`
-carries those names, and `plot_sbc()` renders them as their plotmath symbol
-directly in the panel title instead of a generic "parameter 4".
+Four parameters are worth looking at directly: \(\log \beta\) in the final regime (day 120 — the most policy-relevant point, closest to "now" in this window), the introduction day \(t_0\) and seed size \(I_0\) (the new, previously-fixed pieces of the model, and the two most likely to trade off against each other), and the ascertainment rate \(\rho\). Because `prior`'s `mean` was a named vector, `sbc_res` carries those names, and `plot_sbc()` renders them as their plotmath symbol directly in the panel title instead of a generic "parameter 4".
 
 ```{r sbc-beta4, fig.alt = "SBC rank histogram for log-beta in the final (day 120) regime; a flat histogram indicates calibration."}
 plot_sbc(sbc_res, param = n_segments)
 ```
 
-```{r sbc-d2, fig.alt = "SBC rank histogram for the duration of regime 2; a flat histogram indicates calibration."}
-plot_sbc(sbc_res, param = n_segments + 2L)
+```{r sbc-t0, fig.alt = "SBC rank histogram for the introduction day; a flat histogram indicates calibration."}
+plot_sbc(sbc_res, param = 2L * n_segments)
 ```
 
-```{r sbc-rho, fig.alt = "SBC rank histogram for the ascertainment rate rho; a flat histogram indicates calibration."}
+```{r sbc-seed, fig.alt = "SBC rank histogram for the number of infections seeded at the introduction; a flat histogram indicates calibration."}
 plot_sbc(sbc_res, param = 2L * n_segments + 1L)
 ```
 
-And a posterior predictive check against real data grounds the calibration
-check in the actual observations we care about: does the fitted model, run
-forward from its posterior, reproduce the shape of a real state's curve? We
-check six states that span very different trajectories: Washington (site of
-the first detected US case), New York (the largest epicenter in this
-window), California (first state to issue a stay-at-home order), Louisiana
-(a sharp early surge tied to Mardi Gras), Michigan (a severe Midwest
-outbreak, including major nursing-home clusters), and West Virginia (the
-last state to report a case).
+```{r sbc-rho, fig.alt = "SBC rank histogram for the ascertainment rate rho; a flat histogram indicates calibration."}
+plot_sbc(sbc_res, param = 2L * n_segments + 2L)
+```
+
+And a posterior predictive check against real data grounds the calibration check in the actual observations we care about: does the fitted model, run forward from its posterior, reproduce the shape of a real state's curve? We check six states that span very different trajectories: Washington (site of the first detected US case), New York (the largest epicenter in this window), California (first state to issue a stay-at-home order), Louisiana (a sharp early surge tied to Mardi Gras), Michigan (a severe Midwest outbreak, including major nursing-home clusters), and West Virginia (the last state to report a case).
+
+We summarize the predictive by its **median**, not its mean. Case counts here span four orders of magnitude and the estimator is trained on \(\log(1 + x)\); the predictive distribution in each bin is strongly right-skewed, so its mean tracks the upper tail rather than the center. Plotting the mean of a skewed count predictive makes a well-calibrated fit look like a systematic overshoot.
 
 ```{r post-pred-states, fig.width = 7, fig.height = 6, fig.alt = "Posterior predictive check overlaying reported cases and the predictive interval for six representative states."}
 highlight <- c("Washington", "New York", "California", "Louisiana", "Michigan", "West Virginia")
-bin_mid <- (seq_len(n_bins) - 1) * bin_len + (bin_len + 1) / 2
-bin_date <- start_date + bin_mid - 1
 
 post_pred_state <- function(state, n_draws = 500) {
-  x_obs <- c(log(pop[state]), log1p(case_bins[state, ]))
+  x_obs <- c(log(pop[[state]]), log1p(case_bins[state, ]))
   post <- posterior(fit, x_obs = x_obs)
-  sim_fixed <- function(theta) sir_rt_simulator(theta, N_fixed = pop[state])
+  sim_fixed <- function(theta) sir_rt_simulator(theta, N_fixed = pop[[state]])
   pred <- posterior_predictive(post, sim_fixed, n = n_draws)
   pred_counts <- expm1(pred[, -1, drop = FALSE])  # drop log(N); undo log1p
   data.frame(state = state, date = bin_date,
              observed = case_bins[state, ],
-             pred_mean = colMeans(pred_counts),
+             pred_med = apply(pred_counts, 2, stats::median),
              pred_lo = apply(pred_counts, 2, stats::quantile, 0.05),
              pred_hi = apply(pred_counts, 2, stats::quantile, 0.95))
 }
@@ -438,132 +430,100 @@ post_pred_all$state <- factor(post_pred_all$state, levels = highlight)
 library(ggplot2)
 ggplot(post_pred_all, aes(date)) +
   geom_ribbon(aes(ymin = pred_lo, ymax = pred_hi), fill = "steelblue", alpha = 0.25) +
-  geom_line(aes(y = pred_mean), colour = "steelblue", linewidth = 0.8) +
+  geom_line(aes(y = pred_med), colour = "steelblue", linewidth = 0.8) +
   geom_point(aes(y = observed), colour = "black", size = 1.4) +
   facet_wrap(~state, ncol = 3, scales = "free_y") +
   scale_x_date(date_labels = "%b %d") +
   labs(x = "date (2020)", y = "new cases per 8-day bin",
        title = "Posterior predictive check, 6 representative states",
-       subtitle = "points: reported cases; band: 90% posterior predictive interval") +
+       subtitle = "points: reported cases; line: predictive median; band: 90% interval") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+The predictive median tracks each state's peak, including its height, and the observed points stay inside the 90% band across four orders of magnitude of epidemic size — from West Virginia's few hundred cases per bin to New York's tens of thousands.
+
 ## R(t) for every state
 
-For each of the 51 jurisdictions we condition the same trained posterior on
-that state's own case-count curve and population, then map each posterior
-draw -- its 4 regime-level \(\log \beta\) values *and* its own 4 regime
-durations -- through the same logistic-blended step function to get a full
-120-day \(R(t)\) trajectory. Because the durations are now part of
-\(\theta\), each posterior draw can place a state's inflection points on
-slightly different calendar days (always in order, never colliding).
+For each of the 51 jurisdictions we condition the same trained posterior on that state's own case-count curve and population, then push each posterior draw back through the *same simulator* to get its contact rate \(\beta(t)\) and its susceptible fraction \(S(t)/N\). The effective reproduction number is
+\[
+R_e(t) \;=\; \frac{\beta(t)}{\gamma} \cdot \frac{S(t)}{N},
+\]
+the average number of secondary cases per infection *given the pool of susceptibles still available*. The \(S(t)/N\) factor is not decoration: in New York the model infers that a substantial share of the population had been infected by mid-May, so \(R_e\) there ends the window well below the contact rate alone would suggest. Computing it from the simulator's own state trajectories, rather than re-deriving \(\beta(t)\) alongside it, keeps the reported quantity and the fitted model from drifting apart.
 
 ```{r rt-all-states}
-t_grid <- seq_len(days)
-
-rt_state <- function(state, n_draws = 2000) {
-  x_obs <- c(log(pop[state]), log1p(case_bins[state, ]))
+rt_state <- function(state, n_draws = 500) {
+  x_obs <- c(log(pop[[state]]), log1p(case_bins[state, ]))
   draws <- sample(posterior(fit, x_obs = x_obs), n_draws)
-  log_beta_segments <- draws[, seq_len(n_segments), drop = FALSE]
-  dur <- exp(draws[, n_segments + seq_len(n_segments), drop = FALSE])
-  dur <- dur / rowSums(dur) * total_days
-  tau <- knot_days[1] + t(apply(dur, 1, cumsum))[, seq_len(n_segments - 1), drop = FALSE]
-
-  w_ext <- c(list(matrix(1, n_draws, days)),
-            lapply(seq_len(n_segments - 1), function(k) {
-              outer(tau[, k], t_grid, function(t0, t) plogis((t - t0) / transition_scale))
-            }),
-            list(matrix(0, n_draws, days)))
-  log_beta_t <- Reduce(`+`, lapply(seq_len(n_segments), function(j) {
-    (w_ext[[j]] - w_ext[[j + 1]]) * log_beta_segments[, j]
-  }))
-  rt <- exp(log_beta_t) / gamma_fixed
+  sim <- sir_rt_simulator(draws, N_fixed = pop[[state]], full = TRUE)
+  rt <- sim$beta_t / gamma_fixed * sim$S_frac
   data.frame(state = state, date = start_date + t_grid - 1,
-             rt_mean = colMeans(rt),
+             rt_med = apply(rt, 2, stats::median),
              rt_lo = apply(rt, 2, stats::quantile, 0.05),
-             rt_hi = apply(rt, 2, stats::quantile, 0.95))
+             rt_hi = apply(rt, 2, stats::quantile, 0.95),
+             attack = mean(1 - sim$S_frac[, days]))
 }
 
 rt_all <- do.call(rbind, lapply(state_names, rt_state))
 ```
 
-A handful of states tell the national story: Washington (site of the first
-detected US case and the Kirkland nursing-home cluster), New York (the
-largest epicenter in this window), California (first state to issue a
-stay-at-home order, March 19), Louisiana (a sharp early surge tied to Mardi
-Gras gatherings in New Orleans), Michigan (a severe Midwest outbreak with
-its own major nursing-home clusters), and West Virginia (the last state to
-report a case, on March 17).
+The inferred attack rates are the sanity check on the ascertainment prior: they are what \(\rho\) and the case counts imply about how much of each state had actually been infected by 2020-05-19.
 
-```{r rt-highlight, fig.width = 7, fig.height = 5, fig.alt = "R(t) trajectories with 90 percent credible bands for six representative states."}
+```{r attack-rates}
+attack_by_state <- tapply(rt_all$attack, rt_all$state, `[`, 1)
+round(quantile(attack_by_state, c(0, 0.25, 0.5, 0.75, 1)), 4)
+round(sort(attack_by_state, decreasing = TRUE)[1:5], 3)
+```
+
+A handful of states tell the national story: Washington (site of the first detected US case and the Kirkland nursing-home cluster), New York (the largest epicenter in this window), California (first state to issue a stay-at-home order, March 19), Louisiana (a sharp early surge tied to Mardi Gras gatherings in New Orleans), Michigan (a severe Midwest outbreak with its own major nursing-home clusters), and West Virginia (the last state to report a case, on March 17).
+
+```{r rt-highlight, fig.width = 7, fig.height = 5, fig.alt = "Effective reproduction number trajectories with 90 percent credible bands for six representative states."}
 rt_highlight <- rt_all[rt_all$state %in% highlight, ]
 rt_highlight$state <- factor(rt_highlight$state, levels = highlight)
 
-ggplot(rt_highlight, aes(date, rt_mean)) +
+ggplot(rt_highlight, aes(date, rt_med)) +
   geom_ribbon(aes(ymin = rt_lo, ymax = rt_hi), fill = "steelblue", alpha = 0.25) +
   geom_line(colour = "steelblue", linewidth = 0.8) +
   geom_hline(yintercept = 1, linetype = 2, colour = "grey40") +
   facet_wrap(~state, ncol = 3) +
   scale_x_date(date_labels = "%b %d") +
-  labs(x = "date (2020)", y = expression(R(t)),
-       title = "Posterior R(t), 6 representative states",
-       subtitle = "shaded band: 90% credible interval; dashed line: R(t) = 1") +
+  labs(x = "date (2020)", y = expression(R[e](t)),
+       title = expression(paste("Posterior ", R[e], "(t), 6 representative states")),
+       subtitle = "shaded band: 90% credible interval; dashed line: R = 1") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-All 51 states, condensed into one view: a heatmap of posterior-mean
-\(R(t)\), states sorted by their peak reproduction number.
+All 51 states, condensed into one view: a heatmap of posterior-median \(R_e(t)\), states sorted by their peak reproduction number.
 
-```{r rt-heatmap, fig.width = 7, fig.height = 8, fig.alt = "Heatmap of posterior mean R(t) across all US states over the first 120 days."}
-peak_order <- names(sort(tapply(rt_all$rt_mean, rt_all$state, max), decreasing = TRUE))
+```{r rt-heatmap, fig.width = 7, fig.height = 8, fig.alt = "Heatmap of posterior median effective reproduction number across all US states over the first 120 days."}
+peak_order <- names(sort(tapply(rt_all$rt_med, rt_all$state, max), decreasing = TRUE))
 rt_all$state <- factor(rt_all$state, levels = rev(peak_order))
 
-ggplot(rt_all, aes(date, state, fill = rt_mean)) +
+ggplot(rt_all, aes(date, state, fill = rt_med)) +
   geom_raster() +
   scale_fill_gradient2(midpoint = 1, low = "steelblue", mid = "white",
-                       high = "firebrick", name = expression(R(t))) +
+                       high = "firebrick", name = expression(R[e](t))) +
   scale_x_date(date_labels = "%b %d") +
   labs(x = "date (2020)", y = NULL,
-       title = "Posterior mean R(t), all 50 states + DC",
-       subtitle = "sorted by peak R(t); white = R(t) = 1") +
+       title = expression(paste("Posterior median ", R[e], "(t), all 50 states + DC")),
+       subtitle = "sorted by peak; white = R = 1") +
   theme_minimal() +
   theme(axis.text.y = element_text(size = 6))
 ```
 
-The pattern matches the national narrative from the knot-selection curve:
-\(R(t)\) starts near or above the epidemic threshold of 1 for the states hit
-first, climbs through early-to-mid March as community transmission spreads,
-and comes back down toward 1 by mid-to-late April as stay-at-home orders took
-effect nearly everywhere — with real heterogeneity in timing and magnitude
-that a single national \(R(t)\) estimate would have hidden.
+The pattern matches the national narrative from the knot-selection curve: \(R_e(t)\) is flat and uninformative before a state's inferred introduction day (no epidemic, nothing in the data to constrain \(\beta\), so the posterior there is close to the prior), climbs through early-to-mid March as community transmission spreads, and comes back down toward and below 1 by mid-to-late April as stay-at-home orders took effect nearly everywhere — with real heterogeneity in timing and magnitude that a single national estimate would have hidden.
 
 ## What amortization bought here
 
-The alternative to amortized NPE is fitting a separate model per state — 51
-particle filters, 51 MCMC chains, 51 opportunities for a chain to fail to
-converge. Here, training happened once (`r fit$n_simulations` simulations,
-one MAF), and every state's posterior above cost only a forward pass through
-the trained network. That is the payoff `vignette("sir-epidemic")` promised in
-the abstract; this vignette spends it on a real, 51-jurisdiction dataset.
+The alternative to amortized NPE is fitting a separate model per state — 51 particle filters, 51 MCMC chains, 51 opportunities for a chain to fail to converge. Here, training happened once (`r fit$n_simulations` simulations, one MAF), and every state's posterior above cost only a forward pass through the trained network. That is the payoff `vignette("sir-epidemic")` promised in the abstract; this vignette spends it on a real, 51-jurisdiction dataset.
 
-The model still carries real simplifications, worth stating plainly: \(\gamma\)
-is fixed rather than inferred, so `sbc()` above is calibrated conditional on
-that choice, not unconditionally; every state shares the same *number* and
-rough *national* placement of regimes, with only a per-state prior on each
-regime's duration \(d_k\) letting the exact inflection days move (a state
-whose epidemic unfolded on a genuinely different schedule, rather than just
-a stretched or compressed one, is not well served by this); the one-week
-width of the logistic transition
-between segments is a modeling choice representing how quickly behavior or
-policy shifted, not something the case counts separately identify; a single
-ascertainment rate \(\rho\) stands in for what was, in practice, a patchwork
-of state and local testing capacity; and importation is reduced to a handful
-of seed cases on day 1 rather than a distributed process over the following
-weeks. Loosening any of these is a natural next step, and each one is a
-change to the simulator, not to the inference machinery around it — the
-same amortized-NPE workflow applies unchanged.
+Two of the modeling choices above are worth restating as general lessons, because they are the ones that decide whether this fit works at all.
 
-For the underlying workflow in more depth, see `vignette("sir-epidemic")` and
-`vignette("diagnostics")`.
+*Do not leave the epidemic's phase to demographic noise.* A branching process started from a couple of infections and run for four months has a final size spread across orders of magnitude and a takeoff time that wanders by weeks. If nothing in \(\theta\) can absorb that, the posterior predictive integrates over it: replicate simulations at a *single, fixed* \(\theta\) then differ by a factor of several thousand at the peak bin. Inferring \((t_0, I_0)\) brings that down to a factor of about three, which is genuine early-epidemic stochasticity rather than an artifact of the seeding convention. The recovered introduction days are a free check on the change — the posterior puts New York's near March 1 and West Virginia's in mid-March, matching when those states actually reported their first cases.
+
+*Do not let case counts alone set the epidemic's scale.* Reported cases identify \(\rho \times \text{incidence}\). Without external information on \(\rho\), the fit is free to slide along that ridge, and it slides toward vast, barely-ascertained epidemics because susceptible depletion is then available to flatten the peak. Seroprevalence data are what break the tie, and they belong in the prior.
+
+The model still carries real simplifications, worth stating plainly. \(\gamma\) is fixed rather than inferred, so `sbc()` above is calibrated conditional on that choice, not unconditionally. Every state shares the same *number* and rough *national* placement of regimes, with only a per-state prior on each regime's duration letting the exact inflection days move; a state whose epidemic unfolded on a genuinely different schedule, rather than just a stretched or compressed one, is not well served by this. The one-week width of the logistic transition between segments is a modeling choice representing how quickly behavior or policy shifted, not something the case counts separately identify. A single ascertainment rate \(\rho\) stands in for what was, in practice, a patchwork of state and local testing capacity that grew steeply over exactly this window — a time-varying \(\rho(t)\) is the most obvious next refinement, at the cost of another parameter confounded with \(\beta(t)\). And the model gives each state one introduction, whereas states with large international airports saw a trickle of imported cases for weeks before community transmission established; California, whose first four bins carry a handful of traveler-associated cases, is the state this fits worst. Loosening any of these is a change to the simulator, not to the inference machinery around it — the same amortized-NPE workflow applies unchanged.
+
+For the underlying workflow in more depth, see `vignette("sir-epidemic")` and `vignette("diagnostics")`.
