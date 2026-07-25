@@ -91,7 +91,7 @@ The posterior mean recovers the coefficients that generated the data:
 rbind(truth = theta_true, posterior_mean = colMeans(draws))
 #>                   alpha      beta     sigma
 #> truth          2.000000 -1.000000 0.5000000
-#> posterior_mean 2.003668 -1.041009 0.5003288
+#> posterior_mean 1.980723 -1.047646 0.5304283
 ```
 
 ``` r
@@ -105,7 +105,8 @@ simulation-based calibration live in `vignette("diagnostics")`.
 
 ``` r
 map_estimate(post)     # posterior mode
-#> [1]  1.9989619 -1.0442036  0.4702335
+#>      alpha       beta      sigma 
+#>  1.9716464 -1.0480336  0.4950709
 ```
 
 If you’re interested in sbi in other languages or functionality not
@@ -115,37 +116,57 @@ good implementations in python and in Julia.
 
 ## Running the simulator in parallel
 
-Simulation is usually the expensive part of a fit, and it is embarrassingly parallel. Declare a [`future`](https://future.futureverse.org) plan and every function that calls your simulator — `npe()`, `simulate_for_sbi()`, `npe_sequential()`, `sbc()`, `tarp()`, `posterior_predictive()` — spreads the work across cores:
+Simulation is usually the expensive part of a fit, and it is
+embarrassingly parallel. Declare a
+[`future`](https://future.futureverse.org) plan and every function that
+calls your simulator — `npe()`, `simulate_for_sbi()`,
+`npe_sequential()`, `sbc()`, `tarp()`, `posterior_predictive()` —
+spreads the work across cores:
 
-```r
+``` r
 library(future)
 plan(multisession)
 
 fit <- npe(prior, simulator, n_simulations = 10000)
 ```
 
-There is nothing else to change: no extra argument, no parallel variant of `npe()`. Without a plan everything runs sequentially, as before. Each simulation draws from its own random-number stream, so a given `set.seed()` gives the same results on one core or on 32.
+There is nothing else to change: no extra argument, no parallel variant
+of `npe()`. Without a plan everything runs sequentially, as before. Each
+simulation draws from its own random-number stream, so a given
+`set.seed()` gives the same results on one core or on 32.
 
-Simulation and neural training both report a progress bar with an ETA — one step per simulation, then one step per training epoch. If you use [`progressr`](https://progressr.futureverse.org), `neuralsbi` speaks it natively (`handlers(global = TRUE)`); if not, it draws its own bar. See `?nsbi_parallel` and `?nsbi_progress`.
+Simulation and neural training both report a progress bar with an ETA —
+one step per simulation, then one step per training epoch. If you use
+[`progressr`](https://progressr.futureverse.org), `neuralsbi` speaks it
+natively (`handlers(global = TRUE)`); if not, it draws its own bar. See
+`?nsbi_parallel` and `?nsbi_progress`.
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neuralsbi/) has four
+The [package website](https://pedroliman.github.io/neuralsbi/) has six
 vignettes that build on each other:
 
-1.  [Getting
+1.  [Introduction to neural
+    SBI](https://pedroliman.github.io/neuralsbi/articles/intro-to-sbi.html)
+    — what SBI is for, on a simulator whose likelihood has no closed
+    form.
+2.  [Getting
     started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html)
     — the core prior/simulator/posterior workflow.
-2.  [Choosing a density
+3.  [Choosing a density
     estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html)
     — MDN, MAF, NSF, and the torch-free baseline.
-3.  [Checking the
+4.  [Checking the
     posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html)
     — calibration and predictive diagnostics.
-4.  [Comparison with pomp: an SIR epidemic
+5.  [Comparison with pomp: an SIR epidemic
     model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html)
     — neural posterior estimation and pomp’s particle-filter MCMC on the
     same stochastic epidemic.
+6.  [Amortized R(t) across all US
+    states](https://pedroliman.github.io/neuralsbi/articles/sir-time-varying-beta.html)
+    — three time-varying-beta models fit once each, then conditioned on
+    51 case curves.
 
 ## License
 
