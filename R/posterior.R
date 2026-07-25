@@ -80,6 +80,9 @@ sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
       call. = FALSE)
   }
   out <- collected[seq_len(min(n, nrow(collected))), , drop = FALSE]
+  if (is.null(colnames(out)) && !is.null(fit$param_names)) {
+    colnames(out) <- fit$param_names
+  }
   attr(out, "acceptance_rate") <- nrow(collected) / max(n_tried, 1)
   structure(out, class = c("nsbi_samples", class(out)))
 }
@@ -142,16 +145,26 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
   neg <- function(par) -log_prob(post, matrix(par, nrow = 1), x = x,
                                  normalize = FALSE)
   opt <- stats::optim(start, neg, method = "Nelder-Mead")
-  opt$par
+  out <- opt$par
+  if (is.null(names(out))) names(out) <- fit$param_names
+  out
 }
 
 #' @export
 print.nsbi_posterior <- function(x, ...) {
   cat("<nsbi_posterior>\n")
   cat(sprintf("  parameters (dim): %d\n", x$fit$dim_theta))
+  if (!is.null(x$fit$param_names)) {
+    cat("    names         :", paste(x$fit$param_names, collapse = ", "), "\n")
+  }
   cat(sprintf("  conditioned on x: %s\n",
-              if (is.null(x$x_obs)) "(none set)" else
-                paste(signif(x$x_obs[1, ], 4), collapse = ", ")))
+              if (is.null(x$x_obs)) "(none set)" else {
+                vals <- signif(x$x_obs[1, ], 4)
+                nm <- x$fit$x_names
+                if (!is.null(nm)) vals <- stats::setNames(vals, nm)
+                paste(if (!is.null(nm)) paste0(nm, "=", vals) else vals,
+                     collapse = ", ")
+              }))
   cat("  sample(post, n), log_prob(post, theta), map_estimate(post)\n")
   invisible(x)
 }

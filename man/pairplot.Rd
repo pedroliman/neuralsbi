@@ -20,7 +20,11 @@ pairplot(
 
 \item{truth}{Optional reference parameter vector to overlay.}
 
-\item{labels}{Optional parameter labels.}
+\item{labels}{Optional parameter labels. Defaults to \code{colnames(samples)} (set
+automatically for \code{\link[=sample]{sample()}} draws from a fit with named parameters --
+see \code{\link[=prior_uniform]{prior_uniform()}}/\code{\link[=prior_normal]{prior_normal()}}) or \code{theta[1]}, \code{theta[2]}, ....
+Labels that parse as R syntax (\code{"beta[1]"}, \code{"rho"}) render as their
+plotmath symbol.}
 
 \item{limits}{Optional list (one \code{c(lo, hi)} per parameter, in column
 order) or matrix of per-parameter axis limits.}

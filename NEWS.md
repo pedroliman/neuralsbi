@@ -1,3 +1,7 @@
+# neuralsbi 0.3.6
+
+* Parameters and outcomes can now be named. Name `prior_uniform()`'s `low`/`high` or `prior_normal()`'s `mean` (e.g. `c(beta = 0, gamma = 0)`), or attach `colnames()` to a simulator's output, and those names carry through `npe()`, `sample()`, `map_estimate()`, `sbc()`, `expected_coverage()`, and `posterior_predictive()` without any extra arguments. `plot_sbc()`, `plot_coverage()`, `pairplot()`, and `plot_posterior_predictive()` use the names for titles, legends, and facet labels; a name that happens to be valid R syntax (`"beta[1]"`, `"rho"`, `"sigma^2"`) renders as its plotmath symbol (Greek letters, sub/superscripts) instead of literal text.
+
 # neuralsbi 0.3.5
 
 * The SIR case study becomes a head-to-head comparison with the `pomp` package, `vignette("sir-epidemic")`. Both methods fit the same stochastic SIR epidemic: `pomp` via particle-filter MCMC (`pmcmc`), `neuralsbi` via neural posterior estimation. The vignette contrasts what each needs from the model — `pomp` a measurement density, `neuralsbi` only a simulator — overlays the two posteriors, scores their agreement with a C2ST, and confirms the neural fit with SBC. The comparison is precomputed, so `pomp` is needed only to regenerate the article, not to build or check the package.

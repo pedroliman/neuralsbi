@@ -9,10 +9,14 @@
 #' @param prior An `nsbi_prior` (see [prior_uniform()], [prior_normal()]).
 #' @param simulator A function mapping an `n x dim` matrix of parameters to an
 #'   `n x d` matrix of simulated data. Ignored if `theta` and `x` are given.
+#'   Column names on its output (e.g. via `colnames(out) <- c("cases_wk1",
+#'   ...)`) become the outcome names used in plots.
 #' @param n_simulations Number of prior draws to simulate when `simulator` is
 #'   used and `theta`/`x` are not supplied.
 #' @param theta,x Optional pre-computed simulations. If supplied, `simulator`
-#'   and `n_simulations` are ignored.
+#'   and `n_simulations` are ignored. Column names on `theta` (or names on
+#'   `prior`'s `mean`/`low`) and on `x` are carried through to posterior
+#'   samples, SBC results, and their plots.
 #' @param density_estimator One of `"maf"` (Masked Autoregressive Flow, needs
 #'   `torch`; the default, matching Python `sbi`), `"mdn"` (neural Mixture
 #'   Density Network, needs `torch`), `"nsf"` (Neural Spline Flow, needs
@@ -88,6 +92,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   if (nrow(theta) != nrow(x)) {
     stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
   }
+  param_names <- colnames(theta) %||% prior$param_names
+  x_names <- colnames(x)
 
   # standardization
   if (standardize) {
@@ -119,6 +125,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
       std_x = std_x,
       dim_theta = prior$dim,
       dim_x = ncol(x),
+      param_names = param_names,
+      x_names = x_names,
       n_simulations = nrow(theta),
       density_estimator = if (is.character(density_estimator))
         density_estimator[1] else "custom"
@@ -204,7 +212,13 @@ print.nsbi_npe <- function(x, ...) {
   cat("<nsbi_npe> Neural Posterior Estimation fit\n")
   cat(sprintf("  density estimator : %s\n", x$density_estimator))
   cat(sprintf("  parameters (dim)  : %d\n", x$dim_theta))
+  if (!is.null(x$param_names)) {
+    cat("    names           :", paste(x$param_names, collapse = ", "), "\n")
+  }
   cat(sprintf("  data (dim)        : %d\n", x$dim_x))
+  if (!is.null(x$x_names)) {
+    cat("    names           :", paste(x$x_names, collapse = ", "), "\n")
+  }
   if (!is.null(x$de$embedding)) {
     cat(sprintf("  embedding (mlp)   : %d -> %d features\n",
                 x$dim_x, x$de$embedding$output_dim))

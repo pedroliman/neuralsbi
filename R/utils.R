@@ -9,8 +9,15 @@
 utils::globalVariables(c("self", ".data"))
 
 #' Coerce parameters/data to a numeric matrix with a known column count
+#'
+#' Preserves column names where they carry meaning: a data frame's or matrix's
+#' existing `colnames`, or a plain vector's `names()` when the vector is
+#' interpreted as a single row. A vector re-interpreted as a stacked column
+#' (the `byrow` branch) loses its names -- they described entries, not a
+#' shared parameter/outcome identity.
 #' @keywords internal
 as_theta_matrix <- function(x, d = NULL) {
+  nm <- if (is.data.frame(x) || !is.null(dim(x))) colnames(x) else names(x)
   if (is.data.frame(x)) x <- as.matrix(x)
   if (is.null(dim(x))) {
     # a plain vector: interpret as a single row if length matches d,
@@ -19,13 +26,58 @@ as_theta_matrix <- function(x, d = NULL) {
       x <- matrix(x, nrow = 1L)
     } else {
       x <- matrix(x, ncol = if (is.null(d)) 1L else d, byrow = TRUE)
+      nm <- NULL
     }
   }
   storage.mode(x) <- "double"
   if (!is.null(d) && ncol(x) != d) {
     stop(sprintf("Expected %d columns but got %d.", d, ncol(x)), call. = FALSE)
   }
+  if (is.null(colnames(x)) && !is.null(nm) && length(nm) == ncol(x)) {
+    colnames(x) <- nm
+  }
   x
+}
+
+#' Parse a label as a plotmath expression when possible
+#'
+#' Parameter/outcome names that happen to be valid R syntax (`"beta[1]"`,
+#' `"rho"`, `"sigma^2"`) render as their mathematical symbol -- Greek letters,
+#' sub/superscripts -- when passed through R's plotmath. Names that are not
+#' parseable, or `NULL`, pass through unchanged so callers can fall back to a
+#' plain-text label.
+#' @keywords internal
+math_expr <- function(label) {
+  if (is.null(label)) return(NULL)
+  expr <- tryCatch(str2lang(label), error = function(e) NULL)
+  expr %||% label
+}
+
+#' Vectorized, parse-safe plotmath label text
+#'
+#' Re-quotes any entry that is not valid R syntax as a string literal, which
+#' always parses (and renders as plain text under plotmath). Applying this
+#' before a label is used as a facet/column name guarantees
+#' `ggplot2::label_parsed()` never hits a parse error, whether or not the
+#' original label happens to look like math (`"beta[1]"`) or not (`"growth
+#' rate"`).
+#' @keywords internal
+math_safe_text <- function(labels) {
+  labels <- as.character(labels)
+  vapply(labels, function(s) {
+    ok <- tryCatch({ parse(text = s); TRUE }, error = function(e) FALSE)
+    if (ok) s else paste0('"', gsub('"', '\\"', s, fixed = TRUE), '"')
+  }, character(1), USE.NAMES = FALSE)
+}
+
+#' Vectorized, parse-safe plotmath labels
+#'
+#' Like [math_expr()] but for a whole vector at once, returning an
+#' `expression()` (so a discrete ggplot2 scale's `labels =` can render each
+#' entry as plotmath, mirroring `ggplot2::label_parsed()` for facet strips).
+#' @keywords internal
+math_labels <- function(labels) {
+  parse(text = math_safe_text(labels))
 }
 
 #' @keywords internal
