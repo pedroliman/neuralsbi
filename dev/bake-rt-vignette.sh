@@ -32,8 +32,12 @@ R CMD INSTALL --no-docs . >/dev/null
 
 if [ "${NSBI_SMOKE:-0}" = "1" ]; then
   echo "==> SMOKE MODE: cutting the training budget, results are throwaway"
+  echo "    This edits the .Rmd.orig in place and writes throwaway figures into"
+  echo "    vignettes/. The source is restored on exit, but the baked .Rmd and"
+  echo "    figures are not -- run 'git checkout -- vignettes/' afterwards, and"
+  echo "    do not commit anything a smoke run produced."
   cp vignettes/sir-time-varying-beta.Rmd.orig /tmp/rt-vignette-backup.Rmd.orig
-  trap 'mv /tmp/rt-vignette-backup.Rmd.orig vignettes/sir-time-varying-beta.Rmd.orig' EXIT
+  trap 'mv -f /tmp/rt-vignette-backup.Rmd.orig vignettes/sir-time-varying-beta.Rmd.orig' EXIT INT TERM
   sed -i.bak 's/^n_sim <- 15000$/n_sim <- 1500/; s/max_epochs = 300/max_epochs = 30/; s/n_sbc = 150/n_sbc = 30/' \
     vignettes/sir-time-varying-beta.Rmd.orig
   rm -f vignettes/sir-time-varying-beta.Rmd.orig.bak
@@ -42,10 +46,16 @@ fi
 echo "==> baking (this is the slow part)"
 time Rscript vignettes/precompute.R sir-time-varying
 
+echo "==> rendering HTML preview"
+Rscript -e 'rmarkdown::render("vignettes/sir-time-varying-beta.Rmd", quiet = TRUE)'
+
 echo
 echo "==> done. Regenerated:"
-echo "    vignettes/sir-time-varying-beta.Rmd"
-echo "    vignettes/figures/sir-rt-*.png"
+echo "    vignettes/sir-time-varying-beta.Rmd        (baked source, commit this)"
+echo "    vignettes/figures/sir-rt-*.png             (figures, commit these)"
+echo "    vignettes/sir-time-varying-beta.html       (preview, not committed)"
 echo
-echo "Preview with:"
-echo "    Rscript -e 'rmarkdown::render(\"vignettes/sir-time-varying-beta.Rmd\")'"
+echo "Open the preview:  vignettes/sir-time-varying-beta.html"
+echo
+echo "Figure names changed in this rework -- after a real (non-smoke) bake, drop"
+echo "any stale ones with:  git add -A vignettes/figures"
