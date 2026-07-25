@@ -133,6 +133,11 @@ reference:
   - npe_sequential
   - density_estimator
   - embedding_mlp
+- title: Running the simulator
+  desc: Parallel execution and progress reporting.
+  contents:
+  - nsbi_parallel
+  - nsbi_progress
 - title: Working with the posterior
   desc: Condition on data, then sample, evaluate, and summarize.
   contents:

@@ -16,6 +16,7 @@ npe_sequential(
   max_proposal_batches = 200L,
   seed = NULL,
   verbose = FALSE,
+  chunk_size = NULL,
   ...
 )
 }
@@ -46,6 +47,9 @@ threshold each round.}
 \item{seed}{Optional integer seed for reproducibility.}
 
 \item{verbose}{Print per-round progress.}
+
+\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}. Each round's
+simulations run across \code{future} workers when a plan is set.}
 
 \item{...}{Passed to \code{\link[=npe]{npe()}} (estimator and training settings).}
 }

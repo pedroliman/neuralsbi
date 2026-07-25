@@ -219,7 +219,13 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.3.0 CRAN-prep pass (branch
+pick up the work. Last updated for the 0.4.0 parallel-simulation pass (branch
+`claude/npe-parallel-simulator-futures-q45gqo`, July 2026): every simulator
+call in the package now goes through `run_simulator()` (`R/parallel.R`), which
+chunks the parameter matrix, runs the chunks over a `future` plan when one
+is declared, and reports progress through `R/progress.R` (progressr when
+installed, a built-in ETA bar otherwise). Training reports through the same
+mechanism, one step per epoch. Earlier: the 0.3.0 CRAN-prep pass (branch
 `claude/sbi-cran-compliance-x1gtow`, July 2026): the `npe()` defaults were
 aligned with Python `sbi` (density estimator `"maf"`, MDN `n_components = 10`,
 NSF `n_bins = 10`, `batch_size = 200`, `max_epochs = 2000` as an early-stopping
@@ -248,6 +254,8 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | Area | File(s) | State |
 |---|---|---|
 | Training engine | `R/train.R` | done; restarts, plateau LR decay, grad clipping, history |
+| Parallel simulation | `R/parallel.R` | done; `run_simulator()` is the single simulator entry point, chunked, `future`-backed, per-chunk L'Ecuyer streams so sequential and parallel runs agree bit for bit |
+| Progress reporting | `R/progress.R` | done; progressr-aware with a dependency-free ETA bar as fallback, shared by simulation and training |
 | MDN | `R/mdn.R` | done, trains via shared engine |
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |
 | NSF | `R/nsf.R` | done + tested; autoregressive (sbi uses coupling) |
@@ -280,6 +288,9 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
   (this runs tests inside the package namespace so internals are visible).
 - torch-gated tests skip automatically without libtorch
   (`tests/testthat/helper-torch.R`).
+- `future` and `progressr` are optional (`Suggests`). Without them the package
+  simulates sequentially and draws its own progress bar; the parallel tests in
+  `tests/testthat/test-parallel.R` skip themselves when `future` is absent.
 
 ### Next actions, in priority order
 

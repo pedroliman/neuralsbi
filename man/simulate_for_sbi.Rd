@@ -4,11 +4,20 @@
 \alias{simulate_for_sbi}
 \title{Run a simulator over prior draws}
 \usage{
-simulate_for_sbi(simulator, prior, n, seed = NULL, verbose = FALSE)
+simulate_for_sbi(
+  simulator,
+  prior,
+  n,
+  seed = NULL,
+  verbose = FALSE,
+  chunk_size = NULL
+)
 }
 \arguments{
 \item{simulator}{A function mapping an \verb{n x dim} matrix of parameters to an
-\verb{n x d} matrix of simulated data. Ignored if \code{theta} and \code{x} are given.}
+\verb{n x d} matrix of simulated data. Ignored if \code{theta} and \code{x} are given.
+Column names on its output (e.g. via \code{colnames(out) <- c("cases_wk1", ...)})
+become the outcome names used in plots.}
 
 \item{prior}{An \code{nsbi_prior} (see \code{\link[=prior_uniform]{prior_uniform()}}, \code{\link[=prior_normal]{prior_normal()}}).}
 
@@ -17,10 +26,23 @@ simulate_for_sbi(simulator, prior, n, seed = NULL, verbose = FALSE)
 \item{seed}{Optional integer seed for reproducibility.}
 
 \item{verbose}{Print training progress.}
+
+\item{chunk_size}{Rows of \code{theta} per simulator call. \code{NULL} (default)
+splits the run into about 64 chunks. Chunks are the unit of work sent to
+\code{future} workers and the unit of progress reporting; see \link{nsbi_parallel}.}
 }
 \value{
 A list with \code{theta} (\verb{n x dim}) and \code{x} (\verb{n x d}) matrices.
 }
 \description{
-Run a simulator over prior draws
+Draws \code{n} parameter vectors from the prior and pushes them through the
+simulator. The simulator is called on chunks of rows rather than on the
+whole matrix at once, which is what lets the run report progress and, under
+a \pkg{future} plan, spread the chunks across workers. See \link{nsbi_parallel} and
+\link{nsbi_progress}.
+}
+\examples{
+prior <- prior_uniform(c(-1, -1), c(1, 1))
+sims <- simulate_for_sbi(function(theta) theta^2, prior, n = 100)
+str(sims)
 }

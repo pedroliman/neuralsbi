@@ -25,6 +25,7 @@ npe(
   standardize = TRUE,
   seed = NULL,
   verbose = FALSE,
+  chunk_size = NULL,
   ...
 )
 }
@@ -82,6 +83,10 @@ validation improvement.}
 
 \item{verbose}{Print training progress.}
 
+\item{chunk_size}{Rows of \code{theta} per simulator call. \code{NULL} (default)
+splits the run into about 64 chunks. Chunks are the unit of work sent to
+\code{future} workers and the unit of progress reporting; see \link{nsbi_parallel}.}
+
 \item{...}{Passed to the density estimator.}
 }
 \value{
@@ -95,6 +100,14 @@ conditional density estimator whose output directly approximates the posterior
 \eqn{p(\theta \mid x)}. This is single-round, \emph{amortized} NPE: after training
 once, you can condition on any observation without re-simulating.
 }
+\section{Parallel simulation and progress}{
+
+The simulator runs sequentially unless you declare a \pkg{future} plan --
+\code{library(future); plan(multisession)} -- in which case chunks of parameters
+are simulated across workers. Simulation and training both report progress
+with an ETA. See \link{nsbi_parallel} and \link{nsbi_progress}.
+}
+
 \examples{
 prior <- prior_uniform(c(-2, -2, -2), c(2, 2, 2))
 simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
