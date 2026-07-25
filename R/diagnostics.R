@@ -22,22 +22,32 @@ NULL
 #' @param n_sbc Number of SBC trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial (rank resolution).
 #' @param seed Optional seed.
+#' @param chunk_size Rows per simulator call; see [nsbi_parallel]. The `n_sbc`
+#'   simulations run across `future` workers when a plan is set; the ranking
+#'   loop that follows calls the trained network and always runs locally.
 #' @return An object of class `nsbi_sbc` with the rank matrix and a per-parameter
 #'   uniformity test.
 #' @export
 sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
-                n_posterior_samples = 1000L, seed = NULL) {
+                n_posterior_samples = 1000L, seed = NULL, chunk_size = NULL) {
   stopifnot(inherits(fit, "nsbi_npe"))
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
   ranks <- matrix(NA_real_, nrow = n_sbc, ncol = d)
   theta_true <- sample_prior(prior, n_sbc)
-  x_all <- as_theta_matrix(simulator(theta_true), fit$dim_x)
-  for (i in seq_len(n_sbc)) {
-    post <- posterior(fit, x_obs = x_all[i, ])
-    draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
-    ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
-  }
+  x_all <- run_simulator(simulator, theta_true, chunk_size = chunk_size,
+                         d = fit$dim_x)
+  with_nsbi_progress({
+    p <- nsbi_progressor(steps = n_sbc, label = "Ranking")
+    tryCatch({
+      for (i in seq_len(n_sbc)) {
+        post <- posterior(fit, x_obs = x_all[i, ])
+        draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+        ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
+        p(1)
+      }
+    }, finally = p(0, done = TRUE))
+  })
   if (is.null(colnames(ranks)) && !is.null(fit$param_names)) {
     colnames(ranks) <- fit$param_names
   }
@@ -122,6 +132,7 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #'   over the hyper-rectangle spanned by the true parameter draws, as in the
 #'   paper) or `"prior"` (draws from the prior).
 #' @param seed Optional seed.
+#' @param chunk_size Rows per simulator call; see [nsbi_parallel].
 #' @return An object of class `nsbi_tarp` with the per-trial coverage values
 #'   and the ECP curve. Plot it with [plot_tarp()].
 #' @references Lemos, Coogan, Hezaveh & Perreault-Levasseur (2023),
@@ -130,14 +141,16 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' @export
 tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  n_posterior_samples = 1000L,
-                 references = c("uniform", "prior"), seed = NULL) {
+                 references = c("uniform", "prior"), seed = NULL,
+                 chunk_size = NULL) {
   stopifnot(inherits(fit, "nsbi_npe"))
   references <- match.arg(references)
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
 
   theta_true <- sample_prior(prior, n_tarp)
-  x_all <- as_theta_matrix(simulator(theta_true), fit$dim_x)
+  x_all <- run_simulator(simulator, theta_true, chunk_size = chunk_size,
+                         d = fit$dim_x)
 
   # z-score all distances by the spread of the true draws so no single
   # parameter dominates
@@ -155,14 +168,20 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
   )
 
   f <- numeric(n_tarp)
-  for (i in seq_len(n_tarp)) {
-    post <- posterior(fit, x_obs = x_all[i, ])
-    draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
-    draws_z <- apply_standardizer(std, draws)
-    d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
-    d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
-    f[i] <- mean(d_samples < d_truth)
-  }
+  with_nsbi_progress({
+    p <- nsbi_progressor(steps = n_tarp, label = "Coverage")
+    tryCatch({
+      for (i in seq_len(n_tarp)) {
+        post <- posterior(fit, x_obs = x_all[i, ])
+        draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+        draws_z <- apply_standardizer(std, draws)
+        d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
+        d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
+        f[i] <- mean(d_samples < d_truth)
+        p(1)
+      }
+    }, finally = p(0, done = TRUE))
+  })
 
   levels <- seq(0, 1, by = 0.05)
   ecp <- sapply(levels, function(a) mean(f < a))
@@ -234,12 +253,15 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
 #' @param simulator The simulator.
 #' @param n Number of predictive draws.
 #' @param x Observation to condition on (defaults to `x_obs`).
+#' @param chunk_size Rows per simulator call; see [nsbi_parallel].
 #' @return An `n x d` matrix of simulated data from posterior parameter draws.
 #' @export
-posterior_predictive <- function(post, simulator, n = 1000L, x = NULL) {
+posterior_predictive <- function(post, simulator, n = 1000L, x = NULL,
+                                 chunk_size = NULL) {
   stopifnot(inherits(post, "nsbi_posterior"))
   theta <- sample.nsbi_posterior(post, n = n, obs = x)
-  pred <- as_theta_matrix(simulator(theta))
+  pred <- run_simulator(simulator, theta, chunk_size = chunk_size,
+                        label = "Predicting")
   if (is.null(colnames(pred)) && !is.null(post$fit$x_names)) {
     colnames(pred) <- post$fit$x_names
   }

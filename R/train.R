@@ -29,6 +29,24 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
                                  lr_patience = 10L, lr_factor = 0.5,
                                  min_lr = 1e-6,
                                  seed = NULL, verbose = FALSE) {
+  # The bar spans every restart, so progress reporting is set up out here and
+  # the loop itself lives in train_restarts().
+  with_nsbi_progress(train_restarts(
+    build_net, log_prob_fn, theta, x, max_epochs, batch_size, lr,
+    validation_fraction, patience, n_restarts, clip_grad_norm, lr_patience,
+    lr_factor, min_lr, seed, verbose
+  ))
+}
+
+#' Restart loop behind `train_conditional_de()`
+#'
+#' Split out so `train_conditional_de()` can wrap the whole loop -- all
+#' restarts, one progress bar -- in a progress-reporting context.
+#' @keywords internal
+train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
+                           batch_size, lr, validation_fraction, patience,
+                           n_restarts, clip_grad_norm, lr_patience, lr_factor,
+                           min_lr, seed, verbose) {
   require_torch()
   if (!is.null(seed)) torch::torch_manual_seed(seed)
   theta <- as_theta_matrix(theta)
@@ -49,6 +67,16 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
 
   best <- list(net = NULL, val = Inf, history = NULL)
 
+  # One progress step per epoch. The total is unknown up front (early stopping
+  # decides it), so the bar targets the epoch training would stop at if the
+  # validation loss never improved again, and revises that target upward every
+  # time it does improve. See the "Training progress" section of ?nsbi_progress.
+  max_epochs <- as.integer(max_epochs)
+  n_restarts <- as.integer(n_restarts)
+  epochs_done <- integer(0)   # epochs used by finished restarts
+  p <- nsbi_progressor(steps = max_epochs * n_restarts, label = "Training")
+  on.exit(p(0, done = TRUE), add = TRUE)
+
   for (restart in seq_len(n_restarts)) {
     net <- build_net()
     opt <- torch::optim_adam(net$parameters, lr = lr)
@@ -58,6 +86,7 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
 
     best_val <- Inf
     best_state <- NULL
+    best_epoch <- 0L
     epochs_no_improve <- 0L
     hist_train <- numeric(0)
     hist_val <- numeric(0)
@@ -91,11 +120,14 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
       if (is.finite(val_loss) && val_loss < best_val - 1e-4) {
         best_val <- val_loss
         best_state <- lapply(net$state_dict(), function(t) t$clone())
+        best_epoch <- epoch
         epochs_no_improve <- 0L
       } else {
         epochs_no_improve <- epochs_no_improve + 1L
       }
       scheduler$step(val_loss)  # decay lr on validation plateau
+      p(1, total = train_progress_total(epochs_done, best_epoch, patience,
+                                        max_epochs, restart, n_restarts))
       if (verbose && (epoch %% 10L == 0L || epoch == 1L)) {
         verbose_cat(TRUE, sprintf(
           "[train] restart %d epoch %d  val_loss=%.4f  best=%.4f\n",
@@ -107,6 +139,7 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
         break
       }
     }
+    epochs_done <- c(epochs_done, epoch)
     if (!is.null(best_state)) net$load_state_dict(best_state)
     net$eval()
 
@@ -118,10 +151,25 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
       )
     }
   }
+  p(0, done = TRUE)
 
   if (is.null(best$net)) {
     stop("Training failed: no restart produced a finite validation loss.",
          call. = FALSE)
   }
   list(net = best$net, best_val_loss = best$val, history = best$history)
+}
+
+#' Projected epoch count for the training progress bar
+#'
+#' The run stops when `patience` epochs pass without a better validation loss,
+#' so if the current best never improves it ends at `best_epoch + patience`.
+#' That is the projection; restarts not yet started are budgeted at the mean
+#' length of the ones already finished.
+#' @keywords internal
+train_progress_total <- function(epochs_done, best_epoch, patience, max_epochs,
+                                 restart, n_restarts) {
+  this <- min(max_epochs, best_epoch + patience)
+  est <- if (length(epochs_done)) mean(epochs_done) else this
+  sum(epochs_done) + this + (n_restarts - restart) * est
 }
