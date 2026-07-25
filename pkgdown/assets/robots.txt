@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pedroliman.github.io/neuralsbi/sitemap.xml
+Sitemap: https://neuralsbi.pedrodelima.com/sitemap.xml

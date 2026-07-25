@@ -6,7 +6,7 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neuralsbi/)
+[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://neuralsbi.pedrodelima.com/)
 <!-- badges: end -->
 
 `neuralsbi` brings [neural simulation-based
@@ -125,20 +125,20 @@ Simulation and neural training both report a progress bar with an ETA — one st
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neuralsbi/) has four
+The [package website](https://neuralsbi.pedrodelima.com/) has four
 vignettes that build on each other:
 
 1.  [Getting
-    started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html)
+    started](https://neuralsbi.pedrodelima.com/articles/neuralsbi.html)
     — the core prior/simulator/posterior workflow.
 2.  [Choosing a density
-    estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html)
+    estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.html)
     — MDN, MAF, NSF, and the torch-free baseline.
 3.  [Checking the
-    posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html)
+    posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html)
     — calibration and predictive diagnostics.
 4.  [Comparison with pomp: an SIR epidemic
-    model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html)
+    model](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html)
     — neural posterior estimation and pomp’s particle-filter MCMC on the
     same stochastic epidemic.
 
