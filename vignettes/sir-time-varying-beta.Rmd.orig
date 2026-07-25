@@ -314,8 +314,8 @@ state population sizes — and reused for every state below. This is what
 the price of a forward pass each.
 
 ```{r fit-npe}
-fit <- npe(prior, sir_rt_simulator, n_simulations = 20000,
-           density_estimator = "maf", n_restarts = 1,
+fit <- npe(prior, sir_rt_simulator, n_simulations = 12000,
+           density_estimator = "maf", max_epochs = 200, n_restarts = 1,
            seed = 1, verbose = FALSE)
 fit
 ```
