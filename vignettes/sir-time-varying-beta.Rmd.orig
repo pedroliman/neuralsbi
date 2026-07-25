@@ -668,6 +668,41 @@ ggplot(pp, aes(date)) +
         legend.position = "top")
 ```
 
+The three bands differ strikingly in width — the piecewise model's is an order
+of magnitude wider at New York's peak than either behavioral model's. It is
+tempting to read the narrow bands as overconfidence. They are not, and the way
+to tell is to hold \(\theta\) *fixed* and re-simulate: whatever spread survives
+is the simulator's own process noise, with no posterior uncertainty in it at
+all.
+
+```{r process-noise}
+# One representative theta per model (the coordinatewise posterior median --
+# not necessarily a high-density point for a correlated posterior, but it
+# produces a New-York-like epidemic, which is all this diagnostic needs).
+noise_at_fixed_theta <- function(nm, state = "New York", n_rep = 300) {
+  draws <- sample(posterior(fits[[nm]], x_obs = obs_for(state)), 500)
+  one <- apply(draws, 2, stats::median)
+  rep_theta <- matrix(rep(one, n_rep), nrow = n_rep, byrow = TRUE)
+  r <- sims[[nm]]$sim(rep_theta, N_fixed = pop[[state]], full = TRUE)
+  pred <- smooth7(r$reported)
+  j <- which.max(case_daily_s[state, ])
+  c(peak_cv = stats::sd(pred[, j]) / mean(pred[, j]),
+    peak_day_sd = stats::sd(apply(pred, 1, which.max)))
+}
+round(t(sapply(names(fits), noise_at_fixed_theta)), 4)
+```
+
+The open-loop piecewise model has roughly an order of magnitude more
+peak-height variability at fixed \(\theta\) than either behavioral model. That
+is the feedback doing exactly what feedback does: run hot and \(\beta\) falls,
+run cold and it recovers, so the loop damps the demographic noise that an
+open-loop model lets through. A behavioral epidemic model is therefore
+*intrinsically* more predictable than a phenomenological one at the same
+parameter values, and most of the narrow predictive band is mechanism rather
+than posterior. Whether the remaining width is honest is a question only SBC
+can answer — which is why the rank histograms above come before this plot,
+not after.
+
 A quantitative score across all 51 states, not just the six plotted: the
 root-mean-square error of the predictive median against the observed curve, on
 the \(\log(1+x)\) scale the estimator works in.
