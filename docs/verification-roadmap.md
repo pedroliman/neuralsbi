@@ -219,8 +219,14 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.3.0 CRAN-prep pass (branch
-`claude/sbi-cran-compliance-x1gtow`, July 2026): the `npe()` defaults were
+pick up the work. Last updated for the 0.3.7 pass (branch
+`claude/rt-vignettes-overshoot-fix-gae474`, July 2026): the test suite now
+skips its `ggplot2`/`GGally` tests when those Suggests are absent
+(`tests/testthat/helper-suggests.R`), and `vignette("sir-time-varying-beta")`
+had its epidemic model reworked so the posterior predictive tracks the observed
+case peaks -- see "Epidemic-model wrinkles" below, which is where the
+diagnosis lives. Earlier, the 0.3.0 CRAN-prep pass (branch
+`claude/sbi-cran-compliance-x1gtow`): the `npe()` defaults were
 aligned with Python `sbi` (density estimator `"maf"`, MDN `n_components = 10`,
 NSF `n_bins = 10`, `batch_size = 200`, `max_epochs = 2000` as an early-stopping
 guard), and the package was made CRAN-clean — `R CMD check --as-cran` reports
@@ -279,7 +285,10 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 - Run tests: `R CMD INSTALL --no-docs . && cd tests && Rscript testthat.R`
   (this runs tests inside the package namespace so internals are visible).
 - torch-gated tests skip automatically without libtorch
-  (`tests/testthat/helper-torch.R`).
+  (`tests/testthat/helper-torch.R`); plotting tests skip without
+  `ggplot2`/`GGally` (`tests/testthat/helper-suggests.R`). Both Suggests, both
+  the same contract: the suite must run everywhere, including under
+  `_R_CHECK_FORCE_SUGGESTS_=false`.
 
 ### Next actions, in priority order
 
@@ -323,6 +332,61 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 - The MDN mean-accuracy tests use tolerance 0.1–0.12; occasional seeds may
   be near the edge. If flaky in CI, bump sims, not tolerance.
 - `sample()` masks `base::sample` (S3 generic in `R/generics.R`).
+
+### Epidemic-model wrinkles (`vignette("sir-time-varying-beta")`)
+
+Three failure modes bit this vignette and will bite any similar SIR-from-case-
+counts model. Each was found by a check that costs minutes and is worth running
+before training anything.
+
+1. **Do not leave the epidemic's phase to demographic noise.** The first
+   version seeded every state with `1 + rpois(n, 1.5)` infections on day 1.
+   Replicate simulations at a *single fixed* `theta` then differed by a factor
+   of ~2,000 at the peak bin (and 10-20% went extinct outright), because a
+   supercritical branching process from two individuals has an atom at
+   extinction and a heavy-tailed final size. The posterior predictive
+   integrates over that, so its mean sits far above any real curve while its
+   5th percentile sits at zero — which is what "the vignette overshoots the
+   peaks" actually was. Inferring an introduction day `t0` and a seed size
+   `I0` cuts the fixed-`theta` peak spread to ~3x and the extinction rate to
+   ~2%. Diagnostic: simulate 400 replicates at one `theta` and look at
+   `quantile(peak, c(.05, .95))`.
+2. **Case counts alone do not identify the epidemic's scale.** They identify
+   `rho * incidence`. With a vague prior on `rho`, the best fit runs to
+   `rho ~ 0.003` and an attack rate near 1, because susceptible depletion is
+   then available to flatten the peak cheaply. An informative `rho` prior from
+   seroprevalence (Havers et al. 2020: 6-24x under-ascertainment) is what
+   breaks the tie; with it, the inferred New York attack rate lands near 20%,
+   matching serology. Diagnostic: optimize the deterministic skeleton with a
+   flat `rho` prior and check where `rho` goes.
+3. **Watch for parameters the simulator cannot see.** The original 4
+   regime-duration parameters were rescaled inside the simulator to sum to the
+   window length, so their common scale had no effect — one coordinate of
+   `theta` was pure noise for the flow. SBC does not catch this (an
+   unidentified coordinate returns its prior, which is uniform in rank). Three
+   log-ratios against a reference regime fix it.
+
+Also: summarize a right-skewed count predictive by its median. Plotting
+`colMeans()` of an `expm1(log1p(...))` predictive tracks the upper tail and
+makes a calibrated fit look like a systematic overshoot.
+
+4. **A narrow predictive band is not automatically overconfidence.** The two
+   behavioral-feedback models produce far tighter bands than the piecewise
+   one, and the reason is mechanical, not statistical: at a *fixed* theta the
+   feedback models' peak-height CV is ~0.005-0.010 against ~0.068 for the
+   open-loop piecewise model, because the loop damps demographic noise (run
+   hot, beta falls). Diagnose this by re-simulating at one theta before
+   reaching for a calibration explanation.
+
+### torch fits do not survive `saveRDS()`
+
+An `nsbi_npe` fit holding a torch estimator cannot be round-tripped with
+`saveRDS()`/`readRDS()` -- the module comes back with an invalid external
+pointer and the first `posterior()` call fails with "external pointer is not
+valid". Re-fit in the session that needs the object, or serialize the module
+with `torch::torch_save()`. Worth fixing properly (a `save_npe()`/`load_npe()`
+pair wrapping `torch_save` on the estimator's state dict) -- it makes any
+long-running study awkward, since a 35-minute fit cannot be parked on disk.
 - DESCRIPTION `Version` is dev (`0.2.0.9000`); cut releases when M1–M3 are
   green.
 

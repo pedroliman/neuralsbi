@@ -47,6 +47,7 @@ test_that("posterior_predictive returns simulator-shaped output", {
 })
 
 test_that("plot_posterior_predictive runs and locates the observation", {
+  skip_if_no_ggplot2()
   set.seed(2)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
   simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),

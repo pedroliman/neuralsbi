@@ -38,6 +38,21 @@ on.exit(setwd(old_wd), add = TRUE)
 origs <- sort(list.files(".", pattern = "\\.Rmd\\.orig$"))
 if (length(origs) == 0) stop("No *.Rmd.orig sources found in vignettes/.")
 
+# Optional: bake only the vignettes named on the command line, matched as
+# substrings of the file name. Baking one article beats baking all six when
+# you are iterating on a single source.
+#     Rscript vignettes/precompute.R sir-time-varying
+selected <- commandArgs(trailingOnly = TRUE)
+if (length(selected)) {
+  keep <- Reduce(`|`, lapply(selected, function(p) grepl(p, origs, fixed = TRUE)))
+  if (!any(keep)) {
+    stop("No *.Rmd.orig matched ", paste(selected, collapse = ", "), ". Available: ",
+         paste(origs, collapse = ", "), call. = FALSE)
+  }
+  origs <- origs[keep]
+  message("Baking only: ", paste(origs, collapse = ", "))
+}
+
 for (orig in origs) {
   out <- sub("\\.orig$", "", orig)
   message("Baking ", orig, " -> ", out)
