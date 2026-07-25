@@ -114,8 +114,8 @@ roll7 <- function(x, k = 7) sapply(seq_along(x), function(i) mean(x[max(1, i - k
 national$new7 <- roll7(national$new)
 national$day <- as.numeric(national$date - start_date) + 1
 
-plot(national$day, national$new7, type = "l", lwd = 2,
-     xlab = "day (1 = 2020-01-21)", ylab = "new cases/day (7-day average)",
+plot(national$date, national$new7, type = "l", lwd = 2,
+     xlab = "date", ylab = "new cases/day (7-day average)",
      main = "US reported cases, first 120 days")
 ```
 
@@ -208,9 +208,9 @@ by hand — they fell out of the BIC search — but they recover a shape anyone
 who lived through spring 2020 will recognize.
 
 ```{r knot-plot, fig.alt = "National curve on the log scale with the selected knot days marked."}
-plot(national$day, log1p(national$new7), type = "l", lwd = 2,
-     xlab = "day", ylab = "log(1 + new cases/day)")
-abline(v = knot_days, col = "firebrick", lty = 2)
+plot(national$date, log1p(national$new7), type = "l", lwd = 2,
+     xlab = "date", ylab = "log(1 + new cases/day)")
+abline(v = start_date + knot_days - 1, col = "firebrick", lty = 2)
 ```
 
 ## The model: a stochastic SIR with a piecewise-constant \(\log \beta(t)\)
@@ -329,9 +329,18 @@ fit
 
 ## Validate before trusting a single R(t) curve
 
-Simulation-based calibration checks that the posterior's credible intervals
-have the coverage they claim, using fresh prior draws the network never saw
-during training.
+Simulation-based calibration (SBC) checks that the posterior's credible
+intervals have the coverage they claim, using fresh prior draws the network
+never saw during training. For each of many simulated "true" parameter
+values we compute where that true value ranks among posterior draws
+conditioned on the resulting simulated data; if the posterior is calibrated,
+that rank is equally likely to fall anywhere, so the histogram of ranks
+across trials should come out flat. A histogram skewed toward the edges
+means the posterior is overconfident (true value often falls outside the
+bulk of the posterior); skewed toward the middle means underconfident. The
+red dashed line marks the count expected under perfect calibration, and the
+dotted lines mark a 99% band around it, so any bar that pokes outside the
+dotted lines is a genuine, not just noisy, departure from flat.
 
 ```{r sbc}
 sbc_res <- sbc(fit, sir_rt_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
@@ -342,6 +351,9 @@ Two parameters are worth looking at directly: \(\log \beta\) in the final
 segment (day 120 — the most policy-relevant point, closest to "now" in this
 window) and the ascertainment rate \(\rho\), which is the parameter most
 likely to trade off against \(\beta(t)\) if the two were poorly identified.
+`plot_sbc()` labels each panel generically by parameter index in `theta`, in
+the order the prior and simulator use them — here that is segment 4's
+\(\log \beta\) ("parameter 4") and \(\rho\) ("parameter 5").
 
 ```{r sbc-beta4, fig.alt = "SBC rank histogram for log-beta in the final (day 120) segment; a flat histogram indicates calibration."}
 plot_sbc(sbc_res, param = n_segments)
@@ -363,6 +375,7 @@ to report a case).
 ```{r post-pred-states, fig.width = 7, fig.height = 6, fig.alt = "Posterior predictive check overlaying reported cases and the predictive interval for five representative states."}
 highlight <- c("Washington", "New York", "California", "Louisiana", "West Virginia")
 bin_mid <- (seq_len(n_bins) - 1) * bin_len + (bin_len + 1) / 2
+bin_date <- start_date + bin_mid - 1
 
 post_pred_state <- function(state, n_draws = 500) {
   x_obs <- c(log(pop[state]), log1p(case_bins[state, ]))
@@ -370,7 +383,7 @@ post_pred_state <- function(state, n_draws = 500) {
   sim_fixed <- function(theta) sir_rt_simulator(theta, N_fixed = pop[state])
   pred <- posterior_predictive(post, sim_fixed, n = n_draws)
   pred_counts <- expm1(pred[, -1, drop = FALSE])  # drop log(N); undo log1p
-  data.frame(state = state, day = bin_mid,
+  data.frame(state = state, date = bin_date,
              observed = case_bins[state, ],
              pred_mean = colMeans(pred_counts),
              pred_lo = apply(pred_counts, 2, stats::quantile, 0.05),
@@ -381,15 +394,17 @@ post_pred_all <- do.call(rbind, lapply(highlight, post_pred_state))
 post_pred_all$state <- factor(post_pred_all$state, levels = highlight)
 
 library(ggplot2)
-ggplot(post_pred_all, aes(day)) +
+ggplot(post_pred_all, aes(date)) +
   geom_ribbon(aes(ymin = pred_lo, ymax = pred_hi), fill = "steelblue", alpha = 0.25) +
   geom_line(aes(y = pred_mean), colour = "steelblue", linewidth = 0.8) +
   geom_point(aes(y = observed), colour = "black", size = 1.4) +
   facet_wrap(~state, ncol = 3, scales = "free_y") +
-  labs(x = "day (1 = 2020-01-21)", y = "new cases per 8-day bin",
+  scale_x_date(date_labels = "%b %d") +
+  labs(x = "date (2020)", y = "new cases per 8-day bin",
        title = "Posterior predictive check, 5 representative states",
        subtitle = "points: reported cases; band: 90% posterior predictive interval") +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ## R(t) for every state
@@ -410,7 +425,7 @@ rt_state <- function(state, n_draws = 2000) {
   draws <- sample(posterior(fit, x_obs = x_obs), n_draws)
   log_beta_t <- draws[, seq_len(n_segments)] %*% t(W_grid)   # n_draws x days
   rt <- exp(log_beta_t) / gamma_fixed
-  data.frame(state = state, day = t_grid,
+  data.frame(state = state, date = start_date + t_grid - 1,
              rt_mean = colMeans(rt),
              rt_lo = apply(rt, 2, stats::quantile, 0.05),
              rt_hi = apply(rt, 2, stats::quantile, 0.95))
@@ -430,15 +445,17 @@ a case, on March 17).
 rt_highlight <- rt_all[rt_all$state %in% highlight, ]
 rt_highlight$state <- factor(rt_highlight$state, levels = highlight)
 
-ggplot(rt_highlight, aes(day, rt_mean)) +
+ggplot(rt_highlight, aes(date, rt_mean)) +
   geom_ribbon(aes(ymin = rt_lo, ymax = rt_hi), fill = "steelblue", alpha = 0.25) +
   geom_line(colour = "steelblue", linewidth = 0.8) +
   geom_hline(yintercept = 1, linetype = 2, colour = "grey40") +
   facet_wrap(~state, ncol = 3) +
-  labs(x = "day (1 = 2020-01-21)", y = expression(R(t)),
+  scale_x_date(date_labels = "%b %d") +
+  labs(x = "date (2020)", y = expression(R(t)),
        title = "Posterior R(t), 5 representative states",
        subtitle = "shaded band: 90% credible interval; dashed line: R(t) = 1") +
-  theme_minimal()
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 All 51 states, condensed into one view: a heatmap of posterior-mean
@@ -448,11 +465,12 @@ All 51 states, condensed into one view: a heatmap of posterior-mean
 peak_order <- names(sort(tapply(rt_all$rt_mean, rt_all$state, max), decreasing = TRUE))
 rt_all$state <- factor(rt_all$state, levels = rev(peak_order))
 
-ggplot(rt_all, aes(day, state, fill = rt_mean)) +
+ggplot(rt_all, aes(date, state, fill = rt_mean)) +
   geom_raster() +
   scale_fill_gradient2(midpoint = 1, low = "steelblue", mid = "white",
                        high = "firebrick", name = expression(R(t))) +
-  labs(x = "day (1 = 2020-01-21)", y = NULL,
+  scale_x_date(date_labels = "%b %d") +
+  labs(x = "date (2020)", y = NULL,
        title = "Posterior mean R(t), all 50 states + DC",
        subtitle = "sorted by peak R(t); white = R(t) = 1") +
   theme_minimal() +
