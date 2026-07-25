@@ -101,6 +101,8 @@ navbar:
         href: articles/diagnostics.html
       - text: "Comparison with pomp: an SIR epidemic model"
         href: articles/sir-epidemic.html
+      - text: "Amortized R(t): a time-varying-beta SIR model across all US states"
+        href: articles/sir-time-varying-beta.html
 
 articles:
 - title: Learning the package
@@ -111,6 +113,7 @@ articles:
   - density-estimators
   - diagnostics
   - sir-epidemic
+  - sir-time-varying-beta
 
 reference:
 - title: Priors
