@@ -51,6 +51,10 @@ jobs:
 
       - name: Deploy to GitHub pages
         if: github.event_name != 'pull_request'
+        # `clean: true` wipes gh-pages on every deploy, so the custom-domain
+        # CNAME cannot live only on that branch. It ships as
+        # pkgdown/assets/CNAME, which pkgdown copies to the site root on each
+        # build; drop that file and GitHub Pages unsets the domain.
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           clean: true

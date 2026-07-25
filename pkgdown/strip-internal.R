@@ -10,7 +10,7 @@
 #    signals onto one URL per page.
 
 site <- "site"
-base_url <- "https://pedroliman.github.io/neuralsbi/"
+base_url <- "https://neuralsbi.pedrodelima.com/"
 
 # --- 1. Strip CLAUDE.md from HTML, sitemap, and search index -----------------
 
