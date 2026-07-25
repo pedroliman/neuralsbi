@@ -81,6 +81,7 @@ test_that("math_labels returns a same-length expression vector", {
 })
 
 test_that("plot_sbc, pairplot and plot_posterior_predictive run with named/math labels", {
+  skip_if_no_ggally()
   set.seed(4)
   prior <- prior_normal(mean = c(`beta[1]` = 0, rho = 0), sd = 1)
   simulator <- function(theta) {
@@ -106,6 +107,7 @@ test_that("plot_sbc, pairplot and plot_posterior_predictive run with named/math 
 })
 
 test_that("pairplot handles a non-syntactic label without erroring", {
+  skip_if_no_ggally()
   set.seed(6)
   draws <- matrix(rnorm(200), ncol = 2)
   colnames(draws) <- c("growth rate (per day)", "rho")
