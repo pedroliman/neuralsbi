@@ -461,15 +461,16 @@ plot_sbc(sbc_res, param = 2L * n_segments + 1L)
 And a posterior predictive check against real data grounds the calibration
 check in the actual observations we care about: does the fitted model, run
 forward from its posterior, reproduce the shape of a real state's curve? We
-check five states that span very different trajectories: Washington (site of
+check six states that span very different trajectories: Washington (site of
 the first detected US case), New York (the largest epicenter in this
 window), California (first state to issue a stay-at-home order), Louisiana
-(a sharp early surge tied to Mardi Gras), and West Virginia (the last state
-to report a case).
+(a sharp early surge tied to Mardi Gras), Michigan (a severe Midwest
+outbreak, including major nursing-home clusters), and West Virginia (the
+last state to report a case).
 
 
 ``` r
-highlight <- c("Washington", "New York", "California", "Louisiana", "West Virginia")
+highlight <- c("Washington", "New York", "California", "Louisiana", "Michigan", "West Virginia")
 bin_mid <- (seq_len(n_bins) - 1) * bin_len + (bin_len + 1) / 2
 bin_date <- start_date + bin_mid - 1
 
@@ -497,14 +498,14 @@ ggplot(post_pred_all, aes(date)) +
   facet_wrap(~state, ncol = 3, scales = "free_y") +
   scale_x_date(date_labels = "%b %d") +
   labs(x = "date (2020)", y = "new cases per 8-day bin",
-       title = "Posterior predictive check, 5 representative states",
+       title = "Posterior predictive check, 6 representative states",
        subtitle = "points: reported cases; band: 90% posterior predictive interval") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-post-pred-states-1.png" alt="Posterior predictive check overlaying reported cases and the predictive interval for five representative states."  />
+<img src="figures/sir-rt-post-pred-states-1.png" alt="Posterior predictive check overlaying reported cases and the predictive interval for six representative states."  />
 <p class="caption">plot of chunk post-pred-states</p>
 </div>
 
@@ -552,8 +553,9 @@ A handful of states tell the national story: Washington (site of the first
 detected US case and the Kirkland nursing-home cluster), New York (the
 largest epicenter in this window), California (first state to issue a
 stay-at-home order, March 19), Louisiana (a sharp early surge tied to Mardi
-Gras gatherings in New Orleans), and West Virginia (the last state to report
-a case, on March 17).
+Gras gatherings in New Orleans), Michigan (a severe Midwest outbreak with
+its own major nursing-home clusters), and West Virginia (the last state to
+report a case, on March 17).
 
 
 ``` r
@@ -567,14 +569,14 @@ ggplot(rt_highlight, aes(date, rt_mean)) +
   facet_wrap(~state, ncol = 3) +
   scale_x_date(date_labels = "%b %d") +
   labs(x = "date (2020)", y = expression(R(t)),
-       title = "Posterior R(t), 5 representative states",
+       title = "Posterior R(t), 6 representative states",
        subtitle = "shaded band: 90% credible interval; dashed line: R(t) = 1") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-rt-highlight-1.png" alt="R(t) trajectories with 90 percent credible bands for five representative states."  />
+<img src="figures/sir-rt-rt-highlight-1.png" alt="R(t) trajectories with 90 percent credible bands for six representative states."  />
 <p class="caption">plot of chunk rt-highlight</p>
 </div>
 
