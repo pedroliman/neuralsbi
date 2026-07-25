@@ -10,7 +10,8 @@ sbc(
   prior = fit$prior,
   n_sbc = 200L,
   n_posterior_samples = 1000L,
-  seed = NULL
+  seed = NULL,
+  chunk_size = NULL
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ sbc(
 \item{n_posterior_samples}{Posterior draws per trial (rank resolution).}
 
 \item{seed}{Optional seed.}
+
+\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}. The \code{n_sbc}
+simulations run across \code{future} workers when a plan is set; the ranking
+loop that follows calls the trained network and always runs locally.}
 }
 \value{
 An object of class \code{nsbi_sbc} with the rank matrix and a per-parameter
