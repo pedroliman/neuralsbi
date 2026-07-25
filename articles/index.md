@@ -38,11 +38,10 @@
   with neuralsbi’s neural posterior estimation, and check whether the
   two posteriors agree.
 
-- [Amortized R(t): a time-varying-beta SIR model across all US
+- [Amortized R(t): behavioral SIR models across all US
   states](https://pedroliman.github.io/neuralsbi/articles/sir-time-varying-beta.md):
 
-  Extend the stochastic SIR case study to a contact rate that changes
-  over time, choose how many spline knots the data can support, and
-  train one amortized posterior that infers the effective reproduction
-  number R(t) for every US state from the first 120 days of the
-  SARS-CoV-2 pandemic.
+  Fit three competing epidemic models to daily reported cases in every
+  US state, summarize the 120-day case curve with a learned embedding
+  network, and ask which behavioral mechanism explains the shape of the
+  first SARS-CoV-2 wave.

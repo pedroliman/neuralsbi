@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.3.7
+
+- The test suite now skips its plotting tests when `ggplot2`/`GGally`
+  are not installed, instead of failing. Both are `Suggests`, so
+  `R CMD check` under `_R_CHECK_FORCE_SUGGESTS_=false` – the
+  configuration CRAN uses on a machine without them – previously hit 5
+  errors from
+  [`require_ggplot2()`](https://pedroliman.github.io/neuralsbi/reference/require_ggplot2.md).
+  The new `skip_if_no_ggplot2()`/`skip_if_no_ggally()` helpers mirror
+  the `skip_if_no_torch()` contract already used for the neural tests,
+  so the suite runs everywhere.
+- [`vignette("sir-time-varying-beta")`](https://pedroliman.github.io/neuralsbi/articles/sir-time-varying-beta.md)
+  reworks the epidemic model so that its posterior predictive tracks the
+  observed case peaks instead of overshooting them. The introduction day
+  and seed size are now inferred per state rather than fixed at two
+  infections on 2020-01-21 (which left the epidemic’s phase to
+  demographic noise: replicate simulations at one fixed parameter
+  differed by a factor of several thousand at the peak bin), the
+  ascertainment prior is pinned by spring-2020 seroprevalence (case
+  counts alone identify only the product of ascertainment and incidence,
+  and the unconstrained fit slides toward vast, barely-ascertained
+  epidemics), and the regime-duration parameterization drops a
+  coordinate that the simulator’s rescaling had left unidentified. The
+  article reports the effective reproduction number *R*_(e)(t) = beta(t)
+  S(t) / (N gamma) computed from the simulator’s own susceptible
+  trajectories, adds a prior-predictive check before training, and
+  summarizes the posterior predictive by its median rather than its
+  mean.
+
 ## neuralsbi 0.3.6
 
 - Parameters and outcomes can now be named. Name
