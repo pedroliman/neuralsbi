@@ -7,7 +7,9 @@
 prior_uniform(low, high)
 }
 \arguments{
-\item{low}{Numeric vector of lower bounds (one per parameter).}
+\item{low}{Numeric vector of lower bounds (one per parameter). Naming the
+vector (e.g. \code{c(beta = 0, gamma = 0)}) attaches those names to every
+downstream parameter matrix, posterior sample, and diagnostic plot.}
 
 \item{high}{Numeric vector of upper bounds (one per parameter).}
 }

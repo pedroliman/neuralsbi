@@ -32,13 +32,17 @@ npe(
 \item{prior}{An \code{nsbi_prior} (see \code{\link[=prior_uniform]{prior_uniform()}}, \code{\link[=prior_normal]{prior_normal()}}).}
 
 \item{simulator}{A function mapping an \verb{n x dim} matrix of parameters to an
-\verb{n x d} matrix of simulated data. Ignored if \code{theta} and \code{x} are given.}
+\verb{n x d} matrix of simulated data. Ignored if \code{theta} and \code{x} are given.
+Column names on its output (e.g. via \code{colnames(out) <- c("cases_wk1", ...)})
+become the outcome names used in plots.}
 
 \item{n_simulations}{Number of prior draws to simulate when \code{simulator} is
 used and \code{theta}/\code{x} are not supplied.}
 
 \item{theta, x}{Optional pre-computed simulations. If supplied, \code{simulator}
-and \code{n_simulations} are ignored.}
+and \code{n_simulations} are ignored. Column names on \code{theta} (or names on
+\code{prior}'s \code{mean}/\code{low}) and on \code{x} are carried through to posterior
+samples, SBC results, and their plots.}
 
 \item{density_estimator}{One of \code{"maf"} (Masked Autoregressive Flow, needs
 \code{torch}; the default, matching Python \code{sbi}), \code{"mdn"} (neural Mixture
