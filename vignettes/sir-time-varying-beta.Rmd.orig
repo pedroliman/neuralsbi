@@ -654,13 +654,18 @@ pp$state <- factor(pp$state, levels = highlight)
 pp$model <- factor(pp$model, levels = c("PW", "EFB", "CBF"))
 
 library(ggplot2)
+# Plotted on a log axis, shifted by 1 to match the log1p scale the estimator
+# is trained on. Daily counts run from a handful in West Virginia to five
+# figures in New York; on a linear axis the widest band decides the y-range and
+# every other curve is pressed flat against the bottom of the panel.
 ggplot(pp, aes(date)) +
-  geom_ribbon(aes(ymin = lo, ymax = hi, fill = model), alpha = 0.18) +
-  geom_line(aes(y = med, colour = model), linewidth = 0.7) +
-  geom_point(aes(y = observed), colour = "black", size = 0.35) +
-  facet_wrap(~state, ncol = 2, scales = "free_y") +
+  geom_ribbon(aes(ymin = lo + 1, ymax = hi + 1, fill = model), alpha = 0.18) +
+  geom_line(aes(y = med + 1, colour = model), linewidth = 0.7) +
+  geom_point(aes(y = observed + 1), colour = "black", size = 0.35) +
+  facet_wrap(~state, ncol = 3) +
   scale_x_date(date_labels = "%b %d") +
-  labs(x = "date (2020)", y = "new cases per day (7-day mean)",
+  scale_y_log10() +
+  labs(x = "date (2020)", y = "1 + new cases per day (7-day mean, log scale)",
        title = "Posterior predictive daily incidence, three models",
        subtitle = "points: reported cases; lines: predictive median; bands: 90% interval") +
   theme_minimal() +
@@ -742,6 +747,11 @@ state trajectories rather than re-deriving \(\beta(t)\) alongside it, so the
 reported quantity and the fitted model cannot drift apart. For the CBF model
 \(\beta(t)\) is the transmission rate averaged over the susceptible pool,
 which mixes the unprotected and risk-averse compartments.
+
+The model used below is whichever scored best above, not a fixed choice. The
+three are close enough that the winner can move with the simulation budget, so
+if you re-run this article with a different `n_sim` do not be surprised to see
+a different name here.
 
 ```{r rt-all-states}
 best <- as.character(scores$model[which.min(scores$rmse_med)])
@@ -843,6 +853,16 @@ parameters to bend \(\beta(t)\) into the right shape and, having no mechanism,
 happily reports transmission rates for regimes that ended before the state's
 epidemic began. The behavioral models get comparable fits from 6 and 8
 parameters and put a physical interpretation on every one of them.
+
+One structural difference between the two behavioral models deserves stating,
+because it is invisible in a 120-day first-wave window and decisive outside
+one. EFB's denominator contains the *cumulative* case count, which only ever
+grows, so its \(\beta(t)\) is monotone non-increasing: the model can bend an
+epidemic down but can never let it come back. CBF can, because \(\mu_B\) lets
+risk-averse individuals drift back into the susceptible pool once incidence
+falls. Over the first wave the two look similar; over a second wave they could
+not, and this is the likeliest reason the original study found CBF the better
+forecaster.
 
 The models still carry real simplifications, worth stating plainly. \(\gamma\)
 is fixed rather than inferred, so `sbc()` above is calibrated conditional on
