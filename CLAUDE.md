@@ -5,10 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this package is
 
 `neuralsbi` is a **native R** implementation of neural simulation-based
-inference, focused on Neural Posterior Estimation (NPE). It mirrors the workflow
-of the Python [`sbi`](https://github.com/sbi-dev/sbi) package but is **not a
-wrapper** — neural density estimators run on the R
-[`torch`](https://torch.mlverse.org/) package (libtorch, no Python). Target
+inference, focused on Neural Posterior Estimation (NPE). Target
 users are applied researchers, not ML engineers: sensible defaults, built-in
 posterior diagnostics.
 
@@ -149,6 +146,12 @@ human engineer, not a language model.
 
 **Do not** (these are LLM tells — avoid them):
 
+- Never use em-dashes.
+- Avoid forbidden Words and expressions such as: "reach for", "hand-pick", "Feeding", "wiggle room", "sit", 
+
+- Don't open a sentence without defining the subject. 
+  - For example, this is bad: "One fit per model, each amortized across the whole prior - including the full range of state population sizes — and reused for all 51 jurisdictions."
+  - This is good: "We run one fit per model, first by running each through their priors. Then we obtain our posterior for each of the 51 jursdictions".
 - No filler openers: "In today's fast-paced world", "It's worth noting that",
   "It is important to note", "As we all know".
 - No hype adjectives or adverbs: "powerful", "seamless", "robust" (as a
