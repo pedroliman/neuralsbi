@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neuralsbi/)
+[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://neuralsbi.pedrodelima.com/)
 <!-- badges: end -->
 
 `neuralsbi` brings [neural simulation-based inference](https://simulation-based-inference.org) (SBI) to R. Given a prior over parameters and a simulator, it trains a neural network to approximate the Bayesian posterior `p(theta | x)`: amortized, likelihood-free Bayesian inference, with no likelihood function and no Python. It mirrors the workflow of the Python [`sbi`](https://github.com/sbi-dev/sbi) package, but is a native R implementation: the neural density estimators for posterior estimation (mixture density networks, masked autoregressive flows, neural spline flows) run directly on the [`torch`](https://torch.mlverse.org/) R package (libtorch), not through a Python bridge.
@@ -108,12 +108,12 @@ Simulation and neural training both report a progress bar with an ETA — one st
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neuralsbi/) has four vignettes that build on each other:
+The [package website](https://neuralsbi.pedrodelima.com/) has four vignettes that build on each other:
 
-1. [Getting started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
-2. [Choosing a density estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
-3. [Checking the posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html) — calibration and predictive diagnostics.
-4. [Comparison with pomp: an SIR epidemic model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html) — neural posterior estimation and pomp's particle-filter MCMC on the same stochastic epidemic.
+1. [Getting started](https://neuralsbi.pedrodelima.com/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
+2. [Choosing a density estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
+3. [Checking the posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html) — calibration and predictive diagnostics.
+4. [Comparison with pomp: an SIR epidemic model](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html) — neural posterior estimation and pomp's particle-filter MCMC on the same stochastic epidemic.
 
 ## License
 
