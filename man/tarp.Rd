@@ -11,7 +11,8 @@ tarp(
   n_tarp = 200L,
   n_posterior_samples = 1000L,
   references = c("uniform", "prior"),
-  seed = NULL
+  seed = NULL,
+  chunk_size = NULL
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ over the hyper-rectangle spanned by the true parameter draws, as in the
 paper) or \code{"prior"} (draws from the prior).}
 
 \item{seed}{Optional seed.}
+
+\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}.}
 }
 \value{
 An object of class \code{nsbi_tarp} with the per-trial coverage values
