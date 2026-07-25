@@ -111,12 +111,14 @@ Simulation and neural training both report a progress bar with an ETA — one st
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neuralsbi/) has four vignettes that build on each other:
+The [package website](https://pedroliman.github.io/neuralsbi/) has six vignettes that build on each other:
 
-1. [Getting started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
-2. [Choosing a density estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
-3. [Checking the posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html) — calibration and predictive diagnostics.
-4. [Comparison with pomp: an SIR epidemic model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html) — neural posterior estimation and pomp's particle-filter MCMC on the same stochastic epidemic.
+1. [Introduction to neural SBI](https://pedroliman.github.io/neuralsbi/articles/intro-to-sbi.html) — what SBI is for, on a simulator whose likelihood has no closed form.
+2. [Getting started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html) — the core prior/simulator/posterior workflow.
+3. [Choosing a density estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html) — MDN, MAF, NSF, and the torch-free baseline.
+4. [Checking the posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html) — calibration and predictive diagnostics.
+5. [Comparison with pomp: an SIR epidemic model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html) — neural posterior estimation and pomp's particle-filter MCMC on the same stochastic epidemic.
+6. [Amortized R(t) across all US states](https://pedroliman.github.io/neuralsbi/articles/sir-time-varying-beta.html) — three time-varying-beta models fit once each, then conditioned on 51 case curves.
 
 ## License
 
