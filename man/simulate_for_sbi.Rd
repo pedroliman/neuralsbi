@@ -10,8 +10,7 @@ simulate_for_sbi(
   n,
   sim_args = list(),
   seed = NULL,
-  verbose = FALSE,
-  chunk_size = NULL
+  verbose = FALSE
 )
 }
 \arguments{
@@ -30,11 +29,6 @@ settings. See \link{nsbi_simulator}.}
 \item{seed}{Optional integer seed for reproducibility.}
 
 \item{verbose}{Print training progress.}
-
-\item{chunk_size}{Draws per parallel task. \code{NULL} (default) splits the run
-into about 64 chunks. A chunk is the batch of simulations one \code{future}
-worker loops over; it does not change how the simulator is called. See
-\link{nsbi_parallel}.}
 }
 \value{
 A list with \code{theta} (\verb{n x dim}) and \code{x} (\verb{n x d}) matrices and
@@ -42,8 +36,7 @@ A list with \code{theta} (\verb{n x dim}) and \code{x} (\verb{n x d}) matrices a
 }
 \description{
 Draws \code{n} parameter vectors from the prior and calls the simulator once per
-draw. Draws are batched into chunks so the run can report progress and,
-under a \pkg{future} plan, spread the work across workers. See
+draw. Under a \pkg{future} plan the draws are spread across workers. See
 \link{nsbi_simulator}, \link{nsbi_parallel} and \link{nsbi_progress}.
 }
 \details{

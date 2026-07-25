@@ -42,8 +42,6 @@
 #' @param max_proposal_batches Cap on rejection-sampling batches per round.
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print per-round progress.
-#' @param chunk_size Draws per parallel task; see [nsbi_parallel]. Each round's
-#'   simulations run across `future` workers when a plan is set.
 #' @param ... Passed to [npe()] (estimator and training settings).
 #'
 #' @return An object of class `c("nsbi_snpe", "nsbi_npe")` with a `rounds`
@@ -68,8 +66,7 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
                                                  "linear_gaussian"),
                            epsilon = 1e-4, n_truncation_samples = 5000L,
                            max_proposal_batches = 200L,
-                           seed = NULL, verbose = FALSE, chunk_size = NULL,
-                           ...) {
+                           seed = NULL, verbose = FALSE, ...) {
   stopifnot(inherits(prior, "nsbi_prior"))
   if (!is.function(simulator)) {
     stop("`simulator` must be a function; sequential NPE has to simulate ",
@@ -121,7 +118,6 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
     }
 
     x_new <- run_simulator(simulator, theta_new, sim_args = sim_args,
-                           chunk_size = chunk_size,
                            label = sprintf("Round %d/%d", r, n_rounds))
     kept <- drop_failed_sims(theta_new, x_new)
     theta_new <- kept$theta
@@ -133,8 +129,7 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       r, n_rounds, nrow(theta_new), nrow(theta_all), acceptance))
 
     fit <- npe(prior, theta = theta_all, x = x_all,
-               density_estimator = density_estimator, verbose = verbose,
-               chunk_size = chunk_size, ...)
+               density_estimator = density_estimator, verbose = verbose, ...)
     rounds[[r]] <- list(n_new = nrow(theta_new), acceptance = acceptance,
                         threshold = threshold)
   }

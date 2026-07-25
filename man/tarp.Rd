@@ -12,8 +12,7 @@ tarp(
   n_posterior_samples = 1000L,
   references = c("uniform", "prior"),
   sim_args = list(),
-  seed = NULL,
-  chunk_size = NULL
+  seed = NULL
 )
 }
 \arguments{
@@ -36,8 +35,6 @@ paper) or \code{"prior"} (draws from the prior).}
 call; see \link{nsbi_simulator}.}
 
 \item{seed}{Optional seed.}
-
-\item{chunk_size}{Draws per parallel task; see \link{nsbi_parallel}.}
 }
 \value{
 An object of class \code{nsbi_tarp} with the per-trial coverage values

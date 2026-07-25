@@ -20,6 +20,13 @@ knitr::opts_chunk$set(
   dpi = 96, fig.retina = NULL
 )
 set.seed(1)
+
+# Baked with a future plan, so the simulator runs across cores. Nothing about
+# the results depends on it: every simulation draws from its own RNG stream,
+# so the same seed gives the same answer on 1 core or 32. See ?nsbi_parallel.
+if (requireNamespace("future", quietly = TRUE)) {
+  future::plan(future::multisession)
+}
 ```
 
 `neuralsbi` performs **Neural Posterior Estimation (NPE)**: given a prior and a

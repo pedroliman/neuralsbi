@@ -228,8 +228,8 @@ with a warning, and `save_npe()`/`load_npe()` (`R/serialize.R`) get a
 torch-backed fit to disk and back. Before that, the 0.4.0 parallel-simulation
 pass (branch `claude/npe-parallel-simulator-futures-q45gqo`): every simulator
 call in the package goes through `run_simulator()` (`R/parallel.R`), which
-batches draws into chunks, runs the chunks over a `future` plan when one
-is declared, and reports progress through `R/progress.R` (progressr when
+deals draws out over a `future` plan when one is declared, and reports
+progress through `R/progress.R` (progressr when
 installed, a built-in ETA bar otherwise). Training reports through the same
 mechanism, one step per epoch. Earlier: the 0.3.0 CRAN-prep pass (branch
 `claude/sbi-cran-compliance-x1gtow`, July 2026): the `npe()` defaults were
@@ -262,7 +262,7 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | Training engine | `R/train.R` | done; restarts, plateau LR decay, grad clipping, history |
 | Simulator contract | `R/simulator.R` | done; one call per parameter set, named-formal or named-vector dispatch, `sim_args`, output validation, non-finite dropping |
 | Serialization | `R/serialize.R` | done; `save_npe()`/`load_npe()`, `de_rebuild_net()` per estimator, `check_fit_alive()` guard |
-| Parallel simulation | `R/parallel.R` | done; `run_simulator()` is the single simulator entry point, chunked, `future`-backed, per-draw L'Ecuyer streams so results depend on the seed alone |
+| Parallel simulation | `R/parallel.R` | done; `run_simulator()` is the single simulator entry point, `future`-backed, per-draw L'Ecuyer streams so results depend on the seed alone. Batching (`sim_batches()`) is scheduling only, sized from the worker count, with no user-facing knob |
 | Progress reporting | `R/progress.R` | done; progressr-aware with a dependency-free ETA bar as fallback, shared by simulation and training |
 | MDN | `R/mdn.R` | done, trains via shared engine |
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |

@@ -1,21 +1,18 @@
-test_that("chunking depends on n alone, not on the backend", {
-  # ~64 chunks by default, so the same n always splits the same way
-  expect_length(chunk_index(1000), 63L)
-  expect_equal(lengths(chunk_index(1000))[[1]], 16L)
-  expect_length(chunk_index(10), 10L)
-  expect_length(chunk_index(1), 1L)
-  expect_length(chunk_index(0), 0L)
+test_that("batching is scheduling only: sequential runs are one loop", {
+  # no plan declared, so no batching at all
+  expect_length(sim_batches(1000), 1L)
+  expect_equal(unlist(sim_batches(1000)), seq_len(1000))
+  expect_length(sim_batches(0), 0L)
 
-  idx <- chunk_index(100, chunk_size = 25)
-  expect_length(idx, 4L)
-  expect_equal(unlist(idx), seq_len(100))
+  # under a plan, a few batches per worker, and every draw appears once
+  idx <- sim_batches(1000, workers = 4L)
+  expect_length(idx, 16L)
+  expect_equal(unlist(idx), seq_len(1000))
 
-  # a chunk_size larger than n gives a single call, i.e. the old behaviour
-  expect_length(chunk_index(100, chunk_size = 1000), 1L)
-
-  withr_option <- options(neuralsbi.chunks = 4L)
-  on.exit(options(withr_option), add = TRUE)
-  expect_length(chunk_index(100), 4L)
+  # fewer draws than batch slots: one draw each, never an empty batch
+  idx <- sim_batches(3, workers = 8L)
+  expect_length(idx, 3L)
+  expect_true(all(lengths(idx) == 1L))
 })
 
 test_that("simulations are reproducible under a seed", {
@@ -25,11 +22,13 @@ test_that("simulations are reproducible under a seed", {
   b <- simulate_for_sbi(sim, prior, 200, seed = 42)
   expect_identical(a, b)
 
-  # each draw has its own stream, so the chunking cannot change a result
-  c1 <- simulate_for_sbi(sim, prior, 200, seed = 42, chunk_size = 200)
-  c2 <- simulate_for_sbi(sim, prior, 200, seed = 42, chunk_size = 1)
-  expect_identical(a, c1)
-  expect_identical(a, c2)
+  # each draw carries its own stream, so the same theta always gives the same
+  # x whatever else is in the run: re-simulating one draw's parameters on its
+  # own stream reproduces that row exactly
+  theta1 <- a$theta[1, , drop = FALSE]
+  set.seed(42)
+  invisible(sample_prior(prior, 200))       # line the streams up as the run did
+  expect_identical(run_simulator(sim, theta1)[1, ], a$x[1, ])
 })
 
 test_that("each simulation phase draws fresh randomness", {

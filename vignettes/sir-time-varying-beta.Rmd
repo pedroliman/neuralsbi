@@ -460,6 +460,8 @@ legend("topleft", bty = "n", lwd = 2, col = c("grey40", "firebrick", "steelblue"
 
 We fit each model once, amortized across the whole prior including the full range of state sizes, then reuse that fit for all 51 jurisdictions at a forward pass each.
 
+This is where a `future` plan earns its place. Each model draws 15,000 epidemics, each one an Euler integration over the whole window, and the simulator is called once per parameter set. `library(future); plan(multisession)` spreads those calls across cores; the draws are unaffected, because each carries its own random-number stream. This article is built with a plan declared.
+
 
 ``` r
 n_sim <- 15000

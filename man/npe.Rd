@@ -27,8 +27,7 @@ npe(
   clip_grad_norm = 5,
   standardize = TRUE,
   seed = NULL,
-  verbose = FALSE,
-  chunk_size = NULL
+  verbose = FALSE
 )
 }
 \arguments{
@@ -94,11 +93,6 @@ validation improvement.}
 \item{seed}{Optional integer seed for reproducibility.}
 
 \item{verbose}{Print training progress.}
-
-\item{chunk_size}{Draws per parallel task. \code{NULL} (default) splits the run
-into about 64 chunks. A chunk is the batch of simulations one \code{future}
-worker loops over; it does not change how the simulator is called. See
-\link{nsbi_parallel}.}
 }
 \value{
 An object of class \code{nsbi_npe}. Turn it into a usable posterior with
@@ -116,8 +110,8 @@ once, you can condition on any observation without re-simulating.
 
 
 The simulator runs sequentially unless you declare a \pkg{future} plan --
-\verb{library(future); plan(multisession)} -- in which case chunks of parameters
-are simulated across workers. Simulation and training both report progress
+\verb{library(future); plan(multisession)} -- in which case the simulations are
+spread across workers. Simulation and training both report progress
 with an ETA. See \link{nsbi_parallel} and \link{nsbi_progress}.
 }
 

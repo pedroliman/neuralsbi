@@ -20,6 +20,13 @@ knitr::opts_chunk$set(
   dpi = 96, fig.retina = NULL
 )
 set.seed(1)
+
+# Baked with a future plan, so the simulator runs across cores. Nothing about
+# the results depends on it: every simulation draws from its own RNG stream,
+# so the same seed gives the same answer on 1 core or 32. See ?nsbi_parallel.
+if (requireNamespace("future", quietly = TRUE)) {
+  future::plan(future::multisession)
+}
 ```
 
 This is the first in a short series of tutorials on neural simulation-based
@@ -149,6 +156,21 @@ anywhere in this call.
 fit <- npe(prior, simulator, n_simulations = 5000, seed = 1)
 fit
 ```
+
+Simulation is usually the expensive part, and it is embarrassingly parallel.
+Declare a `future` plan once and every `neuralsbi` function that calls a
+simulator spreads the work across cores, with no argument to pass and no
+parallel variant to call:
+
+```r
+library(future)
+plan(multisession)
+```
+
+Nothing about the answer changes. Each simulation draws from its own
+random-number stream, so a given `set.seed()` gives the same simulations on
+one core and on 32, and there is no scheduling knob to get wrong. This article
+is built with a plan declared. See `?nsbi_parallel`.
 
 `best val loss` above is the average negative log density,
 $-\log q_\phi(\boldsymbol{\theta} \mid \mathbf{x})$, on held-out simulations.

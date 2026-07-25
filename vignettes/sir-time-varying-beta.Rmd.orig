@@ -20,6 +20,13 @@ knitr::opts_chunk$set(
   dpi = 96, fig.retina = NULL
 )
 set.seed(1)
+
+# Baked with a future plan, so the simulator runs across cores. Nothing about
+# the results depends on it: every simulation draws from its own RNG stream,
+# so the same seed gives the same answer on 1 core or 32. See ?nsbi_parallel.
+if (requireNamespace("future", quietly = TRUE)) {
+  future::plan(future::multisession)
+}
 ```
 
 `vignette("sir-epidemic")` fits a stochastic SIR outbreak with a *constant* contact rate \(\beta\). Real epidemics do not hold still, and the interesting question is *why* they move. This vignette fits **three competing models** of that mechanism to daily reported cases in all 50 US states plus Washington, DC, over the first 120 days of the SARS-CoV-2 pandemic (2020-01-21 to 2020-05-19). Two are behavioral-feedback models from Gozzi, Perra and Vespignani (2025, *PNAS* 122(24) e2421993122), where transmission responds to what people see happening around them. The third is a phenomenological baseline that lets \(\beta\) take a different constant value in each of a few time regimes.
@@ -414,6 +421,8 @@ legend("topleft", bty = "n", lwd = 2, col = c("grey40", "firebrick", "steelblue"
 ## Train all three
 
 We fit each model once, amortized across the whole prior including the full range of state sizes, then reuse that fit for all 51 jurisdictions at a forward pass each.
+
+This is where a `future` plan earns its place. Each model draws 15,000 epidemics, each one an Euler integration over the whole window, and the simulator is called once per parameter set. `library(future); plan(multisession)` spreads those calls across cores; the draws are unaffected, because each carries its own random-number stream. This article is built with a plan declared.
 
 ```{r fit-npe}
 n_sim <- 15000
