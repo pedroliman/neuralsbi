@@ -173,3 +173,21 @@ test_that("errors inside a worker reach the caller", {
     "simulator blew up"
   )
 })
+
+test_that("a failed trial lowers the effective n_sbc and is reported", {
+  set.seed(21)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  sim <- function(theta) unname(theta) + rnorm(2, sd = 0.4)
+  fit <- npe(prior, sim, n_simulations = 1000,
+             density_estimator = "linear_gaussian")
+
+  # fail on trials whose first parameter is positive
+  flaky <- function(theta) if (theta[1] > 0) c(NA, NA) else unname(theta)
+  expect_warning(res <- sbc(fit, flaky, n_sbc = 60, n_posterior_samples = 50,
+                            seed = 4),
+                 "SBC trials with non-finite output")
+  expect_equal(nrow(res$ranks), res$n_sbc)
+  expect_lt(res$n_sbc, 60L)
+  expect_gt(res$n_dropped, 0L)
+  expect_output(print(res), "dropped for non-finite simulator output")
+})
