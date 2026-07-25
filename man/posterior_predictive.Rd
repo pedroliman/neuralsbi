@@ -4,7 +4,7 @@
 \alias{posterior_predictive}
 \title{Posterior predictive draws}
 \usage{
-posterior_predictive(post, simulator, n = 1000L, x = NULL)
+posterior_predictive(post, simulator, n = 1000L, x = NULL, chunk_size = NULL)
 }
 \arguments{
 \item{post}{An \code{nsbi_posterior} object.}
@@ -14,6 +14,8 @@ posterior_predictive(post, simulator, n = 1000L, x = NULL)
 \item{n}{Number of predictive draws.}
 
 \item{x}{Observation to condition on (defaults to \code{x_obs}).}
+
+\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}.}
 }
 \value{
 An \verb{n x d} matrix of simulated data from posterior parameter draws.

@@ -45,7 +45,17 @@
 #'   (strongly recommended; default `TRUE`).
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print training progress.
+#' @param chunk_size Rows of `theta` per simulator call. `NULL` (default)
+#'   splits the run into about 64 chunks. Chunks are the unit of work sent to
+#'   `future` workers and the unit of progress reporting; see [nsbi_parallel].
 #' @param ... Passed to the density estimator.
+#'
+#' @section Parallel simulation and progress:
+#'
+#' The simulator runs sequentially unless you declare a \pkg{future} plan --
+#' `library(future); plan(multisession)` -- in which case chunks of parameters
+#' are simulated across workers. Simulation and training both report progress
+#' with an ETA. See [nsbi_parallel] and [nsbi_progress].
 #'
 #' @return An object of class `nsbi_npe`. Turn it into a usable posterior with
 #'   [posterior()], or sample directly with [sample()].
@@ -67,7 +77,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
-                standardize = TRUE, seed = NULL, verbose = FALSE, ...) {
+                standardize = TRUE, seed = NULL, verbose = FALSE,
+                chunk_size = NULL, ...) {
   stopifnot(inherits(prior, "nsbi_prior"))
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
@@ -83,7 +94,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
       stop("Provide either `simulator` or both `theta` and `x`.", call. = FALSE)
     }
     sims <- simulate_for_sbi(simulator, prior, n_simulations, seed = seed,
-                             verbose = verbose)
+                             verbose = verbose, chunk_size = chunk_size)
     theta <- sims$theta
     x <- sims$x
   }
@@ -190,20 +201,26 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 
 #' Run a simulator over prior draws
 #'
+#' Draws `n` parameter vectors from the prior and pushes them through the
+#' simulator. The simulator is called on chunks of rows rather than on the
+#' whole matrix at once, which is what lets the run report progress and, under
+#' a \pkg{future} plan, spread the chunks across workers. See [nsbi_parallel] and
+#' [nsbi_progress].
+#'
 #' @inheritParams npe
 #' @param n Number of simulations.
 #' @return A list with `theta` (`n x dim`) and `x` (`n x d`) matrices.
+#' @examples
+#' prior <- prior_uniform(c(-1, -1), c(1, 1))
+#' sims <- simulate_for_sbi(function(theta) theta^2, prior, n = 100)
+#' str(sims)
 #' @export
-simulate_for_sbi <- function(simulator, prior, n, seed = NULL, verbose = FALSE) {
+simulate_for_sbi <- function(simulator, prior, n, seed = NULL, verbose = FALSE,
+                             chunk_size = NULL) {
   if (!is.null(seed)) set.seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))
-  x <- simulator(theta)
-  x <- as_theta_matrix(x)
-  if (nrow(x) != nrow(theta)) {
-    stop("Simulator must return one row of output per row of theta.",
-         call. = FALSE)
-  }
+  x <- run_simulator(simulator, theta, chunk_size = chunk_size)
   list(theta = theta, x = x)
 }
 

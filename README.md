@@ -108,6 +108,21 @@ available here, see the [awesome neural SBI
 repo](https://github.com/smsharma/awesome-neural-sbi); there are some
 good implementations in python and in Julia.
 
+## Running the simulator in parallel
+
+Simulation is usually the expensive part of a fit, and it is embarrassingly parallel. Declare a [`future`](https://future.futureverse.org) plan and every function that calls your simulator — `npe()`, `simulate_for_sbi()`, `npe_sequential()`, `sbc()`, `tarp()`, `posterior_predictive()` — spreads the work across cores:
+
+```r
+library(future)
+plan(multisession)
+
+fit <- npe(prior, simulator, n_simulations = 10000)
+```
+
+There is nothing else to change: no extra argument, no parallel variant of `npe()`. Without a plan everything runs sequentially, as before. Each chunk of parameters draws from its own random-number stream, so a given `set.seed()` gives the same simulations on one core or on 32.
+
+Simulation and neural training both report a progress bar with an ETA — one step per simulation, then one step per training epoch. If you use [`progressr`](https://progressr.futureverse.org), `neuralsbi` speaks it natively (`handlers(global = TRUE)`); if not, it draws its own bar. See `?nsbi_parallel` and `?nsbi_progress`.
+
 ## Learn more
 
 The [package website](https://pedroliman.github.io/neuralsbi/) has four
