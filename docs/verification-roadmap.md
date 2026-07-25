@@ -369,6 +369,24 @@ before training anything.
 Also: summarize a right-skewed count predictive by its median. Plotting
 `colMeans()` of an `expm1(log1p(...))` predictive tracks the upper tail and
 makes a calibrated fit look like a systematic overshoot.
+
+4. **A narrow predictive band is not automatically overconfidence.** The two
+   behavioral-feedback models produce far tighter bands than the piecewise
+   one, and the reason is mechanical, not statistical: at a *fixed* theta the
+   feedback models' peak-height CV is ~0.005-0.010 against ~0.068 for the
+   open-loop piecewise model, because the loop damps demographic noise (run
+   hot, beta falls). Diagnose this by re-simulating at one theta before
+   reaching for a calibration explanation.
+
+### torch fits do not survive `saveRDS()`
+
+An `nsbi_npe` fit holding a torch estimator cannot be round-tripped with
+`saveRDS()`/`readRDS()` -- the module comes back with an invalid external
+pointer and the first `posterior()` call fails with "external pointer is not
+valid". Re-fit in the session that needs the object, or serialize the module
+with `torch::torch_save()`. Worth fixing properly (a `save_npe()`/`load_npe()`
+pair wrapping `torch_save` on the estimator's state dict) -- it makes any
+long-running study awkward, since a 35-minute fit cannot be parked on disk.
 - DESCRIPTION `Version` is dev (`0.2.0.9000`); cut releases when M1–M3 are
   green.
 
