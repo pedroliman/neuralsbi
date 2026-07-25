@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/pedroliman/neuralsbi/blob/0.3.5/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/pedroliman/neuralsbi/blob/main/DESCRIPTION)
 
 Nascimento de Lima P (2026). *neuralsbi: Neural Simulation-Based
 Inference*. R package version 0.3.5,
