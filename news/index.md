@@ -1,5 +1,32 @@
 # Changelog
 
+## neuralsbi 0.3.6
+
+- Parameters and outcomes can now be named. Name
+  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md)’s
+  `low`/`high` or
+  [`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md)’s
+  `mean` (e.g. `c(beta = 0, gamma = 0)`), or attach
+  [`colnames()`](https://rdrr.io/r/base/colnames.html) to a simulator’s
+  output, and those names carry through
+  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
+  [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md),
+  [`map_estimate()`](https://pedroliman.github.io/neuralsbi/reference/map_estimate.md),
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
+  [`expected_coverage()`](https://pedroliman.github.io/neuralsbi/reference/expected_coverage.md),
+  and
+  [`posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/posterior_predictive.md)
+  without any extra arguments.
+  [`plot_sbc()`](https://pedroliman.github.io/neuralsbi/reference/plot_sbc.md),
+  [`plot_coverage()`](https://pedroliman.github.io/neuralsbi/reference/plot_coverage.md),
+  [`pairplot()`](https://pedroliman.github.io/neuralsbi/reference/pairplot.md),
+  and
+  [`plot_posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/plot_posterior_predictive.md)
+  use the names for titles, legends, and facet labels; a name that
+  happens to be valid R syntax (`"beta[1]"`, `"rho"`, `"sigma^2"`)
+  renders as its plotmath symbol (Greek letters, sub/superscripts)
+  instead of literal text.
+
 ## neuralsbi 0.3.5
 
 - The SIR case study becomes a head-to-head comparison with the `pomp`

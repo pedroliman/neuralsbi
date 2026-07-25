@@ -46,7 +46,9 @@ npe(
 - simulator:
 
   A function mapping an `n x dim` matrix of parameters to an `n x d`
-  matrix of simulated data. Ignored if `theta` and `x` are given.
+  matrix of simulated data. Ignored if `theta` and `x` are given. Column
+  names on its output (e.g. via `colnames(out) <- c("cases_wk1", ...)`)
+  become the outcome names used in plots.
 
 - n_simulations:
 
@@ -56,7 +58,9 @@ npe(
 - theta, x:
 
   Optional pre-computed simulations. If supplied, `simulator` and
-  `n_simulations` are ignored.
+  `n_simulations` are ignored. Column names on `theta` (or names on
+  `prior`'s `mean`/`low`) and on `x` are carried through to posterior
+  samples, SBC results, and their plots.
 
 - density_estimator:
 

@@ -33,7 +33,13 @@ pairplot(
 
 - labels:
 
-  Optional parameter labels.
+  Optional parameter labels. Defaults to `colnames(samples)` (set
+  automatically for
+  [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md)
+  draws from a fit with named parameters – see
+  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md)/[`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md))
+  or `theta[1]`, `theta[2]`, .... Labels that parse as R syntax
+  (`"beta[1]"`, `"rho"`) render as their plotmath symbol.
 
 - limits:
 

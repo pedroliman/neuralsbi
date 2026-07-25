@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,7 +101,9 @@
 
 
 <dl><dt id="arg-low">low<a class="anchor" aria-label="anchor" href="#arg-low"></a></dt>
-<dd><p>Numeric vector of lower bounds (one per parameter).</p></dd>
+<dd><p>Numeric vector of lower bounds (one per parameter). Naming the
+vector (e.g. <code>c(beta = 0, gamma = 0)</code>) attaches those names to every
+downstream parameter matrix, posterior sample, and diagnostic plot.</p></dd>
 
 
 <dt id="arg-high">high<a class="anchor" aria-label="anchor" href="#arg-high"></a></dt>

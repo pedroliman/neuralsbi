@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,6 +86,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.6" id="neuralsbi-036">neuralsbi 0.3.6<a class="anchor" aria-label="anchor" href="#neuralsbi-036"></a></h2>
+<ul><li>Parameters and outcomes can now be named. Name <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code>’s <code>low</code>/<code>high</code> or <code><a href="../reference/prior_normal.html">prior_normal()</a></code>’s <code>mean</code> (e.g. <code>c(beta = 0, gamma = 0)</code>), or attach <code><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames()</a></code> to a simulator’s output, and those names carry through <code><a href="../reference/npe.html">npe()</a></code>, <code><a href="../reference/sample.html">sample()</a></code>, <code><a href="../reference/map_estimate.html">map_estimate()</a></code>, <code><a href="../reference/sbc.html">sbc()</a></code>, <code><a href="../reference/expected_coverage.html">expected_coverage()</a></code>, and <code><a href="../reference/posterior_predictive.html">posterior_predictive()</a></code> without any extra arguments. <code><a href="../reference/plot_sbc.html">plot_sbc()</a></code>, <code><a href="../reference/plot_coverage.html">plot_coverage()</a></code>, <code><a href="../reference/pairplot.html">pairplot()</a></code>, and <code><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive()</a></code> use the names for titles, legends, and facet labels; a name that happens to be valid R syntax (<code>"beta[1]"</code>, <code>"rho"</code>, <code>"sigma^2"</code>) renders as its plotmath symbol (Greek letters, sub/superscripts) instead of literal text.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.5" id="neuralsbi-035">neuralsbi 0.3.5<a class="anchor" aria-label="anchor" href="#neuralsbi-035"></a></h2>
 <ul><li>The SIR case study becomes a head-to-head comparison with the <code>pomp</code> package, <code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code>. Both methods fit the same stochastic SIR epidemic: <code>pomp</code> via particle-filter MCMC (<code>pmcmc</code>), <code>neuralsbi</code> via neural posterior estimation. The vignette contrasts what each needs from the model — <code>pomp</code> a measurement density, <code>neuralsbi</code> only a simulator — overlays the two posteriors, scores their agreement with a C2ST, and confirms the neural fit with SBC. The comparison is precomputed, so <code>pomp</code> is needed only to regenerate the article, not to build or check the package.</li>

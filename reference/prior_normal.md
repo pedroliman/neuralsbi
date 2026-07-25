@@ -12,7 +12,9 @@ prior_normal(mean, sd = 1)
 
 - mean:
 
-  Numeric vector of means (one per parameter).
+  Numeric vector of means (one per parameter). Naming the vector (e.g.
+  `c(beta = 0, gamma = 0)`) attaches those names to every downstream
+  parameter matrix, posterior sample, and diagnostic plot.
 
 - sd:
 

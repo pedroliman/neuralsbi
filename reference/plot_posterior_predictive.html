@@ -55,7 +55,7 @@ reproduce the data it is conditioned on."><meta property="og:image" content="htt
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,7 +121,10 @@ reproduce the data it is conditioned on.</p>
 
 
 <dt id="arg-labels">labels<a class="anchor" aria-label="anchor" href="#arg-labels"></a></dt>
-<dd><p>Optional labels for the data dimensions.</p></dd>
+<dd><p>Optional labels for the data dimensions. Defaults to
+<code>colnames(pred)</code> (set automatically when the simulator names its output
+columns) or <code>x[1]</code>, <code>x[2]</code>, .... Labels that parse as R syntax render as
+their plotmath symbol.</p></dd>
 
 
 <dt id="arg-bins">bins<a class="anchor" aria-label="anchor" href="#arg-bins"></a></dt>

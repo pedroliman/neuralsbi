@@ -18,7 +18,14 @@ plot_sbc(sbc_result, param = 1L, bins = 20L)
 
 - param:
 
-  Which parameter index to plot (default 1).
+  Which parameter index to plot (default 1). The title uses that
+  parameter's name (from a named prior, see
+  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md)/
+  [`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md))
+  when
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md) was
+  run against a fit that has one, rendered as a plotmath symbol if the
+  name parses as R syntax.
 
 - bins:
 

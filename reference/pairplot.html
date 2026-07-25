@@ -53,7 +53,7 @@ pairplot."><meta property="og:image" content="https://pedroliman.github.io/neura
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -127,7 +127,11 @@ reference (e.g. true) parameter value. Analogous to Python <code>sbi</code>'s
 
 
 <dt id="arg-labels">labels<a class="anchor" aria-label="anchor" href="#arg-labels"></a></dt>
-<dd><p>Optional parameter labels.</p></dd>
+<dd><p>Optional parameter labels. Defaults to <code>colnames(samples)</code> (set
+automatically for <code><a href="sample.html">sample()</a></code> draws from a fit with named parameters –
+see <code><a href="prior_uniform.html">prior_uniform()</a></code>/<code><a href="prior_normal.html">prior_normal()</a></code>) or <code>theta[1]</code>, <code>theta[2]</code>, ....
+Labels that parse as R syntax (<code>"beta[1]"</code>, <code>"rho"</code>) render as their
+plotmath symbol.</p></dd>
 
 
 <dt id="arg-limits">limits<a class="anchor" aria-label="anchor" href="#arg-limits"></a></dt>

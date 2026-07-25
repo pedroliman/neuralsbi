@@ -26,7 +26,10 @@ plot_posterior_predictive(pred, x_obs, labels = NULL, bins = 30L)
 
 - labels:
 
-  Optional labels for the data dimensions.
+  Optional labels for the data dimensions. Defaults to `colnames(pred)`
+  (set automatically when the simulator names its output columns) or
+  `x[1]`, `x[2]`, .... Labels that parse as R syntax render as their
+  plotmath symbol.
 
 - bins:
 

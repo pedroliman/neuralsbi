@@ -12,7 +12,9 @@ prior_uniform(low, high)
 
 - low:
 
-  Numeric vector of lower bounds (one per parameter).
+  Numeric vector of lower bounds (one per parameter). Naming the vector
+  (e.g. `c(beta = 0, gamma = 0)`) attaches those names to every
+  downstream parameter matrix, posterior sample, and diagnostic plot.
 
 - high:
 
