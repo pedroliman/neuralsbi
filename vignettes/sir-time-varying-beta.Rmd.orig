@@ -226,7 +226,21 @@ blends into the other over a smooth, roughly one-week **logistic** transition
 rather than switching in a single day: behavior change and policy roll-out
 (school closures, stay-at-home orders) unfold over days, not instantaneously,
 and a hard step would force that transition through whatever handful of days
-straddle the breakpoint. The recovery rate \(\gamma\) is
+straddle the breakpoint.
+
+The breakpoint days themselves also get **wiggle room per state**: the
+national BIC search picks a shared, nominal set of breakpoints, but
+community transmission did not take hold, and stay-at-home orders did not
+land, on the same calendar day in every state. Rather than move each
+breakpoint independently -- which risks two adjacent breakpoints crossing,
+collapsing a regime to zero width or reversing its order -- we put a prior
+on each **regime's duration** \(d_k\) (how many days segment \(k\) lasts),
+not on the breakpoints' absolute positions. Each \(d_k\) is log-normal around
+its nominal (national) duration, and the 4 sampled durations are rescaled to
+sum to exactly the 119 days between day 1 and day 120. Breakpoints are then
+the cumulative sums of those durations, which are positive by construction,
+so the regimes tile the window in order for every draw -- collision is
+impossible rather than merely unlikely. The recovery rate \(\gamma\) is
 **fixed**, not inferred: with only case counts (no recovery or serology data)
 the generation interval is not separately identifiable from \(\beta(t)\), so
 we set \(1/\gamma = 7\) days, in line with early estimates of the COVID-19
@@ -253,36 +267,53 @@ simulated curves of the earlier vignette:
 library(neuralsbi)
 
 n_knots <- length(knot_days)
-n_segments <- n_knots - 1L               # 4 constant-beta segments
-breakpoints <- knot_days[2:(n_knots - 1)]  # the 3 interior transition days
+n_segments <- n_knots - 1L               # 4 constant-beta regimes
+nominal_dur <- diff(knot_days)           # nominal (national) duration of each regime
+total_days <- sum(nominal_dur)           # 119: span covered day 1 -> day 120
 transition_days <- 7                     # ~1-week logistic transition per breakpoint
 transition_scale <- transition_days / 4
+dur_log_sd <- 0.35                       # per-state wiggle room on each regime's duration (log scale)
 gamma_fixed <- 1 / 7
 
+param_names <- c(paste0("beta[", seq_len(n_segments), "]"),
+                 paste0("d[", seq_len(n_segments), "]"), "rho")
 prior <- prior_normal(
-  mean = c(rep(log(0.3), n_segments), qlogis(0.1)),
-  sd   = c(rep(0.5, n_segments), 1)
+  mean = stats::setNames(c(rep(log(0.3), n_segments), log(nominal_dur), qlogis(0.1)),
+                         param_names),
+  sd   = c(rep(0.5, n_segments), rep(dur_log_sd, n_segments), 1)
 )
 
 sir_rt_simulator <- function(theta, N_fixed = NULL) {
-  theta <- matrix(as.numeric(theta), ncol = n_segments + 1L)
+  theta <- matrix(as.numeric(theta), ncol = 2L * n_segments + 1L)
   n <- nrow(theta)
   log_beta_segments <- theta[, seq_len(n_segments), drop = FALSE]
-  rho <- plogis(theta[, n_segments + 1])
+  log_dur <- theta[, n_segments + seq_len(n_segments), drop = FALSE]
+  rho <- plogis(theta[, 2L * n_segments + 1])
 
   # population: a known covariate, drawn to span real US state sizes during
   # training and fixed to the observed state's population at inference time
   N <- if (is.null(N_fixed)) exp(stats::runif(n, log(5e5), log(4e7))) else rep(N_fixed, n)
 
-  # piecewise-constant log-beta(t): each segment holds a fixed level, and a
-  # logistic function blends one level into the next over a window centered
-  # on the breakpoint. Weights depend only on the breakpoint days, so build
-  # them once and matrix-multiply across all n draws.
+  # regime durations: exp() keeps them positive, then rescaling each draw's 4
+  # durations to sum to total_days pins the breakpoints to the same 119-day
+  # span the data cover. Their cumulative sum is therefore always increasing
+  # -- breakpoints cannot collide or cross for any draw -- while the prior
+  # on log_dur still lets each regime run a little longer or shorter, and
+  # start a little earlier or later, than the national placement.
+  dur <- exp(log_dur)
+  dur <- dur / rowSums(dur) * total_days                    # n x n_segments, rows sum to total_days
+  tau <- knot_days[1] + t(apply(dur, 1, cumsum))[, seq_len(n_segments - 1), drop = FALSE]
+
   t_grid <- seq_len(days)
-  w_trans <- sapply(breakpoints, function(tau) plogis((t_grid - tau) / transition_scale))
-  w_ext <- cbind(1, w_trans, 0)
-  W <- w_ext[, -ncol(w_ext), drop = FALSE] - w_ext[, -1, drop = FALSE]
-  beta_t <- exp(log_beta_segments %*% t(W))   # n x days
+  w_ext <- c(list(matrix(1, n, days)),
+            lapply(seq_len(n_segments - 1), function(k) {
+              outer(tau[, k], t_grid, function(t0, t) plogis((t - t0) / transition_scale))
+            }),
+            list(matrix(0, n, days)))
+  log_beta_t <- Reduce(`+`, lapply(seq_len(n_segments), function(j) {
+    (w_ext[[j]] - w_ext[[j + 1]]) * log_beta_segments[, j]
+  }))
+  beta_t <- exp(log_beta_t)   # n x days
 
   I0 <- 1 + stats::rpois(n, 1.5)           # a handful of independent introductions
   S <- N - I0; I <- I0; R <- rep(0, n)
@@ -308,10 +339,14 @@ sir_rt_simulator <- function(theta, N_fixed = NULL) {
 }
 ```
 
-\(\theta = (\log \beta_1, \dots, \log \beta_4, \operatorname{logit} \rho)\)
-is 5-dimensional and unconstrained on \(\mathbb{R}^5\) — the log/logit
-transforms mean we can use a single Gaussian prior with no truncated support,
-so the posterior needs no rejection sampling for leakage.
+\(\theta = (\log \beta_1, \dots, \log \beta_4, \log d_1, \dots, \log d_4,
+\operatorname{logit} \rho)\) is 9-dimensional and unconstrained on
+\(\mathbb{R}^9\) — the log/logit transforms mean we can use a single
+Gaussian prior with no truncated support, so the posterior needs no
+rejection sampling for leakage, and the rescaling inside the simulator (not
+the prior) is what keeps the regimes from colliding. Naming `prior`'s `mean`
+vector (`beta[1]`, ..., `d[1]`, ..., `rho`) carries those names through
+every posterior draw, SBC result, and diagnostic plot below.
 
 ## Training the amortized posterior
 
@@ -344,23 +379,29 @@ dotted lines is a genuine, not just noisy, departure from flat.
 
 ```{r sbc}
 sbc_res <- sbc(fit, sir_rt_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
-sbc_res    # one uniformity p-value per parameter: 4 log-beta segments, then rho
+sbc_res    # one uniformity p-value per parameter: 4 log-beta regimes, 4 regime durations, then rho
 ```
 
-Two parameters are worth looking at directly: \(\log \beta\) in the final
-segment (day 120 — the most policy-relevant point, closest to "now" in this
-window) and the ascertainment rate \(\rho\), which is the parameter most
-likely to trade off against \(\beta(t)\) if the two were poorly identified.
-`plot_sbc()` labels each panel generically by parameter index in `theta`, in
-the order the prior and simulator use them — here that is segment 4's
-\(\log \beta\) ("parameter 4") and \(\rho\) ("parameter 5").
+Three parameters are worth looking at directly: \(\log \beta\) in the final
+regime (day 120 — the most policy-relevant point, closest to "now" in this
+window), the duration \(d_2\) of the regime nearest the WHO's pandemic
+declaration and the first stay-at-home orders (the new, previously-fixed
+piece of the model), and the ascertainment rate \(\rho\), which is the
+parameter most likely to trade off against \(\beta(t)\) if the two were
+poorly identified. Because `prior`'s `mean` was a named vector, `sbc_res`
+carries those names, and `plot_sbc()` renders them as their plotmath symbol
+directly in the panel title instead of a generic "parameter 4".
 
-```{r sbc-beta4, fig.alt = "SBC rank histogram for log-beta in the final (day 120) segment; a flat histogram indicates calibration."}
+```{r sbc-beta4, fig.alt = "SBC rank histogram for log-beta in the final (day 120) regime; a flat histogram indicates calibration."}
 plot_sbc(sbc_res, param = n_segments)
 ```
 
+```{r sbc-d2, fig.alt = "SBC rank histogram for the duration of regime 2; a flat histogram indicates calibration."}
+plot_sbc(sbc_res, param = n_segments + 2L)
+```
+
 ```{r sbc-rho, fig.alt = "SBC rank histogram for the ascertainment rate rho; a flat histogram indicates calibration."}
-plot_sbc(sbc_res, param = n_segments + 1)
+plot_sbc(sbc_res, param = 2L * n_segments + 1L)
 ```
 
 And a posterior predictive check against real data grounds the calibration
@@ -411,19 +452,31 @@ ggplot(post_pred_all, aes(date)) +
 
 For each of the 51 jurisdictions we condition the same trained posterior on
 that state's own case-count curve and population, then map each posterior
-draw of the 4 segment-level \(\log \beta\) values through the same
-logistic-blended step function to get a full 120-day \(R(t)\) trajectory.
+draw -- its 4 regime-level \(\log \beta\) values *and* its own 4 regime
+durations -- through the same logistic-blended step function to get a full
+120-day \(R(t)\) trajectory. Because the durations are now part of
+\(\theta\), each posterior draw can place a state's inflection points on
+slightly different calendar days (always in order, never colliding).
 
 ```{r rt-all-states}
 t_grid <- seq_len(days)
-w_trans_grid <- sapply(breakpoints, function(tau) plogis((t_grid - tau) / transition_scale))
-w_ext_grid <- cbind(1, w_trans_grid, 0)
-W_grid <- w_ext_grid[, -ncol(w_ext_grid), drop = FALSE] - w_ext_grid[, -1, drop = FALSE]
 
 rt_state <- function(state, n_draws = 2000) {
   x_obs <- c(log(pop[state]), log1p(case_bins[state, ]))
   draws <- sample(posterior(fit, x_obs = x_obs), n_draws)
-  log_beta_t <- draws[, seq_len(n_segments)] %*% t(W_grid)   # n_draws x days
+  log_beta_segments <- draws[, seq_len(n_segments), drop = FALSE]
+  dur <- exp(draws[, n_segments + seq_len(n_segments), drop = FALSE])
+  dur <- dur / rowSums(dur) * total_days
+  tau <- knot_days[1] + t(apply(dur, 1, cumsum))[, seq_len(n_segments - 1), drop = FALSE]
+
+  w_ext <- c(list(matrix(1, n_draws, days)),
+            lapply(seq_len(n_segments - 1), function(k) {
+              outer(tau[, k], t_grid, function(t0, t) plogis((t - t0) / transition_scale))
+            }),
+            list(matrix(0, n_draws, days)))
+  log_beta_t <- Reduce(`+`, lapply(seq_len(n_segments), function(j) {
+    (w_ext[[j]] - w_ext[[j + 1]]) * log_beta_segments[, j]
+  }))
   rt <- exp(log_beta_t) / gamma_fixed
   data.frame(state = state, date = start_date + t_grid - 1,
              rt_mean = colMeans(rt),
@@ -495,17 +548,20 @@ the abstract; this vignette spends it on a real, 51-jurisdiction dataset.
 
 The model still carries real simplifications, worth stating plainly: \(\gamma\)
 is fixed rather than inferred, so `sbc()` above is calibrated conditional on
-that choice, not unconditionally; every state shares the same calendar-time
-breakpoints even though the epidemic reached each one at a different moment;
-the one-week width of the logistic transition between segments is a modeling
-choice representing how quickly behavior or policy shifted, not something
-the case counts separately identify; a single ascertainment rate \(\rho\)
-stands in for what was, in practice, a patchwork of state and local testing
-capacity; and importation is reduced to a handful of seed cases on day 1
-rather than a distributed process over the following weeks. Loosening any of
-these is a natural next step, and each one is a change to the simulator, not
-to the inference machinery around it — the same amortized-NPE workflow
-applies unchanged.
+that choice, not unconditionally; every state shares the same *number* and
+rough *national* placement of regimes, with only a per-state prior on each
+regime's duration \(d_k\) letting the exact inflection days move (a state
+whose epidemic unfolded on a genuinely different schedule, rather than just
+a stretched or compressed one, is not well served by this); the one-week
+width of the logistic transition
+between segments is a modeling choice representing how quickly behavior or
+policy shifted, not something the case counts separately identify; a single
+ascertainment rate \(\rho\) stands in for what was, in practice, a patchwork
+of state and local testing capacity; and importation is reduced to a handful
+of seed cases on day 1 rather than a distributed process over the following
+weeks. Loosening any of these is a natural next step, and each one is a
+change to the simulator, not to the inference machinery around it — the
+same amortized-NPE workflow applies unchanged.
 
 For the underlying workflow in more depth, see `vignette("sir-epidemic")` and
 `vignette("diagnostics")`.
