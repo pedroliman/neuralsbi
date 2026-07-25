@@ -38,6 +38,9 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
     draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
     ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
   }
+  if (is.null(colnames(ranks)) && !is.null(fit$param_names)) {
+    colnames(ranks) <- fit$param_names
+  }
   # per-parameter uniformity via chi-square on binned ranks
   L <- n_posterior_samples
   pvals <- apply(ranks, 2, function(r) {
@@ -47,6 +50,7 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
     tab <- table(br)
     stats::chisq.test(tab)$p.value
   })
+  names(pvals) <- colnames(ranks)
   structure(
     list(ranks = ranks, n_posterior_samples = L, n_sbc = n_sbc,
          uniformity_pvalue = pvals),
@@ -59,7 +63,12 @@ print.nsbi_sbc <- function(x, ...) {
   cat(sprintf("<nsbi_sbc> %d trials, %d posterior samples each\n",
               x$n_sbc, x$n_posterior_samples))
   cat("  per-parameter uniformity p-values (large = calibrated):\n")
-  cat("   ", paste(sprintf("%.3f", x$uniformity_pvalue), collapse = "  "), "\n")
+  if (!is.null(names(x$uniformity_pvalue))) {
+    cat("   ", paste(names(x$uniformity_pvalue), sprintf("%.3f", x$uniformity_pvalue),
+                     sep = "=", collapse = "  "), "\n")
+  } else {
+    cat("   ", paste(sprintf("%.3f", x$uniformity_pvalue), collapse = "  "), "\n")
+  }
   invisible(x)
 }
 
@@ -83,7 +92,7 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
     colMeans(u > lo & u < hi)
   })
   emp <- t(emp)
-  colnames(emp) <- paste0("param", seq_len(ncol(emp)))
+  colnames(emp) <- colnames(sbc_result$ranks) %||% paste0("param", seq_len(ncol(emp)))
   data.frame(nominal = levels, emp, row.names = NULL, check.names = FALSE)
 }
 
@@ -230,5 +239,9 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
 posterior_predictive <- function(post, simulator, n = 1000L, x = NULL) {
   stopifnot(inherits(post, "nsbi_posterior"))
   theta <- sample.nsbi_posterior(post, n = n, obs = x)
-  as_theta_matrix(simulator(theta))
+  pred <- as_theta_matrix(simulator(theta))
+  if (is.null(colnames(pred)) && !is.null(post$fit$x_names)) {
+    colnames(pred) <- post$fit$x_names
+  }
+  pred
 }

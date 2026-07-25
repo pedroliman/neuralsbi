@@ -141,13 +141,20 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
 print.nsbi_snpe <- function(x, ...) {
   cat("<nsbi_snpe> Sequential NPE fit (TSNPE, truncated-prior proposals)\n")
   cat(sprintf("  density estimator : %s\n", x$density_estimator))
+  if (!is.null(x$param_names)) {
+    cat("    parameter names :", paste(x$param_names, collapse = ", "), "\n")
+  }
   cat(sprintf("  rounds            : %d\n", length(x$rounds)))
   cat(sprintf("  simulations       : %d\n", x$n_simulations))
   accs <- vapply(x$rounds, function(r) r$acceptance, numeric(1))
   cat(sprintf("  acceptance/round  : %s\n",
               paste(sprintf("%.2f", accs), collapse = ", ")))
-  cat(sprintf("  targeted x_obs    : %s\n",
-              paste(signif(x$x_obs, 4), collapse = ", ")))
+  x_obs_display <- if (!is.null(x$x_names)) {
+    paste(paste0(x$x_names, "=", signif(x$x_obs, 4)), collapse = ", ")
+  } else {
+    paste(signif(x$x_obs, 4), collapse = ", ")
+  }
+  cat(sprintf("  targeted x_obs    : %s\n", x_obs_display))
   cat("  NOT amortized: only valid at (or near) the targeted x_obs.\n")
   cat("  -> build a posterior with posterior(fit, x_obs = ...)\n")
   invisible(x)

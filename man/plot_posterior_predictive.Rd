@@ -11,7 +11,10 @@ plot_posterior_predictive(pred, x_obs, labels = NULL, bins = 30L)
 
 \item{x_obs}{The observed data vector the posterior was conditioned on.}
 
-\item{labels}{Optional labels for the data dimensions.}
+\item{labels}{Optional labels for the data dimensions. Defaults to
+\code{colnames(pred)} (set automatically when the simulator names its output
+columns) or \code{x[1]}, \code{x[2]}, .... Labels that parse as R syntax render as
+their plotmath symbol.}
 
 \item{bins}{Number of histogram bins.}
 }

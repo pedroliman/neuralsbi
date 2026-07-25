@@ -8,7 +8,11 @@
 #' @param samples A matrix of posterior draws (rows = draws), or an
 #'   `nsbi_samples` object.
 #' @param truth Optional reference parameter vector to overlay.
-#' @param labels Optional parameter labels.
+#' @param labels Optional parameter labels. Defaults to `colnames(samples)` (set
+#'   automatically for [sample()] draws from a fit with named parameters --
+#'   see [prior_uniform()]/[prior_normal()]) or `theta[1]`, `theta[2]`, ....
+#'   Labels that parse as R syntax (`"beta[1]"`, `"rho"`) render as their
+#'   plotmath symbol.
 #' @param limits Optional list (one `c(lo, hi)` per parameter, in column
 #'   order) or matrix of per-parameter axis limits.
 #' @param col Point and density fill colour.
@@ -24,6 +28,7 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
   if (is.null(labels)) {
     labels <- colnames(X) %||% paste0("theta[", seq_len(d), "]")
   }
+  labels <- math_safe_text(labels)
   colnames(X) <- labels
   df <- as.data.frame(X, check.names = FALSE)
 
@@ -71,7 +76,8 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
     lower = list(continuous = lower_fn),
     diag  = list(continuous = diag_fn),
     upper = list(continuous = "blank"),
-    progress = FALSE
+    progress = FALSE,
+    labeller = ggplot2::label_parsed
   ) + ggplot2::theme_minimal()
 
   print(p)
@@ -84,7 +90,10 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
 #' narrow (overconfident); an inverted-U means it is too wide.
 #'
 #' @param sbc_result An `nsbi_sbc` object from [sbc()].
-#' @param param Which parameter index to plot (default 1).
+#' @param param Which parameter index to plot (default 1). The title uses
+#'   that parameter's name (from a named prior, see [prior_uniform()]/
+#'   [prior_normal()]) when [sbc()] was run against a fit that has one,
+#'   rendered as a plotmath symbol if the name parses as R syntax.
 #' @param bins Number of histogram bins.
 #' @return A `ggplot` object (also drawn as a side effect), invisibly.
 #' @export
@@ -97,12 +106,18 @@ plot_sbc <- function(sbc_result, param = 1L, bins = 20L) {
   expected <- sbc_result$n_sbc / bins
   ci <- stats::qbinom(c(0.005, 0.995), sbc_result$n_sbc, 1 / bins)
 
+  param_name <- colnames(sbc_result$ranks)[param]
+  title <- if (is.null(param_name)) {
+    sprintf("SBC ranks: parameter %d", param)
+  } else {
+    bquote("SBC ranks:" ~ .(math_expr(param_name)))
+  }
+
   p <- ggplot2::ggplot(data.frame(rank = r), ggplot2::aes(x = .data$rank)) +
     ggplot2::geom_histogram(breaks = breaks, fill = "grey80", colour = "white") +
     ggplot2::geom_hline(yintercept = expected, colour = "firebrick", linewidth = 0.7, linetype = "dashed") +
     ggplot2::geom_hline(yintercept = ci, colour = "firebrick", linewidth = 0.5, linetype = "dotted") +
-    ggplot2::labs(title = sprintf("SBC ranks: parameter %d", param),
-                 x = "rank of true value", y = "count") +
+    ggplot2::labs(title = title, x = "rank of true value", y = "count") +
     ggplot2::theme_minimal()
 
   print(p)
@@ -144,6 +159,7 @@ plot_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
                        ggplot2::aes(x = .data$nominal, y = .data$empirical, colour = .data$parameter),
                        linewidth = 0.8) +
     ggplot2::coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
+    ggplot2::scale_colour_discrete(labels = math_labels) +
     ggplot2::labs(title = "Expected coverage", x = "nominal credibility level",
                  y = "empirical coverage", colour = NULL) +
     ggplot2::theme_minimal()
@@ -200,7 +216,10 @@ plot_tarp <- function(tarp_result) {
 #'
 #' @param pred A matrix of predictive draws from [posterior_predictive()].
 #' @param x_obs The observed data vector the posterior was conditioned on.
-#' @param labels Optional labels for the data dimensions.
+#' @param labels Optional labels for the data dimensions. Defaults to
+#'   `colnames(pred)` (set automatically when the simulator names its output
+#'   columns) or `x[1]`, `x[2]`, .... Labels that parse as R syntax render as
+#'   their plotmath symbol.
 #' @param bins Number of histogram bins.
 #' @return A `ggplot` object (also drawn as a side effect), invisibly.
 #' @export
@@ -214,6 +233,7 @@ plot_posterior_predictive <- function(pred, x_obs, labels = NULL, bins = 30L) {
     labels <- colnames(pred) %||% paste0("x[", seq_len(d), "]")
   }
   q <- stats::setNames(vapply(seq_len(d), function(j) mean(pred[, j] < x_obs[j]), numeric(1)), labels)
+  labels <- math_safe_text(labels)
 
   long <- data.frame(
     value = as.vector(pred),
@@ -225,7 +245,7 @@ plot_posterior_predictive <- function(pred, x_obs, labels = NULL, bins = 30L) {
     ggplot2::geom_histogram(bins = bins, fill = "grey80", colour = "white") +
     ggplot2::geom_vline(data = obs_df, ggplot2::aes(xintercept = .data$obs),
                         colour = "firebrick", linewidth = 0.8) +
-    ggplot2::facet_wrap(~dim, scales = "free") +
+    ggplot2::facet_wrap(~dim, scales = "free", labeller = ggplot2::label_parsed) +
     ggplot2::labs(x = "predictive draws", y = "count") +
     ggplot2::theme_minimal()
 
