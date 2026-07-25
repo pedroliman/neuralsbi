@@ -1,3 +1,7 @@
+# neuralsbi 0.3.6
+
+* New vignette, `vignette("sir-time-varying-beta")`: extends the SIR case study to a time-varying contact rate. `beta(t)` is piecewise linear between knots chosen by a BIC-based segmented-regression search over the national US COVID-19 case curve, rather than fixed by hand. A single amortized NPE fit — trained once over a prior spanning the full range of US state population sizes — is then conditioned on real reported-case data for all 50 states plus DC over the first 120 days of the pandemic (2020-01-21 to 2020-05-19), recovering a posterior effective-reproduction-number trajectory `R(t)` per state, checked with SBC and a posterior predictive check.
+
 # neuralsbi 0.3.5
 
 * The SIR case study becomes a head-to-head comparison with the `pomp` package, `vignette("sir-epidemic")`. Both methods fit the same stochastic SIR epidemic: `pomp` via particle-filter MCMC (`pmcmc`), `neuralsbi` via neural posterior estimation. The vignette contrasts what each needs from the model — `pomp` a measurement density, `neuralsbi` only a simulator — overlays the two posteriors, scores their agreement with a C2ST, and confirms the neural fit with SBC. The comparison is precomputed, so `pomp` is needed only to regenerate the article, not to build or check the package.
