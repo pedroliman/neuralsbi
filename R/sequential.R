@@ -40,6 +40,8 @@
 #' @param max_proposal_batches Cap on rejection-sampling batches per round.
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print per-round progress.
+#' @param chunk_size Rows per simulator call; see [nsbi_parallel]. Each round's
+#'   simulations run across `future` workers when a plan is set.
 #' @param ... Passed to [npe()] (estimator and training settings).
 #'
 #' @return An object of class `c("nsbi_snpe", "nsbi_npe")` with a `rounds`
@@ -65,7 +67,8 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
                                                  "linear_gaussian"),
                            epsilon = 1e-4, n_truncation_samples = 5000L,
                            max_proposal_batches = 200L,
-                           seed = NULL, verbose = FALSE, ...) {
+                           seed = NULL, verbose = FALSE, chunk_size = NULL,
+                           ...) {
   stopifnot(inherits(prior, "nsbi_prior"))
   if (!is.function(simulator)) {
     stop("`simulator` must be a function; sequential NPE has to simulate ",
@@ -113,11 +116,8 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       }
     }
 
-    x_new <- as_theta_matrix(simulator(theta_new))
-    if (nrow(x_new) != nrow(theta_new)) {
-      stop("Simulator must return one row of output per row of theta.",
-           call. = FALSE)
-    }
+    x_new <- run_simulator(simulator, theta_new, chunk_size = chunk_size,
+                           label = sprintf("Round %d/%d", r, n_rounds))
     theta_all <- rbind(theta_all, theta_new)
     x_all <- rbind(x_all, x_new)
     verbose_cat(verbose, sprintf(
@@ -125,7 +125,8 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       r, n_rounds, nrow(theta_new), nrow(theta_all), acceptance))
 
     fit <- npe(prior, theta = theta_all, x = x_all,
-               density_estimator = density_estimator, verbose = verbose, ...)
+               density_estimator = density_estimator, verbose = verbose,
+               chunk_size = chunk_size, ...)
     rounds[[r]] <- list(n_new = nrow(theta_new), acceptance = acceptance,
                         threshold = threshold)
   }
