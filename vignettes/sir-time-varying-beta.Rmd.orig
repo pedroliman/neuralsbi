@@ -210,7 +210,7 @@ who lived through spring 2020 will recognize.
 ```{r knot-plot, fig.alt = "National curve on the log scale with the selected knot days marked."}
 plot(national$date, log1p(national$new7), type = "l", lwd = 2,
      xlab = "date", ylab = "log(1 + new cases/day)")
-abline(v = start_date + knot_days - 1, col = "firebrick", lty = 2)
+abline(v = start_date + knot_days - 1, col = "firebrick", lty = 2, lwd = 2)
 ```
 
 ## The model: a stochastic SIR with a piecewise-constant \(\log \beta(t)\)
