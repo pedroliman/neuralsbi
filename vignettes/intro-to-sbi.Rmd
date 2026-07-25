@@ -97,6 +97,15 @@ fit
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 ```
 
+Simulation is usually the expensive part, and it is embarrassingly parallel. Declare a `future` plan once and every `neuralsbi` function that calls a simulator spreads the work across cores, with no argument to pass and no parallel variant to call:
+
+``` r
+library(future)
+plan(multisession)
+```
+
+Nothing about the answer changes. Each simulation draws from its own random-number stream, so a given `set.seed()` gives the same simulations on one core and on 32, and there is no scheduling knob to get wrong. This article is built with a plan declared. See `?nsbi_parallel`.
+
 `best val loss` above is the average negative log density, $-\log q_\phi(\boldsymbol{\theta} \mid \mathbf{x})$, on held-out simulations. It is useful for comparing fits on the same problem and means nothing compared across problems.
 
 This fit is **amortized**: trained once, over the whole prior, it can be conditioned afterwards on any observation the prior predictive distribution could plausibly have produced, with no re-simulating and no retraining. That is the central practical payoff of NPE over likelihood-based MCMC, which restarts from scratch for every new data set. The caveat matters: an observation unlike anything in training still returns posterior draws, and they are not to be trusted. That is one of the things a posterior predictive check catches, which is why one appears below.

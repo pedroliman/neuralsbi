@@ -4,14 +4,7 @@
 \alias{posterior_predictive}
 \title{Posterior predictive draws}
 \usage{
-posterior_predictive(
-  post,
-  simulator,
-  n = 1000L,
-  x = NULL,
-  sim_args = list(),
-  chunk_size = NULL
-)
+posterior_predictive(post, simulator, n = 1000L, x = NULL, sim_args = list())
 }
 \arguments{
 \item{post}{An \code{nsbi_posterior} object.}
@@ -25,8 +18,6 @@ posterior_predictive(
 
 \item{sim_args}{Named list of extra arguments passed to every simulator
 call; see \link{nsbi_simulator}.}
-
-\item{chunk_size}{Draws per parallel task; see \link{nsbi_parallel}.}
 }
 \value{
 An \verb{n x d} matrix of simulated data from posterior parameter draws.

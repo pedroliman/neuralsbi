@@ -11,8 +11,7 @@ sbc(
   n_sbc = 200L,
   n_posterior_samples = 1000L,
   sim_args = list(),
-  seed = NULL,
-  chunk_size = NULL
+  seed = NULL
 )
 }
 \arguments{
@@ -31,10 +30,6 @@ sbc(
 call; see \link{nsbi_simulator}.}
 
 \item{seed}{Optional seed.}
-
-\item{chunk_size}{Draws per parallel task; see \link{nsbi_parallel}. The \code{n_sbc}
-simulations run across \code{future} workers when a plan is set; the ranking
-loop that follows calls the trained network and always runs locally.}
 }
 \value{
 An object of class \code{nsbi_sbc} with the rank matrix and a per-parameter
@@ -48,4 +43,8 @@ posterior is well calibrated, the ranks are uniformly distributed.
 \details{
 A trial whose simulation returns non-finite output is dropped, which lowers
 the effective \code{n_sbc}.
+
+The \code{n_sbc} simulations run across \code{future} workers when a plan is
+set (see \link{nsbi_parallel}); the ranking loop that follows calls the trained
+network and always runs locally.
 }

@@ -22,34 +22,34 @@ current process, and \code{neuralsbi} mentions the two lines above once per
 session. Silence that hint with
 \code{options(neuralsbi.parallel_hint = FALSE)}.
 }
-\section{Chunking}{
-
-
-The simulator is called once per parameter set (see \link{nsbi_simulator}). A
-chunk is the batch of draws one worker loops over: the unit of parallel
-dispatch, and nothing else. The number of chunks depends only on the number
-of simulations (\code{ceiling(n / chunk_size)}, with \code{chunk_size} chosen to give
-about 64 chunks), \emph{not} on the number of workers. Set it yourself with the
-\code{chunk_size} argument, or globally with \code{options(neuralsbi.chunks = )}.
-Larger chunks mean less scheduling overhead; smaller chunks balance uneven
-simulator run times better. Under a multi-process plan each chunk ships the
-simulator -- and everything its environment captures -- to a worker, so a
-simulator closing over a large object is a reason to raise \code{chunk_size}, or
-to pass the object through \code{sim_args} instead.
-}
-
 \section{Random numbers}{
 
 
 Each \emph{simulation} gets its own L'Ecuyer-CMRG random-number stream, derived
 from the session's RNG state at the moment simulation starts. So
 \code{set.seed(42)} before a fit (or \code{npe(..., seed = 42)}) gives the same
-simulations whatever the plan, the worker count, and the chunk size: results
-depend on the seed alone.
+simulations whatever the plan and whatever the worker count: results depend
+on the seed alone.
 
 Because the simulations are drawn from separate streams, the simulator no
 longer consumes the caller's RNG state directly; the state advances by one
 draw per simulation phase.
+}
+
+\section{Scheduling}{
+
+
+Under a multi-process plan the draws are dealt out to workers in batches,
+because one \code{future} per simulation would spend longer shipping the
+simulator to a worker than running it. Batch sizes follow the worker count
+and are not a setting: they cannot change a result, since every simulation
+has its own RNG stream. Running sequentially there are no batches at all,
+just a loop.
+
+Each batch ships the simulator, and everything its environment captures, to
+a worker. A simulator closing over a large object therefore pays for that
+object once per batch, which is a reason to pass it through \code{sim_args}
+instead of capturing it.
 }
 
 \section{What is not parallelized}{

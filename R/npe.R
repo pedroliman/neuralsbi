@@ -53,16 +53,12 @@
 #'   (strongly recommended; default `TRUE`).
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print training progress.
-#' @param chunk_size Draws per parallel task. `NULL` (default) splits the run
-#'   into about 64 chunks. A chunk is the batch of simulations one `future`
-#'   worker loops over; it does not change how the simulator is called. See
-#'   [nsbi_parallel].
 #'
 #' @section Parallel simulation and progress:
 #'
 #' The simulator runs sequentially unless you declare a \pkg{future} plan --
-#' `library(future); plan(multisession)` -- in which case chunks of parameters
-#' are simulated across workers. Simulation and training both report progress
+#' `library(future); plan(multisession)` -- in which case the simulations are
+#' spread across workers. Simulation and training both report progress
 #' with an ETA. See [nsbi_parallel] and [nsbi_progress].
 #'
 #' @return An object of class `nsbi_npe`. Turn it into a usable posterior with
@@ -87,8 +83,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
-                standardize = TRUE, seed = NULL, verbose = FALSE,
-                chunk_size = NULL) {
+                standardize = TRUE, seed = NULL, verbose = FALSE) {
   stopifnot(inherits(prior, "nsbi_prior"))
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
@@ -105,7 +100,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
     }
     sims <- simulate_for_sbi(simulator, prior, n_simulations,
                              sim_args = sim_args, seed = seed,
-                             verbose = verbose, chunk_size = chunk_size)
+                             verbose = verbose)
     theta <- sims$theta
     x <- sims$x
     n_dropped <- sims$n_dropped
@@ -225,8 +220,7 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 #' Run a simulator over prior draws
 #'
 #' Draws `n` parameter vectors from the prior and calls the simulator once per
-#' draw. Draws are batched into chunks so the run can report progress and,
-#' under a \pkg{future} plan, spread the work across workers. See
+#' draw. Under a \pkg{future} plan the draws are spread across workers. See
 #' [nsbi_simulator], [nsbi_parallel] and [nsbi_progress].
 #'
 #' Simulations whose output is not finite are dropped together with their
@@ -245,12 +239,11 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 #' str(sims)
 #' @export
 simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
-                             seed = NULL, verbose = FALSE, chunk_size = NULL) {
+                             seed = NULL, verbose = FALSE) {
   if (!is.null(seed)) set.seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))
-  x <- run_simulator(simulator, theta, sim_args = sim_args,
-                     chunk_size = chunk_size)
+  x <- run_simulator(simulator, theta, sim_args = sim_args)
   drop_failed_sims(theta, x)[c("theta", "x", "n_dropped")]
 }
 
