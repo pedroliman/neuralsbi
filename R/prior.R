@@ -10,7 +10,7 @@ NULL
 
 #' @keywords internal
 new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
-                      type = "custom") {
+                      type = "custom", param_names = NULL) {
   structure(
     list(
       sample = sample_fn,
@@ -18,7 +18,8 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
       dim = as.integer(dim),
       lower = lower,
       upper = upper,
-      type = type
+      type = type,
+      param_names = param_names
     ),
     class = "nsbi_prior"
   )
@@ -26,7 +27,9 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
 
 #' Box-uniform (independent uniform) prior
 #'
-#' @param low Numeric vector of lower bounds (one per parameter).
+#' @param low Numeric vector of lower bounds (one per parameter). Naming the
+#'   vector (e.g. `c(beta = 0, gamma = 0)`) attaches those names to every
+#'   downstream parameter matrix, posterior sample, and diagnostic plot.
 #' @param high Numeric vector of upper bounds (one per parameter).
 #' @return An `nsbi_prior` object.
 #' @examples
@@ -34,6 +37,7 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
 #' theta <- sample_prior(prior, 5)
 #' @export
 prior_uniform <- function(low, high) {
+  param_names <- names(low) %||% names(high)
   low <- as.numeric(low)
   high <- as.numeric(high)
   if (length(low) != length(high)) {
@@ -57,18 +61,21 @@ prior_uniform <- function(low, high) {
     ifelse(inside, const, -Inf)
   }
   new_prior(sample_fn, log_prob_fn, d, lower = low, upper = high,
-            type = "uniform")
+            type = "uniform", param_names = param_names)
 }
 
 #' Independent normal prior
 #'
-#' @param mean Numeric vector of means (one per parameter).
+#' @param mean Numeric vector of means (one per parameter). Naming the vector
+#'   (e.g. `c(beta = 0, gamma = 0)`) attaches those names to every downstream
+#'   parameter matrix, posterior sample, and diagnostic plot.
 #' @param sd Numeric scalar or vector of standard deviations.
 #' @return An `nsbi_prior` object.
 #' @examples
 #' prior <- prior_normal(mean = c(0, 0), sd = 1)
 #' @export
 prior_normal <- function(mean, sd = 1) {
+  param_names <- names(mean)
   mean <- as.numeric(mean)
   d <- length(mean)
   sd <- as.numeric(sd)
@@ -89,7 +96,7 @@ prior_normal <- function(mean, sd = 1) {
     rowSums(lp)
   }
   new_prior(sample_fn, log_prob_fn, d, lower = NULL, upper = NULL,
-            type = "normal")
+            type = "normal", param_names = param_names)
 }
 
 #' Build a prior from arbitrary sampling / density functions
@@ -119,8 +126,11 @@ prior_custom <- function(sample_fn, log_prob_fn = NULL, dim, lower = NULL,
 #' @export
 sample_prior <- function(prior, n) {
   stopifnot(inherits(prior, "nsbi_prior"))
-  out <- prior$sample(n)
-  as_theta_matrix(out, prior$dim)
+  out <- as_theta_matrix(prior$sample(n), prior$dim)
+  if (is.null(colnames(out)) && !is.null(prior$param_names)) {
+    colnames(out) <- prior$param_names
+  }
+  out
 }
 
 #' Test whether parameters lie within the prior support
@@ -147,6 +157,9 @@ within_support <- function(prior, theta) {
 #' @export
 print.nsbi_prior <- function(x, ...) {
   cat(sprintf("<nsbi_prior> type=%s, dim=%d\n", x$type, x$dim))
+  if (!is.null(x$param_names)) {
+    cat("  parameters:", paste(x$param_names, collapse = ", "), "\n")
+  }
   if (!is.null(x$lower)) {
     cat("  lower:", paste(signif(x$lower, 4), collapse = ", "), "\n")
     cat("  upper:", paste(signif(x$upper, 4), collapse = ", "), "\n")
