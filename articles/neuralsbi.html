@@ -22,7 +22,7 @@
 ">
 <meta property="og:description" content="Train a neural posterior estimator from a prior and a simulator to perform amortized, likelihood-free Bayesian inference in R, then check that the fit is trustworthy.
 ">
-<meta property="og:image" content="https://pedroliman.github.io/neuralsbi/og-card.png">
+<meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png">
 <meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:creator" content="@PedroNdeLima">
@@ -40,7 +40,7 @@
   "@type": "SoftwareSourceCode",
   "name": "neuralsbi",
   "description": "A native R implementation of neural simulation-based inference (SBI). Trains neural posterior estimators on a prior and simulator for amortized, likelihood-free Bayesian inference, running on the torch back end.",
-  "url": "https://pedroliman.github.io/neuralsbi/",
+  "url": "https://neuralsbi.pedrodelima.com/",
   "codeRepository": "https://github.com/pedroliman/neuralsbi",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
@@ -67,7 +67,7 @@
   }
 }
 </script>
-<link rel="canonical" href="https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html">
+<link rel="canonical" href="https://neuralsbi.pedrodelima.com/articles/neuralsbi.html">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -147,7 +147,7 @@ and shows how to check that the result is trustworthy.</p>
 Here is a small linear-Gaussian model whose posterior we happen to know
 in closed form, so we can check our answer.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedroliman.github.io/neuralsbi/">neuralsbi</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># (1) prior over two parameters</span></span>
 <span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>

@@ -14,7 +14,7 @@ sample(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, ...)
 - x:
 
   An `nsbi_posterior` object (named `x` to satisfy the
-  [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md)
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
   generic).
 
 - size, n:

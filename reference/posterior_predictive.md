@@ -30,7 +30,7 @@ posterior_predictive(post, simulator, n = 1000L, x = NULL, chunk_size = NULL)
 - chunk_size:
 
   Rows per simulator call; see
-  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
 
 ## Value
 

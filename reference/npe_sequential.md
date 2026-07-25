@@ -1,17 +1,17 @@
 # Sequential NPE with truncated-prior proposals (TSNPE)
 
 Multi-round NPE targeting a single observation `x_obs`. Single-round
-[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
-spends its simulation budget across the whole prior; when only one
-observation matters, most of those simulations land in regions the
-posterior never visits. `npe_sequential()` implements truncated
-sequential NPE (TSNPE, Deistler et al. 2022): after each round the prior
-is truncated to the highest-probability region of the current posterior
-estimate, and the next round's parameters are drawn from that truncated
-prior. Because every proposal is proportional to the prior on its
-support, the standard NPE loss stays valid – no importance-weight or
-atomic correction is needed, which is what makes TSNPE the simplest
-correct sequential scheme.
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) spends its
+simulation budget across the whole prior; when only one observation
+matters, most of those simulations land in regions the posterior never
+visits. `npe_sequential()` implements truncated sequential NPE (TSNPE,
+Deistler et al. 2022): after each round the prior is truncated to the
+highest-probability region of the current posterior estimate, and the
+next round's parameters are drawn from that truncated prior. Because
+every proposal is proportional to the prior on its support, the standard
+NPE loss stays valid – no importance-weight or atomic correction is
+needed, which is what makes TSNPE the simplest correct sequential
+scheme.
 
 ## Usage
 
@@ -38,8 +38,8 @@ npe_sequential(
 - prior:
 
   An `nsbi_prior` (see
-  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md),
-  [`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md)).
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md),
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)).
 
 - simulator:
 
@@ -63,8 +63,8 @@ npe_sequential(
 - density_estimator:
 
   Passed to
-  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
-  each round.
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) each
+  round.
 
 - epsilon:
 
@@ -90,14 +90,14 @@ npe_sequential(
 - chunk_size:
 
   Rows per simulator call; see
-  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
   Each round's simulations run across `future` workers when a plan is
   set.
 
 - ...:
 
   Passed to
-  [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
   (estimator and training settings).
 
 ## Value
@@ -110,10 +110,10 @@ recording per-round budgets, acceptance rates, and thresholds.
 The rounds accumulate: each round's estimator is trained on all
 simulations so far. The final fit is returned as an `nsbi_npe` (subclass
 `nsbi_snpe`) and works with
-[`posterior()`](https://pedroliman.github.io/neuralsbi/reference/posterior.md),
-[`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md)
-and the diagnostics, but unlike single-round NPE it is *not* amortized:
-it is only trustworthy at (or very near) `x_obs`.
+[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md),
+[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md) and
+the diagnostics, but unlike single-round NPE it is *not* amortized: it
+is only trustworthy at (or very near) `x_obs`.
 
 Proposal draws are obtained by rejection: prior candidates are kept when
 their posterior log-density clears the `epsilon`-quantile threshold of

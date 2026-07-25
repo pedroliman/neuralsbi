@@ -45,5 +45,5 @@ not a promise.
 
 ## See also
 
-[nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+[nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
 for running the simulator across cores.

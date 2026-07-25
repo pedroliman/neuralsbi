@@ -41,8 +41,8 @@ npe(
 - prior:
 
   An `nsbi_prior` (see
-  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md),
-  [`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md)).
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md),
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)).
 
 - simulator:
 
@@ -84,7 +84,7 @@ npe(
 - embedding_net:
 
   Optional summary network built with
-  [`embedding_mlp()`](https://pedroliman.github.io/neuralsbi/reference/embedding_mlp.md).
+  [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md).
   When supplied, the neural estimators condition on the learned features
   \\f\_\psi(x)\\ instead of the raw data, training the embedding
   jointly. Ignored (with a warning) by `"linear_gaussian"`.
@@ -127,7 +127,7 @@ npe(
   Rows of `theta` per simulator call. `NULL` (default) splits the run
   into about 64 chunks. Chunks are the unit of work sent to `future`
   workers and the unit of progress reporting; see
-  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
 
 - ...:
 
@@ -136,9 +136,9 @@ npe(
 ## Value
 
 An object of class `nsbi_npe`. Turn it into a usable posterior with
-[`posterior()`](https://pedroliman.github.io/neuralsbi/reference/posterior.md),
+[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md),
 or sample directly with
-[`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md).
+[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md).
 
 ## Parallel simulation and progress
 
@@ -146,9 +146,9 @@ The simulator runs sequentially unless you declare a future plan –
 [`library(future); plan(multisession)`](https://future.futureverse.org)
 – in which case chunks of parameters are simulated across workers.
 Simulation and training both report progress with an ETA. See
-[nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+[nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
 and
-[nsbi_progress](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md).
+[nsbi_progress](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md).
 
 ## Examples
 

@@ -22,7 +22,7 @@
 ">
 <meta property="og:description" content="The basics of amortized, likelihood-free Bayesian inference: prior, simulator, observation, and how neuralsbi turns them into a posterior, illustrated with a simulator whose likelihood has no closed form.
 ">
-<meta property="og:image" content="https://pedroliman.github.io/neuralsbi/og-card.png">
+<meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png">
 <meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:creator" content="@PedroNdeLima">
@@ -40,7 +40,7 @@
   "@type": "SoftwareSourceCode",
   "name": "neuralsbi",
   "description": "A native R implementation of neural simulation-based inference (SBI). Trains neural posterior estimators on a prior and simulator for amortized, likelihood-free Bayesian inference, running on the torch back end.",
-  "url": "https://pedroliman.github.io/neuralsbi/",
+  "url": "https://neuralsbi.pedrodelima.com/",
   "codeRepository": "https://github.com/pedroliman/neuralsbi",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
@@ -67,7 +67,7 @@
   }
 }
 </script>
-<link rel="canonical" href="https://pedroliman.github.io/neuralsbi/articles/intro-to-sbi.html">
+<link rel="canonical" href="https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -210,7 +210,7 @@ from a small sample of observations.</p>
 <p>Every SBI problem needs a <strong>prior</strong>, a
 <strong>simulator</strong>, and an <strong>observation</strong>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedroliman.github.io/neuralsbi/">neuralsbi</a></span><span class="op">)</span>   <span class="co"># note: masks base::sample(); see below</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span>   <span class="co"># note: masks base::sample(); see below</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'neuralsbi'</span></span>
 <span><span class="co">#&gt; The following object is masked from 'package:base':</span></span>

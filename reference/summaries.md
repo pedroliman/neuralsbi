@@ -43,7 +43,7 @@ summary(object, ...)
 - object:
 
   An `nsbi_samples` matrix from
-  [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md),
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
   an `nsbi_posterior`, or an `nsbi_npe` fit.
 
 - probs:

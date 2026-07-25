@@ -28,6 +28,6 @@ fit_mdn(
 - embedding:
 
   Optional embedding-network spec (see
-  [`embedding_mlp()`](https://pedroliman.github.io/neuralsbi/reference/embedding_mlp.md));
+  [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md));
   the MDN then conditions on the learned features instead of the raw
   `x`.

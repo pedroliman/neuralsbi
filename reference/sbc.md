@@ -48,7 +48,7 @@ sbc(
 - chunk_size:
 
   Rows per simulator call; see
-  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
   The `n_sbc` simulations run across `future` workers when a plan is
   set; the ranking loop that follows calls the trained network and
   always runs locally.

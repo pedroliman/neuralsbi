@@ -1,12 +1,12 @@
 # Running the simulator in parallel
 
 Every `neuralsbi` function that calls a simulator –
-[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
-[`simulate_for_sbi()`](https://pedroliman.github.io/neuralsbi/reference/simulate_for_sbi.md),
-[`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md),
-[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
-[`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md),
-[`posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/posterior_predictive.md)
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+[`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md),
+[`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
 – runs it through one execution path. That path is sequential by default
 and parallel as soon as you declare a future plan:
 
@@ -56,12 +56,12 @@ external pointers that cannot be shipped to a worker, and libtorch
 already uses multiple threads internally
 ([`torch::torch_set_num_threads()`](https://torch.mlverse.org/docs/reference/threads.html)).
 The same goes for the posterior-sampling loops in
-[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md) and
-[`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md) –
-those call the trained network, not the simulator, and are reported with
-their own progress bar.
+[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) – those
+call the trained network, not the simulator, and are reported with their
+own progress bar.
 
 ## See also
 
-[nsbi_progress](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md)
+[nsbi_progress](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md)
 for controlling progress bars.

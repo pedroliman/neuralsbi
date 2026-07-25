@@ -12,7 +12,7 @@ defaults and built-in posterior diagnostics.
 
 Useful links:
 
-- <https://pedroliman.github.io/neuralsbi/>
+- <https://neuralsbi.pedrodelima.com/>
 
 - <https://github.com/pedroliman/neuralsbi>
 

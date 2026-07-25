@@ -93,7 +93,7 @@ scale.](reference/figures/README-pairplot-1.png)
 
 The same posterior gives a point estimate; calibration checks such as
 simulation-based calibration live in
-[`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md).
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md).
 
 ``` r
 
@@ -112,12 +112,12 @@ Simulation is usually the expensive part of a fit, and it is
 embarrassingly parallel. Declare a
 [`future`](https://future.futureverse.org) plan and every function that
 calls your simulator —
-[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
-[`simulate_for_sbi()`](https://pedroliman.github.io/neuralsbi/reference/simulate_for_sbi.md),
-[`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md),
-[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
-[`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md),
-[`posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/posterior_predictive.md)
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+[`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md),
+[`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
 — spreads the work across cores:
 
 ``` r
@@ -129,7 +129,7 @@ fit <- npe(prior, simulator, n_simulations = 10000)
 ```
 
 There is nothing else to change: no extra argument, no parallel variant
-of [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md).
+of [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md).
 Without a plan everything runs sequentially, as before. Each chunk of
 parameters draws from its own random-number stream, so a given
 [`set.seed()`](https://rdrr.io/r/base/Random.html) gives the same
@@ -139,26 +139,26 @@ Simulation and neural training both report a progress bar with an ETA —
 one step per simulation, then one step per training epoch. If you use
 [`progressr`](https://progressr.futureverse.org), `neuralsbi` speaks it
 natively (`handlers(global = TRUE)`); if not, it draws its own bar. See
-[`?nsbi_parallel`](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+[`?nsbi_parallel`](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
 and
-[`?nsbi_progress`](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md).
+[`?nsbi_progress`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md).
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neuralsbi/) has four
+The [package website](https://neuralsbi.pedrodelima.com/) has four
 vignettes that build on each other:
 
 1.  [Getting
-    started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html)
+    started](https://neuralsbi.pedrodelima.com/articles/neuralsbi.html)
     — the core prior/simulator/posterior workflow.
 2.  [Choosing a density
-    estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html)
+    estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.html)
     — MDN, MAF, NSF, and the torch-free baseline.
 3.  [Checking the
-    posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html)
+    posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html)
     — calibration and predictive diagnostics.
 4.  [Comparison with pomp: an SIR epidemic
-    model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html)
+    model](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html)
     — neural posterior estimation and pomp’s particle-filter MCMC on the
     same stochastic epidemic.
 

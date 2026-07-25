@@ -35,9 +35,9 @@ pairplot(
 
   Optional parameter labels. Defaults to `colnames(samples)` (set
   automatically for
-  [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md)
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
   draws from a fit with named parameters – see
-  [`prior_uniform()`](https://pedroliman.github.io/neuralsbi/reference/prior_uniform.md)/[`prior_normal()`](https://pedroliman.github.io/neuralsbi/reference/prior_normal.md))
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)/[`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md))
   or `theta[1]`, `theta[2]`, .... Labels that parse as R syntax
   (`"beta[1]"`, `"rho"`) render as their plotmath symbol.
 

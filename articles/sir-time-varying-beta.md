@@ -1,6 +1,6 @@
 # Amortized R(t): behavioral SIR models across all US states
 
-[`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md)
+[`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md)
 fits a stochastic SIR outbreak with a *constant* contact rate $`\beta`$.
 Real epidemics do not hold still, and the interesting question is *why*
 they move. This vignette fits **three competing models** of that
@@ -18,7 +18,7 @@ That is what makes a three-model, 51-jurisdiction comparison affordable.
 Along the way we recover the **effective reproduction number**
 $`R_e(t) = \beta(t) S(t) / (N \gamma)`$, and show two pieces of
 `neuralsbi` machinery that matter for time-series inference: an
-[`embedding_mlp()`](https://pedroliman.github.io/neuralsbi/reference/embedding_mlp.md)
+[`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
 summary network, and a prior predictive check that catches model error
 no amount of training will fix.
 
@@ -131,7 +131,7 @@ shoulder.
 
 All three models share the same discrete-time, binomial-transition SIR
 core from
-[`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md):
+[`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md):
 counts update via [`rbinom()`](https://rdrr.io/r/stats/Binomial.html),
 so the process is genuinely stochastic and there is no tractable
 likelihood. Three modeling choices are shared by all three and worth
@@ -481,7 +481,7 @@ prior_cbf <- prior_normal(
 The observation is 121 numbers: $`\log N`$ plus a 120-day case curve.
 Passing that straight into the flow wastes capacity, and choosing
 summary statistics by hand throws away whatever the chosen set missed.
-[`embedding_mlp()`](https://pedroliman.github.io/neuralsbi/reference/embedding_mlp.md)
+[`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
 learns the compression instead: a small MLP maps the standardized
 121-dimensional observation to `output_dim` features, trained
 **jointly** with the density estimator so the features are optimized for
@@ -614,7 +614,7 @@ sbc_res$CBF
 ```
 
 Because each prior’s `mean` was a named vector,
-[`plot_sbc()`](https://pedroliman.github.io/neuralsbi/reference/plot_sbc.md)
+[`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md)
 renders each parameter’s plotmath symbol in the panel title instead of a
 generic “parameter 3”.
 
@@ -924,7 +924,7 @@ back into the susceptible pool once incidence falls. This is the
 likeliest reason the original study found CBF the better forecaster.
 
 The models carry real simplifications. $`\gamma`$ is fixed, so
-[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md) is
+[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) is
 calibrated conditional on that choice. A single $`\rho`$ stands in for
 testing capacity that grew steeply over exactly this window; a
 time-varying $`\rho(t)`$ is the obvious next refinement, at the cost of
@@ -936,7 +936,7 @@ reproduce. Loosening any of these is a change to the simulator, not to
 the inference machinery around it.
 
 For the underlying workflow in more depth, see
-[`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md),
-[`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md),
+[`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md),
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md),
 and
-[`vignette("density-estimators")`](https://pedroliman.github.io/neuralsbi/articles/density-estimators.md).
+[`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md).

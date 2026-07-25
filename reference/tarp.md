@@ -59,18 +59,17 @@ tarp(
 - chunk_size:
 
   Rows per simulator call; see
-  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
 
 ## Value
 
 An object of class `nsbi_tarp` with the per-trial coverage values and
 the ECP curve. Plot it with
-[`plot_tarp()`](https://pedroliman.github.io/neuralsbi/reference/plot_tarp.md).
+[`plot_tarp()`](https://neuralsbi.pedrodelima.com/reference/plot_tarp.md).
 
 ## Details
 
-Unlike
-[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
+Unlike [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
 which ranks each parameter marginally, TARP is a *joint* test: it can
 detect posteriors whose marginals are calibrated but whose correlation
 structure is wrong. Distances are computed after z-scoring each

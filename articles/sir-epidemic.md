@@ -274,8 +274,8 @@ which is the reassuring outcome: two different simulation-based
 machines, pointed at the same stochastic model, recover the same rates.
 
 For the `neuralsbi` workflow in more depth, see
-[`vignette("neuralsbi")`](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.md)
+[`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)
 and
-[`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md);
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md);
 for `pomp`, the [package
 tutorials](https://kingaa.github.io/pomp/docs.html).

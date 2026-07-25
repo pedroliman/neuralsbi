@@ -5,7 +5,7 @@ simulation-based inference (SBI) in R. It covers the basics: what
 problem SBI solves, the three ingredients every analysis needs, and what
 it means for a fit to be *amortized*. If you would rather see SBI
 recover a posterior you can verify by hand first, start with
-[`vignette("neuralsbi")`](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.md),
+[`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md),
 which runs the same workflow on a linear-Gaussian model with a
 closed-form answer. Later tutorials go deeper on density estimators,
 calibration, and applied case studies; this one stays small on purpose.
@@ -111,7 +111,7 @@ needed to be, so SBC will not warn you.
 `neuralsbi` masks [`base::sample()`](https://rdrr.io/r/base/sample.html)
 with an S3 generic so that `sample(post, n)` can dispatch on a fitted
 posterior; `sample(1:10, 3)` still works as usual, and
-[`sample_posterior()`](https://pedroliman.github.io/neuralsbi/reference/sample_posterior.md)
+[`sample_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample_posterior.md)
 is a non-generic alias if the masking gets in the way in a script.
 
 One more thing worth flagging up front, especially if you come from
@@ -127,8 +127,8 @@ as $`y`$, so following those citations you will meet both conventions.)
 
 ## Training an amortized posterior estimator
 
-[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md)
-(Neural Posterior Estimation) draws parameters from the prior, runs the
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) (Neural
+Posterior Estimation) draws parameters from the prior, runs the
 simulator, and trains a **density estimator**
 $`q_\phi(\boldsymbol{\theta} \mid \mathbf{x})`$, a flexible conditional
 density with neural weights $`\phi`$, to approximate the posterior. Here
@@ -287,7 +287,7 @@ about 58% of the time for $`A`$ and 56% for $`B`$, the signature of mild
 overconfidence in both parameters. That is a realistic outcome for a
 first pass at ten draws per data set; the standard remedy is more
 simulations before reaching for a bigger network.
-[`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md)
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
 covers the full set of checks, including what to do when a fit does not
 pass one.
 
@@ -319,16 +319,16 @@ the parameters are set, which SBC cannot detect on its own.
 
 This tutorial deliberately skipped almost everything else:
 
-- [`vignette("neuralsbi")`](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.md)
+- [`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)
   walks the same workflow again with a linear-Gaussian model, where you
   can check the estimated posterior against an exact analytic answer.
-- [`vignette("density-estimators")`](https://pedroliman.github.io/neuralsbi/articles/density-estimators.md)
+- [`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md)
   compares the mixture-density-network, flow, and closed-form
   estimators, and when each is worth using.
-- [`vignette("diagnostics")`](https://pedroliman.github.io/neuralsbi/articles/diagnostics.md)
+- [`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
   covers the complete diagnostic toolkit: SBC, expected coverage, TARP,
   and posterior predictive checks.
-- [`vignette("sir-epidemic")`](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.md)
+- [`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md)
   is a full applied case study, including sequential inference when
   simulations are expensive and only one observation matters.
 
