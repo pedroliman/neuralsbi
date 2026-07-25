@@ -47,8 +47,7 @@ test_that("MAF posterior is close to the analytic linear-Gaussian posterior", {
   set.seed(6)
   d <- 2; sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = sigma),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   fit <- npe(prior, simulator, n_simulations = 8000, density_estimator = "maf",
              n_transforms = 3L, hidden = c(50L, 50L), max_epochs = 300L,
              seed = 6)

@@ -131,11 +131,13 @@ reference:
   - simulate_for_sbi
   - npe
   - npe_sequential
+  - save_npe
   - density_estimator
   - embedding_mlp
 - title: Running the simulator
-  desc: Parallel execution and progress reporting.
+  desc: The simulator contract, parallel execution, and progress reporting.
   contents:
+  - nsbi_simulator
   - nsbi_parallel
   - nsbi_progress
 - title: Working with the posterior

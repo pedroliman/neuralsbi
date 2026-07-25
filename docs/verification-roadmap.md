@@ -219,10 +219,16 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.4.0 parallel-simulation pass (branch
-`claude/npe-parallel-simulator-futures-q45gqo`, July 2026): every simulator
-call in the package now goes through `run_simulator()` (`R/parallel.R`), which
-chunks the parameter matrix, runs the chunks over a `future` plan when one
+pick up the work. Last updated for the 0.4.1 simulator-contract pass (branch
+`claude/issues-22-24-ql384x`, July 2026, issues #22 and #24): the simulator is
+now called once per parameter set and returns one observation (`R/simulator.R`
+holds the contract, `?nsbi_simulator` documents it), extra simulator arguments
+travel in `sim_args`, non-finite simulations are dropped in `(theta, x)` pairs
+with a warning, and `save_npe()`/`load_npe()` (`R/serialize.R`) get a
+torch-backed fit to disk and back. Before that, the 0.4.0 parallel-simulation
+pass (branch `claude/npe-parallel-simulator-futures-q45gqo`): every simulator
+call in the package goes through `run_simulator()` (`R/parallel.R`), which
+batches draws into chunks, runs the chunks over a `future` plan when one
 is declared, and reports progress through `R/progress.R` (progressr when
 installed, a built-in ETA bar otherwise). Training reports through the same
 mechanism, one step per epoch. Earlier: the 0.3.0 CRAN-prep pass (branch
@@ -254,7 +260,9 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | Area | File(s) | State |
 |---|---|---|
 | Training engine | `R/train.R` | done; restarts, plateau LR decay, grad clipping, history |
-| Parallel simulation | `R/parallel.R` | done; `run_simulator()` is the single simulator entry point, chunked, `future`-backed, per-chunk L'Ecuyer streams so sequential and parallel runs agree bit for bit |
+| Simulator contract | `R/simulator.R` | done; one call per parameter set, named-formal or named-vector dispatch, `sim_args`, output validation, non-finite dropping |
+| Serialization | `R/serialize.R` | done; `save_npe()`/`load_npe()`, `de_rebuild_net()` per estimator, `check_fit_alive()` guard |
+| Parallel simulation | `R/parallel.R` | done; `run_simulator()` is the single simulator entry point, chunked, `future`-backed, per-draw L'Ecuyer streams so results depend on the seed alone |
 | Progress reporting | `R/progress.R` | done; progressr-aware with a dependency-free ETA bar as fallback, shared by simulation and training |
 | MDN | `R/mdn.R` | done, trains via shared engine |
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |
@@ -384,15 +392,21 @@ makes a calibrated fit look like a systematic overshoot.
    hot, beta falls). Diagnose this by re-simulating at one theta before
    reaching for a calibration explanation.
 
-### torch fits do not survive `saveRDS()`
+### Saving a fit (fixed in 0.4.1)
 
-An `nsbi_npe` fit holding a torch estimator cannot be round-tripped with
-`saveRDS()`/`readRDS()` -- the module comes back with an invalid external
-pointer and the first `posterior()` call fails with "external pointer is not
-valid". Re-fit in the session that needs the object, or serialize the module
-with `torch::torch_save()`. Worth fixing properly (a `save_npe()`/`load_npe()`
-pair wrapping `torch_save` on the estimator's state dict) -- it makes any
-long-running study awkward, since a 35-minute fit cannot be parked on disk.
+`save_npe(fit, path)` / `load_npe(path)` in `R/serialize.R` are the round trip.
+`save_npe()` writes the module's `state_dict` with `torch::torch_save()`,
+reads the resulting file back as raw bytes, and stores those bytes inside one
+`.rds` alongside the rest of the fit; `load_npe()` rebuilds the network through
+`de_rebuild_net()` (which reads the architecture off the estimator object) and
+restores the weights. A `linear_gaussian` fit carries no bytes and is just an
+`.rds`.
+
+`saveRDS()` on a torch-backed fit still produces a broken object -- R offers no
+hook to intercept it -- but the failure now names its cause: `posterior()`
+calls `check_fit_alive()`, which touches a parameter tensor and raises a
+message pointing at `save_npe()`, and `print()` flags the same thing. Adding an
+estimator means adding a branch to `de_rebuild_net()`.
 - DESCRIPTION `Version` is dev (`0.2.0.9000`); cut releases when M1–M3 are
   green.
 

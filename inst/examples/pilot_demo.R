@@ -8,8 +8,7 @@ outdir <- "docs/figures"; dir.create(outdir, showWarnings = FALSE, recursive = T
 ## ---- 1. Linear Gaussian ---------------------------------------------------
 d <- 2; sigma <- 0.5
 prior_lg <- prior_normal(mean = c(0, 0), sd = 1)
-sim_lg <- function(theta) theta + matrix(rnorm(length(theta), sd = sigma),
-                                         nrow = nrow(theta))
+sim_lg <- function(theta) theta + rnorm(d, sd = sigma)
 fit_lg <- npe(prior_lg, sim_lg, n_simulations = 6000,
               density_estimator = "mdn", n_components = 2L,
               hidden = c(50L, 50L), max_epochs = 300L, seed = 1)
@@ -40,10 +39,9 @@ par(op); dev.off()
 ## ---- 2. Two Moons ---------------------------------------------------------
 prior_tm <- prior_uniform(low = c(-1, -1), high = c(1, 1))
 two_moons_sim <- function(theta) {
-  n <- nrow(theta)
-  a <- runif(n, -pi / 2, pi / 2); r <- rnorm(n, 0.1, 0.01)
-  cbind(r * cos(a) + 0.25 - abs(theta[, 1] + theta[, 2]) / sqrt(2),
-        r * sin(a) + (-theta[, 1] + theta[, 2]) / sqrt(2))
+  a <- runif(1, -pi / 2, pi / 2); r <- rnorm(1, 0.1, 0.01)
+  c(r * cos(a) + 0.25 - abs(theta[1] + theta[2]) / sqrt(2),
+    r * sin(a) + (-theta[1] + theta[2]) / sqrt(2))
 }
 fit_tm <- npe(prior_tm, two_moons_sim, n_simulations = 15000,
               density_estimator = "mdn", n_components = 8L,

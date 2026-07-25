@@ -24,7 +24,7 @@ set.seed(seed)
 sims <- simulate_for_sbi(task$simulator, task$prior, n, seed = seed)
 # observations: simulate from fresh prior draws (kept for reference too)
 theta_obs <- sample_prior(task$prior, n_obs)
-x_obs <- task$simulator(theta_obs)
+x_obs <- t(apply(theta_obs, 1, task$simulator))   # one call per parameter set
 
 dir <- file.path("data", task_name)
 dir.create(dir, recursive = TRUE, showWarnings = FALSE)

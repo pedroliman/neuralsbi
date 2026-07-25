@@ -36,6 +36,9 @@ definitions in the \code{sbibm} benchmark suite. Each task bundles a prior,
 a simulator, and (where one exists) an analytic reference posterior, so the
 same object drives unit tests, calibration studies, and the benchmark
 harness in \code{inst/benchmarks/}.
+
+Each task's \code{simulator} follows the package contract: one parameter set in,
+one simulated observation out (see \link{nsbi_simulator}).
 \itemize{
 \item \code{task_gaussian_linear()} -- conjugate Gaussian; analytic posterior.
 \item \code{task_two_moons()} -- crescent-shaped, bimodal posterior.

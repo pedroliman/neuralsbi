@@ -2,7 +2,6 @@
 % Please edit documentation in R/parallel.R
 \name{nsbi_parallel}
 \alias{nsbi_parallel}
-\alias{parallel-simulation}
 \title{Running the simulator in parallel}
 \description{
 Every \code{neuralsbi} function that calls a simulator -- \code{\link[=npe]{npe()}},
@@ -10,7 +9,8 @@ Every \code{neuralsbi} function that calls a simulator -- \code{\link[=npe]{npe(
 \code{\link[=posterior_predictive]{posterior_predictive()}} -- runs it through one execution path. That path is
 sequential by default and parallel as soon as you declare a \pkg{future}
 plan:
-
+}
+\details{
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{library(future)
 plan(multisession)          # or multicore, cluster, batchtools, ...
 fit <- npe(prior, simulator, n_simulations = 10000)
@@ -24,28 +24,28 @@ session. Silence that hint with
 }
 \section{Chunking}{
 
-The parameter matrix is split into row chunks and one chunk at a time is
-handed to the simulator, so a vectorized simulator keeps most of its
-vectorization while progress can still be reported and work spread across
-workers. The number of chunks depends only on the number of simulations
-(\code{ceiling(n / chunk_size)}, with \code{chunk_size} chosen to give about 64
-chunks), \emph{not} on the number of workers -- which is what makes results
-reproducible across plans. Set it yourself with the \code{chunk_size} argument,
-or globally with \code{options(neuralsbi.chunks = )}. Larger chunks mean less
-overhead per call and a coarser progress bar; smaller chunks balance
-uneven simulator run times better. Under a multi-process plan each chunk
-ships the simulator -- and everything its environment captures -- to a
-worker, so a simulator closing over a large object is a reason to raise
-\code{chunk_size}.
+
+The simulator is called once per parameter set (see \link{nsbi_simulator}). A
+chunk is the batch of draws one worker loops over: the unit of parallel
+dispatch, and nothing else. The number of chunks depends only on the number
+of simulations (\code{ceiling(n / chunk_size)}, with \code{chunk_size} chosen to give
+about 64 chunks), \emph{not} on the number of workers. Set it yourself with the
+\code{chunk_size} argument, or globally with \code{options(neuralsbi.chunks = )}.
+Larger chunks mean less scheduling overhead; smaller chunks balance uneven
+simulator run times better. Under a multi-process plan each chunk ships the
+simulator -- and everything its environment captures -- to a worker, so a
+simulator closing over a large object is a reason to raise \code{chunk_size}, or
+to pass the object through \code{sim_args} instead.
 }
 
 \section{Random numbers}{
 
-Each chunk gets its own L'Ecuyer-CMRG random-number stream, derived from the
-session's RNG state at the moment simulation starts. So \code{set.seed(42)}
-before a fit (or \code{npe(..., seed = 42)}) gives the same simulations whether
-you run sequentially or on 32 workers, and whatever the worker count. What
-does change results is the chunking: fixing \code{chunk_size} fixes the draws.
+
+Each \emph{simulation} gets its own L'Ecuyer-CMRG random-number stream, derived
+from the session's RNG state at the moment simulation starts. So
+\code{set.seed(42)} before a fit (or \code{npe(..., seed = 42)}) gives the same
+simulations whatever the plan, the worker count, and the chunk size: results
+depend on the seed alone.
 
 Because the simulations are drawn from separate streams, the simulator no
 longer consumes the caller's RNG state directly; the state advances by one
@@ -53,6 +53,7 @@ draw per simulation phase.
 }
 
 \section{What is not parallelized}{
+
 
 Training runs in the calling process. Torch tensors and modules are external
 pointers that cannot be shipped to a worker, and libtorch already uses

@@ -1,0 +1,163 @@
+#' Save and reload a fitted NPE model
+#'
+#' A fit whose estimator is `"maf"`, `"mdn"` or `"nsf"` holds a `torch` module,
+#' and a torch module is an external pointer. `saveRDS()` writes the pointer,
+#' not the network: the file reloads without complaint and the object prints
+#' normally, but the first call that touches the network fails with
+#' `external pointer is not valid`. `save_npe()` and `load_npe()` are the
+#' round trip that works.
+#'
+#' `save_npe()` writes one `.rds` file holding the network's weights (via
+#' [torch::torch_save()] on its `state_dict`) alongside everything else the fit
+#' carries as ordinary R objects: the prior, the standardization centers and
+#' scales, parameter and outcome names, the simulation count, and the training
+#' history. `load_npe()` rebuilds the network from the recorded architecture
+#' and restores the weights, returning an `nsbi_npe` that behaves exactly like
+#' the one you trained.
+#'
+#' A `"linear_gaussian"` fit holds no torch objects and round-trips through
+#' `saveRDS()` unharmed; `save_npe()` accepts it anyway, so saving code does
+#' not have to know which estimator was used.
+#'
+#' Weights are saved, not code. A fit saved by one version of `neuralsbi` loads
+#' into a later one as long as the estimator's architecture has not changed;
+#' `load_npe()` reports the version that wrote the file when the rebuild fails.
+#'
+#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()].
+#' @param path File to write to (or read from). The convention is `.rds`.
+#' @return `save_npe()` returns `path` invisibly. `load_npe()` returns the
+#'   `nsbi_npe` fit.
+#'
+#' @examples
+#' prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))
+#' simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.1),
+#'                                 b = nu + rnorm(1, sd = 0.1))
+#' fit <- npe(prior, simulator, n_simulations = 500,
+#'            density_estimator = "linear_gaussian")
+#'
+#' path <- tempfile(fileext = ".rds")
+#' save_npe(fit, path)
+#' fit2 <- load_npe(path)
+#' sample(posterior(fit2, x_obs = c(0.8, 0.6)), 100)
+#' unlink(path)
+#' @name save_npe
+NULL
+
+#' @rdname save_npe
+#' @export
+save_npe <- function(fit, path) {
+  stopifnot(inherits(fit, "nsbi_npe"))
+  if (!is.character(path) || length(path) != 1L) {
+    stop("`path` must be a single file path.", call. = FALSE)
+  }
+  net <- fit$de$net
+  weights <- NULL
+  if (!is.null(net)) {
+    if (!torch_net_alive(net)) {
+      stop("This fit's network is a dangling external pointer, so there are ",
+           "no weights to save. It came from readRDS(); refit, or reload the ",
+           "original with load_npe().", call. = FALSE)
+    }
+    require_torch()
+    tmp <- tempfile(fileext = ".pt")
+    on.exit(unlink(tmp), add = TRUE)
+    torch::torch_save(net$state_dict(), tmp)
+    weights <- readBin(tmp, "raw", n = file.size(tmp))
+  }
+  bundle <- list(
+    nsbi_save_format = 1L,
+    package_version = as.character(utils::packageVersion("neuralsbi")),
+    saved_at = Sys.time(),
+    fit = de_drop_net(fit),
+    weights = weights
+  )
+  saveRDS(bundle, path)
+  invisible(path)
+}
+
+#' @rdname save_npe
+#' @export
+load_npe <- function(path) {
+  bundle <- readRDS(path)
+  if (!is.list(bundle) || !identical(bundle$nsbi_save_format, 1L)) {
+    stop(sprintf("'%s' was not written by save_npe().", path), call. = FALSE)
+  }
+  fit <- bundle$fit
+  if (is.null(bundle$weights)) return(fit)
+
+  require_torch()
+  tmp <- tempfile(fileext = ".pt")
+  on.exit(unlink(tmp), add = TRUE)
+  writeBin(bundle$weights, tmp)
+  net <- de_rebuild_net(fit$de)
+  state <- torch::torch_load(tmp)
+  tryCatch(
+    net$load_state_dict(state),
+    error = function(e) {
+      stop(sprintf(
+        paste0("Could not restore the network saved by neuralsbi %s: %s\n",
+               "The estimator's architecture has changed since the fit was ",
+               "saved; retrain with the current version."),
+        bundle$package_version %||% "(unknown)", conditionMessage(e)),
+        call. = FALSE)
+    }
+  )
+  net$eval()
+  fit$de$net <- net
+  fit
+}
+
+#' The fit without its torch module, for R-level serialization
+#' @keywords internal
+de_drop_net <- function(fit) {
+  fit$de$net <- NULL
+  fit
+}
+
+#' Rebuild an estimator's network from the architecture recorded on the fit
+#'
+#' The one place that knows how to turn a stored estimator back into a torch
+#' module. Every field it reads is set by the matching `fit_*()`, so adding an
+#' estimator means adding a branch here.
+#' @keywords internal
+de_rebuild_net <- function(de) {
+  kind <- class(de)[1L]
+  switch(
+    kind,
+    nsbi_de_mdn = mdn_module(de$dim_x, de$dim_theta, de$n_components,
+                             de$hidden, de$embedding)(),
+    nsbi_de_maf = maf_module(de$dim_x, de$dim_theta, de$n_transforms,
+                             de$hidden, de$embedding)(),
+    nsbi_de_nsf = nsf_module(de$dim_x, de$dim_theta, de$n_transforms,
+                             de$hidden, de$n_bins, de$tail_bound,
+                             de$embedding)(),
+    stop(sprintf("Cannot rebuild a network for estimator class '%s'.", kind),
+         call. = FALSE)
+  )
+}
+
+#' Is this torch module still backed by a live pointer?
+#'
+#' `readRDS()` on a torch-backed fit returns a module whose external pointer is
+#' nil. Nothing about the R object says so, so the only way to find out is to
+#' touch a tensor.
+#' @keywords internal
+torch_net_alive <- function(net) {
+  if (is.null(net)) return(TRUE)
+  tryCatch({
+    params <- net$parameters
+    if (length(params) > 0L) invisible(dim(params[[1L]]))
+    TRUE
+  }, error = function(e) FALSE)
+}
+
+#' Fail at the door, not three calls later, on a fit that lost its network
+#' @keywords internal
+check_fit_alive <- function(fit) {
+  if (torch_net_alive(fit$de$net)) return(invisible(TRUE))
+  stop("This fit's neural network is no longer usable: its torch module is a ",
+       "dangling external pointer.\n",
+       "A torch-backed fit does not survive saveRDS()/readRDS(). Save it with ",
+       "save_npe(fit, path) and reload it with load_npe(path).",
+       call. = FALSE)
+}

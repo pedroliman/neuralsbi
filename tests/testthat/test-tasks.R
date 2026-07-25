@@ -23,8 +23,8 @@ test_that("gaussian_linear task matches its analytic reference", {
 test_that("two_moons simulator produces the crescent geometry", {
   set.seed(10)
   task <- task_two_moons()
-  theta <- matrix(0, nrow = 500, ncol = 2)  # fixed parameters
-  x <- task$simulator(theta)
+  theta <- matrix(0, nrow = 500, ncol = 2)  # 500 draws at fixed parameters
+  x <- run_simulator(task$simulator, theta)
   expect_equal(dim(x), c(500L, 2L))
   # crescent radius approx 0.1 around (0.25, 0)
   r <- sqrt((x[, 1] - 0.25)^2 + x[, 2]^2)
@@ -43,8 +43,8 @@ test_that("sir task simulates plausible epidemics under its prior", {
   lp <- task$prior$log_prob(sims$theta)
   expect_true(all(is.finite(lp)))
   # a fast-spreading epidemic peaks higher than a slow one
-  x_fast <- task$simulator(matrix(c(0.9, 0.1), nrow = 1))
-  x_slow <- task$simulator(matrix(c(0.15, 0.14), nrow = 1))
+  x_fast <- task$simulator(c(0.9, 0.1))
+  x_slow <- task$simulator(c(0.15, 0.14))
   expect_gt(max(x_fast), max(x_slow))
 })
 
@@ -57,7 +57,7 @@ test_that("slcp simulator has the right shape and support behavior", {
   expect_true(all(within_support(task$prior, sims$theta)))
   # the four 2-D points are i.i.d.: odd columns share mean theta_1
   theta_fix <- matrix(rep(c(1, -1, 0.8, 0.6, 0.3), each = 2000), ncol = 5)
-  x <- task$simulator(theta_fix)
+  x <- run_simulator(task$simulator, theta_fix)
   expect_equal(mean(x[, 1]), 1, tolerance = 0.05)
   expect_equal(mean(x[, 4]), -1, tolerance = 0.05)
 })
