@@ -1,6 +1,55 @@
 # Changelog
 
-## neuralsbi 0.3.7
+## neuralsbi 0.4.0
+
+- The simulator can now run in parallel. Declare a `future` plan –
+  [`library(future); plan(multisession)`](https://future.futureverse.org)
+  – and every function that calls a simulator
+  ([`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
+  [`simulate_for_sbi()`](https://pedroliman.github.io/neuralsbi/reference/simulate_for_sbi.md),
+  [`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md),
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
+  [`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md),
+  [`posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/posterior_predictive.md))
+  spreads the work across workers. There is no new argument to pass and
+  no parallel variant to call: with no plan declared everything runs
+  sequentially as before, and `neuralsbi` mentions the two lines above
+  once per session (`options(neuralsbi.parallel_hint = FALSE)` to
+  silence it). Each chunk of parameters draws from its own L’Ecuyer-CMRG
+  stream, so a given [`set.seed()`](https://rdrr.io/r/base/Random.html)
+  produces the same simulations sequentially and on any number of
+  workers. See
+  [`?nsbi_parallel`](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+
+- Long-running work now reports progress with an ETA – simulation and
+  neural training alike, one progress step per simulation and per
+  training epoch. With `progressr` installed, `neuralsbi` emits standard
+  progressr updates, so
+  [`progressr::handlers()`](https://progressr.futureverse.org/reference/handlers.html)
+  and
+  [`with_progress()`](https://progressr.futureverse.org/reference/with_progress.html)
+  control reporting; without it, a built-in bar needing no extra
+  packages does the job. The training bar targets the epoch at which
+  early stopping would fire and revises that target as the validation
+  loss improves. See
+  [`?nsbi_progress`](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md).
+
+- [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
+  [`simulate_for_sbi()`](https://pedroliman.github.io/neuralsbi/reference/simulate_for_sbi.md),
+  [`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md),
+  [`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
+  [`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md),
+  and
+  [`posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/posterior_predictive.md)
+  gain a `chunk_size` argument controlling how many parameter rows go to
+  the simulator per call. The default splits a run into about 64 chunks;
+  because the split depends only on the number of simulations, results
+  do not change with the number of workers. A simulator whose output
+  must be produced in one call can set `chunk_size` to the full
+  simulation budget.
+
+- `future` and `progressr` are `Suggests`, not dependencies; `parallel`
+  (base R) moves into `Imports`. \# neuralsbi 0.3.7
 
 - The test suite now skips its plotting tests when `ggplot2`/`GGally`
   are not installed, instead of failing. Both are `Suggests`, so
@@ -11,6 +60,7 @@
   The new `skip_if_no_ggplot2()`/`skip_if_no_ggally()` helpers mirror
   the `skip_if_no_torch()` contract already used for the neural tests,
   so the suite runs everywhere.
+
 - [`vignette("sir-time-varying-beta")`](https://pedroliman.github.io/neuralsbi/articles/sir-time-varying-beta.md)
   reworks the epidemic model so that its posterior predictive tracks the
   observed case peaks instead of overshooting them. The introduction day

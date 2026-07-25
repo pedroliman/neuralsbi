@@ -28,6 +28,7 @@ npe_sequential(
   max_proposal_batches = 200L,
   seed = NULL,
   verbose = FALSE,
+  chunk_size = NULL,
   ...
 )
 ```
@@ -85,6 +86,13 @@ npe_sequential(
 - verbose:
 
   Print per-round progress.
+
+- chunk_size:
+
+  Rows per simulator call; see
+  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  Each round's simulations run across `future` workers when a plan is
+  set.
 
 - ...:
 

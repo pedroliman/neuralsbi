@@ -32,6 +32,17 @@ Generate training data and fit a neural posterior estimator.
 - [`embedding_mlp()`](https://pedroliman.github.io/neuralsbi/reference/embedding_mlp.md)
   : Embedding (summary) networks for structured observations
 
+## Running the simulator
+
+Parallel execution and progress reporting.
+
+- [`nsbi_parallel`](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+  [`parallel-simulation`](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+  : Running the simulator in parallel
+- [`nsbi_progress`](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md)
+  [`progress-bars`](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md)
+  : Progress reporting
+
 ## Working with the posterior
 
 Condition on data, then sample, evaluate, and summarize.

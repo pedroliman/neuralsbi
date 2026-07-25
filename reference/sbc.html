@@ -51,7 +51,7 @@ posterior is well calibrated, the ranks are uniformly distributed.'><meta proper
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,8 @@ posterior is well calibrated, the ranks are uniformly distributed.</p>
 <span>  prior <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">prior</span>,</span>
 <span>  n_sbc <span class="op">=</span> <span class="fl">200L</span>,</span>
 <span>  n_posterior_samples <span class="op">=</span> <span class="fl">1000L</span>,</span>
-<span>  seed <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  chunk_size <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -135,6 +136,12 @@ posterior is well calibrated, the ranks are uniformly distributed.</p>
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Optional seed.</p></dd>
+
+
+<dt id="arg-chunk-size">chunk_size<a class="anchor" aria-label="anchor" href="#arg-chunk-size"></a></dt>
+<dd><p>Rows per simulator call; see <a href="nsbi_parallel.html">nsbi_parallel</a>. The <code>n_sbc</code>
+simulations run across <code>future</code> workers when a plan is set; the ranking
+loop that follows calls the trained network and always runs locally.</p></dd>
 
 </dl></div>
     <div class="section level2">

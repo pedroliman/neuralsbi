@@ -14,7 +14,8 @@ sbc(
   prior = fit$prior,
   n_sbc = 200L,
   n_posterior_samples = 1000L,
-  seed = NULL
+  seed = NULL,
+  chunk_size = NULL
 )
 ```
 
@@ -43,6 +44,14 @@ sbc(
 - seed:
 
   Optional seed.
+
+- chunk_size:
+
+  Rows per simulator call; see
+  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+  The `n_sbc` simulations run across `future` workers when a plan is
+  set; the ranking loop that follows calls the trained network and
+  always runs locally.
 
 ## Value
 

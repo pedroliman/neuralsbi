@@ -19,7 +19,8 @@ tarp(
   n_tarp = 200L,
   n_posterior_samples = 1000L,
   references = c("uniform", "prior"),
-  seed = NULL
+  seed = NULL,
+  chunk_size = NULL
 )
 ```
 
@@ -54,6 +55,11 @@ tarp(
 - seed:
 
   Optional seed.
+
+- chunk_size:
+
+  Rows per simulator call; see
+  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
 
 ## Value
 

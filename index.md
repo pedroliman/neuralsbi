@@ -106,6 +106,43 @@ available here, see the [awesome neural SBI
 repo](https://github.com/smsharma/awesome-neural-sbi); there are some
 good implementations in python and in Julia.
 
+## Running the simulator in parallel
+
+Simulation is usually the expensive part of a fit, and it is
+embarrassingly parallel. Declare a
+[`future`](https://future.futureverse.org) plan and every function that
+calls your simulator —
+[`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md),
+[`simulate_for_sbi()`](https://pedroliman.github.io/neuralsbi/reference/simulate_for_sbi.md),
+[`npe_sequential()`](https://pedroliman.github.io/neuralsbi/reference/npe_sequential.md),
+[`sbc()`](https://pedroliman.github.io/neuralsbi/reference/sbc.md),
+[`tarp()`](https://pedroliman.github.io/neuralsbi/reference/tarp.md),
+[`posterior_predictive()`](https://pedroliman.github.io/neuralsbi/reference/posterior_predictive.md)
+— spreads the work across cores:
+
+``` r
+
+library(future)
+plan(multisession)
+
+fit <- npe(prior, simulator, n_simulations = 10000)
+```
+
+There is nothing else to change: no extra argument, no parallel variant
+of [`npe()`](https://pedroliman.github.io/neuralsbi/reference/npe.md).
+Without a plan everything runs sequentially, as before. Each chunk of
+parameters draws from its own random-number stream, so a given
+[`set.seed()`](https://rdrr.io/r/base/Random.html) gives the same
+simulations on one core or on 32.
+
+Simulation and neural training both report a progress bar with an ETA —
+one step per simulation, then one step per training epoch. If you use
+[`progressr`](https://progressr.futureverse.org), `neuralsbi` speaks it
+natively (`handlers(global = TRUE)`); if not, it draws its own bar. See
+[`?nsbi_parallel`](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+and
+[`?nsbi_progress`](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md).
+
 ## Learn more
 
 The [package website](https://pedroliman.github.io/neuralsbi/) has four

@@ -31,6 +31,7 @@ npe(
   standardize = TRUE,
   seed = NULL,
   verbose = FALSE,
+  chunk_size = NULL,
   ...
 )
 ```
@@ -121,6 +122,13 @@ npe(
 
   Print training progress.
 
+- chunk_size:
+
+  Rows of `theta` per simulator call. `NULL` (default) splits the run
+  into about 64 chunks. Chunks are the unit of work sent to `future`
+  workers and the unit of progress reporting; see
+  [nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md).
+
 - ...:
 
   Passed to the density estimator.
@@ -132,6 +140,16 @@ An object of class `nsbi_npe`. Turn it into a usable posterior with
 or sample directly with
 [`sample()`](https://pedroliman.github.io/neuralsbi/reference/sample.md).
 
+## Parallel simulation and progress
+
+The simulator runs sequentially unless you declare a future plan –
+[`library(future); plan(multisession)`](https://future.futureverse.org)
+– in which case chunks of parameters are simulated across workers.
+Simulation and training both report progress with an ETA. See
+[nsbi_parallel](https://pedroliman.github.io/neuralsbi/reference/nsbi_parallel.md)
+and
+[nsbi_progress](https://pedroliman.github.io/neuralsbi/reference/nsbi_progress.md).
+
 ## Examples
 
 ``` r
@@ -140,6 +158,10 @@ simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
                                                  nrow = nrow(theta))
 fit <- npe(prior, simulator, n_simulations = 2000,
            density_estimator = "linear_gaussian")
+#> Running the simulator sequentially. To use all your cores:
+#>   library(future)
+#>   plan(multisession)
+#> Hide this hint with options(neuralsbi.parallel_hint = FALSE).
 post <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
 draws <- sample(post, 1000)
 ```
