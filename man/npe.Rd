@@ -8,12 +8,15 @@ npe(
   prior,
   simulator = NULL,
   n_simulations = 1000,
+  sim_args = list(),
   theta = NULL,
   x = NULL,
   density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
   n_components = 10L,
   n_transforms = 5L,
   hidden = c(50L, 50L),
+  n_bins = 10L,
+  tail_bound = 3,
   embedding_net = NULL,
   max_epochs = 2000L,
   batch_size = 200L,
@@ -25,20 +28,25 @@ npe(
   standardize = TRUE,
   seed = NULL,
   verbose = FALSE,
-  chunk_size = NULL,
-  ...
+  chunk_size = NULL
 )
 }
 \arguments{
 \item{prior}{An \code{nsbi_prior} (see \code{\link[=prior_uniform]{prior_uniform()}}, \code{\link[=prior_normal]{prior_normal()}}).}
 
-\item{simulator}{A function mapping an \verb{n x dim} matrix of parameters to an
-\verb{n x d} matrix of simulated data. Ignored if \code{theta} and \code{x} are given.
-Column names on its output (e.g. via \code{colnames(out) <- c("cases_wk1", ...)})
-become the outcome names used in plots.}
+\item{simulator}{A function called once per parameter set, returning one
+simulated observation: a numeric vector, a scalar, or a one-row matrix or
+data frame. Parameters arrive either as named arguments (when the prior's
+names match the simulator's formals) or as one named vector. Names on the
+output become the outcome names used in plots. See \link{nsbi_simulator}.
+Ignored if \code{theta} and \code{x} are given.}
 
 \item{n_simulations}{Number of prior draws to simulate when \code{simulator} is
 used and \code{theta}/\code{x} are not supplied.}
+
+\item{sim_args}{Named list of extra arguments passed to every simulator
+call: observed data, a time grid, a fixed population size, solver
+settings. See \link{nsbi_simulator}.}
 
 \item{theta, x}{Optional pre-computed simulations. If supplied, \code{simulator}
 and \code{n_simulations} are ignored. Column names on \code{theta} (or names on
@@ -56,6 +64,10 @@ function \verb{function(theta, x)} returning a fitted estimator.}
 
 \item{n_transforms}{MAF/NSF setting: number of stacked autoregressive
 transforms (default 5, as in \code{sbi}).}
+
+\item{n_bins, tail_bound}{NSF settings: number of spline bins per transform
+and the half-width of the interval the spline acts on (outside it the
+transform is the identity).}
 
 \item{embedding_net}{Optional summary network built with \code{\link[=embedding_mlp]{embedding_mlp()}}.
 When supplied, the neural estimators condition on the learned features
@@ -83,15 +95,15 @@ validation improvement.}
 
 \item{verbose}{Print training progress.}
 
-\item{chunk_size}{Rows of \code{theta} per simulator call. \code{NULL} (default)
-splits the run into about 64 chunks. Chunks are the unit of work sent to
-\code{future} workers and the unit of progress reporting; see \link{nsbi_parallel}.}
-
-\item{...}{Passed to the density estimator.}
+\item{chunk_size}{Draws per parallel task. \code{NULL} (default) splits the run
+into about 64 chunks. A chunk is the batch of simulations one \code{future}
+worker loops over; it does not change how the simulator is called. See
+\link{nsbi_parallel}.}
 }
 \value{
 An object of class \code{nsbi_npe}. Turn it into a usable posterior with
-\code{\link[=posterior]{posterior()}}, or sample directly with \code{\link[=sample]{sample()}}.
+\code{\link[=posterior]{posterior()}}, or sample directly with \code{\link[=sample]{sample()}}. Save it to disk with
+\code{\link[=save_npe]{save_npe()}}: a torch-backed fit does not survive \code{saveRDS()}.
 }
 \description{
 \code{npe()} is the main entry point. Given a prior and either a simulator (which
@@ -102,18 +114,19 @@ once, you can condition on any observation without re-simulating.
 }
 \section{Parallel simulation and progress}{
 
+
 The simulator runs sequentially unless you declare a \pkg{future} plan --
-\code{library(future); plan(multisession)} -- in which case chunks of parameters
+\verb{library(future); plan(multisession)} -- in which case chunks of parameters
 are simulated across workers. Simulation and training both report progress
 with an ETA. See \link{nsbi_parallel} and \link{nsbi_progress}.
 }
 
 \examples{
-prior <- prior_uniform(c(-2, -2, -2), c(2, 2, 2))
-simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
-                                                 nrow = nrow(theta))
+prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))
+simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.1),
+                                b = nu + rnorm(1, sd = 0.1))
 fit <- npe(prior, simulator, n_simulations = 2000,
            density_estimator = "linear_gaussian")
-post <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
+post <- posterior(fit, x_obs = c(0.8, 0.6))
 draws <- sample(post, 1000)
 }

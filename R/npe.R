@@ -7,12 +7,17 @@
 #' once, you can condition on any observation without re-simulating.
 #'
 #' @param prior An `nsbi_prior` (see [prior_uniform()], [prior_normal()]).
-#' @param simulator A function mapping an `n x dim` matrix of parameters to an
-#'   `n x d` matrix of simulated data. Ignored if `theta` and `x` are given.
-#'   Column names on its output (e.g. via `colnames(out) <- c("cases_wk1",
-#'   ...)`) become the outcome names used in plots.
+#' @param simulator A function called once per parameter set, returning one
+#'   simulated observation: a numeric vector, a scalar, or a one-row matrix or
+#'   data frame. Parameters arrive either as named arguments (when the prior's
+#'   names match the simulator's formals) or as one named vector. Names on the
+#'   output become the outcome names used in plots. See [nsbi_simulator].
+#'   Ignored if `theta` and `x` are given.
 #' @param n_simulations Number of prior draws to simulate when `simulator` is
 #'   used and `theta`/`x` are not supplied.
+#' @param sim_args Named list of extra arguments passed to every simulator
+#'   call: observed data, a time grid, a fixed population size, solver
+#'   settings. See [nsbi_simulator].
 #' @param theta,x Optional pre-computed simulations. If supplied, `simulator`
 #'   and `n_simulations` are ignored. Column names on `theta` (or names on
 #'   `prior`'s `mean`/`low`) and on `x` are carried through to posterior
@@ -26,6 +31,9 @@
 #'   transforms (default 5, as in `sbi`).
 #' @param n_components,hidden MDN settings: number of mixture components
 #'   (default 10, as in `sbi`) and a vector of hidden-layer widths.
+#' @param n_bins,tail_bound NSF settings: number of spline bins per transform
+#'   and the half-width of the interval the spline acts on (outside it the
+#'   transform is the identity).
 #' @param embedding_net Optional summary network built with [embedding_mlp()].
 #'   When supplied, the neural estimators condition on the learned features
 #'   \eqn{f_\psi(x)} instead of the raw data, training the embedding jointly.
@@ -45,10 +53,10 @@
 #'   (strongly recommended; default `TRUE`).
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print training progress.
-#' @param chunk_size Rows of `theta` per simulator call. `NULL` (default)
-#'   splits the run into about 64 chunks. Chunks are the unit of work sent to
-#'   `future` workers and the unit of progress reporting; see [nsbi_parallel].
-#' @param ... Passed to the density estimator.
+#' @param chunk_size Draws per parallel task. `NULL` (default) splits the run
+#'   into about 64 chunks. A chunk is the batch of simulations one `future`
+#'   worker loops over; it does not change how the simulator is called. See
+#'   [nsbi_parallel].
 #'
 #' @section Parallel simulation and progress:
 #'
@@ -58,27 +66,29 @@
 #' with an ETA. See [nsbi_parallel] and [nsbi_progress].
 #'
 #' @return An object of class `nsbi_npe`. Turn it into a usable posterior with
-#'   [posterior()], or sample directly with [sample()].
+#'   [posterior()], or sample directly with [sample()]. Save it to disk with
+#'   [save_npe()]: a torch-backed fit does not survive `saveRDS()`.
 #'
 #' @examples
-#' prior <- prior_uniform(c(-2, -2, -2), c(2, 2, 2))
-#' simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
-#'                                                  nrow = nrow(theta))
+#' prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))
+#' simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.1),
+#'                                 b = nu + rnorm(1, sd = 0.1))
 #' fit <- npe(prior, simulator, n_simulations = 2000,
 #'            density_estimator = "linear_gaussian")
-#' post <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
+#' post <- posterior(fit, x_obs = c(0.8, 0.6))
 #' draws <- sample(post, 1000)
 #' @export
 npe <- function(prior, simulator = NULL, n_simulations = 1000,
-                theta = NULL, x = NULL,
+                sim_args = list(), theta = NULL, x = NULL,
                 density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
                 n_components = 10L, n_transforms = 5L, hidden = c(50L, 50L),
+                n_bins = 10L, tail_bound = 3,
                 embedding_net = NULL,
                 max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE,
-                chunk_size = NULL, ...) {
+                chunk_size = NULL) {
   stopifnot(inherits(prior, "nsbi_prior"))
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
@@ -93,16 +103,27 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
     if (is.null(simulator)) {
       stop("Provide either `simulator` or both `theta` and `x`.", call. = FALSE)
     }
-    sims <- simulate_for_sbi(simulator, prior, n_simulations, seed = seed,
+    sims <- simulate_for_sbi(simulator, prior, n_simulations,
+                             sim_args = sim_args, seed = seed,
                              verbose = verbose, chunk_size = chunk_size)
     theta <- sims$theta
     x <- sims$x
+    n_dropped <- sims$n_dropped
+  } else {
+    # pre-computed simulations get the same finiteness check, so the rule does
+    # not depend on who ran the simulator
+    theta <- as_theta_matrix(theta, prior$dim)
+    x <- as_theta_matrix(x)
+    if (nrow(theta) != nrow(x)) {
+      stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
+    }
+    kept <- drop_failed_sims(theta, x)
+    theta <- kept$theta
+    x <- kept$x
+    n_dropped <- kept$n_dropped
   }
   theta <- as_theta_matrix(theta, prior$dim)
   x <- as_theta_matrix(x)
-  if (nrow(theta) != nrow(x)) {
-    stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
-  }
   param_names <- colnames(theta) %||% prior$param_names
   x_names <- colnames(x)
 
@@ -122,10 +143,11 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   de <- fit_density_estimator(
     density_estimator, theta_z, x_z,
     n_components = n_components, n_transforms = n_transforms,
-    hidden = hidden, embedding_net = embedding_net, max_epochs = max_epochs,
+    hidden = hidden, n_bins = n_bins, tail_bound = tail_bound,
+    embedding_net = embedding_net, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
     patience = patience, n_restarts = n_restarts,
-    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose, ...
+    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose
   )
 
   structure(
@@ -139,6 +161,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
       param_names = param_names,
       x_names = x_names,
       n_simulations = nrow(theta),
+      n_dropped = n_dropped,
       density_estimator = if (is.character(density_estimator))
         density_estimator[1] else "custom"
     ),
@@ -201,27 +224,34 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 
 #' Run a simulator over prior draws
 #'
-#' Draws `n` parameter vectors from the prior and pushes them through the
-#' simulator. The simulator is called on chunks of rows rather than on the
-#' whole matrix at once, which is what lets the run report progress and, under
-#' a \pkg{future} plan, spread the chunks across workers. See [nsbi_parallel] and
-#' [nsbi_progress].
+#' Draws `n` parameter vectors from the prior and calls the simulator once per
+#' draw. Draws are batched into chunks so the run can report progress and,
+#' under a \pkg{future} plan, spread the work across workers. See
+#' [nsbi_simulator], [nsbi_parallel] and [nsbi_progress].
+#'
+#' Simulations whose output is not finite are dropped together with their
+#' parameters, with a warning.
 #'
 #' @inheritParams npe
+#' @param simulator A function called once per parameter set, returning one
+#'   simulated observation: a numeric vector, a scalar, or a one-row matrix or
+#'   data frame. See [nsbi_simulator].
 #' @param n Number of simulations.
-#' @return A list with `theta` (`n x dim`) and `x` (`n x d`) matrices.
+#' @return A list with `theta` (`n x dim`) and `x` (`n x d`) matrices and
+#'   `n_dropped`, the number of simulations discarded for non-finite output.
 #' @examples
-#' prior <- prior_uniform(c(-1, -1), c(1, 1))
-#' sims <- simulate_for_sbi(function(theta) theta^2, prior, n = 100)
+#' prior <- prior_uniform(c(a = -1, b = -1), c(a = 1, b = 1))
+#' sims <- simulate_for_sbi(function(a, b) c(a^2, b^2), prior, n = 100)
 #' str(sims)
 #' @export
-simulate_for_sbi <- function(simulator, prior, n, seed = NULL, verbose = FALSE,
-                             chunk_size = NULL) {
+simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
+                             seed = NULL, verbose = FALSE, chunk_size = NULL) {
   if (!is.null(seed)) set.seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))
-  x <- run_simulator(simulator, theta, chunk_size = chunk_size)
-  list(theta = theta, x = x)
+  x <- run_simulator(simulator, theta, sim_args = sim_args,
+                     chunk_size = chunk_size)
+  drop_failed_sims(theta, x)[c("theta", "x", "n_dropped")]
 }
 
 #' @export
@@ -241,8 +271,17 @@ print.nsbi_npe <- function(x, ...) {
                 x$dim_x, x$de$embedding$output_dim))
   }
   cat(sprintf("  simulations       : %d\n", x$n_simulations))
+  if (!is.null(x$n_dropped) && x$n_dropped > 0L) {
+    total <- x$n_simulations + x$n_dropped
+    cat(sprintf("    dropped         : %d of %d, non-finite output (%.1f%%)\n",
+                x$n_dropped, total, 100 * x$n_dropped / total))
+  }
   if (!is.null(x$de$best_val_loss) && is.finite(x$de$best_val_loss)) {
     cat(sprintf("  best val loss     : %.4f\n", x$de$best_val_loss))
+  }
+  if (!torch_net_alive(x$de$net)) {
+    cat("  ! network unusable: a torch fit does not survive saveRDS();\n")
+    cat("    save with save_npe() and reload with load_npe().\n")
   }
   cat("  -> build a posterior with posterior(fit, x_obs = ...)\n")
   invisible(x)

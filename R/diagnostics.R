@@ -16,27 +16,38 @@ NULL
 #' the true parameter within posterior samples conditioned on that data. If the
 #' posterior is well calibrated, the ranks are uniformly distributed.
 #'
+#' A trial whose simulation returns non-finite output is dropped, which lowers
+#' the effective `n_sbc`.
+#'
 #' @param fit An `nsbi_npe` fit (amortized posterior).
-#' @param simulator The simulator used for inference.
+#' @param simulator The simulator used for inference; called once per trial
+#'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
 #' @param n_sbc Number of SBC trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial (rank resolution).
+#' @param sim_args Named list of extra arguments passed to every simulator
+#'   call; see [nsbi_simulator].
 #' @param seed Optional seed.
-#' @param chunk_size Rows per simulator call; see [nsbi_parallel]. The `n_sbc`
+#' @param chunk_size Draws per parallel task; see [nsbi_parallel]. The `n_sbc`
 #'   simulations run across `future` workers when a plan is set; the ranking
 #'   loop that follows calls the trained network and always runs locally.
 #' @return An object of class `nsbi_sbc` with the rank matrix and a per-parameter
 #'   uniformity test.
 #' @export
 sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
-                n_posterior_samples = 1000L, seed = NULL, chunk_size = NULL) {
+                n_posterior_samples = 1000L, sim_args = list(), seed = NULL,
+                chunk_size = NULL) {
   stopifnot(inherits(fit, "nsbi_npe"))
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
-  ranks <- matrix(NA_real_, nrow = n_sbc, ncol = d)
   theta_true <- sample_prior(prior, n_sbc)
-  x_all <- run_simulator(simulator, theta_true, chunk_size = chunk_size,
-                         d = fit$dim_x)
+  x_all <- run_simulator(simulator, theta_true, sim_args = sim_args,
+                         chunk_size = chunk_size, d = fit$dim_x)
+  kept <- drop_failed_sims(theta_true, x_all, what = "SBC trials")
+  theta_true <- kept$theta
+  x_all <- kept$x
+  n_sbc <- nrow(theta_true)
+  ranks <- matrix(NA_real_, nrow = n_sbc, ncol = d)
   with_nsbi_progress({
     p <- nsbi_progressor(steps = n_sbc, label = "Ranking")
     tryCatch({
@@ -63,7 +74,7 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
   names(pvals) <- colnames(ranks)
   structure(
     list(ranks = ranks, n_posterior_samples = L, n_sbc = n_sbc,
-         uniformity_pvalue = pvals),
+         n_dropped = kept$n_dropped, uniformity_pvalue = pvals),
     class = "nsbi_sbc"
   )
 }
@@ -123,16 +134,22 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' parameter (using the spread of the true draws), so parameters on different
 #' scales contribute comparably.
 #'
+#' A trial whose simulation returns non-finite output is dropped, which lowers
+#' the effective `n_tarp`.
+#'
 #' @param fit An `nsbi_npe` fit (amortized posterior).
-#' @param simulator The simulator used for inference.
+#' @param simulator The simulator used for inference; called once per trial
+#'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
 #' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial.
 #' @param references How to draw reference points: `"uniform"` (default, uniform
 #'   over the hyper-rectangle spanned by the true parameter draws, as in the
 #'   paper) or `"prior"` (draws from the prior).
+#' @param sim_args Named list of extra arguments passed to every simulator
+#'   call; see [nsbi_simulator].
 #' @param seed Optional seed.
-#' @param chunk_size Rows per simulator call; see [nsbi_parallel].
+#' @param chunk_size Draws per parallel task; see [nsbi_parallel].
 #' @return An object of class `nsbi_tarp` with the per-trial coverage values
 #'   and the ECP curve. Plot it with [plot_tarp()].
 #' @references Lemos, Coogan, Hezaveh & Perreault-Levasseur (2023),
@@ -141,16 +158,20 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' @export
 tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  n_posterior_samples = 1000L,
-                 references = c("uniform", "prior"), seed = NULL,
-                 chunk_size = NULL) {
+                 references = c("uniform", "prior"), sim_args = list(),
+                 seed = NULL, chunk_size = NULL) {
   stopifnot(inherits(fit, "nsbi_npe"))
   references <- match.arg(references)
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
 
   theta_true <- sample_prior(prior, n_tarp)
-  x_all <- run_simulator(simulator, theta_true, chunk_size = chunk_size,
-                         d = fit$dim_x)
+  x_all <- run_simulator(simulator, theta_true, sim_args = sim_args,
+                         chunk_size = chunk_size, d = fit$dim_x)
+  kept <- drop_failed_sims(theta_true, x_all, what = "TARP trials")
+  theta_true <- kept$theta
+  x_all <- kept$x
+  n_tarp <- nrow(theta_true)
 
   # z-score all distances by the spread of the true draws so no single
   # parameter dominates
@@ -187,7 +208,8 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
   ecp <- sapply(levels, function(a) mean(f < a))
   structure(
     list(coverage_values = f, levels = levels, ecp = ecp,
-         n_tarp = n_tarp, n_posterior_samples = n_posterior_samples,
+         n_tarp = n_tarp, n_dropped = kept$n_dropped,
+         n_posterior_samples = n_posterior_samples,
          references = references),
     class = "nsbi_tarp"
   )
@@ -247,21 +269,27 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
 #' Posterior predictive draws
 #'
 #' Samples parameters from the posterior and pushes them back through the
-#' simulator, giving predictive data to compare against the observation.
+#' simulator, giving predictive data to compare against the observation. A draw
+#' whose simulation returns non-finite output is dropped, which lowers the
+#' number of predictive draws returned.
 #'
 #' @param post An `nsbi_posterior` object.
-#' @param simulator The simulator.
+#' @param simulator The simulator; called once per posterior draw (see
+#'   [nsbi_simulator]).
 #' @param n Number of predictive draws.
 #' @param x Observation to condition on (defaults to `x_obs`).
-#' @param chunk_size Rows per simulator call; see [nsbi_parallel].
+#' @param sim_args Named list of extra arguments passed to every simulator
+#'   call; see [nsbi_simulator].
+#' @param chunk_size Draws per parallel task; see [nsbi_parallel].
 #' @return An `n x d` matrix of simulated data from posterior parameter draws.
 #' @export
 posterior_predictive <- function(post, simulator, n = 1000L, x = NULL,
-                                 chunk_size = NULL) {
+                                 sim_args = list(), chunk_size = NULL) {
   stopifnot(inherits(post, "nsbi_posterior"))
   theta <- sample.nsbi_posterior(post, n = n, obs = x)
-  pred <- run_simulator(simulator, theta, chunk_size = chunk_size,
-                        label = "Predicting")
+  pred <- run_simulator(simulator, theta, sim_args = sim_args,
+                        chunk_size = chunk_size, label = "Predicting")
+  pred <- drop_failed_sims(NULL, pred, what = "predictive draws")$x
   if (is.null(colnames(pred)) && !is.null(post$fit$x_names)) {
     colnames(pred) <- post$fit$x_names
   }

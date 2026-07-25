@@ -143,7 +143,7 @@ Calibration is an average over many simulated datasets; a predictive check asks 
 
 ``` r
 theta_true <- sample_prior(task$prior, 1)
-x_obs <- task$simulator(theta_true)
+x_obs <- task$simulator(drop(theta_true))
 
 post <- posterior(fit, x_obs = x_obs)
 pred <- posterior_predictive(post, task$simulator, n = 500)

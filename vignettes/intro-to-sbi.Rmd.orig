@@ -81,24 +81,22 @@ set.seed(2024)
 # (1) prior over the two parameters we want to infer. B is a scale parameter
 # and must be positive; 0.3 to 2 brackets the plausible range for this
 # example. A is location, so it gets a wide box.
-prior <- prior_uniform(low = c(0, 0.3), high = c(10, 2))
+prior <- prior_uniform(low = c(A = 0, B = 0.3), high = c(A = 10, B = 2))
 
-# (2) simulator: an (n x 2) matrix of parameters -> an (n x 10) matrix of
-# data. Each row draws 10 i.i.d. observations from the g-and-k distribution
-# at that row's (A, B), with g = 2 and k = 0.5 fixed, then sorts them (see
-# below for why).
+# (2) simulator: one parameter set -> one observation. It draws 10 i.i.d.
+# observations from the g-and-k distribution at that (A, B), with g = 2 and
+# k = 0.5 fixed, then sorts them (see below for why). The prior names match
+# the arguments, so A and B arrive by name.
 rgk <- function(n, A, B, g = 2, k = 0.5, c_asym = 0.8) {
   z <- rnorm(n)
   A + B * (1 + c_asym * tanh(g * z / 2)) * (1 + z^2)^k * z
 }
-simulator <- function(theta) {
-  t(apply(theta, 1, function(th) sort(rgk(10, th[1], th[2]))))
-}
-stopifnot(nrow(simulator(sample_prior(prior, 5))) == 5)
+simulator <- function(A, B) sort(rgk(10, A, B))
+stopifnot(length(simulator(3, 1)) == 10)
 
 # (3) the observation: 10 draws from the g-and-k distribution with A = 3, B = 1
 theta_true <- c(A = 3, B = 1)
-x_obs <- simulator(rbind(theta_true))
+x_obs <- simulator(A = theta_true[["A"]], B = theta_true[["B"]])
 ```
 
 The `sort()` matters more than it looks. The ten draws are exchangeable, so
@@ -124,13 +122,13 @@ the way in a script.
 One more thing worth flagging up front, especially if you come from
 regression or econometrics: SBI writes the *observed data* as $\mathbf{x}$,
 the role your outcome variable $y$ usually plays; covariates, if you have
-any, are absorbed into the simulator. The package README shows this
-collision directly: its regression example has a covariate `x` living inside
-the simulator, a response `y_obs`, and then passes `y_obs` to the argument
-`x_obs`. Expect to translate for a while: SBI's $\mathbf{x}$ is what a
-regression course calls the response. (Talts et al. and the Stan literature
-generally write the data as $y$, so following those citations you will meet
-both conventions.)
+any, are arguments to the simulator. The package README shows this
+collision directly: its regression example passes a covariate `x` to the
+simulator through `sim_args`, gets a response `y_obs` back, and then hands
+`y_obs` to the argument `x_obs`. Expect to translate for a while: SBI's
+$\mathbf{x}$ is what a regression course calls the response. (Talts et al. and
+the Stan literature generally write the data as $y$, so following those
+citations you will meet both conventions.)
 
 ## Training an amortized posterior estimator
 
@@ -189,7 +187,7 @@ already trained above.
 
 ```{r fig.alt = "Pairs plot of the posterior for a second observation, from the same fitted estimator."}
 theta_true2 <- c(A = 6, B = 0.6)
-x_obs2      <- simulator(rbind(theta_true2))
+x_obs2      <- simulator(A = theta_true2[["A"]], B = theta_true2[["B"]])
 
 draws2 <- sample(posterior(fit, x_obs = x_obs2), 5000)
 colnames(draws2) <- c("A", "B")

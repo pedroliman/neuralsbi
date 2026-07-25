@@ -25,8 +25,10 @@
 #' with a warning.
 #'
 #' @param prior An `nsbi_prior` (see [prior_uniform()], [prior_normal()]).
-#' @param simulator A function mapping an `n x dim` matrix of parameters to an
-#'   `n x d` matrix of simulated data.
+#' @param simulator A function called once per parameter set, returning one
+#'   simulated observation; see [nsbi_simulator].
+#' @param sim_args Named list of extra arguments passed to every simulator
+#'   call; see [nsbi_simulator].
 #' @param x_obs The observation to target. Sequential inference concentrates
 #'   simulations around the posterior for this observation.
 #' @param n_rounds Number of rounds. Round 1 is ordinary single-round NPE.
@@ -40,7 +42,7 @@
 #' @param max_proposal_batches Cap on rejection-sampling batches per round.
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print per-round progress.
-#' @param chunk_size Rows per simulator call; see [nsbi_parallel]. Each round's
+#' @param chunk_size Draws per parallel task; see [nsbi_parallel]. Each round's
 #'   simulations run across `future` workers when a plan is set.
 #' @param ... Passed to [npe()] (estimator and training settings).
 #'
@@ -52,9 +54,8 @@
 #'   \doi{10.48550/arXiv.2210.04815}
 #'
 #' @examples
-#' prior <- prior_normal(mean = c(0, 0), sd = 1)
-#' simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
-#'                                             nrow = nrow(theta))
+#' prior <- prior_normal(mean = c(mu = 0, nu = 0), sd = 1)
+#' simulator <- function(mu, nu) c(mu, nu) + rnorm(2, sd = 0.3)
 #' fit <- npe_sequential(prior, simulator, x_obs = c(0.5, -0.5),
 #'                       n_rounds = 2, n_simulations = 1000,
 #'                       density_estimator = "linear_gaussian")
@@ -62,7 +63,7 @@
 #' draws <- sample(post, 1000)
 #' @export
 npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
-                           n_simulations = 1000L,
+                           n_simulations = 1000L, sim_args = list(),
                            density_estimator = c("maf", "mdn", "nsf",
                                                  "linear_gaussian"),
                            epsilon = 1e-4, n_truncation_samples = 5000L,
@@ -94,7 +95,10 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       lp_ref <- log_prob(post, ref, normalize = FALSE)
       threshold <- stats::quantile(lp_ref, probs = epsilon, names = FALSE)
 
-      theta_new <- matrix(0, nrow = 0, ncol = prior$dim)
+      # keep the parameter names: they decide how the simulator is called, and
+      # round 2 must call it exactly as round 1 did
+      theta_new <- matrix(0, nrow = 0, ncol = prior$dim,
+                          dimnames = list(NULL, prior$param_names))
       tried <- 0L
       batch <- 0L
       while (nrow(theta_new) < budgets[r] && batch < max_proposal_batches) {
@@ -116,8 +120,12 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       }
     }
 
-    x_new <- run_simulator(simulator, theta_new, chunk_size = chunk_size,
+    x_new <- run_simulator(simulator, theta_new, sim_args = sim_args,
+                           chunk_size = chunk_size,
                            label = sprintf("Round %d/%d", r, n_rounds))
+    kept <- drop_failed_sims(theta_new, x_new)
+    theta_new <- kept$theta
+    x_new <- kept$x
     theta_all <- rbind(theta_all, theta_new)
     x_all <- rbind(x_all, x_new)
     verbose_cat(verbose, sprintf(

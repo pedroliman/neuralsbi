@@ -23,10 +23,9 @@ test_that("as_theta_matrix preserves names for a single named vector row", {
 test_that("npe() carries theta/x names onto the fit, posterior samples, and MAP", {
   set.seed(1)
   prior <- prior_normal(mean = c(beta = 0, rho = 0), sd = 1)
-  simulator <- function(theta) {
-    out <- theta + matrix(rnorm(length(theta), sd = 0.3), nrow = nrow(theta))
-    colnames(out) <- c("cases", "deaths")
-    out
+  # the parameter names match the formals, so they arrive one scalar each
+  simulator <- function(beta, rho) {
+    c(cases = beta, deaths = rho) + rnorm(2, sd = 0.3)
   }
   fit <- npe(prior, simulator, n_simulations = 1500,
              density_estimator = "linear_gaussian")
@@ -47,8 +46,7 @@ test_that("npe() carries theta/x names onto the fit, posterior samples, and MAP"
 test_that("sbc() and expected_coverage() carry parameter names", {
   set.seed(2)
   prior <- prior_normal(mean = c(beta = 0, rho = 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) unname(theta) + rnorm(2, sd = 0.3)
   fit <- npe(prior, simulator, n_simulations = 1500,
              density_estimator = "linear_gaussian")
   res <- sbc(fit, simulator, n_sbc = 50, n_posterior_samples = 100, seed = 3)
@@ -84,10 +82,10 @@ test_that("plot_sbc, pairplot and plot_posterior_predictive run with named/math 
   skip_if_no_ggally()
   set.seed(4)
   prior <- prior_normal(mean = c(`beta[1]` = 0, rho = 0), sd = 1)
+  # "beta[1]" can never be a formal, so this simulator gets the whole vector
   simulator <- function(theta) {
-    out <- theta + matrix(rnorm(length(theta), sd = 0.3), nrow = nrow(theta))
-    colnames(out) <- c("cases", "growth rate (per day)")
-    out
+    y <- unname(theta) + rnorm(2, sd = 0.3)
+    c(cases = y[1], `growth rate (per day)` = y[2])
   }
   fit <- npe(prior, simulator, n_simulations = 1500,
              density_estimator = "linear_gaussian")

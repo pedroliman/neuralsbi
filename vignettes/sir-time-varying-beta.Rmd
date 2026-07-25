@@ -355,6 +355,8 @@ sim_cbf <- function(theta, N_fixed = NULL, full = FALSE) {
 }
 ```
 
+Each of these takes one parameter set and returns one reported curve as a one-row matrix, which is what `npe()` asks for. The leading `matrix(as.numeric(theta), ncol = ...)` also lets the same function run a whole matrix of draws in one call, which is how the diagnostics below use them: `sbc()` and `npe()` go through the per-parameter-set path, while the predictive checks call the simulators directly on a block of posterior draws.
+
 Every parameter is unconstrained on \(\mathbb{R}\): the log/logit transforms mean a single Gaussian prior with no truncated support, so the posterior needs no rejection sampling for leakage. Naming each `mean` vector carries the names through every posterior draw, SBC result, and plot. \(\beta_0\) means different things across families: in the piecewise model it is an *effective* rate per regime, centred on \(R = 2\); in the behavioral models it is the *intrinsic* transmission rate with the decline explained mechanistically, centred on \(R_0 = 3\).
 
 

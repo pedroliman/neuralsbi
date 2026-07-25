@@ -10,6 +10,7 @@ npe_sequential(
   x_obs,
   n_rounds = 2L,
   n_simulations = 1000L,
+  sim_args = list(),
   density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
   epsilon = 1e-04,
   n_truncation_samples = 5000L,
@@ -23,8 +24,8 @@ npe_sequential(
 \arguments{
 \item{prior}{An \code{nsbi_prior} (see \code{\link[=prior_uniform]{prior_uniform()}}, \code{\link[=prior_normal]{prior_normal()}}).}
 
-\item{simulator}{A function mapping an \verb{n x dim} matrix of parameters to an
-\verb{n x d} matrix of simulated data.}
+\item{simulator}{A function called once per parameter set, returning one
+simulated observation; see \link{nsbi_simulator}.}
 
 \item{x_obs}{The observation to target. Sequential inference concentrates
 simulations around the posterior for this observation.}
@@ -33,6 +34,9 @@ simulations around the posterior for this observation.}
 
 \item{n_simulations}{Simulation budget per round; either a scalar or a
 vector of length \code{n_rounds}.}
+
+\item{sim_args}{Named list of extra arguments passed to every simulator
+call; see \link{nsbi_simulator}.}
 
 \item{density_estimator}{Passed to \code{\link[=npe]{npe()}} each round.}
 
@@ -48,7 +52,7 @@ threshold each round.}
 
 \item{verbose}{Print per-round progress.}
 
-\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}. Each round's
+\item{chunk_size}{Draws per parallel task; see \link{nsbi_parallel}. Each round's
 simulations run across \code{future} workers when a plan is set.}
 
 \item{...}{Passed to \code{\link[=npe]{npe()}} (estimator and training settings).}
@@ -84,9 +88,8 @@ prior the acceptance rate falls; the round then stops after
 with a warning.
 }
 \examples{
-prior <- prior_normal(mean = c(0, 0), sd = 1)
-simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
-                                            nrow = nrow(theta))
+prior <- prior_normal(mean = c(mu = 0, nu = 0), sd = 1)
+simulator <- function(mu, nu) c(mu, nu) + rnorm(2, sd = 0.3)
 fit <- npe_sequential(prior, simulator, x_obs = c(0.5, -0.5),
                       n_rounds = 2, n_simulations = 1000,
                       density_estimator = "linear_gaussian")

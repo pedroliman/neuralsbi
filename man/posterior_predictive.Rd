@@ -4,23 +4,36 @@
 \alias{posterior_predictive}
 \title{Posterior predictive draws}
 \usage{
-posterior_predictive(post, simulator, n = 1000L, x = NULL, chunk_size = NULL)
+posterior_predictive(
+  post,
+  simulator,
+  n = 1000L,
+  x = NULL,
+  sim_args = list(),
+  chunk_size = NULL
+)
 }
 \arguments{
 \item{post}{An \code{nsbi_posterior} object.}
 
-\item{simulator}{The simulator.}
+\item{simulator}{The simulator; called once per posterior draw (see
+\link{nsbi_simulator}).}
 
 \item{n}{Number of predictive draws.}
 
 \item{x}{Observation to condition on (defaults to \code{x_obs}).}
 
-\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}.}
+\item{sim_args}{Named list of extra arguments passed to every simulator
+call; see \link{nsbi_simulator}.}
+
+\item{chunk_size}{Draws per parallel task; see \link{nsbi_parallel}.}
 }
 \value{
 An \verb{n x d} matrix of simulated data from posterior parameter draws.
 }
 \description{
 Samples parameters from the posterior and pushes them back through the
-simulator, giving predictive data to compare against the observation.
+simulator, giving predictive data to compare against the observation. A draw
+whose simulation returns non-finite output is dropped, which lowers the
+number of predictive draws returned.
 }

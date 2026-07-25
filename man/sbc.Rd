@@ -10,6 +10,7 @@ sbc(
   prior = fit$prior,
   n_sbc = 200L,
   n_posterior_samples = 1000L,
+  sim_args = list(),
   seed = NULL,
   chunk_size = NULL
 )
@@ -17,7 +18,8 @@ sbc(
 \arguments{
 \item{fit}{An \code{nsbi_npe} fit (amortized posterior).}
 
-\item{simulator}{The simulator used for inference.}
+\item{simulator}{The simulator used for inference; called once per trial
+(see \link{nsbi_simulator}).}
 
 \item{prior}{The prior used for inference (defaults to \code{fit$prior}).}
 
@@ -25,9 +27,12 @@ sbc(
 
 \item{n_posterior_samples}{Posterior draws per trial (rank resolution).}
 
+\item{sim_args}{Named list of extra arguments passed to every simulator
+call; see \link{nsbi_simulator}.}
+
 \item{seed}{Optional seed.}
 
-\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}. The \code{n_sbc}
+\item{chunk_size}{Draws per parallel task; see \link{nsbi_parallel}. The \code{n_sbc}
 simulations run across \code{future} workers when a plan is set; the ranking
 loop that follows calls the trained network and always runs locally.}
 }
@@ -39,4 +44,8 @@ uniformity test.
 Repeatedly draws a "true" parameter from the prior, simulates data, and ranks
 the true parameter within posterior samples conditioned on that data. If the
 posterior is well calibrated, the ranks are uniformly distributed.
+}
+\details{
+A trial whose simulation returns non-finite output is dropped, which lowers
+the effective \code{n_sbc}.
 }
