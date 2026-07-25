@@ -40,6 +40,12 @@ if (!requireNamespace("future", quietly = TRUE)) {
           "install.packages('future') to use all your cores.", call. = FALSE)
 }
 
+# Show the simulation and training bars while baking. They are off under knitr
+# by default, which is right for the articles but unhelpful when you are
+# watching a run that takes hours. The bar writes to stderr, so it reaches the
+# console without landing in the baked .Rmd.
+options(neuralsbi.progress = "builtin")
+
 # knit each source with the working directory inside vignettes/, so the baked
 # figure paths ("figures/<name>-1.png") are relative to the vignette itself and
 # resolve the same way under R CMD build and pkgdown.
