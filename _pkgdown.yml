@@ -1,4 +1,4 @@
-url: https://pedroliman.github.io/neuralsbi/
+url: https://neuralsbi.pedrodelima.com/
 
 # `docs/` holds the package's design documents, so the rendered site goes to
 # `site/` (gitignored); CI deploys it to the gh-pages branch.
@@ -42,7 +42,7 @@ template:
          "@type": "SoftwareSourceCode",
          "name": "neuralsbi",
          "description": "A native R implementation of neural simulation-based inference (SBI). Trains neural posterior estimators on a prior and simulator for amortized, likelihood-free Bayesian inference, running on the torch back end.",
-         "url": "https://pedroliman.github.io/neuralsbi/",
+         "url": "https://neuralsbi.pedrodelima.com/",
          "codeRepository": "https://github.com/pedroliman/neuralsbi",
          "programmingLanguage": {
            "@type": "ComputerLanguage",
