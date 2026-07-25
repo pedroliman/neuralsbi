@@ -57,6 +57,7 @@ test_that("tarp supports prior reference points and prints", {
 })
 
 test_that("plot_tarp runs and returns the ECP curve", {
+  skip_if_no_ggplot2()
   set.seed(10)
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) {
