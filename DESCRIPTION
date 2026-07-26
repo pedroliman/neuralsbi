@@ -24,7 +24,8 @@ Suggests:
     rlang,
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    svglite
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://neuralsbi.pedrodelima.com/, https://github.com/pedroliman/neuralsbi
