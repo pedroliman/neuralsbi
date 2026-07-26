@@ -36,7 +36,7 @@ load_npe(path)
 ## Details
 
 `save_npe()` writes one `.rds` file holding the network's weights (via
-[`torch::torch_save()`](https://rdrr.io/pkg/torch/man/torch_save.html)
+[`torch::torch_save()`](https://torch.mlverse.org/docs/reference/torch_save.html)
 on its `state_dict`) alongside everything else the fit carries as
 ordinary R objects: the prior, the standardization centers and scales,
 parameter and outcome names, the simulation count, and the training

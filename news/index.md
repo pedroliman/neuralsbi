@@ -91,7 +91,7 @@
   the network fails with `external pointer is not valid`.
   [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   writes the weights with
-  [`torch::torch_save()`](https://rdrr.io/pkg/torch/man/torch_save.html)
+  [`torch::torch_save()`](https://torch.mlverse.org/docs/reference/torch_save.html)
   and everything else as ordinary R objects, into one `.rds`;
   [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   rebuilds the network from the recorded architecture and restores them.

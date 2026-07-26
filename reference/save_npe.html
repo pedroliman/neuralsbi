@@ -9,12 +9,12 @@ and a torch module is an external pointer. saveRDS() writes the pointer,
 not the network: the file reloads without complaint and the object prints
 normally, but the first call that touches the network fails with
 external pointer is not valid. save_npe() and load_npe() are the
-round trip that works.'><meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png"><meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-2ZH21CKEW9"></script><script>
+round trip that works.'><meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png"><meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-2ZH21CKEW9');
+  gtag('config', 'G-49QZC8ZP1X');
 </script><!-- Google tag (gtag.js) --><!-- Structured data: describe the package to search engines so it can
      surface as a software result rather than a generic web page. --><script type="application/ld+json">
 {
@@ -133,7 +133,7 @@ round trip that works.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>save_npe()</code> writes one <code>.rds</code> file holding the network's weights (via
-<code><a href="https://rdrr.io/pkg/torch/man/torch_save.html" class="external-link">torch::torch_save()</a></code> on its <code>state_dict</code>) alongside everything else the fit
+<code><a href="https://torch.mlverse.org/docs/reference/torch_save.html" class="external-link">torch::torch_save()</a></code> on its <code>state_dict</code>) alongside everything else the fit
 carries as ordinary R objects: the prior, the standardization centers and
 scales, parameter and outcome names, the simulation count, and the training
 history. <code>load_npe()</code> rebuilds the network from the recorded architecture
