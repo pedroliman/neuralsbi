@@ -23,13 +23,16 @@
 if (!requireNamespace("knitr", quietly = TRUE)) {
   stop("knitr is required to precompute the vignettes.")
 }
+if (!requireNamespace("svglite", quietly = TRUE)) {
+  stop("svglite is required to bake the vignettes' figures as SVG.")
+}
 if (!requireNamespace("torch", quietly = TRUE) || !torch::torch_is_installed()) {
   stop("torch (libtorch) is required to bake the neural vignettes. ",
        "Install with install.packages('torch'); torch::install_torch().")
 }
 
 # knit each source with the working directory inside vignettes/, so the baked
-# figure paths ("figures/<name>-1.png") are relative to the vignette itself and
+# figure paths ("figures/<name>-1.svg") are relative to the vignette itself and
 # resolve the same way under R CMD build and pkgdown.
 vign_dir <- if (basename(getwd()) == "vignettes") getwd() else file.path(getwd(), "vignettes")
 old_wd <- setwd(vign_dir)
