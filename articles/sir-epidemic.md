@@ -25,7 +25,7 @@ time series.)
 ## The model, written twice
 
 Both packages need the same generative model. `pomp` wants it as C
-snippets; `neuralsbi` wants a vectorized R function. The dynamics are
+snippets; `neuralsbi` wants a plain R function. The dynamics are
 identical: an Euler step with binomial transitions, and reported cases
 drawn as a binomial thinning of the true weekly incidence.
 
@@ -131,9 +131,10 @@ to this one outbreak: a different curve means running the sampler again.
 ## Route 2 — neuralsbi: neural posterior estimation
 
 `neuralsbi` never evaluates a measurement density. It only needs to
-*draw* from the model, so we write the same dynamics as a vectorized
-simulator: an $`n \times 2`$ matrix of parameters in, an $`n \times 20`$
-matrix of reported curves out.
+*draw* from the model, so we write the same dynamics as a simulator: one
+pair $`(\beta, \gamma)`$ in, one reported incidence curve of length 20
+out. The prior names the two parameters after the simulator’s arguments,
+so each arrives by name.
 
 ``` r
 
@@ -144,18 +145,17 @@ library(neuralsbi)
 #> 
 #>     sample
 
-sir_simulator <- function(theta) {
-  n <- nrow(theta); Beta <- theta[, 1]; gamma <- theta[, 2]
-  S <- rep(N - I0, n); I <- rep(I0, n); R <- rep(0, n)
-  out <- matrix(0, n, Tobs)
-  for (tt in seq_len(Tobs)) {          # one column per week
-    H <- rep(0, n)
+sir_simulator <- function(Beta, gamma) {
+  S <- N - I0; I <- I0; R <- 0
+  out <- numeric(Tobs)
+  for (tt in seq_len(Tobs)) {          # one entry per week
+    H <- 0
     for (s in seq_len(10)) {           # ten Euler substeps, dt = 1/10
-      dN_SI <- rbinom(n, S, 1 - exp(-Beta * I / N * 0.1))
-      dN_IR <- rbinom(n, I, 1 - exp(-gamma * 0.1))
+      dN_SI <- rbinom(1, S, 1 - exp(-Beta * I / N * 0.1))
+      dN_IR <- rbinom(1, I, 1 - exp(-gamma * 0.1))
       S <- S - dN_SI; I <- I + dN_SI - dN_IR; R <- R + dN_IR; H <- H + dN_SI
     }
-    out[, tt] <- rbinom(n, H, rho)     # binomial reporting
+    out[tt] <- rbinom(1, H, rho)       # binomial reporting
   }
   out
 }
@@ -170,9 +170,11 @@ unimodal posterior.
 
 ``` r
 
-prior <- prior_uniform(low = c(0.5, 0.2), high = c(5, 3))   # same as pomp's dprior
+prior <- prior_uniform(low  = c(Beta = 0.5, gamma = 0.2),   # same as pomp's dprior
+                       high = c(Beta = 5,   gamma = 3))
 
-# 8000 simulations to train a 2-parameter posterior. If it comes out too wide, add simulations before enlarging the network.
+# 8000 simulations to train a 2-parameter posterior. If it comes out too wide,
+# add simulations before enlarging the network.
 fit <- npe(prior, sir_simulator, n_simulations = 8000,
            density_estimator = "mdn", max_epochs = 400,
            n_restarts = 2, seed = 1)
@@ -180,9 +182,11 @@ fit <- npe(prior, sir_simulator, n_simulations = 8000,
 post_npe <- posterior(fit, x_obs = x_obs)
 draws_npe <- sample(post_npe, 4000)
 round(colMeans(draws_npe), 3)
-#> [1] 2.097 0.894
+#>  Beta gamma 
+#> 2.059 0.832
 round(apply(draws_npe, 2, sd), 3)
-#> [1] 0.347 0.239
+#>  Beta gamma 
+#> 0.257 0.202
 ```
 
 ## Do the posteriors agree?
@@ -215,7 +219,7 @@ plot of chunk unnamed-chunk-9
 
 
 c2st(as.matrix(draws_npe), as.matrix(post_pomp), seed = 1)$accuracy
-#> [1] 0.7272727
+#> [1] 0.7270909
 ```
 
 The two posteriors sit on top of each other: same location, same
@@ -240,7 +244,7 @@ sbc_res <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300,
 sbc_res                    # large p-values = calibrated
 #> <nsbi_sbc> 150 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     0.312  0.181
+#>     Beta=0.419  gamma=0.223
 plot_sbc(sbc_res, param = 1)
 ```
 

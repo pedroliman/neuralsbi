@@ -3,29 +3,11 @@
 simulate_for_sbi(), npe_sequential(), sbc(), tarp(),
 posterior_predictive() – runs it through one execution path. That path is
 sequential by default and parallel as soon as you declare a future
-plan:
-library(future)
-plan(multisession)          # or multicore, cluster, batchtools, ...
-fit &amp;lt;- npe(prior, simulator, n_simulations = 10000)
-
-Nothing else changes: no argument to set, no variant of the function to
-call. With no plan (or plan(sequential)) the simulations run in the
-current process, and neuralsbi mentions the two lines above once per
-session. Silence that hint with
-options(neuralsbi.parallel_hint = FALSE)."><meta property="og:description" content="Every neuralsbi function that calls a simulator – npe(),
+plan:"><meta property="og:description" content="Every neuralsbi function that calls a simulator – npe(),
 simulate_for_sbi(), npe_sequential(), sbc(), tarp(),
 posterior_predictive() – runs it through one execution path. That path is
 sequential by default and parallel as soon as you declare a future
-plan:
-library(future)
-plan(multisession)          # or multicore, cluster, batchtools, ...
-fit &amp;lt;- npe(prior, simulator, n_simulations = 10000)
-
-Nothing else changes: no argument to set, no variant of the function to
-call. With no plan (or plan(sequential)) the simulations run in the
-current process, and neuralsbi mentions the two lines above once per
-session. Silence that hint with
-options(neuralsbi.parallel_hint = FALSE)."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png"><meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-2ZH21CKEW9"></script><script>
+plan:"><meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png"><meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-2ZH21CKEW9"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -73,7 +55,7 @@ options(neuralsbi.parallel_hint = FALSE)."><meta property="og:image" content="ht
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -119,7 +101,12 @@ options(neuralsbi.parallel_hint = FALSE)."><meta property="og:image" content="ht
 <code><a href="posterior_predictive.html">posterior_predictive()</a></code> – runs it through one execution path. That path is
 sequential by default and parallel as soon as you declare a <span class="pkg">future</span>
 plan:</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
+    </div>
+
+
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p></p><div class="sourceCode r"><pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span><span class="op">)</span>          <span class="co"># or multicore, cluster, batchtools, ...</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">10000</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>Nothing else changes: no argument to set, no variant of the function to
@@ -128,46 +115,44 @@ current process, and <code>neuralsbi</code> mentions the two lines above once pe
 session. Silence that hint with
 <code>options(neuralsbi.parallel_hint = FALSE)</code>.</p>
     </div>
-
-
-    <div class="section level2">
-    <h2 id="chunking">Chunking<a class="anchor" aria-label="anchor" href="#chunking"></a></h2>
-
-
-<p>The parameter matrix is split into row chunks and one chunk at a time is
-handed to the simulator, so a vectorized simulator keeps most of its
-vectorization while progress can still be reported and work spread across
-workers. The number of chunks depends only on the number of simulations
-(<code>ceiling(n / chunk_size)</code>, with <code>chunk_size</code> chosen to give about 64
-chunks), <em>not</em> on the number of workers – which is what makes results
-reproducible across plans. Set it yourself with the <code>chunk_size</code> argument,
-or globally with <code>options(neuralsbi.chunks = )</code>. Larger chunks mean less
-overhead per call and a coarser progress bar; smaller chunks balance
-uneven simulator run times better. Under a multi-process plan each chunk
-ships the simulator – and everything its environment captures – to a
-worker, so a simulator closing over a large object is a reason to raise
-<code>chunk_size</code>.</p>
-    </div>
     <div class="section level2">
     <h2 id="random-numbers">Random numbers<a class="anchor" aria-label="anchor" href="#random-numbers"></a></h2>
 
 
-<p>Each chunk gets its own L'Ecuyer-CMRG random-number stream, derived from the
-session's RNG state at the moment simulation starts. So <code>set.seed(42)</code>
-before a fit (or <code>npe(..., seed = 42)</code>) gives the same simulations whether
-you run sequentially or on 32 workers, and whatever the worker count. What
-does change results is the chunking: fixing <code>chunk_size</code> fixes the draws.</p>
+
+<p>Each <em>simulation</em> gets its own L'Ecuyer-CMRG random-number stream, derived
+from the session's RNG state at the moment simulation starts. So
+<code>set.seed(42)</code> before a fit (or <code>npe(..., seed = 42)</code>) gives the same
+simulations whatever the plan and whatever the worker count: results depend
+on the seed alone.</p>
 <p>Because the simulations are drawn from separate streams, the simulator no
 longer consumes the caller's RNG state directly; the state advances by one
 draw per simulation phase.</p>
     </div>
     <div class="section level2">
+    <h2 id="scheduling">Scheduling<a class="anchor" aria-label="anchor" href="#scheduling"></a></h2>
+
+
+
+<p>Under a multi-process plan the draws are dealt out to workers in batches,
+because one <code>future</code> per simulation would spend longer shipping the
+simulator to a worker than running it. Batch sizes follow the worker count
+and are not a setting: they cannot change a result, since every simulation
+has its own RNG stream. Running sequentially there are no batches at all,
+just a loop.</p>
+<p>Each batch ships the simulator, and everything its environment captures, to
+a worker. A simulator closing over a large object therefore pays for that
+object once per batch, which is a reason to pass it through <code>sim_args</code>
+instead of capturing it.</p>
+    </div>
+    <div class="section level2">
     <h2 id="what-is-not-parallelized">What is not parallelized<a class="anchor" aria-label="anchor" href="#what-is-not-parallelized"></a></h2>
+
 
 
 <p>Training runs in the calling process. Torch tensors and modules are external
 pointers that cannot be shipped to a worker, and libtorch already uses
-multiple threads internally (<code><a href="https://torch.mlverse.org/docs/reference/threads.html" class="external-link">torch::torch_set_num_threads()</a></code>). The same
+multiple threads internally (<code><a href="https://rdrr.io/pkg/torch/man/threads.html" class="external-link">torch::torch_set_num_threads()</a></code>). The same
 goes for the posterior-sampling loops in <code><a href="sbc.html">sbc()</a></code> and <code><a href="tarp.html">tarp()</a></code> – those call
 the trained network, not the simulator, and are reported with their own
 progress bar.</p>

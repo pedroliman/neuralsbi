@@ -41,3 +41,10 @@ rejected ("leakage" correction), and
 [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
 is renormalized by the estimated acceptance probability so it integrates
 to one over the support.
+
+## See also
+
+[`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md),
+which is how a torch-backed fit gets to disk and back;
+[`readRDS()`](https://rdrr.io/r/base/readRDS.html) returns one whose
+network is dead, and `posterior()` says so rather than failing later.

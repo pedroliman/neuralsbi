@@ -1,9 +1,8 @@
 # Run a simulator over prior draws
 
-Draws `n` parameter vectors from the prior and pushes them through the
-simulator. The simulator is called on chunks of rows rather than on the
-whole matrix at once, which is what lets the run report progress and,
-under a future plan, spread the chunks across workers. See
+Draws `n` parameter vectors from the prior and calls the simulator once
+per draw. Under a future plan the draws are spread across workers. See
+[nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md),
 [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
 and
 [nsbi_progress](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md).
@@ -15,9 +14,9 @@ simulate_for_sbi(
   simulator,
   prior,
   n,
+  sim_args = list(),
   seed = NULL,
-  verbose = FALSE,
-  chunk_size = NULL
+  verbose = FALSE
 )
 ```
 
@@ -25,10 +24,10 @@ simulate_for_sbi(
 
 - simulator:
 
-  A function mapping an `n x dim` matrix of parameters to an `n x d`
-  matrix of simulated data. Ignored if `theta` and `x` are given. Column
-  names on its output (e.g. via `colnames(out) <- c("cases_wk1", ...)`)
-  become the outcome names used in plots.
+  A function called once per parameter set, returning one simulated
+  observation: a numeric vector, a scalar, or a one-row matrix or data
+  frame. See
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
 
 - prior:
 
@@ -40,6 +39,12 @@ simulate_for_sbi(
 
   Number of simulations.
 
+- sim_args:
+
+  Named list of extra arguments passed to every simulator call: observed
+  data, a time grid, a fixed population size, solver settings. See
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
+
 - seed:
 
   Optional integer seed for reproducibility.
@@ -48,24 +53,27 @@ simulate_for_sbi(
 
   Print training progress.
 
-- chunk_size:
-
-  Rows of `theta` per simulator call. `NULL` (default) splits the run
-  into about 64 chunks. Chunks are the unit of work sent to `future`
-  workers and the unit of progress reporting; see
-  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
-
 ## Value
 
-A list with `theta` (`n x dim`) and `x` (`n x d`) matrices.
+A list with `theta` (`n x dim`) and `x` (`n x d`) matrices and
+`n_dropped`, the number of simulations discarded for non-finite output.
+
+## Details
+
+Simulations whose output is not finite are dropped together with their
+parameters, with a warning.
 
 ## Examples
 
 ``` r
-prior <- prior_uniform(c(-1, -1), c(1, 1))
-sims <- simulate_for_sbi(function(theta) theta^2, prior, n = 100)
+prior <- prior_uniform(c(a = -1, b = -1), c(a = 1, b = 1))
+sims <- simulate_for_sbi(function(a, b) c(a^2, b^2), prior, n = 100)
 str(sims)
-#> List of 2
-#>  $ theta: num [1:100, 1:2] -0.0435 0.4745 -0.8025 -0.3234 0.3867 ...
-#>  $ x    : num [1:100, 1:2] 0.00189 0.22512 0.64396 0.10456 0.14956 ...
+#> List of 3
+#>  $ theta    : num [1:100, 1:2] -0.0446 0.1635 0.5102 0.3754 0.9791 ...
+#>   ..- attr(*, "dimnames")=List of 2
+#>   .. ..$ : NULL
+#>   .. ..$ : chr [1:2] "a" "b"
+#>  $ x        : num [1:100, 1:2] 0.00199 0.02673 0.2603 0.1409 0.95866 ...
+#>  $ n_dropped: int 0
 ```

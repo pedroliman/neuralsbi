@@ -77,7 +77,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -221,24 +221,22 @@ from a small sample of observations.</p>
 <span><span class="co"># (1) prior over the two parameters we want to infer. B is a scale parameter</span></span>
 <span><span class="co"># and must be positive; 0.3 to 2 brackets the plausible range for this</span></span>
 <span><span class="co"># example. A is location, so it gets a wide box.</span></span>
-<span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span><span class="op">)</span>, high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">0</span>, B <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>, high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">10</span>, B <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># (2) simulator: an (n x 2) matrix of parameters -&gt; an (n x 10) matrix of</span></span>
-<span><span class="co"># data. Each row draws 10 i.i.d. observations from the g-and-k distribution</span></span>
-<span><span class="co"># at that row's (A, B), with g = 2 and k = 0.5 fixed, then sorts them (see</span></span>
-<span><span class="co"># below for why).</span></span>
+<span><span class="co"># (2) simulator: one parameter set -&gt; one observation. It draws 10 i.i.d.</span></span>
+<span><span class="co"># observations from the g-and-k distribution at that (A, B), with g = 2 and</span></span>
+<span><span class="co"># k = 0.5 fixed, then sorts them (see below for why). The prior names match</span></span>
+<span><span class="co"># the arguments, so A and B arrive by name.</span></span>
 <span><span class="va">rgk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">A</span>, <span class="va">B</span>, <span class="va">g</span> <span class="op">=</span> <span class="fl">2</span>, <span class="va">k</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">c_asym</span> <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
 <span>  <span class="va">A</span> <span class="op">+</span> <span class="va">B</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">c_asym</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">tanh</a></span><span class="op">(</span><span class="va">g</span> <span class="op">*</span> <span class="va">z</span> <span class="op">/</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">z</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">^</span><span class="va">k</span> <span class="op">*</span> <span class="va">z</span></span>
 <span><span class="op">}</span></span>
-<span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">theta</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">th</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">rgk</span><span class="op">(</span><span class="fl">10</span>, <span class="va">th</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">th</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu">simulator</span><span class="op">(</span><span class="fu"><a href="../reference/sample_prior.html">sample_prior</a></span><span class="op">(</span><span class="va">prior</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">A</span>, <span class="va">B</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu">rgk</span><span class="op">(</span><span class="fl">10</span>, <span class="va">A</span>, <span class="va">B</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu">simulator</span><span class="op">(</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">==</span> <span class="fl">10</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># (3) the observation: 10 draws from the g-and-k distribution with A = 3, B = 1</span></span>
 <span><span class="va">theta_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">3</span>, B <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">x_obs</span> <span class="op">&lt;-</span> <span class="fu">simulator</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">theta_true</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">x_obs</span> <span class="op">&lt;-</span> <span class="fu">simulator</span><span class="op">(</span>A <span class="op">=</span> <span class="va">theta_true</span><span class="op">[[</span><span class="st">"A"</span><span class="op">]</span><span class="op">]</span>, B <span class="op">=</span> <span class="va">theta_true</span><span class="op">[[</span><span class="st">"B"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>The <code><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort()</a></code> matters more than it looks. The ten draws are
 exchangeable, so their ordering carries no information about
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛉</mi><annotation encoding="application/x-tex">\boldsymbol{\theta}</annotation></semantics></math>,
@@ -264,12 +262,12 @@ regression or econometrics: SBI writes the <em>observed data</em> as
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>,
 the role your outcome variable
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-usually plays; covariates, if you have any, are absorbed into the
+usually plays; covariates, if you have any, are arguments to the
 simulator. The package README shows this collision directly: its
-regression example has a covariate <code>x</code> living inside the
-simulator, a response <code>y_obs</code>, and then passes
-<code>y_obs</code> to the argument <code>x_obs</code>. Expect to
-translate for a while: SBI’s
+regression example passes a covariate <code>x</code> to the simulator
+through <code>sim_args</code>, gets a response <code>y_obs</code> back,
+and then hands <code>y_obs</code> to the argument <code>x_obs</code>.
+Expect to translate for a while: SBI’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>
 is what a regression course calls the response. (Talts et al. and the
 Stan literature generally write the data as
@@ -293,16 +291,32 @@ transformations until it has the required shape, which is what lets the
 estimator both sample and evaluate its own density. It is the package
 default. No likelihood function appears anywhere in this call.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 5000 simulations for a 2-parameter posterior. If the fit below looks too wide or the calibration check is off, add simulations before reaching for a bigger network.</span></span>
+<code class="sourceCode R"><span><span class="co"># 5000 simulations for a 2-parameter posterior. If the fit below looks too</span></span>
+<span><span class="co"># wide or the calibration check is off, add simulations before reaching for a</span></span>
+<span><span class="co"># bigger network.</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">5000</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
 <span><span class="co">#&gt; &lt;nsbi_npe&gt; Neural Posterior Estimation fit</span></span>
 <span><span class="co">#&gt;   density estimator : maf</span></span>
 <span><span class="co">#&gt;   parameters (dim)  : 2</span></span>
+<span><span class="co">#&gt;     names           : A, B </span></span>
 <span><span class="co">#&gt;   data (dim)        : 10</span></span>
 <span><span class="co">#&gt;   simulations       : 5000</span></span>
-<span><span class="co">#&gt;   best val loss     : -0.4382</span></span>
+<span><span class="co">#&gt;   best val loss     : -0.4202</span></span>
 <span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span></code></pre></div>
+<p>Simulation is usually the expensive part, and it is embarrassingly
+parallel. Declare a <code>future</code> plan once and every
+<code>neuralsbi</code> function that calls a simulator spreads the work
+across cores, with no argument to pass and no parallel variant to
+call:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span><span class="op">)</span></span></code></pre></div>
+<p>Nothing about the answer changes. Each simulation draws from its own
+random-number stream, so a given <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> gives the same
+simulations on one core and on 32, and there is no scheduling knob to
+get wrong. This article is built with a plan declared. See
+<code><a href="../reference/nsbi_parallel.html">?nsbi_parallel</a></code>.</p>
 <p><code>best val loss</code> above is the average negative log density,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>𝛉</mi><mo>∣</mo><mi>𝐱</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">-\log q_\phi(\boldsymbol{\theta} \mid \mathbf{x})</annotation></semantics></math>,
 on held-out simulations. It is useful for comparing fits on the same
@@ -320,15 +334,15 @@ why one appears below.</p>
 <div class="section level2">
 <h2 id="conditioning-on-the-observation">Conditioning on the observation<a class="anchor" aria-label="anchor" href="#conditioning-on-the-observation"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">post</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
 <span><span class="va">draws</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">5000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   parameter     mean        sd      q2.5      q25      q50      q75    q97.5</span></span>
-<span><span class="co">#&gt; 1         A 3.547952 0.3502057 2.9275815 3.297965 3.529138 3.781315 4.263523</span></span>
-<span><span class="co">#&gt; 2         B 1.413960 0.3090027 0.7708583 1.203194 1.446074 1.650534 1.921025</span></span>
+<span><span class="co">#&gt;   parameter     mean        sd     q2.5      q25      q50      q75    q97.5</span></span>
+<span><span class="co">#&gt; 1         A 2.633147 0.3831943 1.922643 2.380682 2.603389 2.867064 3.452922</span></span>
+<span><span class="co">#&gt; 2         B 1.323994 0.3097987 0.759366 1.088905 1.314465 1.562229 1.900945</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/intro-to-sbi-unnamed-chunk-4-1.png" alt="Pairs plot of the posterior over A and B, with the true values marked."><p class="caption">
@@ -347,9 +361,9 @@ width is the subject of the calibration check below.</p>
 <p>Condition the <em>same</em> fit on a second, unrelated observation.
 There is no simulation and no training here: just a forward pass through
 the network already trained above.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">theta_true2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">6</span>, B <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span></span>
-<span><span class="va">x_obs2</span>      <span class="op">&lt;-</span> <span class="fu">simulator</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">theta_true2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">x_obs2</span>      <span class="op">&lt;-</span> <span class="fu">simulator</span><span class="op">(</span>A <span class="op">=</span> <span class="va">theta_true2</span><span class="op">[[</span><span class="st">"A"</span><span class="op">]</span><span class="op">]</span>, B <span class="op">=</span> <span class="va">theta_true2</span><span class="op">[[</span><span class="st">"B"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">draws2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs2</span><span class="op">)</span>, <span class="fl">5000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">draws2</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span></span>
@@ -381,12 +395,12 @@ ranks among posterior draws conditioned on
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>.
 A calibrated posterior puts the truth anywhere in that ranking with
 equal probability, so the ranks come out uniform.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">200</span>, n_posterior_samples <span class="op">=</span> <span class="fl">300</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">res</span>                <span class="co"># per-parameter uniformity p-values (large = calibrated)</span></span>
 <span><span class="co">#&gt; &lt;nsbi_sbc&gt; 200 trials, 300 posterior samples each</span></span>
 <span><span class="co">#&gt;   per-parameter uniformity p-values (large = calibrated):</span></span>
-<span><span class="co">#&gt;     0.076  0.119</span></span>
+<span><span class="co">#&gt;     A=0.083  B=0.040</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span>, param <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>   <span class="co"># rank histogram for A: flat = calibrated</span></span></code></pre></div>
 <div class="figure">
@@ -394,35 +408,35 @@ equal probability, so the ranks come out uniform.</p>
 plot of chunk unnamed-chunk-6
 </p>
 </div>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_coverage.html">plot_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>         <span class="co"># empirical vs. nominal credible-interval coverage</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/intro-to-sbi-unnamed-chunk-6-2.png" alt="SBC rank histogram and expected-coverage plot for the fit."><p class="caption">
 plot of chunk unnamed-chunk-6
 </p>
 </div>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/expected_coverage.html">expected_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span>     <span class="co"># the numbers behind that plot</span></span>
-<span><span class="co">#&gt;    nominal param1 param2</span></span>
-<span><span class="co">#&gt; 1     0.05  0.025  0.060</span></span>
-<span><span class="co">#&gt; 2     0.10  0.085  0.100</span></span>
-<span><span class="co">#&gt; 3     0.15  0.120  0.135</span></span>
-<span><span class="co">#&gt; 4     0.20  0.150  0.160</span></span>
-<span><span class="co">#&gt; 5     0.25  0.185  0.195</span></span>
-<span><span class="co">#&gt; 6     0.30  0.235  0.250</span></span>
-<span><span class="co">#&gt; 7     0.35  0.300  0.280</span></span>
-<span><span class="co">#&gt; 8     0.40  0.375  0.330</span></span>
-<span><span class="co">#&gt; 9     0.45  0.430  0.390</span></span>
-<span><span class="co">#&gt; 10    0.50  0.465  0.420</span></span>
-<span><span class="co">#&gt; 11    0.55  0.495  0.455</span></span>
-<span><span class="co">#&gt; 12    0.60  0.530  0.500</span></span>
-<span><span class="co">#&gt; 13    0.65  0.585  0.555</span></span>
-<span><span class="co">#&gt; 14    0.70  0.635  0.620</span></span>
-<span><span class="co">#&gt; 15    0.75  0.685  0.690</span></span>
-<span><span class="co">#&gt; 16    0.80  0.730  0.710</span></span>
-<span><span class="co">#&gt; 17    0.85  0.790  0.750</span></span>
-<span><span class="co">#&gt; 18    0.90  0.835  0.835</span></span>
-<span><span class="co">#&gt; 19    0.95  0.910  0.880</span></span></code></pre></div>
+<span><span class="co">#&gt;    nominal     A     B</span></span>
+<span><span class="co">#&gt; 1     0.05 0.065 0.050</span></span>
+<span><span class="co">#&gt; 2     0.10 0.105 0.080</span></span>
+<span><span class="co">#&gt; 3     0.15 0.155 0.120</span></span>
+<span><span class="co">#&gt; 4     0.20 0.200 0.175</span></span>
+<span><span class="co">#&gt; 5     0.25 0.250 0.205</span></span>
+<span><span class="co">#&gt; 6     0.30 0.280 0.235</span></span>
+<span><span class="co">#&gt; 7     0.35 0.355 0.280</span></span>
+<span><span class="co">#&gt; 8     0.40 0.415 0.340</span></span>
+<span><span class="co">#&gt; 9     0.45 0.485 0.390</span></span>
+<span><span class="co">#&gt; 10    0.50 0.550 0.425</span></span>
+<span><span class="co">#&gt; 11    0.55 0.600 0.490</span></span>
+<span><span class="co">#&gt; 12    0.60 0.640 0.550</span></span>
+<span><span class="co">#&gt; 13    0.65 0.690 0.595</span></span>
+<span><span class="co">#&gt; 14    0.70 0.725 0.665</span></span>
+<span><span class="co">#&gt; 15    0.75 0.795 0.705</span></span>
+<span><span class="co">#&gt; 16    0.80 0.865 0.740</span></span>
+<span><span class="co">#&gt; 17    0.85 0.895 0.780</span></span>
+<span><span class="co">#&gt; 18    0.90 0.930 0.830</span></span>
+<span><span class="co">#&gt; 19    0.95 0.975 0.915</span></span></code></pre></div>
 <p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>’s
 p-value is 0.076, just above the conventional 0.05 cutoff;
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>’s
@@ -446,7 +460,7 @@ checks, including what to do when a fit does not pass one.</p>
 <strong>posterior predictive check</strong> does: push posterior draws
 back through the simulator and compare the simulated data against the
 observation that produced the fit.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior_predictive.html">posterior_predictive</a></span><span class="op">(</span><span class="va">post</span>, <span class="va">simulator</span>, n <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive</a></span><span class="op">(</span><span class="va">pred</span>, <span class="va">x_obs</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">

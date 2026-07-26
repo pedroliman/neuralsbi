@@ -6,6 +6,10 @@ simulator, and (where one exists) an analytic reference posterior, so
 the same object drives unit tests, calibration studies, and the
 benchmark harness in `inst/benchmarks/`.
 
+Each task's `simulator` follows the package contract: one parameter set
+in, one simulated observation out (see
+[nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md)).
+
 - `task_gaussian_linear()` – conjugate Gaussian; analytic posterior.
 
 - `task_two_moons()` – crescent-shaped, bimodal posterior.

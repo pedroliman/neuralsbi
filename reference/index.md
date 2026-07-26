@@ -27,6 +27,9 @@ Generate training data and fit a neural posterior estimator.
   Posterior Estimation (NPE)
 - [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
   : Sequential NPE with truncated-prior proposals (TSNPE)
+- [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  : Save and reload a fitted NPE model
 - [`density_estimator`](https://neuralsbi.pedrodelima.com/reference/density_estimator.md)
   : Conditional density estimators
 - [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
@@ -34,10 +37,11 @@ Generate training data and fit a neural posterior estimator.
 
 ## Running the simulator
 
-Parallel execution and progress reporting.
+The simulator contract, parallel execution, and progress reporting.
 
+- [`nsbi_simulator`](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md)
+  : The simulator contract
 - [`nsbi_parallel`](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
-  [`parallel-simulation`](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
   : Running the simulator in parallel
 - [`nsbi_progress`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md)
   [`progress-bars`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md)

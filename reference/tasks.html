@@ -4,6 +4,8 @@ definitions in the sbibm benchmark suite. Each task bundles a prior,
 a simulator, and (where one exists) an analytic reference posterior, so the
 same object drives unit tests, calibration studies, and the benchmark
 harness in inst/benchmarks/.
+Each task's simulator follows the package contract: one parameter set in,
+one simulated observation out (see nsbi_simulator).
 task_gaussian_linear() – conjugate Gaussian; analytic posterior.
 task_two_moons() – crescent-shaped, bimodal posterior.
 task_slcp() – 5 parameters, 8-dimensional data, strongly
@@ -16,6 +18,8 @@ definitions in the sbibm benchmark suite. Each task bundles a prior,
 a simulator, and (where one exists) an analytic reference posterior, so the
 same object drives unit tests, calibration studies, and the benchmark
 harness in inst/benchmarks/.
+Each task's simulator follows the package contract: one parameter set in,
+one simulated observation out (see nsbi_simulator).
 task_gaussian_linear() – conjugate Gaussian; analytic posterior.
 task_two_moons() – crescent-shaped, bimodal posterior.
 task_slcp() – 5 parameters, 8-dimensional data, strongly
@@ -71,7 +75,7 @@ task_sir() – SIR epidemic dynamics with log-normal priors;
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -116,7 +120,9 @@ task_sir() – SIR epidemic dynamics with log-normal priors;
 definitions in the <code>sbibm</code> benchmark suite. Each task bundles a prior,
 a simulator, and (where one exists) an analytic reference posterior, so the
 same object drives unit tests, calibration studies, and the benchmark
-harness in <code>inst/benchmarks/</code>.</p><ul><li><p><code>task_gaussian_linear()</code> – conjugate Gaussian; analytic posterior.</p></li>
+harness in <code>inst/benchmarks/</code>.</p>
+<p>Each task's <code>simulator</code> follows the package contract: one parameter set in,
+one simulated observation out (see <a href="nsbi_simulator.html">nsbi_simulator</a>).</p><ul><li><p><code>task_gaussian_linear()</code> – conjugate Gaussian; analytic posterior.</p></li>
 <li><p><code>task_two_moons()</code> – crescent-shaped, bimodal posterior.</p></li>
 <li><p><code>task_slcp()</code> – 5 parameters, 8-dimensional data, strongly
   non-Gaussian posterior.</p></li>

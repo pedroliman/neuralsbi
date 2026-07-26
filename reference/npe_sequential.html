@@ -65,7 +65,7 @@ what makes TSNPE the simplest correct sequential scheme."><meta property="og:ima
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -126,13 +126,13 @@ what makes TSNPE the simplest correct sequential scheme.</p>
 <span>  <span class="va">x_obs</span>,</span>
 <span>  n_rounds <span class="op">=</span> <span class="fl">2L</span>,</span>
 <span>  n_simulations <span class="op">=</span> <span class="fl">1000L</span>,</span>
+<span>  sim_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  density_estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"maf"</span>, <span class="st">"mdn"</span>, <span class="st">"nsf"</span>, <span class="st">"linear_gaussian"</span><span class="op">)</span>,</span>
 <span>  epsilon <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  n_truncation_samples <span class="op">=</span> <span class="fl">5000L</span>,</span>
 <span>  max_proposal_batches <span class="op">=</span> <span class="fl">200L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  chunk_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -146,8 +146,8 @@ what makes TSNPE the simplest correct sequential scheme.</p>
 
 
 <dt id="arg-simulator">simulator<a class="anchor" aria-label="anchor" href="#arg-simulator"></a></dt>
-<dd><p>A function mapping an <code>n x dim</code> matrix of parameters to an
-<code>n x d</code> matrix of simulated data.</p></dd>
+<dd><p>A function called once per parameter set, returning one
+simulated observation; see <a href="nsbi_simulator.html">nsbi_simulator</a>.</p></dd>
 
 
 <dt id="arg-x-obs">x_obs<a class="anchor" aria-label="anchor" href="#arg-x-obs"></a></dt>
@@ -162,6 +162,11 @@ simulations around the posterior for this observation.</p></dd>
 <dt id="arg-n-simulations">n_simulations<a class="anchor" aria-label="anchor" href="#arg-n-simulations"></a></dt>
 <dd><p>Simulation budget per round; either a scalar or a
 vector of length <code>n_rounds</code>.</p></dd>
+
+
+<dt id="arg-sim-args">sim_args<a class="anchor" aria-label="anchor" href="#arg-sim-args"></a></dt>
+<dd><p>Named list of extra arguments passed to every simulator
+call; see <a href="nsbi_simulator.html">nsbi_simulator</a>.</p></dd>
 
 
 <dt id="arg-density-estimator">density_estimator<a class="anchor" aria-label="anchor" href="#arg-density-estimator"></a></dt>
@@ -188,11 +193,6 @@ threshold each round.</p></dd>
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Print per-round progress.</p></dd>
-
-
-<dt id="arg-chunk-size">chunk_size<a class="anchor" aria-label="anchor" href="#arg-chunk-size"></a></dt>
-<dd><p>Rows per simulator call; see <a href="nsbi_parallel.html">nsbi_parallel</a>. Each round's
-simulations run across <code>future</code> workers when a plan is set.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -227,9 +227,8 @@ scalable and hassle-free simulation-based inference", NeurIPS.
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="prior_normal.html">prior_normal</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="va">theta</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                                            nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="prior_normal.html">prior_normal</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">0</span>, nu <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">mu</span>, <span class="va">nu</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">mu</span>, <span class="va">nu</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2</span>, sd <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">npe_sequential</span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, x_obs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="op">-</span><span class="fl">0.5</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                      n_rounds <span class="op">=</span> <span class="fl">2</span>, n_simulations <span class="op">=</span> <span class="fl">1000</span>,</span></span>
 <span class="r-in"><span>                      density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span><span class="op">)</span></span></span>

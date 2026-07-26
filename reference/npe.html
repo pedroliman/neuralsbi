@@ -55,7 +55,7 @@ once, you can condition on any observation without re-simulating."><meta propert
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -109,12 +109,15 @@ once, you can condition on any observation without re-simulating.</p>
 <span>  <span class="va">prior</span>,</span>
 <span>  simulator <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_simulations <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  sim_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  theta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  density_estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"maf"</span>, <span class="st">"mdn"</span>, <span class="st">"nsf"</span>, <span class="st">"linear_gaussian"</span><span class="op">)</span>,</span>
 <span>  n_components <span class="op">=</span> <span class="fl">10L</span>,</span>
 <span>  n_transforms <span class="op">=</span> <span class="fl">5L</span>,</span>
 <span>  hidden <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50L</span>, <span class="fl">50L</span><span class="op">)</span>,</span>
+<span>  n_bins <span class="op">=</span> <span class="fl">10L</span>,</span>
+<span>  tail_bound <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  embedding_net <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max_epochs <span class="op">=</span> <span class="fl">2000L</span>,</span>
 <span>  batch_size <span class="op">=</span> <span class="fl">200L</span>,</span>
@@ -125,9 +128,7 @@ once, you can condition on any observation without re-simulating.</p>
 <span>  clip_grad_norm <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  standardize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  chunk_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -140,15 +141,23 @@ once, you can condition on any observation without re-simulating.</p>
 
 
 <dt id="arg-simulator">simulator<a class="anchor" aria-label="anchor" href="#arg-simulator"></a></dt>
-<dd><p>A function mapping an <code>n x dim</code> matrix of parameters to an
-<code>n x d</code> matrix of simulated data. Ignored if <code>theta</code> and <code>x</code> are given.
-Column names on its output (e.g. via <code>colnames(out) &lt;- c("cases_wk1", ...)</code>)
-become the outcome names used in plots.</p></dd>
+<dd><p>A function called once per parameter set, returning one
+simulated observation: a numeric vector, a scalar, or a one-row matrix or
+data frame. Parameters arrive either as named arguments (when the prior's
+names match the simulator's formals) or as one named vector. Names on the
+output become the outcome names used in plots. See <a href="nsbi_simulator.html">nsbi_simulator</a>.
+Ignored if <code>theta</code> and <code>x</code> are given.</p></dd>
 
 
 <dt id="arg-n-simulations">n_simulations<a class="anchor" aria-label="anchor" href="#arg-n-simulations"></a></dt>
 <dd><p>Number of prior draws to simulate when <code>simulator</code> is
 used and <code>theta</code>/<code>x</code> are not supplied.</p></dd>
+
+
+<dt id="arg-sim-args">sim_args<a class="anchor" aria-label="anchor" href="#arg-sim-args"></a></dt>
+<dd><p>Named list of extra arguments passed to every simulator
+call: observed data, a time grid, a fixed population size, solver
+settings. See <a href="nsbi_simulator.html">nsbi_simulator</a>.</p></dd>
 
 
 <dt id="arg-theta-x">theta, x<a class="anchor" aria-label="anchor" href="#arg-theta-x"></a></dt>
@@ -174,6 +183,12 @@ function <code>function(theta, x)</code> returning a fitted estimator.</p></dd>
 <dt id="arg-n-transforms">n_transforms<a class="anchor" aria-label="anchor" href="#arg-n-transforms"></a></dt>
 <dd><p>MAF/NSF setting: number of stacked autoregressive
 transforms (default 5, as in <code>sbi</code>).</p></dd>
+
+
+<dt id="arg-n-bins-tail-bound">n_bins, tail_bound<a class="anchor" aria-label="anchor" href="#arg-n-bins-tail-bound"></a></dt>
+<dd><p>NSF settings: number of spline bins per transform
+and the half-width of the interval the spline acts on (outside it the
+transform is the identity).</p></dd>
 
 
 <dt id="arg-embedding-net">embedding_net<a class="anchor" aria-label="anchor" href="#arg-embedding-net"></a></dt>
@@ -215,44 +230,36 @@ validation improvement.</p></dd>
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Print training progress.</p></dd>
 
-
-<dt id="arg-chunk-size">chunk_size<a class="anchor" aria-label="anchor" href="#arg-chunk-size"></a></dt>
-<dd><p>Rows of <code>theta</code> per simulator call. <code>NULL</code> (default)
-splits the run into about 64 chunks. Chunks are the unit of work sent to
-<code>future</code> workers and the unit of progress reporting; see <a href="nsbi_parallel.html">nsbi_parallel</a>.</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Passed to the density estimator.</p></dd>
-
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>nsbi_npe</code>. Turn it into a usable posterior with
-<code><a href="posterior.html">posterior()</a></code>, or sample directly with <code><a href="sample.html">sample()</a></code>.</p>
+<code><a href="posterior.html">posterior()</a></code>, or sample directly with <code><a href="sample.html">sample()</a></code>. Save it to disk with
+<code><a href="save_npe.html">save_npe()</a></code>: a torch-backed fit does not survive <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="parallel-simulation-and-progress">Parallel simulation and progress<a class="anchor" aria-label="anchor" href="#parallel-simulation-and-progress"></a></h2>
 
 
+
 <p>The simulator runs sequentially unless you declare a <span class="pkg">future</span> plan –
-<code><a href="https://future.futureverse.org" class="external-link">library(future); plan(multisession)</a></code> – in which case chunks of parameters
-are simulated across workers. Simulation and training both report progress
+<code>library(future); plan(multisession)</code> – in which case the simulations are
+spread across workers. Simulation and training both report progress
 with an ETA. See <a href="nsbi_parallel.html">nsbi_parallel</a> and <a href="nsbi_progress.html">nsbi_progress</a>.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="prior_uniform.html">prior_uniform</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="va">theta</span> <span class="op">+</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>                                                 nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="prior_uniform.html">prior_uniform</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="op">-</span><span class="fl">2</span>, nu <span class="op">=</span> <span class="op">-</span><span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mu <span class="op">=</span> <span class="fl">2</span>, nu <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">mu</span>, <span class="va">nu</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>a <span class="op">=</span> <span class="va">mu</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, sd <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                                b <span class="op">=</span> <span class="va">nu</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, sd <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">npe</span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span></span>
 <span class="r-in"><span>           density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Running the simulator sequentially. To use all your cores:</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   library(future)</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   plan(multisession)</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Hide this hint with options(neuralsbi.parallel_hint = FALSE).</span>
-<span class="r-in"><span><span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.6</span>, <span class="fl">0.4</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">1000</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>

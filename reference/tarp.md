@@ -19,8 +19,8 @@ tarp(
   n_tarp = 200L,
   n_posterior_samples = 1000L,
   references = c("uniform", "prior"),
-  seed = NULL,
-  chunk_size = NULL
+  sim_args = list(),
+  seed = NULL
 )
 ```
 
@@ -32,7 +32,8 @@ tarp(
 
 - simulator:
 
-  The simulator used for inference.
+  The simulator used for inference; called once per trial (see
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md)).
 
 - prior:
 
@@ -52,14 +53,14 @@ tarp(
   hyper-rectangle spanned by the true parameter draws, as in the paper)
   or `"prior"` (draws from the prior).
 
+- sim_args:
+
+  Named list of extra arguments passed to every simulator call; see
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
+
 - seed:
 
   Optional seed.
-
-- chunk_size:
-
-  Rows per simulator call; see
-  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
 
 ## Value
 
@@ -75,6 +76,9 @@ detect posteriors whose marginals are calibrated but whose correlation
 structure is wrong. Distances are computed after z-scoring each
 parameter (using the spread of the true draws), so parameters on
 different scales contribute comparably.
+
+A trial whose simulation returns non-finite output is dropped, which
+lowers the effective `n_tarp`.
 
 ## References
 

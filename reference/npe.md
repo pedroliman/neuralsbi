@@ -14,12 +14,15 @@ npe(
   prior,
   simulator = NULL,
   n_simulations = 1000,
+  sim_args = list(),
   theta = NULL,
   x = NULL,
   density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
   n_components = 10L,
   n_transforms = 5L,
   hidden = c(50L, 50L),
+  n_bins = 10L,
+  tail_bound = 3,
   embedding_net = NULL,
   max_epochs = 2000L,
   batch_size = 200L,
@@ -30,9 +33,7 @@ npe(
   clip_grad_norm = 5,
   standardize = TRUE,
   seed = NULL,
-  verbose = FALSE,
-  chunk_size = NULL,
-  ...
+  verbose = FALSE
 )
 ```
 
@@ -46,15 +47,24 @@ npe(
 
 - simulator:
 
-  A function mapping an `n x dim` matrix of parameters to an `n x d`
-  matrix of simulated data. Ignored if `theta` and `x` are given. Column
-  names on its output (e.g. via `colnames(out) <- c("cases_wk1", ...)`)
-  become the outcome names used in plots.
+  A function called once per parameter set, returning one simulated
+  observation: a numeric vector, a scalar, or a one-row matrix or data
+  frame. Parameters arrive either as named arguments (when the prior's
+  names match the simulator's formals) or as one named vector. Names on
+  the output become the outcome names used in plots. See
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
+  Ignored if `theta` and `x` are given.
 
 - n_simulations:
 
   Number of prior draws to simulate when `simulator` is used and
   `theta`/`x` are not supplied.
+
+- sim_args:
+
+  Named list of extra arguments passed to every simulator call: observed
+  data, a time grid, a fixed population size, solver settings. See
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
 
 - theta, x:
 
@@ -80,6 +90,12 @@ npe(
 
   MAF/NSF setting: number of stacked autoregressive transforms (default
   5, as in `sbi`).
+
+- n_bins, tail_bound:
+
+  NSF settings: number of spline bins per transform and the half-width
+  of the interval the spline acts on (outside it the transform is the
+  identity).
 
 - embedding_net:
 
@@ -122,30 +138,23 @@ npe(
 
   Print training progress.
 
-- chunk_size:
-
-  Rows of `theta` per simulator call. `NULL` (default) splits the run
-  into about 64 chunks. Chunks are the unit of work sent to `future`
-  workers and the unit of progress reporting; see
-  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
-
-- ...:
-
-  Passed to the density estimator.
-
 ## Value
 
 An object of class `nsbi_npe`. Turn it into a usable posterior with
 [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md),
 or sample directly with
 [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md).
+Save it to disk with
+[`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md):
+a torch-backed fit does not survive
+[`saveRDS()`](https://rdrr.io/r/base/readRDS.html).
 
 ## Parallel simulation and progress
 
 The simulator runs sequentially unless you declare a future plan –
-[`library(future); plan(multisession)`](https://future.futureverse.org)
-– in which case chunks of parameters are simulated across workers.
-Simulation and training both report progress with an ETA. See
+`library(future); plan(multisession)` – in which case the simulations
+are spread across workers. Simulation and training both report progress
+with an ETA. See
 [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
 and
 [nsbi_progress](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md).
@@ -153,15 +162,15 @@ and
 ## Examples
 
 ``` r
-prior <- prior_uniform(c(-2, -2, -2), c(2, 2, 2))
-simulator <- function(theta) theta + 1 + matrix(rnorm(length(theta), sd = 0.1),
-                                                 nrow = nrow(theta))
+prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))
+simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.1),
+                                b = nu + rnorm(1, sd = 0.1))
 fit <- npe(prior, simulator, n_simulations = 2000,
            density_estimator = "linear_gaussian")
 #> Running the simulator sequentially. To use all your cores:
 #>   library(future)
 #>   plan(multisession)
 #> Hide this hint with options(neuralsbi.parallel_hint = FALSE).
-post <- posterior(fit, x_obs = c(0.8, 0.6, 0.4))
+post <- posterior(fit, x_obs = c(0.8, 0.6))
 draws <- sample(post, 1000)
 ```

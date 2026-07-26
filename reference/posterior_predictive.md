@@ -1,12 +1,14 @@
 # Posterior predictive draws
 
 Samples parameters from the posterior and pushes them back through the
-simulator, giving predictive data to compare against the observation.
+simulator, giving predictive data to compare against the observation. A
+draw whose simulation returns non-finite output is dropped, which lowers
+the number of predictive draws returned.
 
 ## Usage
 
 ``` r
-posterior_predictive(post, simulator, n = 1000L, x = NULL, chunk_size = NULL)
+posterior_predictive(post, simulator, n = 1000L, x = NULL, sim_args = list())
 ```
 
 ## Arguments
@@ -17,7 +19,8 @@ posterior_predictive(post, simulator, n = 1000L, x = NULL, chunk_size = NULL)
 
 - simulator:
 
-  The simulator.
+  The simulator; called once per posterior draw (see
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md)).
 
 - n:
 
@@ -27,10 +30,10 @@ posterior_predictive(post, simulator, n = 1000L, x = NULL, chunk_size = NULL)
 
   Observation to condition on (defaults to `x_obs`).
 
-- chunk_size:
+- sim_args:
 
-  Rows per simulator call; see
-  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
+  Named list of extra arguments passed to every simulator call; see
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
 
 ## Value
 

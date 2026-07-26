@@ -71,24 +71,22 @@ set.seed(2024)
 # (1) prior over the two parameters we want to infer. B is a scale parameter
 # and must be positive; 0.3 to 2 brackets the plausible range for this
 # example. A is location, so it gets a wide box.
-prior <- prior_uniform(low = c(0, 0.3), high = c(10, 2))
+prior <- prior_uniform(low = c(A = 0, B = 0.3), high = c(A = 10, B = 2))
 
-# (2) simulator: an (n x 2) matrix of parameters -> an (n x 10) matrix of
-# data. Each row draws 10 i.i.d. observations from the g-and-k distribution
-# at that row's (A, B), with g = 2 and k = 0.5 fixed, then sorts them (see
-# below for why).
+# (2) simulator: one parameter set -> one observation. It draws 10 i.i.d.
+# observations from the g-and-k distribution at that (A, B), with g = 2 and
+# k = 0.5 fixed, then sorts them (see below for why). The prior names match
+# the arguments, so A and B arrive by name.
 rgk <- function(n, A, B, g = 2, k = 0.5, c_asym = 0.8) {
   z <- rnorm(n)
   A + B * (1 + c_asym * tanh(g * z / 2)) * (1 + z^2)^k * z
 }
-simulator <- function(theta) {
-  t(apply(theta, 1, function(th) sort(rgk(10, th[1], th[2]))))
-}
-stopifnot(nrow(simulator(sample_prior(prior, 5))) == 5)
+simulator <- function(A, B) sort(rgk(10, A, B))
+stopifnot(length(simulator(3, 1)) == 10)
 
 # (3) the observation: 10 draws from the g-and-k distribution with A = 3, B = 1
 theta_true <- c(A = 3, B = 1)
-x_obs <- simulator(rbind(theta_true))
+x_obs <- simulator(A = theta_true[["A"]], B = theta_true[["B"]])
 ```
 
 The [`sort()`](https://rdrr.io/r/base/sort.html) matters more than it
@@ -117,13 +115,14 @@ is a non-generic alias if the masking gets in the way in a script.
 One more thing worth flagging up front, especially if you come from
 regression or econometrics: SBI writes the *observed data* as
 $`\mathbf{x}`$, the role your outcome variable $`y`$ usually plays;
-covariates, if you have any, are absorbed into the simulator. The
-package README shows this collision directly: its regression example has
-a covariate `x` living inside the simulator, a response `y_obs`, and
-then passes `y_obs` to the argument `x_obs`. Expect to translate for a
-while: SBI’s $`\mathbf{x}`$ is what a regression course calls the
-response. (Talts et al. and the Stan literature generally write the data
-as $`y`$, so following those citations you will meet both conventions.)
+covariates, if you have any, are arguments to the simulator. The package
+README shows this collision directly: its regression example passes a
+covariate `x` to the simulator through `sim_args`, gets a response
+`y_obs` back, and then hands `y_obs` to the argument `x_obs`. Expect to
+translate for a while: SBI’s $`\mathbf{x}`$ is what a regression course
+calls the response. (Talts et al. and the Stan literature generally
+write the data as $`y`$, so following those citations you will meet both
+conventions.)
 
 ## Training an amortized posterior estimator
 
@@ -140,17 +139,38 @@ default. No likelihood function appears anywhere in this call.
 
 ``` r
 
-# 5000 simulations for a 2-parameter posterior. If the fit below looks too wide or the calibration check is off, add simulations before reaching for a bigger network.
+# 5000 simulations for a 2-parameter posterior. If the fit below looks too
+# wide or the calibration check is off, add simulations before reaching for a
+# bigger network.
 fit <- npe(prior, simulator, n_simulations = 5000, seed = 1)
 fit
 #> <nsbi_npe> Neural Posterior Estimation fit
 #>   density estimator : maf
 #>   parameters (dim)  : 2
+#>     names           : A, B 
 #>   data (dim)        : 10
 #>   simulations       : 5000
-#>   best val loss     : -0.4382
+#>   best val loss     : -0.4202
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 ```
+
+Simulation is usually the expensive part, and it is embarrassingly
+parallel. Declare a `future` plan once and every `neuralsbi` function
+that calls a simulator spreads the work across cores, with no argument
+to pass and no parallel variant to call:
+
+``` r
+
+library(future)
+plan(multisession)
+```
+
+Nothing about the answer changes. Each simulation draws from its own
+random-number stream, so a given
+[`set.seed()`](https://rdrr.io/r/base/Random.html) gives the same
+simulations on one core and on 32, and there is no scheduling knob to
+get wrong. This article is built with a plan declared. See
+[`?nsbi_parallel`](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
 
 `best val loss` above is the average negative log density,
 $`-\log q_\phi(\boldsymbol{\theta} \mid \mathbf{x})`$, on held-out
@@ -176,9 +196,9 @@ draws  <- sample(post, 5000)
 colnames(draws) <- c("A", "B")
 
 summary(draws)
-#>   parameter     mean        sd      q2.5      q25      q50      q75    q97.5
-#> 1         A 3.547952 0.3502057 2.9275815 3.297965 3.529138 3.781315 4.263523
-#> 2         B 1.413960 0.3090027 0.7708583 1.203194 1.446074 1.650534 1.921025
+#>   parameter     mean        sd     q2.5      q25      q50      q75    q97.5
+#> 1         A 2.633147 0.3831943 1.922643 2.380682 2.603389 2.867064 3.452922
+#> 2         B 1.323994 0.3097987 0.759366 1.088905 1.314465 1.562229 1.900945
 pairplot(draws, truth = theta_true)
 ```
 
@@ -200,7 +220,7 @@ already trained above.
 ``` r
 
 theta_true2 <- c(A = 6, B = 0.6)
-x_obs2      <- simulator(rbind(theta_true2))
+x_obs2      <- simulator(A = theta_true2[["A"]], B = theta_true2[["B"]])
 
 draws2 <- sample(posterior(fit, x_obs = x_obs2), 5000)
 colnames(draws2) <- c("A", "B")
@@ -234,7 +254,7 @@ res <- sbc(fit, simulator, n_sbc = 200, n_posterior_samples = 300, seed = 2)
 res                # per-parameter uniformity p-values (large = calibrated)
 #> <nsbi_sbc> 200 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     0.076  0.119
+#>     A=0.083  B=0.040
 
 plot_sbc(res, param = 1)   # rank histogram for A: flat = calibrated
 ```
@@ -257,26 +277,26 @@ plot of chunk unnamed-chunk-6
 ``` r
 
 expected_coverage(res)     # the numbers behind that plot
-#>    nominal param1 param2
-#> 1     0.05  0.025  0.060
-#> 2     0.10  0.085  0.100
-#> 3     0.15  0.120  0.135
-#> 4     0.20  0.150  0.160
-#> 5     0.25  0.185  0.195
-#> 6     0.30  0.235  0.250
-#> 7     0.35  0.300  0.280
-#> 8     0.40  0.375  0.330
-#> 9     0.45  0.430  0.390
-#> 10    0.50  0.465  0.420
-#> 11    0.55  0.495  0.455
-#> 12    0.60  0.530  0.500
-#> 13    0.65  0.585  0.555
-#> 14    0.70  0.635  0.620
-#> 15    0.75  0.685  0.690
-#> 16    0.80  0.730  0.710
-#> 17    0.85  0.790  0.750
-#> 18    0.90  0.835  0.835
-#> 19    0.95  0.910  0.880
+#>    nominal     A     B
+#> 1     0.05 0.065 0.050
+#> 2     0.10 0.105 0.080
+#> 3     0.15 0.155 0.120
+#> 4     0.20 0.200 0.175
+#> 5     0.25 0.250 0.205
+#> 6     0.30 0.280 0.235
+#> 7     0.35 0.355 0.280
+#> 8     0.40 0.415 0.340
+#> 9     0.45 0.485 0.390
+#> 10    0.50 0.550 0.425
+#> 11    0.55 0.600 0.490
+#> 12    0.60 0.640 0.550
+#> 13    0.65 0.690 0.595
+#> 14    0.70 0.725 0.665
+#> 15    0.75 0.795 0.705
+#> 16    0.80 0.865 0.740
+#> 17    0.85 0.895 0.780
+#> 18    0.90 0.930 0.830
+#> 19    0.95 0.975 0.915
 ```
 
 $`A`$’s p-value is 0.076, just above the conventional 0.05 cutoff;

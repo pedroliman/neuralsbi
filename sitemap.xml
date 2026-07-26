@@ -45,6 +45,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/npe_sequential.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_progress.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsf.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsf_apply.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsf_inverse.html</loc></url>
@@ -69,6 +70,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_prior.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/save_npe.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sbc.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/standardize.html</loc></url>

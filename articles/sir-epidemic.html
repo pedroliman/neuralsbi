@@ -77,7 +77,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -165,8 +165,8 @@ is the reported-case time series.)</p>
 <h2 id="the-model-written-twice">The model, written twice<a class="anchor" aria-label="anchor" href="#the-model-written-twice"></a>
 </h2>
 <p>Both packages need the same generative model. <code>pomp</code> wants
-it as C snippets; <code>neuralsbi</code> wants a vectorized R function.
-The dynamics are identical: an Euler step with binomial transitions, and
+it as C snippets; <code>neuralsbi</code> wants a plain R function. The
+dynamics are identical: an Euler step with binomial transitions, and
 reported cases drawn as a binomial thinning of the true weekly
 incidence.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -258,11 +258,11 @@ sampler again.</p>
 </h2>
 <p><code>neuralsbi</code> never evaluates a measurement density. It only
 needs to <em>draw</em> from the model, so we write the same dynamics as
-a vectorized simulator: an
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">n \times 2</annotation></semantics></math>
-matrix of parameters in, an
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mn>20</mn></mrow><annotation encoding="application/x-tex">n \times 20</annotation></semantics></math>
-matrix of reported curves out.</p>
+a simulator: one pair
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>β</mi><mo>,</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\beta, \gamma)</annotation></semantics></math>
+in, one reported incidence curve of length 20 out. The prior names the
+two parameters after the simulator’s arguments, so each arrives by
+name.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -271,18 +271,17 @@ matrix of reported curves out.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     sample</span></span>
 <span></span>
-<span><span class="va">sir_simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span>; <span class="va">Beta</span> <span class="op">&lt;-</span> <span class="va">theta</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>; <span class="va">gamma</span> <span class="op">&lt;-</span> <span class="va">theta</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span></span>
-<span>  <span class="va">S</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>, <span class="va">n</span><span class="op">)</span>; <span class="va">I</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">I0</span>, <span class="va">n</span><span class="op">)</span>; <span class="va">R</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">n</span><span class="op">)</span></span>
-<span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">n</span>, <span class="va">Tobs</span><span class="op">)</span></span>
-<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">tt</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">Tobs</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>          <span class="co"># one column per week</span></span>
-<span>    <span class="va">H</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">n</span><span class="op">)</span></span>
+<span><span class="va">sir_simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">Beta</span>, <span class="va">gamma</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">S</span> <span class="op">&lt;-</span> <span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>; <span class="va">I</span> <span class="op">&lt;-</span> <span class="va">I0</span>; <span class="va">R</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">Tobs</span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">tt</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">Tobs</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>          <span class="co"># one entry per week</span></span>
+<span>    <span class="va">H</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span>    <span class="kw">for</span> <span class="op">(</span><span class="va">s</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>           <span class="co"># ten Euler substeps, dt = 1/10</span></span>
-<span>      <span class="va">dN_SI</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">S</span>, <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">Beta</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span> <span class="op">*</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span>
-<span>      <span class="va">dN_IR</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">I</span>, <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">gamma</span> <span class="op">*</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span>
+<span>      <span class="va">dN_SI</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">S</span>, <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">Beta</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span> <span class="op">*</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span>
+<span>      <span class="va">dN_IR</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">I</span>, <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">gamma</span> <span class="op">*</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span>
 <span>      <span class="va">S</span> <span class="op">&lt;-</span> <span class="va">S</span> <span class="op">-</span> <span class="va">dN_SI</span>; <span class="va">I</span> <span class="op">&lt;-</span> <span class="va">I</span> <span class="op">+</span> <span class="va">dN_SI</span> <span class="op">-</span> <span class="va">dN_IR</span>; <span class="va">R</span> <span class="op">&lt;-</span> <span class="va">R</span> <span class="op">+</span> <span class="va">dN_IR</span>; <span class="va">H</span> <span class="op">&lt;-</span> <span class="va">H</span> <span class="op">+</span> <span class="va">dN_SI</span></span>
 <span>    <span class="op">}</span></span>
-<span>    <span class="va">out</span><span class="op">[</span>, <span class="va">tt</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">H</span>, <span class="va">rho</span><span class="op">)</span>     <span class="co"># binomial reporting</span></span>
+<span>    <span class="va">out</span><span class="op">[</span><span class="va">tt</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">H</span>, <span class="va">rho</span><span class="op">)</span>       <span class="co"># binomial reporting</span></span>
 <span>  <span class="op">}</span></span>
 <span>  <span class="va">out</span></span>
 <span><span class="op">}</span></span></code></pre></div>
@@ -296,9 +295,11 @@ pairs, then conditions it on the observed curve. Training is
 one. A mixture density network suits this smooth, unimodal
 posterior.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.2</span><span class="op">)</span>, high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>   <span class="co"># same as pomp's dprior</span></span>
+<code class="sourceCode R"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">0.5</span>, gamma <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,   <span class="co"># same as pomp's dprior</span></span>
+<span>                       high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">5</span>,   gamma <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 8000 simulations to train a 2-parameter posterior. If it comes out too wide, add simulations before enlarging the network.</span></span>
+<span><span class="co"># 8000 simulations to train a 2-parameter posterior. If it comes out too wide,</span></span>
+<span><span class="co"># add simulations before enlarging the network.</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">sir_simulator</span>, n_simulations <span class="op">=</span> <span class="fl">8000</span>,</span>
 <span>           density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, max_epochs <span class="op">=</span> <span class="fl">400</span>,</span>
 <span>           n_restarts <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -306,9 +307,11 @@ posterior.</p>
 <span><span class="va">post_npe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
 <span><span class="va">draws_npe</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post_npe</span>, <span class="fl">4000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws_npe</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 2.097 0.894</span></span>
+<span><span class="co">#&gt;  Beta gamma </span></span>
+<span><span class="co">#&gt; 2.059 0.832</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">draws_npe</span>, <span class="fl">2</span>, <span class="va">sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.347 0.239</span></span></code></pre></div>
+<span><span class="co">#&gt;  Beta gamma </span></span>
+<span><span class="co">#&gt; 0.257 0.202</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="do-the-posteriors-agree">Do the posteriors agree?<a class="anchor" aria-label="anchor" href="#do-the-posteriors-agree"></a>
@@ -336,7 +339,7 @@ plot of chunk unnamed-chunk-9
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">draws_npe</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">post_pomp</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
-<span><span class="co">#&gt; [1] 0.7272727</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.7270909</span></span></code></pre></div>
 <p>The two posteriors sit on top of each other: same location, same
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>–<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
 ridge (the two rates trade off because the data mostly pin down their
@@ -360,7 +363,7 @@ Calibrated posteriors give uniform ranks.</p>
 <span><span class="va">sbc_res</span>                    <span class="co"># large p-values = calibrated</span></span>
 <span><span class="co">#&gt; &lt;nsbi_sbc&gt; 150 trials, 300 posterior samples each</span></span>
 <span><span class="co">#&gt;   per-parameter uniformity p-values (large = calibrated):</span></span>
-<span><span class="co">#&gt;     0.312  0.181</span></span>
+<span><span class="co">#&gt;     Beta=0.419  gamma=0.223</span></span>
 <span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">sbc_res</span>, param <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/sir-epidemic-unnamed-chunk-10-1.png" alt="SBC rank histogram for beta; a flat histogram indicates calibration."><p class="caption">

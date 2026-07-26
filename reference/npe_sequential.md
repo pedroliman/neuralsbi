@@ -22,13 +22,13 @@ npe_sequential(
   x_obs,
   n_rounds = 2L,
   n_simulations = 1000L,
+  sim_args = list(),
   density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"),
   epsilon = 1e-04,
   n_truncation_samples = 5000L,
   max_proposal_batches = 200L,
   seed = NULL,
   verbose = FALSE,
-  chunk_size = NULL,
   ...
 )
 ```
@@ -43,8 +43,9 @@ npe_sequential(
 
 - simulator:
 
-  A function mapping an `n x dim` matrix of parameters to an `n x d`
-  matrix of simulated data.
+  A function called once per parameter set, returning one simulated
+  observation; see
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
 
 - x_obs:
 
@@ -59,6 +60,11 @@ npe_sequential(
 
   Simulation budget per round; either a scalar or a vector of length
   `n_rounds`.
+
+- sim_args:
+
+  Named list of extra arguments passed to every simulator call; see
+  [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
 
 - density_estimator:
 
@@ -86,13 +92,6 @@ npe_sequential(
 - verbose:
 
   Print per-round progress.
-
-- chunk_size:
-
-  Rows per simulator call; see
-  [nsbi_parallel](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
-  Each round's simulations run across `future` workers when a plan is
-  set.
 
 - ...:
 
@@ -131,9 +130,8 @@ and hassle-free simulation-based inference", NeurIPS.
 ## Examples
 
 ``` r
-prior <- prior_normal(mean = c(0, 0), sd = 1)
-simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
-                                            nrow = nrow(theta))
+prior <- prior_normal(mean = c(mu = 0, nu = 0), sd = 1)
+simulator <- function(mu, nu) c(mu, nu) + rnorm(2, sd = 0.3)
 fit <- npe_sequential(prior, simulator, x_obs = c(0.5, -0.5),
                       n_rounds = 2, n_simulations = 1000,
                       density_estimator = "linear_gaussian")

@@ -1,5 +1,107 @@
 # Changelog
 
+## neuralsbi 0.4.1
+
+- **Breaking: the simulator is now called once per parameter set and
+  returns one simulated observation.** Most models a researcher already
+  has work that way – an ODE solve, an agent-based model, a call out to
+  `pomp` or `deSolve` – so meeting the old contract meant wrapping the
+  model in an apply loop and thinking about column-major indexing before
+  anything ran. Two signatures are accepted, decided from
+  `formals(simulator)`: when every parameter name appears among the
+  formals the parameters arrive by name, one scalar each
+  (`function(mu, sigma) ...`); otherwise the whole named parameter
+  vector goes to the first argument (`function(theta) ...`). A simulator
+  returns a numeric vector of length `d`, a scalar, or a one-row matrix
+  or data frame, and names on that output become the outcome names. See
+  [`?nsbi_simulator`](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md)
+  for the contract and the migration examples.
+- This also fixes a correctness bug introduced in 0.4.0. Chunking meant
+  a simulator written for a single parameter set could return a vector
+  whose length happened to match the chunk’s row count, and that vector
+  was accepted as one column of outcomes for several draws.
+  `simulate_for_sbi(function(theta) c(theta[1] * 2, theta[2] * 2), prior, 100)`
+  returned a 100 x 1 matrix of nonsense with no error and no warning; it
+  now returns the 100 x 2 matrix it should.
+- [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) and
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  gain `sim_args`, a named list forwarded to every simulator call.
+  Observed data, a time grid, a fixed population size, a design matrix
+  or a solver tolerance travel from the call site instead of being
+  captured in a closure – which also keeps them out of what gets
+  serialized to a `future` worker. A list rather than `...` because
+  every one of
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)’s
+  formals sits before `...`, so R’s partial matching would silently
+  capture `x`, `theta`, `n` or `seed`.
+- Simulations whose output contains `NA`, `NaN` or an infinite value are
+  dropped, together with their parameters, with one warning per run
+  reporting the count and the rate. A single non-finite value would
+  otherwise poison the training loss and surface much later as a `NaN`
+  validation loss. The count is recorded on the fit and shown by
+  [`print()`](https://rdrr.io/r/base/print.html). Nothing left is an
+  error. In
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) a
+  failed draw removes the whole trial; in
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  it reduces the number of predictive draws. Pre-computed `theta`/`x`
+  passed to
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) are
+  checked the same way. Note that dropping conditions on the simulator
+  having succeeded: when failure depends on the parameters, the fit
+  targets the posterior *given success*, so a high drop rate is a
+  modelling signal.
+- Random-number streams are now per simulation rather than per chunk, so
+  a given seed produces the same simulations whatever the `future` plan
+  and whatever the worker count. The 0.4.0 guarantee held only at a
+  fixed chunk size.
+- **`chunk_size` is gone**, from
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) and
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md),
+  along with `options(neuralsbi.chunks)`. Chunking existed in 0.4.0 to
+  make results reproducible across backends: the split had to depend on
+  `n` alone, which meant users had to know about it and could change
+  their draws by changing it. Per-simulation RNG streams give that
+  guarantee outright, so what is left is ordinary parallel scheduling.
+  Batches are now sized from the worker count, cannot affect a result,
+  and are not a setting. Running sequentially there are no batches at
+  all, just a loop.
+- NSF’s `n_bins` and `tail_bound` are explicit
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+  arguments;
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) no
+  longer takes `...`.
+- New
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  /
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md).
+  A fit whose estimator is `"maf"`, `"mdn"` or `"nsf"` holds a torch
+  module, which is an external pointer:
+  [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) writes the pointer,
+  the file reloads without complaint, and the first call that touches
+  the network fails with `external pointer is not valid`.
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  writes the weights with
+  [`torch::torch_save()`](https://rdrr.io/pkg/torch/man/torch_save.html)
+  and everything else as ordinary R objects, into one `.rds`;
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  rebuilds the network from the recorded architecture and restores them.
+  An overnight fit can now be reloaded the next morning, which is what
+  amortization was for.
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  and [`print()`](https://rdrr.io/r/base/print.html) also detect a fit
+  that came back from [`readRDS()`](https://rdrr.io/r/base/readRDS.html)
+  and say so, instead of failing later with a torch error.
+
 ## neuralsbi 0.4.0
 
 - The simulator can now run in parallel. Declare a `future` plan –
