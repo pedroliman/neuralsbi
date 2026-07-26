@@ -1,3 +1,7 @@
+# neuralsbi 0.4.2
+
+* `pairplot()`'s lower triangle now shows highest-density regions (via the new `ggdensity` Suggests, `geom_hdr()`, at the 50/80/95/99% probability levels) instead of a raw scatter of draws. A scatter of 10,000+ points overplots into an undifferentiated blob at the resolution most posteriors are viewed at; nested HDR contours show where the mass actually concentrates. The `truth` cross-hair markers are unchanged. `col` now sets the region fill colour; `alpha` applies only to the diagonal marginal densities, since the lower triangle shades itself by probability level.
+
 # neuralsbi 0.4.1
 
 * **Breaking: the simulator is now called once per parameter set and returns one simulated observation.** Most models a researcher already has work that way -- an ODE solve, an agent-based model, a call out to `pomp` or `deSolve` -- so meeting the old contract meant wrapping the model in an apply loop and thinking about column-major indexing before anything ran. Two signatures are accepted, decided from `formals(simulator)`: when every parameter name appears among the formals the parameters arrive by name, one scalar each (`function(mu, sigma) ...`); otherwise the whole named parameter vector goes to the first argument (`function(theta) ...`). A simulator returns a numeric vector of length `d`, a scalar, or a one-row matrix or data frame, and names on that output become the outcome names. See `?nsbi_simulator` for the contract and the migration examples.
