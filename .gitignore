@@ -17,6 +17,9 @@ testthat-problems.rds
 # OS / editor
 .DS_Store
 
+# rmarkdown::render("README.Rmd") preview byproduct
+README.html
+
 # pkgdown rendered site
 site/
 Rplots.pdf

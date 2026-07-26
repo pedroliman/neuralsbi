@@ -6,9 +6,7 @@ test_that("normalized log_prob integrates to one over a bounded support", {
   set.seed(11)
   # tight uniform prior so a nontrivial fraction of estimator mass leaks out
   prior <- prior_uniform(-1, 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.8), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.8)
   fit <- npe(prior, simulator, n_simulations = 3000,
              density_estimator = "linear_gaussian")
   post <- posterior(fit, x_obs = 0.9)
@@ -29,9 +27,7 @@ test_that("normalized log_prob integrates to one over a bounded support", {
 test_that("normalized log_prob is -Inf outside the support and shifted inside", {
   set.seed(12)
   prior <- prior_uniform(c(-1, -1), c(1, 1))
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.5), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   fit <- npe(prior, simulator, n_simulations = 2000,
              density_estimator = "linear_gaussian")
   post <- posterior(fit, x_obs = c(0.8, 0.8))
@@ -53,9 +49,7 @@ test_that("normalized log_prob is -Inf outside the support and shifted inside", 
 test_that("unbounded priors are unaffected by normalize", {
   set.seed(13)
   prior <- prior_normal(mean = 0, sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.5), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   fit <- npe(prior, simulator, n_simulations = 1000,
              density_estimator = "linear_gaussian")
   post <- posterior(fit, x_obs = 0.5)

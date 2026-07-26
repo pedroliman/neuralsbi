@@ -6,9 +6,7 @@ test_that("tarp is calibrated for the exact linear-Gaussian posterior", {
   set.seed(7)
   sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   fit <- npe(prior, simulator, n_simulations = 3000,
              density_estimator = "linear_gaussian")
 
@@ -28,12 +26,8 @@ test_that("tarp is calibrated for the exact linear-Gaussian posterior", {
 test_that("tarp detects an overconfident posterior", {
   set.seed(8)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  narrow_sim <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.3), nrow = nrow(theta))
-  }
-  wide_sim <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 1.5), nrow = nrow(theta))
-  }
+  narrow_sim <- function(theta) theta + rnorm(length(theta), sd = 0.3)
+  wide_sim <- function(theta) theta + rnorm(length(theta), sd = 1.5)
   # trained for sd 0.3, evaluated on data with sd 1.5: posterior far too narrow
   fit <- npe(prior, narrow_sim, n_simulations = 3000,
              density_estimator = "linear_gaussian")
@@ -45,9 +39,7 @@ test_that("tarp detects an overconfident posterior", {
 test_that("tarp supports prior reference points and prints", {
   set.seed(9)
   prior <- prior_normal(mean = 0, sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.5), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   fit <- npe(prior, simulator, n_simulations = 1000,
              density_estimator = "linear_gaussian")
   res <- tarp(fit, simulator, n_tarp = 50L, n_posterior_samples = 100L,
@@ -60,9 +52,7 @@ test_that("plot_tarp runs and returns the ECP curve", {
   skip_if_no_ggplot2()
   set.seed(10)
   prior <- prior_normal(mean = 0, sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.5), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   fit <- npe(prior, simulator, n_simulations = 1000,
              density_estimator = "linear_gaussian")
   res <- tarp(fit, simulator, n_tarp = 40L, n_posterior_samples = 100L,

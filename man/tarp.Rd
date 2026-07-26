@@ -11,14 +11,15 @@ tarp(
   n_tarp = 200L,
   n_posterior_samples = 1000L,
   references = c("uniform", "prior"),
-  seed = NULL,
-  chunk_size = NULL
+  sim_args = list(),
+  seed = NULL
 )
 }
 \arguments{
 \item{fit}{An \code{nsbi_npe} fit (amortized posterior).}
 
-\item{simulator}{The simulator used for inference.}
+\item{simulator}{The simulator used for inference; called once per trial
+(see \link{nsbi_simulator}).}
 
 \item{prior}{The prior used for inference (defaults to \code{fit$prior}).}
 
@@ -30,9 +31,10 @@ tarp(
 over the hyper-rectangle spanned by the true parameter draws, as in the
 paper) or \code{"prior"} (draws from the prior).}
 
-\item{seed}{Optional seed.}
+\item{sim_args}{Named list of extra arguments passed to every simulator
+call; see \link{nsbi_simulator}.}
 
-\item{chunk_size}{Rows per simulator call; see \link{nsbi_parallel}.}
+\item{seed}{Optional seed.}
 }
 \value{
 An object of class \code{nsbi_tarp} with the per-trial coverage values
@@ -54,6 +56,9 @@ test: it can detect posteriors whose marginals are calibrated but whose
 correlation structure is wrong. Distances are computed after z-scoring each
 parameter (using the spread of the true draws), so parameters on different
 scales contribute comparably.
+
+A trial whose simulation returns non-finite output is dropped, which lowers
+the effective \code{n_tarp}.
 }
 \references{
 Lemos, Coogan, Hezaveh & Perreault-Levasseur (2023),

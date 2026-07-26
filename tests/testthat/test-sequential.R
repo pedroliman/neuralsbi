@@ -13,9 +13,7 @@ test_that("npe_sequential recovers the analytic posterior at x_obs", {
   set.seed(21)
   d <- 2; sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   x_obs <- c(1.0, -0.5)
   fit <- npe_sequential(prior, simulator, x_obs = x_obs,
                         n_rounds = 3, n_simulations = 800,
@@ -39,9 +37,7 @@ test_that("npe_sequential recovers the analytic posterior at x_obs", {
 test_that("later rounds actually truncate the proposal", {
   set.seed(22)
   prior <- prior_normal(mean = 0, sd = 2)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.2), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
   fit <- npe_sequential(prior, simulator, x_obs = 1,
                         n_rounds = 2, n_simulations = 500,
                         density_estimator = "linear_gaussian", seed = 3)
@@ -58,9 +54,7 @@ test_that("later rounds actually truncate the proposal", {
 test_that("per-round budgets can differ and are recorded", {
   set.seed(23)
   prior <- prior_normal(mean = 0, sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.5), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   fit <- npe_sequential(prior, simulator, x_obs = 0.3,
                         n_rounds = 2, n_simulations = c(600, 300),
                         density_estimator = "linear_gaussian", seed = 4)
@@ -78,9 +72,7 @@ test_that("npe_sequential requires a simulator function", {
 test_that("truncation works with a bounded prior", {
   set.seed(24)
   prior <- prior_uniform(c(-2, -2), c(2, 2))
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = 0.3), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.3)
   x_obs <- c(0.5, 0.5)
   fit <- npe_sequential(prior, simulator, x_obs = x_obs,
                         n_rounds = 2, n_simulations = 600,

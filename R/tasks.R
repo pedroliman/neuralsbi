@@ -11,6 +11,9 @@
 #' * [task_slcp()] -- "simple likelihood, complex posterior"; 5 parameters,
 #'   8-dimensional data, strongly non-Gaussian posterior.
 #'
+#' Each task's `simulator` follows the package contract: one parameter set in,
+#' one simulated observation out (see [nsbi_simulator]).
+#'
 #' @return A list of class `nsbi_task` with elements `name`, `prior`,
 #'   `simulator`, `dim_theta`, `dim_x`, and optionally
 #'   `reference_posterior(x_obs, n)` returning exact posterior draws.
@@ -50,9 +53,7 @@ print.nsbi_task <- function(x, ...) {
 task_gaussian_linear <- function(dim = 10L, prior_var = 0.1, noise_var = 0.1) {
   prior <- prior_normal(mean = rep(0, dim), sd = sqrt(prior_var))
   simulator <- function(theta) {
-    theta <- as_theta_matrix(theta, dim)
-    theta + matrix(stats::rnorm(length(theta), sd = sqrt(noise_var)),
-                   nrow = nrow(theta))
+    unname(theta) + stats::rnorm(dim, sd = sqrt(noise_var))
   }
   reference <- function(x_obs, n = 10000L) {
     x_obs <- as.numeric(x_obs)
@@ -75,14 +76,12 @@ task_gaussian_linear <- function(dim = 10L, prior_var = 0.1, noise_var = 0.1) {
 task_two_moons <- function() {
   prior <- prior_uniform(low = c(-1, -1), high = c(1, 1))
   simulator <- function(theta) {
-    theta <- as_theta_matrix(theta, 2L)
-    n <- nrow(theta)
-    a <- stats::runif(n, -pi / 2, pi / 2)
-    r <- stats::rnorm(n, mean = 0.1, sd = 0.01)
+    a <- stats::runif(1, -pi / 2, pi / 2)
+    r <- stats::rnorm(1, mean = 0.1, sd = 0.01)
     px <- r * cos(a) + 0.25
     py <- r * sin(a)
-    cbind(px - abs(theta[, 1] + theta[, 2]) / sqrt(2),
-          py + (-theta[, 1] + theta[, 2]) / sqrt(2))
+    unname(c(px - abs(theta[1] + theta[2]) / sqrt(2),
+             py + (-theta[1] + theta[2]) / sqrt(2)))
   }
   new_task("two_moons", prior, simulator, 2L, 2L)
 }
@@ -115,25 +114,19 @@ task_sir <- function(N = 1e6, days = 160, n_points = 10L, n_obs_draws = 1000L) {
   )
   obs_times <- round(seq(1, days, length.out = n_points))
   simulator <- function(theta) {
-    theta <- as_theta_matrix(theta, 2L)
-    n <- nrow(theta)
-    x <- matrix(0, nrow = n, ncol = n_points)
-    for (i in seq_len(n)) {
-      beta <- theta[i, 1]; gamma <- theta[i, 2]
-      S <- N - 1; I <- 1; R <- 0
-      Ipath <- numeric(days)
-      for (t in seq_len(days)) {
-        newinf <- beta * S * I / N
-        newrec <- gamma * I
-        S <- S - newinf
-        I <- I + newinf - newrec
-        R <- R + newrec
-        Ipath[t] <- I
-      }
-      p <- pmin(pmax(Ipath[obs_times] / N, 0), 1)
-      x[i, ] <- stats::rbinom(n_points, n_obs_draws, p) / n_obs_draws
+    beta <- theta[1]; gamma <- theta[2]
+    S <- N - 1; I <- 1; R <- 0
+    Ipath <- numeric(days)
+    for (t in seq_len(days)) {
+      newinf <- beta * S * I / N
+      newrec <- gamma * I
+      S <- S - newinf
+      I <- I + newinf - newrec
+      R <- R + newrec
+      Ipath[t] <- I
     }
-    x
+    p <- pmin(pmax(Ipath[obs_times] / N, 0), 1)
+    unname(stats::rbinom(n_points, n_obs_draws, p) / n_obs_draws)
   }
   new_task("sir", prior, simulator, 2L, n_points)
 }
@@ -151,16 +144,14 @@ task_sir <- function(N = 1e6, days = 160, n_points = 10L, n_obs_draws = 1000L) {
 task_slcp <- function() {
   prior <- prior_uniform(low = rep(-3, 5), high = rep(3, 5))
   simulator <- function(theta) {
-    theta <- as_theta_matrix(theta, 5L)
-    n <- nrow(theta)
-    m1 <- theta[, 1]; m2 <- theta[, 2]
-    s1 <- theta[, 3]^2; s2 <- theta[, 4]^2
-    rho <- tanh(theta[, 5])
-    x <- matrix(0, nrow = n, ncol = 8L)
+    m1 <- theta[1]; m2 <- theta[2]
+    s1 <- theta[3]^2; s2 <- theta[4]^2
+    rho <- tanh(theta[5])
+    x <- numeric(8L)
     for (j in 0:3) {
-      z1 <- stats::rnorm(n); z2 <- stats::rnorm(n)
-      x[, 2 * j + 1L] <- m1 + s1 * z1
-      x[, 2 * j + 2L] <- m2 + s2 * (rho * z1 + sqrt(1 - rho^2) * z2)
+      z1 <- stats::rnorm(1); z2 <- stats::rnorm(1)
+      x[2 * j + 1L] <- m1 + s1 * z1
+      x[2 * j + 2L] <- m2 + s2 * (rho * z1 + sqrt(1 - rho^2) * z2)
     }
     x
   }

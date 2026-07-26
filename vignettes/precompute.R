@@ -17,7 +17,9 @@
 #     Rscript vignettes/precompute.R   # bake the vignettes
 #
 # It needs the package installed (so `library(neuralsbi)` resolves) and torch
-# available (`torch::install_torch()`). Commit the regenerated `*.Rmd` and
+# available (`torch::install_torch()`). Install `future` too: each vignette
+# declares `plan(multisession)`, which is the difference between minutes and
+# hours on the two SIR articles. Commit the regenerated `*.Rmd` and
 # `vignettes/figures/` alongside your source change.
 
 if (!requireNamespace("knitr", quietly = TRUE)) {
@@ -30,6 +32,22 @@ if (!requireNamespace("torch", quietly = TRUE) || !torch::torch_is_installed()) 
   stop("torch (libtorch) is required to bake the neural vignettes. ",
        "Install with install.packages('torch'); torch::install_torch().")
 }
+
+# Every vignette declares its own `future` plan in its setup chunk, so the
+# simulations run across cores. `future` is a Suggests; without it the bake
+# still works, one core at a time, and the SIR articles take hours instead of
+# minutes. Warn rather than stop, so a quick bake of a cheap article is not
+# blocked on installing it.
+if (!requireNamespace("future", quietly = TRUE)) {
+  warning("future is not installed, so the vignettes will bake sequentially. ",
+          "install.packages('future') to use all your cores.", call. = FALSE)
+}
+
+# Show the simulation and training bars while baking. They are off under knitr
+# by default, which is right for the articles but unhelpful when you are
+# watching a run that takes hours. The bar writes to stderr, so it reaches the
+# console without landing in the baked .Rmd.
+options(neuralsbi.progress = "builtin")
 
 # knit each source with the working directory inside vignettes/, so the baked
 # figure paths ("figures/<name>-1.svg") are relative to the vignette itself and
@@ -76,5 +94,8 @@ for (orig in origs) {
          call. = FALSE)
   }
 }
+
+# shut the workers down; the plan is global state and the vignettes set it
+if (requireNamespace("future", quietly = TRUE)) future::plan(future::sequential)
 
 message("Done. Review the regenerated *.Rmd and figures/, then commit them.")

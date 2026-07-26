@@ -20,6 +20,13 @@ knitr::opts_chunk$set(
   dpi = 96, fig.retina = NULL, dev = "svglite"
 )
 set.seed(1)
+
+# Baked with a future plan, so the simulator runs across cores. Nothing about
+# the results depends on it: every simulation draws from its own RNG stream,
+# so the same seed gives the same answer on 1 core or 32. See ?nsbi_parallel.
+if (requireNamespace("future", quietly = TRUE)) {
+  future::plan(future::multisession)
+}
 ```
 
 `neuralsbi` performs **Neural Posterior Estimation (NPE)**: given a prior and a
@@ -37,13 +44,12 @@ to know in closed form, so we can check our answer.
 library(neuralsbi)
 
 # (1) prior over two parameters
-prior <- prior_normal(mean = c(0, 0), sd = 1)
+prior <- prior_normal(mean = c(mu1 = 0, mu2 = 0), sd = 1)
 
-# (2) simulator: an (n x 2) matrix of parameters -> an (n x 2) matrix of data
+# (2) simulator: one parameter set in, one observation out. The prior names
+# match the arguments, so mu1 and mu2 arrive by name.
 sigma <- 0.5
-simulator <- function(theta) {
-  theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
-}
+simulator <- function(mu1, mu2) c(mu1, mu2) + rnorm(2, sd = sigma)
 
 # (3) the observation we want to explain
 x_obs <- c(1.0, -0.5)

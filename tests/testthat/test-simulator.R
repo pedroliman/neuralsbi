@@ -1,0 +1,93 @@
+# The simulator contract: how one parameter set reaches the simulator, and
+# what it is allowed to give back. See ?nsbi_simulator.
+
+test_that("parameters arrive by name when they match the formals", {
+  prior <- prior_uniform(low = c(mu = 0, sigma = 1),
+                         high = c(mu = 1, sigma = 2))
+  expect_equal(sim_dispatch(function(mu, sigma) NULL, c("mu", "sigma")),
+               "named")
+  # a spare formal is fine; a missing one is not
+  expect_equal(sim_dispatch(function(mu, sigma, n) NULL, c("mu", "sigma")),
+               "named")
+  expect_equal(sim_dispatch(function(mu) NULL, c("mu", "sigma")), "vector")
+  expect_equal(sim_dispatch(function(theta) NULL, c("mu", "sigma")), "vector")
+  # `...` cannot stand in for a parameter: the match has to be explicit
+  expect_equal(sim_dispatch(function(...) NULL, c("mu", "sigma")), "vector")
+  # an unnamed prior always takes the vector form
+  expect_equal(sim_dispatch(function(mu, sigma) NULL, NULL), "vector")
+
+  sims <- simulate_for_sbi(function(mu, sigma) c(m = mu, s = sigma),
+                           prior, 20, seed = 1)
+  expect_equal(colnames(sims$x), c("m", "s"))
+  expect_equal(unname(sims$x), unname(sims$theta))
+})
+
+test_that("a non-syntactic parameter name always takes the vector form", {
+  prior <- prior_normal(mean = c(`beta[1]` = 0, rho = 0), sd = 1)
+  expect_equal(sim_dispatch(function(theta) NULL, prior$param_names), "vector")
+  sims <- simulate_for_sbi(function(theta) unname(theta), prior, 20, seed = 1)
+  expect_equal(unname(sims$x), unname(sims$theta))
+})
+
+test_that("sim_args reach the simulator under both signatures", {
+  prior <- prior_uniform(low = c(alpha = -1, beta = -1),
+                         high = c(alpha = 1, beta = 1))
+  grid <- c(0, 0.5, 1)
+
+  by_name <- function(alpha, beta, x_grid) alpha + beta * x_grid
+  x <- simulate_for_sbi(by_name, prior, 10, sim_args = list(x_grid = grid),
+                        seed = 2)
+  expect_equal(dim(x$x), c(10L, 3L))
+  expect_equal(x$x[, 1], unname(x$theta[, "alpha"]))
+
+  by_vector <- function(theta, x_grid) theta["alpha"] + theta["beta"] * x_grid
+  y <- simulate_for_sbi(by_vector, prior, 10, sim_args = list(x_grid = grid),
+                        seed = 2)
+  expect_equal(x$x, y$x)
+})
+
+test_that("sim_args is checked before anything runs", {
+  prior <- prior_uniform(low = c(a = 0), high = c(a = 1))
+  expect_error(
+    simulate_for_sbi(function(a, b) a + b, prior, 5, sim_args = list(1)),
+    "must be named"
+  )
+  expect_error(
+    simulate_for_sbi(function(a) a, prior, 5, sim_args = list(a = 1)),
+    "clash with parameter names: a"
+  )
+  expect_error(simulate_for_sbi("not a function", prior, 5),
+               "must be a function")
+})
+
+test_that("a single named parameter keeps its name -- the documented sharp edge", {
+  prior <- prior_uniform(low = c(beta = 1, gamma = 1),
+                         high = c(beta = 2, gamma = 2))
+  # theta["beta"] / theta["gamma"] is a scalar still called "beta"
+  sims <- simulate_for_sbi(function(theta) theta["beta"] / theta["gamma"],
+                           prior, 10, seed = 1)
+  expect_equal(colnames(sims$x), "beta")
+  # unname() is the fix
+  sims <- simulate_for_sbi(
+    function(theta) unname(theta["beta"] / theta["gamma"]), prior, 10, seed = 1)
+  expect_null(colnames(sims$x))
+})
+
+test_that("npe() runs end to end on a per-parameter-set simulator", {
+  set.seed(11)
+  prior <- prior_normal(mean = c(alpha = 0, beta = 0), sd = 1)
+  simulator <- function(alpha, beta, x_grid) {
+    rnorm(length(x_grid), mean = alpha + beta * x_grid, sd = 0.2)
+  }
+  grid <- seq(-1, 1, length.out = 4)
+  fit <- npe(prior, simulator, n_simulations = 2000,
+             sim_args = list(x_grid = grid),
+             density_estimator = "linear_gaussian")
+  expect_equal(fit$dim_x, 4L)
+  expect_equal(fit$n_dropped, 0L)
+
+  truth <- c(alpha = 0.5, beta = -0.8)
+  x_obs <- truth["alpha"] + truth["beta"] * grid
+  draws <- sample(posterior(fit, x_obs = x_obs), 4000)
+  expect_equal(unname(colMeans(draws)), unname(truth), tolerance = 0.15)
+})

@@ -2,9 +2,7 @@ test_that("sbc returns ranks of the right shape and reasonable calibration", {
   set.seed(7)
   d <- 2; sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   fit <- npe(prior, simulator, n_simulations = 4000,
              density_estimator = "linear_gaussian")
   res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 200, seed = 3)
@@ -16,8 +14,7 @@ test_that("sbc returns ranks of the right shape and reasonable calibration", {
 test_that("expected_coverage produces a monotone-ish curve near the diagonal", {
   set.seed(7)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.5),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   fit <- npe(prior, simulator, n_simulations = 4000,
              density_estimator = "linear_gaussian")
   res <- sbc(fit, simulator, n_sbc = 200, n_posterior_samples = 200, seed = 5)
@@ -37,8 +34,7 @@ test_that("c2st of a sample set against itself is ~0.5", {
 
 test_that("posterior_predictive returns simulator-shaped output", {
   prior <- prior_normal(mean = 0, sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(nrow(theta), sd = 0.3),
-                                             ncol = 1)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.3)
   fit <- npe(prior, simulator, n_simulations = 1000,
              density_estimator = "linear_gaussian")
   post <- posterior(fit, x_obs = 0.5)
@@ -50,8 +46,7 @@ test_that("plot_posterior_predictive runs and locates the observation", {
   skip_if_no_ggplot2()
   set.seed(2)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.3)
   fit <- npe(prior, simulator, n_simulations = 1000,
              density_estimator = "linear_gaussian")
   x_obs <- c(0.5, -0.2)

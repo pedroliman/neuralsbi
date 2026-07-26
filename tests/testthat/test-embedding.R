@@ -19,8 +19,7 @@ test_that("embedding_mlp validates its arguments", {
 
 test_that("npe warns and ignores an embedding for linear_gaussian", {
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.3),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.3)
   expect_warning(
     fit <- npe(prior, simulator, n_simulations = 200,
                density_estimator = "linear_gaussian",
@@ -55,8 +54,7 @@ test_that("embedded estimators expose the summary net and keep raw dim_x", {
   skip_if_no_torch()
   set.seed(2)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.4),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.4)
   emb <- embedding_mlp(output_dim = 3, hidden = c(16))
   for (de in c("mdn", "maf", "nsf")) {
     fit <- npe(prior, simulator, n_simulations = 300, density_estimator = de,
@@ -78,8 +76,7 @@ test_that("a jointly trained embedding still recovers the linear-Gaussian poster
   set.seed(7)
   d <- 2; sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = sigma),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   fit <- npe(prior, simulator, n_simulations = 8000, density_estimator = "maf",
              n_transforms = 3L, hidden = c(50L, 50L),
              embedding_net = embedding_mlp(output_dim = 4, hidden = c(32)),

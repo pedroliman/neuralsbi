@@ -8,41 +8,43 @@ simulate_for_sbi(
   simulator,
   prior,
   n,
+  sim_args = list(),
   seed = NULL,
-  verbose = FALSE,
-  chunk_size = NULL
+  verbose = FALSE
 )
 }
 \arguments{
-\item{simulator}{A function mapping an \verb{n x dim} matrix of parameters to an
-\verb{n x d} matrix of simulated data. Ignored if \code{theta} and \code{x} are given.
-Column names on its output (e.g. via \code{colnames(out) <- c("cases_wk1", ...)})
-become the outcome names used in plots.}
+\item{simulator}{A function called once per parameter set, returning one
+simulated observation: a numeric vector, a scalar, or a one-row matrix or
+data frame. See \link{nsbi_simulator}.}
 
 \item{prior}{An \code{nsbi_prior} (see \code{\link[=prior_uniform]{prior_uniform()}}, \code{\link[=prior_normal]{prior_normal()}}).}
 
 \item{n}{Number of simulations.}
 
+\item{sim_args}{Named list of extra arguments passed to every simulator
+call: observed data, a time grid, a fixed population size, solver
+settings. See \link{nsbi_simulator}.}
+
 \item{seed}{Optional integer seed for reproducibility.}
 
 \item{verbose}{Print training progress.}
-
-\item{chunk_size}{Rows of \code{theta} per simulator call. \code{NULL} (default)
-splits the run into about 64 chunks. Chunks are the unit of work sent to
-\code{future} workers and the unit of progress reporting; see \link{nsbi_parallel}.}
 }
 \value{
-A list with \code{theta} (\verb{n x dim}) and \code{x} (\verb{n x d}) matrices.
+A list with \code{theta} (\verb{n x dim}) and \code{x} (\verb{n x d}) matrices and
+\code{n_dropped}, the number of simulations discarded for non-finite output.
 }
 \description{
-Draws \code{n} parameter vectors from the prior and pushes them through the
-simulator. The simulator is called on chunks of rows rather than on the
-whole matrix at once, which is what lets the run report progress and, under
-a \pkg{future} plan, spread the chunks across workers. See \link{nsbi_parallel} and
-\link{nsbi_progress}.
+Draws \code{n} parameter vectors from the prior and calls the simulator once per
+draw. Under a \pkg{future} plan the draws are spread across workers. See
+\link{nsbi_simulator}, \link{nsbi_parallel} and \link{nsbi_progress}.
+}
+\details{
+Simulations whose output is not finite are dropped together with their
+parameters, with a warning.
 }
 \examples{
-prior <- prior_uniform(c(-1, -1), c(1, 1))
-sims <- simulate_for_sbi(function(theta) theta^2, prior, n = 100)
+prior <- prior_uniform(c(a = -1, b = -1), c(a = 1, b = 1))
+sims <- simulate_for_sbi(function(a, b) c(a^2, b^2), prior, n = 100)
 str(sims)
 }

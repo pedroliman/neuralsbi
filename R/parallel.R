@@ -18,33 +18,31 @@
 #' session. Silence that hint with
 #' `options(neuralsbi.parallel_hint = FALSE)`.
 #'
-#' @section Chunking:
-#'
-#' The parameter matrix is split into row chunks and one chunk at a time is
-#' handed to the simulator, so a vectorized simulator keeps most of its
-#' vectorization while progress can still be reported and work spread across
-#' workers. The number of chunks depends only on the number of simulations
-#' (`ceiling(n / chunk_size)`, with `chunk_size` chosen to give about 64
-#' chunks), *not* on the number of workers -- which is what makes results
-#' reproducible across plans. Set it yourself with the `chunk_size` argument,
-#' or globally with `options(neuralsbi.chunks = )`. Larger chunks mean less
-#' overhead per call and a coarser progress bar; smaller chunks balance
-#' uneven simulator run times better. Under a multi-process plan each chunk
-#' ships the simulator -- and everything its environment captures -- to a
-#' worker, so a simulator closing over a large object is a reason to raise
-#' `chunk_size`.
-#'
 #' @section Random numbers:
 #'
-#' Each chunk gets its own L'Ecuyer-CMRG random-number stream, derived from the
-#' session's RNG state at the moment simulation starts. So `set.seed(42)`
-#' before a fit (or `npe(..., seed = 42)`) gives the same simulations whether
-#' you run sequentially or on 32 workers, and whatever the worker count. What
-#' does change results is the chunking: fixing `chunk_size` fixes the draws.
+#' Each *simulation* gets its own L'Ecuyer-CMRG random-number stream, derived
+#' from the session's RNG state at the moment simulation starts. So
+#' `set.seed(42)` before a fit (or `npe(..., seed = 42)`) gives the same
+#' simulations whatever the plan and whatever the worker count: results depend
+#' on the seed alone.
 #'
 #' Because the simulations are drawn from separate streams, the simulator no
 #' longer consumes the caller's RNG state directly; the state advances by one
 #' draw per simulation phase.
+#'
+#' @section Scheduling:
+#'
+#' Under a multi-process plan the draws are dealt out to workers in batches,
+#' because one `future` per simulation would spend longer shipping the
+#' simulator to a worker than running it. Batch sizes follow the worker count
+#' and are not a setting: they cannot change a result, since every simulation
+#' has its own RNG stream. Running sequentially there are no batches at all,
+#' just a loop.
+#'
+#' Each batch ships the simulator, and everything its environment captures, to
+#' a worker. A simulator closing over a large object therefore pays for that
+#' object once per batch, which is a reason to pass it through `sim_args`
+#' instead of capturing it.
 #'
 #' @section What is not parallelized:
 #'
@@ -86,21 +84,21 @@ hint_parallel <- function(n = Inf) {
   invisible(TRUE)
 }
 
-#' Split `seq_len(n)` into row chunks
+#' Deal `seq_len(n)` out to the current plan's workers
 #'
-#' The chunk count depends on `n` alone, so the same seed gives the same
-#' simulations under any plan. See the "Chunking" section of [nsbi_parallel].
+#' Batching is a scheduling detail, not a setting: it exists only because one
+#' `future` per simulation would cost more in dispatch than it saves in
+#' parallelism, and it cannot change a result because every simulation carries
+#' its own RNG stream. A few batches per worker, so uneven simulator run times
+#' even out without re-serializing the simulator hundreds of times. Sequential
+#' runs get one batch, i.e. a plain loop.
 #' @keywords internal
-chunk_index <- function(n, chunk_size = NULL) {
+sim_batches <- function(n, workers = nsbi_workers()) {
   n <- as.integer(n)
   if (n <= 0L) return(list())
-  if (is.null(chunk_size)) {
-    target <- as.integer(getOption("neuralsbi.chunks", 64L))
-    if (is.na(target) || target < 1L) target <- 1L
-    chunk_size <- ceiling(n / target)
-  }
-  chunk_size <- max(1L, as.integer(chunk_size))
-  unname(split(seq_len(n), ceiling(seq_len(n) / chunk_size)))
+  if (workers <= 1L) return(list(seq_len(n)))
+  size <- ceiling(n / min(n, workers * 4L))
+  unname(split(seq_len(n), ceiling(seq_len(n) / size)))
 }
 
 #' Independent RNG streams, one per chunk
@@ -146,34 +144,40 @@ with_rng_stream <- function(stream, expr) {
   expr
 }
 
-#' Apply `fun` to each chunk, sequentially or across future workers
+#' Apply `fun` to each batch, sequentially or across future workers
 #'
 #' The parallel branch keeps at most one future per worker in flight and polls
-#' for completions, so progress is reported as chunks finish rather than in one
-#' jump at the end.
+#' for completions, so progress is reported as batches finish rather than in
+#' one jump at the end. `fun` is called as `fun(batch, tick)`: running
+#' sequentially it ticks the bar itself, once per unit of work; running on a
+#' worker it cannot report back mid-batch, so `tick` does nothing and the batch
+#' is credited on completion.
 #'
-#' @param chunks List of arguments to `fun`.
-#' @param fun Function of one argument.
+#' @param batches List of arguments to `fun`.
+#' @param fun Function of a batch and a `tick()` callback.
 #' @param p Progress reporter from `nsbi_progressor()`, or `NULL`.
-#' @param weights Progress units to credit per chunk (defaults to 1 each).
+#' @param weights Progress units to credit per batch (defaults to 1 each).
+#' @param seeds L'Ecuyer-CMRG seeds, one per batch, handed to the future
+#'   backend. `fun` is free to set its own streams inside the batch.
 #' @keywords internal
-nsbi_chunk_apply <- function(chunks, fun, p = NULL, weights = NULL) {
-  n <- length(chunks)
+nsbi_batch_apply <- function(batches, fun, p = NULL, weights = NULL,
+                             seeds = NULL) {
+  n <- length(batches)
   if (n == 0L) return(list())
   weights <- weights %||% rep(1, n)
-  streams <- rng_streams(n)
+  seeds <- seeds %||% rng_streams(n)
   workers <- nsbi_workers()
-  tick <- function(i) if (!is.null(p)) p(weights[i])
 
   if (workers <= 1L) {
+    tick <- if (is.null(p)) function() NULL else function() p(1)
     out <- vector("list", n)
     for (i in seq_len(n)) {
-      out[[i]] <- with_rng_stream(streams[[i]], fun(chunks[[i]]))
-      tick(i)
+      out[[i]] <- with_rng_stream(seeds[[i]], fun(batches[[i]], tick))
     }
     return(out)
   }
 
+  noop <- function() NULL
   out <- vector("list", n)
   futures <- vector("list", n)
   pending <- integer(0)   # indices submitted but not yet collected
@@ -181,8 +185,9 @@ nsbi_chunk_apply <- function(chunks, fun, p = NULL, weights = NULL) {
   collected <- 0L
   while (collected < n) {
     while (length(pending) < workers && nxt <= n) {
-      futures[[nxt]] <- future::futureCall(FUN = fun, args = list(chunks[[nxt]]),
-                                           seed = streams[[nxt]])
+      futures[[nxt]] <- future::futureCall(FUN = fun,
+                                           args = list(batches[[nxt]], noop),
+                                           seed = seeds[[nxt]])
       pending <- c(pending, nxt)
       nxt <- nxt + 1L
     }
@@ -196,7 +201,7 @@ nsbi_chunk_apply <- function(chunks, fun, p = NULL, weights = NULL) {
       out[[i]] <- future::value(futures[[i]])
       futures[i] <- list(NULL)
       collected <- collected + 1L
-      tick(i)
+      if (!is.null(p)) p(weights[i])
     }
     pending <- pending[!done]
   }
@@ -206,64 +211,54 @@ nsbi_chunk_apply <- function(chunks, fun, p = NULL, weights = NULL) {
 #' Run a simulator over a parameter matrix
 #'
 #' The single point through which every simulator call in the package passes:
-#' chunking, the future backend, RNG streams, and the progress bar all live
-#' here. See [nsbi_parallel].
+#' the per-parameter-set contract, the future backend, RNG streams, and the
+#' progress bar all live here. See [nsbi_simulator] and [nsbi_parallel].
 #'
-#' @param simulator The user's simulator.
-#' @param theta Parameter matrix.
-#' @param chunk_size Rows per simulator call; `NULL` picks a default.
+#' @param simulator The user's simulator, called once per row of `theta`.
+#' @param theta Parameter matrix; its `colnames` are the parameter names used
+#'   to decide how the simulator receives its arguments.
+#' @param sim_args Named list of extra arguments forwarded to every call.
 #' @param label Phase name for the progress bar.
 #' @param d Expected number of output columns, if known.
+#' @return An `n x d` matrix, one row per row of `theta`.
 #' @keywords internal
-run_simulator <- function(simulator, theta, chunk_size = NULL,
+run_simulator <- function(simulator, theta, sim_args = list(),
                           label = "Simulating", d = NULL) {
-  if (!is.function(simulator)) {
-    stop("`simulator` must be a function of a parameter matrix.", call. = FALSE)
-  }
   theta <- as_theta_matrix(theta)
+  call_one <- simulator_caller(simulator, colnames(theta), sim_args)
   n <- nrow(theta)
-  if (n == 0L) return(as_theta_matrix(matrix(numeric(0), nrow = 0, ncol = d %||% 1L)))
-  idx <- chunk_index(n, chunk_size)
+  if (n == 0L) {
+    return(as_theta_matrix(matrix(numeric(0), nrow = 0, ncol = d %||% 1L), d))
+  }
+  idx <- sim_batches(n)
   hint_parallel(n)
+  streams <- rng_streams(n)
 
   # `finally`, not on.exit(): this block is a promise forced inside
   # progressr::with_progress(), so on.exit() would attach to that frame and
   # close the bar before the work starts.
   with_nsbi_progress({
     p <- nsbi_progressor(steps = n, label = label)
-    chunks <- lapply(idx, function(i) theta[i, , drop = FALSE])
-    out <- tryCatch(
-      nsbi_chunk_apply(chunks, simulator, p = p, weights = lengths(idx)),
+    batches <- lapply(idx, function(i) {
+      list(theta = theta[i, , drop = FALSE], index = i, streams = streams[i])
+    })
+    run_batch <- function(batch, tick) {
+      k <- nrow(batch$theta)
+      out <- vector("list", k)
+      for (j in seq_len(k)) {
+        out[[j]] <- as_sim_draw(
+          with_rng_stream(batch$streams[[j]], call_one(batch$theta[j, ])),
+          batch$index[j]
+        )
+        tick()
+      }
+      out
+    }
+    draws <- tryCatch(
+      nsbi_batch_apply(batches, run_batch, p = p, weights = lengths(idx),
+                       seeds = lapply(batches, function(b) b$streams[[1L]])),
       finally = p(0, done = TRUE)
     )
-    bind_sim_output(out, lengths(idx), n, d)
+    bind_sim_draws(do.call(c, draws), d)
   })
-}
-
-#' Stack per-chunk simulator output into one matrix
-#'
-#' A chunk of one row that comes back as a plain vector is a single
-#' observation, not a column of them -- the one place where chunking could
-#' silently transpose a result.
-#' @keywords internal
-bind_sim_output <- function(out, sizes, n, d = NULL) {
-  mats <- Map(function(v, k) {
-    if (is.data.frame(v)) v <- as.matrix(v)
-    if (is.null(dim(v))) {
-      v <- if (k == 1L) matrix(v, nrow = 1L) else matrix(v, ncol = 1L)
-    }
-    storage.mode(v) <- "double"
-    v
-  }, out, sizes)
-  ncols <- vapply(mats, ncol, integer(1))
-  if (length(unique(ncols)) > 1L) {
-    stop("Simulator returned a different number of columns for different ",
-         "parameter chunks.", call. = FALSE)
-  }
-  x <- do.call(rbind, mats)
-  if (nrow(x) != n) {
-    stop("Simulator must return one row of output per row of theta.",
-         call. = FALSE)
-  }
-  as_theta_matrix(x, d)
 }
