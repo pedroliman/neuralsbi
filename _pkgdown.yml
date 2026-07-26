@@ -9,8 +9,8 @@ template:
   light-switch: true
   bslib:
     primary: "#2c5f7c"
-    base_font: {google: "Source Sans 3"}
-    heading_font: {google: "Source Sans 3"}
+    base_font: {google: "Source Serif 4"}
+    heading_font: {google: "Source Serif 4"}
     code_font: {google: "JetBrains Mono"}
   # Social-share card and Twitter/X preview. pkgdown turns the relative image
   # path into an absolute og:image against `url`; og-card.png ships from

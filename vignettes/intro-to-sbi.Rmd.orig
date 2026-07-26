@@ -17,7 +17,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE, comment = "#>", error = FALSE,
   fig.path = "figures/intro-to-sbi-", fig.width = 5, fig.height = 4,
-  dpi = 96, fig.retina = NULL
+  dpi = 96, fig.retina = NULL, dev = "svglite"
 )
 set.seed(1)
 ```
