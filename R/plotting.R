@@ -1,9 +1,9 @@
 #' Visualize posterior samples
 #'
 #' A pair plot built on [GGally::ggpairs()]: 1-D marginal densities on the
-#' diagonal and 2-D scatter in the lower triangle, with optional markers for a
-#' reference (e.g. true) parameter value. Analogous to Python `sbi`'s
-#' `pairplot`.
+#' diagonal and 2-D highest-density regions (via [ggdensity::geom_hdr()]) in
+#' the lower triangle, with optional markers for a reference (e.g. true)
+#' parameter value. Analogous to Python `sbi`'s `pairplot`.
 #'
 #' @param samples A matrix of posterior draws (rows = draws), or an
 #'   `nsbi_samples` object.
@@ -15,14 +15,16 @@
 #'   plotmath symbol.
 #' @param limits Optional list (one `c(lo, hi)` per parameter, in column
 #'   order) or matrix of per-parameter axis limits.
-#' @param col Point and density fill colour.
-#' @param alpha Point and density fill transparency.
-#' @param ... Passed to the lower-triangle [ggplot2::geom_point()] layer.
+#' @param col Density-region and marginal-density fill colour.
+#' @param alpha Marginal-density fill transparency. The lower-triangle
+#'   highest-density regions shade themselves by probability level (99/95/80/50%)
+#'   instead, via `ggdensity`'s own `alpha` mapping.
+#' @param ... Passed to the lower-triangle [ggdensity::geom_hdr()] layer.
 #' @return A `ggmatrix` object (also drawn as a side effect), invisibly.
 #' @export
 pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
                      col = "steelblue", alpha = 0.4, ...) {
-  require_ggplot2(ggally = TRUE)
+  require_ggplot2(ggally = TRUE, ggdensity = TRUE)
   X <- as_theta_matrix(samples)
   d <- ncol(X)
   if (is.null(labels)) {
@@ -49,7 +51,7 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
     xn <- rlang::as_name(mapping$x)
     yn <- rlang::as_name(mapping$y)
     p <- ggplot2::ggplot(data, mapping) +
-      ggplot2::geom_point(colour = col, alpha = alpha, size = 0.6, ...)
+      ggdensity::geom_hdr(fill = col, ...)
     if (!is.null(truth_df)) {
       p <- p +
         ggplot2::geom_vline(xintercept = truth_df[[xn]], colour = "firebrick", linewidth = 0.6) +

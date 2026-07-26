@@ -2,11 +2,11 @@
 % Please edit documentation in R/utils.R
 \name{require_ggplot2}
 \alias{require_ggplot2}
-\title{Check that ggplot2 (and, for \code{\link[=pairplot]{pairplot()}}, GGally) are available}
+\title{Check that ggplot2 (and, for \code{\link[=pairplot]{pairplot()}}, GGally and ggdensity) are available}
 \usage{
-require_ggplot2(ggally = FALSE)
+require_ggplot2(ggally = FALSE, ggdensity = FALSE)
 }
 \description{
-Check that ggplot2 (and, for \code{\link[=pairplot]{pairplot()}}, GGally) are available
+Check that ggplot2 (and, for \code{\link[=pairplot]{pairplot()}}, GGally and ggdensity) are available
 }
 \keyword{internal}
