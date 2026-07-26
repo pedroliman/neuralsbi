@@ -108,7 +108,7 @@ rbind(truth = theta_true, posterior_mean = colMeans(draws))
 pairplot(draws, truth = theta_true)
 ```
 
-<img src="man/figures/README-pairplot-1.png" alt="Pairwise posterior over the SIR transmission and recovery rates." width="100%" />
+<img src="man/figures/README-pairplot-1.svg" alt="Pairwise posterior over the SIR transmission and recovery rates." width="100%" />
 
 The same posterior gives a point estimate; calibration checks such as
 simulation-based calibration live in `vignette("diagnostics")`.

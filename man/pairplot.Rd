@@ -29,18 +29,20 @@ plotmath symbol.}
 \item{limits}{Optional list (one \code{c(lo, hi)} per parameter, in column
 order) or matrix of per-parameter axis limits.}
 
-\item{col}{Point and density fill colour.}
+\item{col}{Density-region and marginal-density fill colour.}
 
-\item{alpha}{Point and density fill transparency.}
+\item{alpha}{Marginal-density fill transparency. The lower-triangle
+highest-density regions shade themselves by probability level (99/95/80/50\%)
+instead, via \code{ggdensity}'s own \code{alpha} mapping.}
 
-\item{...}{Passed to the lower-triangle \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}} layer.}
+\item{...}{Passed to the lower-triangle \code{\link[ggdensity:geom_hdr]{ggdensity::geom_hdr()}} layer.}
 }
 \value{
 A \code{ggmatrix} object (also drawn as a side effect), invisibly.
 }
 \description{
 A pair plot built on \code{\link[GGally:ggpairs]{GGally::ggpairs()}}: 1-D marginal densities on the
-diagonal and 2-D scatter in the lower triangle, with optional markers for a
-reference (e.g. true) parameter value. Analogous to Python \code{sbi}'s
-\code{pairplot}.
+diagonal and 2-D highest-density regions (via \code{\link[ggdensity:geom_hdr]{ggdensity::geom_hdr()}}) in
+the lower triangle, with optional markers for a reference (e.g. true)
+parameter value. Analogous to Python \code{sbi}'s \code{pairplot}.
 }
