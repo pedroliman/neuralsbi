@@ -16,6 +16,7 @@ Imports:
     utils
 Suggests:
     torch (>= 0.11.0),
+    deSolve,
     ggplot2 (>= 3.4.0),
     GGally (>= 2.2.0),
     future (>= 1.30.0),
