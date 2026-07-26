@@ -6,7 +6,7 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
-[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://pedroliman.github.io/neuralsbi/)
+[![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://neuralsbi.pedrodelima.com/)
 <!-- badges: end -->
 
 `neuralsbi` brings [neural simulation-based
@@ -143,28 +143,28 @@ natively (`handlers(global = TRUE)`); if not, it draws its own bar. See
 
 ## Learn more
 
-The [package website](https://pedroliman.github.io/neuralsbi/) has six
+The [package website](https://neuralsbi.pedrodelima.com/) has six
 vignettes that build on each other:
 
 1.  [Introduction to neural
-    SBI](https://pedroliman.github.io/neuralsbi/articles/intro-to-sbi.html)
+    SBI](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html)
     — what SBI is for, on a simulator whose likelihood has no closed
     form.
 2.  [Getting
-    started](https://pedroliman.github.io/neuralsbi/articles/neuralsbi.html)
+    started](https://neuralsbi.pedrodelima.com/articles/neuralsbi.html)
     — the core prior/simulator/posterior workflow.
 3.  [Choosing a density
-    estimator](https://pedroliman.github.io/neuralsbi/articles/density-estimators.html)
+    estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.html)
     — MDN, MAF, NSF, and the torch-free baseline.
 4.  [Checking the
-    posterior](https://pedroliman.github.io/neuralsbi/articles/diagnostics.html)
+    posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html)
     — calibration and predictive diagnostics.
 5.  [Comparison with pomp: an SIR epidemic
-    model](https://pedroliman.github.io/neuralsbi/articles/sir-epidemic.html)
+    model](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html)
     — neural posterior estimation and pomp’s particle-filter MCMC on the
     same stochastic epidemic.
 6.  [Amortized R(t) across all US
-    states](https://pedroliman.github.io/neuralsbi/articles/sir-time-varying-beta.html)
+    states](https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.html)
     — three time-varying-beta models fit once each, then conditioned on
     51 case curves.
 

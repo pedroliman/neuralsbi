@@ -1,4 +1,4 @@
-url: https://pedroliman.github.io/neuralsbi/
+url: https://neuralsbi.pedrodelima.com/
 
 # `docs/` holds the package's design documents, so the rendered site goes to
 # `site/` (gitignored); CI deploys it to the gh-pages branch.
@@ -9,8 +9,8 @@ template:
   light-switch: true
   bslib:
     primary: "#2c5f7c"
-    base_font: {google: "Source Sans 3"}
-    heading_font: {google: "Source Sans 3"}
+    base_font: {google: "Source Serif 4"}
+    heading_font: {google: "Source Serif 4"}
     code_font: {google: "JetBrains Mono"}
   # Social-share card and Twitter/X preview. pkgdown turns the relative image
   # path into an absolute og:image against `url`; og-card.png ships from
@@ -42,7 +42,7 @@ template:
          "@type": "SoftwareSourceCode",
          "name": "neuralsbi",
          "description": "A native R implementation of neural simulation-based inference (SBI). Trains neural posterior estimators on a prior and simulator for amortized, likelihood-free Bayesian inference, running on the torch back end.",
-         "url": "https://pedroliman.github.io/neuralsbi/",
+         "url": "https://neuralsbi.pedrodelima.com/",
          "codeRepository": "https://github.com/pedroliman/neuralsbi",
          "programmingLanguage": {
            "@type": "ComputerLanguage",
