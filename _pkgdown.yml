@@ -95,25 +95,25 @@ navbar:
       menu:
       - text: Introduction to neural simulation-based inference in R
         href: articles/intro-to-sbi.html
-      - text: Choosing a density estimator
-        href: articles/density-estimators.html
-      - text: Checking the posterior
-        href: articles/diagnostics.html
-      - text: "Comparison with pomp: an SIR epidemic model"
-        href: articles/sir-epidemic.html
-      - text: "Amortized R(t): a time-varying-beta SIR model across all US states"
-        href: articles/sir-time-varying-beta.html
+#      - text: Choosing a density estimator
+#        href: articles/density-estimators.html
+#      - text: Checking the posterior
+#        href: articles/diagnostics.html
+#      - text: "Comparison with pomp: an SIR epidemic model"
+#        href: articles/sir-epidemic.html
+#      - text: "Amortized R(t): a time-varying-beta SIR model across all US states"
+#        href: articles/sir-time-varying-beta.html
 
 articles:
 - title: Learning the package
   navbar: ~
   contents:
   - intro-to-sbi
-  - neuralsbi
-  - density-estimators
-  - diagnostics
-  - sir-epidemic
-  - sir-time-varying-beta
+#  - neuralsbi
+#  - density-estimators
+#  - diagnostics
+#  - sir-epidemic
+#  - sir-time-varying-beta
 
 reference:
 - title: Priors
