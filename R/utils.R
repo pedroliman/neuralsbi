@@ -108,9 +108,9 @@ torch_available <- function() {
   requireNamespace("torch", quietly = TRUE) && isTRUE(torch::torch_is_installed())
 }
 
-#' Check that ggplot2 (and, for [pairplot()], GGally) are available
+#' Check that ggplot2 (and, for [pairplot()], GGally and ggdensity) are available
 #' @keywords internal
-require_ggplot2 <- function(ggally = FALSE) {
+require_ggplot2 <- function(ggally = FALSE, ggdensity = FALSE) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop(
       "This plotting function needs the 'ggplot2' package.\n",
@@ -122,6 +122,13 @@ require_ggplot2 <- function(ggally = FALSE) {
     stop(
       "pairplot() needs the 'GGally' package (for ggpairs()).\n",
       "Install it with install.packages('GGally').",
+      call. = FALSE
+    )
+  }
+  if (ggdensity && !requireNamespace("ggdensity", quietly = TRUE)) {
+    stop(
+      "pairplot() needs the 'ggdensity' package (for geom_hdr()).\n",
+      "Install it with install.packages('ggdensity').",
       call. = FALSE
     )
   }
