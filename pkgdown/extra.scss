@@ -30,6 +30,30 @@ html[data-bs-theme="dark"] {
   max-width: 56rem;
 }
 
+// Move the "on this page" outline to the left, as a slim menu column, and
+// narrow it so #main gets the rest of the row to center itself in.
+// `.row` is a Bootstrap flex container, so a visual reorder is enough; DOM
+// order (main, then aside) is left alone.
+@include media-breakpoint-up(md) {
+  .row > #main {
+    order: 2;
+  }
+
+  .row > aside {
+    order: 1;
+    flex: 0 0 14rem;
+    width: 14rem;
+    max-width: 14rem;
+    margin-left: 0;
+  }
+}
+
+@include media-breakpoint-up(xxl) {
+  .row > aside {
+    margin-left: 0;
+  }
+}
+
 // Prose elements get a narrow, centered measure. Figures, tables, and code
 // are left at the width of #main itself, so they read visibly wider than
 // the text while still stopping well short of the sidebar.
@@ -86,6 +110,12 @@ h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
 }
 
+#main .page-header {
+  margin-top: 3.5rem;
+  padding-bottom: 2rem;
+  margin-bottom: 2.5rem;
+}
+
 .page-header h1 {
   font-weight: 700;
   font-size: 2.5rem;
@@ -99,6 +129,22 @@ h1, h2, h3, h4, h5, h6 {
   font-style: italic;
   font-weight: 400;
   color: var(--bs-secondary-color);
+}
+
+// The vignette/Rd source-file link ("Source: vignettes/foo.Rmd") is
+// implementation detail, not something a reader needs.
+.page-header small.dont-index {
+  display: none;
+}
+
+// The hex logo badge is a landing-page flourish; it crowds the title on
+// every other page.
+.page-header img.logo {
+  display: none;
+}
+
+.template-home .page-header img.logo {
+  display: block;
 }
 
 code, pre, kbd, samp, .sourceCode {
@@ -132,7 +178,12 @@ code, pre, kbd, samp, .sourceCode {
   display: block;
 }
 
-#main p.caption,
+// None of the vignettes set an explicit fig.cap; every `p.caption` knitr
+// emits is its generic "plot of chunk <label>" filler, not a real caption.
+#main p.caption {
+  display: none;
+}
+
 #main .figure figcaption {
   font-style: italic;
   font-size: 0.9rem;
