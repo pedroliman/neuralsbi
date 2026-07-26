@@ -21,3 +21,5 @@
 # sources and the build script out of the tarball.
 ^vignettes/.*\.Rmd\.orig$
 ^vignettes/precompute\.R$
+# Web-only articles: pkgdown renders vignettes/articles/, R CMD build must not.
+^vignettes/articles$

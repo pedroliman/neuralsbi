@@ -95,6 +95,8 @@ navbar:
       menu:
       - text: Introduction to neural simulation-based inference in R
         href: articles/intro-to-sbi.html
+      - text: Choosing a simulation-based inference package
+        href: articles/sbi-packages.html
 #      - text: Choosing a density estimator
 #        href: articles/density-estimators.html
 #      - text: Checking the posterior
@@ -109,6 +111,7 @@ articles:
   navbar: ~
   contents:
   - intro-to-sbi
+  - articles/sbi-packages
 #  - neuralsbi
 #  - density-estimators
 #  - diagnostics

@@ -1,0 +1,213 @@
+---
+title: "Choosing a simulation-based inference package"
+description: >
+  How neuralsbi relates to sbi, BayesFlow, NeuralEstimators, pyABC and pomp:
+  what each one is built for, when another package is the better choice, and
+  the validation discipline that none of them removes.
+output: rmarkdown::html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+`neuralsbi` is one option among several, and it is not the right one for every problem. This article maps the packages a researcher is likely to consider next to it, says what each is actually built for, and gives the cases where something else is the better choice. Nothing here is executed; the code blocks show calling conventions rather than results.
+
+The comparison covers three neural packages ([`sbi`](https://github.com/sbi-dev/sbi), [`BayesFlow`](https://github.com/bayesflow-org/bayesflow), [`NeuralEstimators`](https://github.com/msainsburydale/NeuralEstimators.jl)) and two classical likelihood-free packages ([`pyABC`](https://github.com/ICB-DCM/pyABC), [`pomp`](https://kingaa.github.io/pomp/)). The classical two are included because they are frequently the correct answer: a neural estimator is not automatically an improvement on a particle filter.
+
+## The shape of the choice
+
+Two questions separate these packages, and answering them narrows the field faster than any feature table.
+
+**Can you write down a measurement density?** If the latent process is a black box but the observation model is something you can evaluate, such as a binomial count given a latent prevalence, then a particle filter uses that density and will usually give a sharper posterior than any method that only simulates. `pomp` is built on exactly that assumption. Neural SBI asks only that you can simulate, which is a weaker requirement and therefore a weaker position to infer from.
+
+**Do you need to condition on one observation or many?** Amortized inference pays a large training cost once and then conditions on any new observation in milliseconds. That trade is worth it for many observations and wasteful for one. Sequential and classical methods concentrate the simulation budget on a single target and are not valid elsewhere.
+
+## At a glance
+
+| Package | Language | Approach | Amortized | Where it fits |
+|---|---|---|---|---|
+| `neuralsbi` | R | NPE (MDN, MAF, NSF) | yes | R users who want NPE and diagnostics without a Python dependency |
+| `sbi` | Python | NPE, NLE, NRE, FMPE, NPSE | yes | The method reference; anything beyond NPE, GPU training, CNN/RNN embeddings |
+| `BayesFlow` | Python | Amortized workflows, mainly NPE | yes | Summary-network design, model comparison, hierarchical models |
+| `NeuralEstimators` | Julia (R interface) | Neural Bayes estimators | yes | Spatial data, extremes, i.i.d. replicates, irregular geometries |
+| `pyABC` | Python | ABC-SMC | no | Model selection across competing models; large distributed budgets |
+| `pomp` | R | Particle filter, iterated filtering, pMCMC, ABC | no | State-space models where a measurement density exists |
+
+## The neural packages
+
+### neuralsbi
+
+`neuralsbi` implements neural posterior estimation and nothing else. It trains a conditional density estimator $q_\phi(\boldsymbol{\theta} \mid \mathbf{x})$ on pairs drawn from the prior and the simulator, then conditions on an observation. Estimators are a closed-form conditional Gaussian (`linear_gaussian`, exact for linear-Gaussian models and useful as a baseline), a mixture density network (`mdn`), a masked autoregressive flow (`maf`), and an autoregressive rational-quadratic spline flow (`nsf`). Its sequential method is TSNPE, which truncates the proposal to the region the current posterior supports.
+
+The reason it exists is the dependency surface. Neural estimators run on `torch`, meaning libtorch's C++ bindings, so there is no Python environment to install or reproduce. Calibration diagnostics are part of the package rather than an add-on: `sbc()`, `expected_coverage()`, `tarp()`, `c2st()` and `posterior_predictive()` are all exported, and `vignette("diagnostics")` walks through reading them.
+
+Its limits are worth stating plainly. There is no NLE, NRE, FMPE or NPSE, so a problem that wants a likelihood surrogate or repeated i.i.d. observations is better served elsewhere. Training targets CPU. The spline flow is autoregressive rather than coupling-based, which differs from `sbi`'s NSF.
+
+```r
+prior     <- prior_uniform(low = c(beta = 0.1, gamma = 0.02),
+                           high = c(beta = 1.0, gamma = 0.30))
+simulator <- function(beta, gamma) c(peak = ..., peak_day = ...)
+
+fit   <- npe(prior, simulator, n_simulations = 10000, density_estimator = "maf")
+post  <- posterior(fit, x_obs = x_obs)
+draws <- sample(post, 10000)
+```
+
+The simulator contract is one call per parameter set returning one observation, documented at `?nsbi_simulator`. This differs from `sbi`, which expects a batched simulator, so a simulator ported between the two needs its loop added or removed.
+
+### sbi
+
+`sbi` is the broad method reference: if an SBI algorithm is established, it is implemented here. NPE, NLE and NRE cover the three ways of targeting the posterior, and the newer estimators (FMPE for flow matching, NPSE for score-based) are available alongside them. Embedding networks include CNN and RNN architectures for structured observations, training runs on GPU, and [`sbibm`](https://github.com/sbi-benchmark/sbibm) supplies standard tasks with reference posteriors.
+
+Use `sbi` when the method matters more than the language: NLE for repeated i.i.d. observations, NRE when a classifier framing suits the problem, or GPU training for a budget that CPU cannot absorb. It is also the right place to start when comparing algorithms, because the alternatives share one API.
+
+One practical note that causes most of the import errors people hit: `sbi` renamed its classes in 2024, so `SNPE` became `NPE` and so on. Tutorials written before then use spellings the current API keeps only as aliases. The citation for current versions is [sbi reloaded](https://arxiv.org/abs/2411.17337), not the 2020 JOSS note.
+
+### BayesFlow
+
+`BayesFlow` foregrounds the amortized *workflow* rather than the estimator. Summary-network design is a first-class concern instead of an implementation detail, which matters when observations are long time series, sets, or images that need compressing before a density estimator sees them. The package also carries model comparison, misspecification detection, and hierarchical and compositional models, reflecting its roots in cognitive and systems modelling.
+
+It runs on Keras 3, so PyTorch, TensorFlow and JAX are all available as backends. Version 2 is a rewrite with an API incompatible with version 1; the current release is in the 2.0.x series. Check which version any tutorial targets before following it, because the two are not interchangeable.
+
+Choose `BayesFlow` when the summary network is the hard part of the problem, when comparing several models rather than fitting one, or when the hierarchical structure of the data matters.
+
+### NeuralEstimators
+
+`NeuralEstimators` takes a different framing from the other three. It trains *neural Bayes estimators*, networks mapping data directly to summaries of the posterior, with uncertainty quantified through quantile estimation rather than by learning a full density by default. The architectures are the point: DeepSets for exchangeable i.i.d. replicates, CNNs for gridded data, and graph neural networks for irregularly observed spatial data, where a `GNNGraph` may hold subgraphs for independent replicates.
+
+This design comes out of spatial statistics and extremes, and it is the strongest option in that setting. Estimating the parameters of a max-stable process is the canonical example, where the likelihood is intractable and composite-likelihood approaches are the standard alternative.
+
+The package is Julia, with an [R interface on CRAN](https://cran.r-project.org/package=NeuralEstimators) (version 0.2.1). The R interface still requires a Julia installation of 1.11 or newer, so it removes the language barrier but not the toolchain one. For an R user weighing it against `neuralsbi`, that is the trade: `NeuralEstimators` brings architectures built for replicated and spatial data, at the cost of a Julia dependency, and it returns estimators and intervals rather than posterior draws from a learned density.
+
+## The classical packages
+
+Neither of these trains a network, and neither is obsolete.
+
+### pyABC
+
+`pyABC` implements ABC-SMC: sample from the prior, simulate, accept parameters whose simulated data fall within a tolerance of the observation, then shrink the tolerance across generations. Acceptance thresholds, transition kernels and distance functions are all adaptive and all replaceable without touching package internals.
+
+Two things distinguish it. Model selection is first-class, so comparing several competing models and estimating their relative evidence is a supported workflow rather than something to assemble by hand. And the parallelization is serious: the scheduling strategy is designed for distributed environments scaling to thousands of cores, with a web interface for monitoring runs in progress.
+
+Use `pyABC` when the scientific question is which model is right rather than what the parameters are, or when compute is abundant and a simple, well-understood approximation is preferable to a trained network whose failure modes are silent.
+
+### pomp
+
+`pomp` is a toolkit for partially observed Markov processes, and ABC is the least of what it offers. A model is specified through `rprocess` for the latent dynamics, `rmeasure` to simulate observations, and `dmeasure` for the measurement *density*. That third component is the crux: supplying it unlocks the likelihood-based methods, `pfilter` for likelihood evaluation, `mif2` for iterated filtering, and `pmcmc` for particle MCMC, alongside probe matching and trajectory matching.
+
+When a state-space structure is available and the measurement density can be written, those particle-filter methods usually outperform `pomp`'s own ABC option, and there is little reason to use ABC inside `pomp`. The comparison against `neuralsbi` is worked end to end in `vignette("sir-epidemic")`, fitting the same SIR model both ways. The two posteriors land in the same place; the particle filter's is slightly sharper, because it uses the known binomial measurement density while NPE is handed only simulations. That extra width is calibrated rather than broken, which SBC confirms in the same article.
+
+The summary from that vignette generalizes:
+
+|  | `pomp` (pMCMC) | `neuralsbi` (NPE) |
+|---|---|---|
+| Latent state process | simulated only | simulated only |
+| Measurement model | needs the density (`dmeasure`) | needs only to simulate |
+| Inference | particle filter plus MCMC | train a neural density estimator |
+| Reusable across datasets | no, refit per observation | yes, amortized |
+| Cost structure | cheap setup, rerun per dataset | expensive training, then instant |
+| Exactness | exact in the MCMC limit | approximate, must be calibration-checked |
+
+## Choosing
+
+| Situation | Package |
+|---|---|
+| You work in R and want NPE with diagnostics | `neuralsbi` |
+| You need NLE, NRE, FMPE or NPSE | `sbi` |
+| Repeated i.i.d. observations | `sbi` (NLE or NRE), `NeuralEstimators` (DeepSets) |
+| The observation is a long time series or an image | `BayesFlow`, or `sbi` with a CNN embedding |
+| Comparing several competing models | `BayesFlow`, `pyABC` |
+| Spatial data on an irregular geometry | `NeuralEstimators` |
+| A measurement density exists and there is one dataset | `pomp` |
+| Many nuisance parameters, expensive simulator | [`swyft`](https://github.com/undark-lab/swyft) (TMNRE) |
+| Benchmarking a method against reference posteriors | `sbibm` |
+| A tractable likelihood exists and MCMC is feasible | Stan, or any MCMC engine, not SBI |
+
+That last row is worth taking seriously. SBI is for settings where the likelihood is unavailable or impractical. When it is available and sampling is feasible, MCMC is better validated and involves no network training.
+
+## What none of them changes
+
+Whichever package, the discipline is the same and worth restating: a trained estimator that has not been calibration-checked is not a result. SBC ranks, expected coverage, and a posterior predictive check against the actual observation are the minimum before any scientific claim. Neural estimators fail silently, returning confident, wrong posteriors with no error message.
+
+Calibration and accuracy are different properties, and conflating them is the common mistake. A posterior equal to the prior is perfectly calibrated and perfectly useless. Coverage is a necessary condition, not a sufficient one. Of the standard checks, only the posterior predictive speaks to the observation you actually have, and only it can flag misspecification.
+
+In `neuralsbi` that is `sbc()`, `expected_coverage()`, `tarp()` and `posterior_predictive()`; `vignette("diagnostics")` covers how to read each one. `sbi` has the equivalents under its diagnostics tutorials, including local C2ST for per-observation checks. `BayesFlow` builds its diagnostics into the workflow API.
+
+## Tutorials by package
+
+Galleries evolve, so confirm the exact notebook set and API version for the release you install.
+
+**`neuralsbi`** ([articles](https://neuralsbi.pedrodelima.com/)). Introduction to neural simulation-based inference in R; a linear-Gaussian walkthrough with a closed-form answer; choosing a density estimator; checking the posterior; the `pomp` comparison on an SIR model; amortized $R(t)$ across all US states.
+
+**`sbi`** ([tutorials](https://sbi-dev.github.io/sbi/latest/tutorials/)). Introduction covers getting started, the Bayesian workflow, and implemented algorithms. Advanced covers multi-round inference, sampling algorithms, custom density estimators, embedding nets, trial-based data, invalid simulations, and importance-sampling posteriors. Diagnostics covers posterior predictive checks, simulation-based calibration, local-C2ST coverage, and ArviZ integration. Analysis covers conditional distributions, sensitivity analysis, and plotting. Worked examples include the Hodgkin-Huxley and decision-making models.
+
+**`BayesFlow`** ([examples](https://bayesflow.org/)). Bayesian linear regression starter; From ABC to BayesFlow; posterior estimation for SIR-like models; likelihood estimation for the g-and-k distribution; inference on image and spatial data; rapid iteration with point estimation on Lotka-Volterra; simple model comparison; posterior estimation with multimodal data; Bayesian experimental design; ensembles; neural ratio estimation with PyMC; compositional amortized inference for hierarchical models; a diffusion-models tutorial.
+
+**`NeuralEstimators`** ([Julia docs](https://msainsburydale.github.io/NeuralEstimators.jl), [R vignettes](https://cran.r-project.org/package=NeuralEstimators)). The R interface ships an introduction and a worked case with incomplete gridded data. Code reproducing the graph-neural-network paper is at [`NeuralEstimatorsGNN`](https://github.com/msainsburydale/NeuralEstimatorsGNN).
+
+**`pyABC`** ([examples](https://pyabc.readthedocs.io/en/latest/examples.html)). Parameter inference and model selection are the two to start with; the gallery extends to adaptive distances, external simulators, and distributed execution.
+
+**`pomp`** ([documentation](https://kingaa.github.io/pomp/docs.html)). A getting-started guide, the JSS paper, and two short courses, "Simulation-based Inference for Epidemiological Dynamics" and "Model-based Inference in Ecology and Epidemiology". The measles case study of He et al. (2010) is the worked example.
+
+## Reading notes
+
+The three neural packages differ mainly in emphasis. `sbi` is the broad method reference, every algorithm behind one API. `BayesFlow` foregrounds the amortized workflow and summary-network design for cognitive and systems modelling. `NeuralEstimators` is built around DeepSets, CNN and GNN architectures for spatial statistics and extremes with i.i.d. replicates.
+
+The two classical packages differ too. `pyABC` is ABC-SMC with strong model-selection and distributed-computing support, while `pomp` is a full POMP toolkit whose likelihood-based particle-filter methods, iterated filtering and particle MCMC, usually outperform its ABC option when a state-space structure is available.
+
+Tutorial lists above were checked against current package documentation at the time of writing. The simulator mathematics in the appendix is standard and stable across versions.
+
+## Appendix: the benchmark simulators
+
+These are the tasks `neuralsbi` exports from `R/tasks.R` and shares between its tests and its benchmarks, given here so a comparison against another package targets the same model. They follow the definitions used in the SBI benchmarking literature. Write $\boldsymbol{\theta}$ for the parameter vector and $\mathbf{x}$ for the simulated observation.
+
+### Gaussian linear
+
+The regression oracle for the whole pipeline, because its posterior is available in closed form. With dimension $d = 10$ and $\sigma_p^2 = \sigma_n^2 = 0.1$:
+
+$$\boldsymbol{\theta} \sim \mathcal{N}(\mathbf{0}, \sigma_p^2 I_d), \qquad \mathbf{x} \mid \boldsymbol{\theta} \sim \mathcal{N}(\boldsymbol{\theta}, \sigma_n^2 I_d).$$
+
+Conjugacy gives the posterior directly, which is what `task_gaussian_linear()` returns as its reference:
+
+$$\sigma_\text{post}^2 = \left(\frac{1}{\sigma_p^2} + \frac{1}{\sigma_n^2}\right)^{-1}, \qquad \boldsymbol{\mu}_\text{post} = \frac{\sigma_\text{post}^2}{\sigma_n^2}\,\mathbf{x}.$$
+
+### Two moons
+
+Two parameters, two outputs, and a posterior with two crescent-shaped modes. The bimodality is the point: it defeats any unimodal estimator, so it separates a mixture density network or a flow from a Gaussian approximation.
+
+$$\boldsymbol{\theta} \sim \mathcal{U}([-1, 1]^2), \qquad a \sim \mathcal{U}\!\left(-\tfrac{\pi}{2}, \tfrac{\pi}{2}\right), \qquad r \sim \mathcal{N}(0.1, 0.01^2),$$
+
+$$\mathbf{p} = \left(r\cos a + 0.25,\; r \sin a\right), \qquad \mathbf{x} = \left(p_1 - \frac{|\theta_1 + \theta_2|}{\sqrt{2}},\; p_2 + \frac{-\theta_1 + \theta_2}{\sqrt{2}}\right).$$
+
+The absolute value is what folds the likelihood into two branches.
+
+### SLCP
+
+"Simple likelihood, complex posterior": the forward model is an ordinary bivariate Gaussian, but the parameterization makes the posterior multimodal and sharply curved. Five parameters, eight outputs.
+
+$$\boldsymbol{\theta} \sim \mathcal{U}([-3, 3]^5), \qquad \mathbf{m} = (\theta_1, \theta_2), \qquad s_1 = \theta_3^2, \quad s_2 = \theta_4^2, \quad \rho = \tanh \theta_5,$$
+
+$$\Sigma = \begin{pmatrix} s_1^2 & \rho s_1 s_2 \\ \rho s_1 s_2 & s_2^2 \end{pmatrix}, \qquad \mathbf{y}_1, \dots, \mathbf{y}_4 \overset{\text{iid}}{\sim} \mathcal{N}(\mathbf{m}, \Sigma),$$
+
+with $\mathbf{x} \in \mathbb{R}^8$ the four draws stacked. Squaring $\theta_3$ and $\theta_4$ makes their signs unidentifiable, which is where the modes come from.
+
+### SIR
+
+A discrete-time deterministic SIR epidemic with binomial observation noise, $N = 10^6$ and 160 days. The priors are lognormal, so both rates stay positive:
+
+$$\beta \sim \text{LogNormal}(\log 0.4,\, 0.5), \qquad \gamma \sim \text{LogNormal}(\log 0.125,\, 0.2).$$
+
+The state updates each day by
+
+$$S_{t+1} = S_t - \frac{\beta S_t I_t}{N}, \qquad I_{t+1} = I_t + \frac{\beta S_t I_t}{N} - \gamma I_t, \qquad R_{t+1} = R_t + \gamma I_t,$$
+
+starting from $S_1 = N - 1$, $I_1 = 1$, $R_1 = 0$. Prevalence is then sampled at ten equally spaced times $t_1, \dots, t_{10}$ with 1000 draws each:
+
+$$x_k = \frac{1}{1000}\,\text{Binomial}\!\left(1000,\; \frac{I_{t_k}}{N}\right).$$
+
+The likelihood is intractable because the observation times are sparse and the binomial draws must be marginalized over the whole trajectory. This is also the model `vignette("sir-epidemic")` fits with both `neuralsbi` and `pomp`.
+
+## References
+
+The reviews worth starting from are Cranmer, Brehmer and Louppe (2020), [The frontier of simulation-based inference](https://arxiv.org/abs/1911.01429), for the framing, and Deistler et al. (2025), [Simulation-Based Inference: A Practical Guide](https://arxiv.org/abs/2508.12939), for the workflow. Lueckmann et al. (2021), [Benchmarking Simulation-Based Inference](https://arxiv.org/abs/2101.04653), is the evidence base for algorithm choice and the source of the benchmark tasks above. Zammit-Mangion, Sainsbury-Dale and Huser (2024), [Neural Methods for Amortized Inference](https://arxiv.org/abs/2404.12484), gives a statistician's framing of amortization and is the natural companion to `NeuralEstimators`. On validation, Hermans et al. (2022), [A Trust Crisis in Simulation-Based Inference?](https://arxiv.org/abs/2110.06581), is the argument that calibration checking is mandatory rather than optional.
