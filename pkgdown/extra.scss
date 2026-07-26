@@ -1,9 +1,12 @@
 /* ---------------------------------------------------------------------------
    Editorial reading theme: a centered, narrow prose column (40rem) with
    figures, tables, and code left at the width of #main (56rem, widened from
-   pkgdown's default 50rem cap) so they read visibly wider than the text, a
-   warm paper background, and a quieter, typographic "on this page" outline
-   in place of the default pill nav. Serif throughout, including the outline.
+   pkgdown's default 50rem cap) so they read visibly wider than the text, and
+   a warm paper background. Serif throughout. No sidebar: the "on this page"
+   outline is dropped entirely so #main can take the full row and center on
+   the page; on the home page, the link/license/citation/dev-status aside is
+   kept but demoted to a footer-like band below the content instead of a
+   side column.
    --------------------------------------------------------------------------- */
 
 $prose-width: 40rem;
@@ -30,27 +33,51 @@ html[data-bs-theme="dark"] {
   max-width: 56rem;
 }
 
-// Move the "on this page" outline to the left, as a slim menu column, and
-// narrow it so #main gets the rest of the row to center itself in.
-// `.row` is a Bootstrap flex container, so a visual reorder is enough; DOM
-// order (main, then aside) is left alone.
-@include media-breakpoint-up(md) {
-  .row > #main {
-    order: 2;
-  }
-
-  .row > aside {
-    order: 1;
-    flex: 0 0 14rem;
-    width: 14rem;
-    max-width: 14rem;
-    margin-left: 0;
-  }
+// No more side column: #main always takes the full row width, so it can
+// center itself in the whole page rather than the 75% pkgdown's grid
+// otherwise leaves it.
+.row > #main {
+  width: 100%;
+  flex: 0 0 100%;
+  max-width: 56rem;
 }
 
-@include media-breakpoint-up(xxl) {
-  .row > aside {
-    margin-left: 0;
+// The "on this page" outline is gone everywhere...
+.row > aside {
+  display: none;
+}
+
+// ...except the home page, where the link/license/citation/dev-status
+// content is kept, but as a full-width band below the content instead of a
+// side column, reading like a second, lighter footer.
+.template-home .row > aside {
+  display: block;
+  width: 100%;
+  flex: 0 0 100%;
+  max-width: 56rem;
+  margin: 3rem auto 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 0.9rem;
+}
+
+.template-home .row > aside .list-unstyled {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 3rem;
+}
+
+.template-home .row > aside h2 {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  width: 100%;
+  margin-top: 1.5rem;
+
+  &:first-child {
+    margin-top: 0;
   }
 }
 
@@ -114,6 +141,7 @@ h1, h2, h3, h4, h5, h6 {
   margin-top: 3.5rem;
   padding-bottom: 2rem;
   margin-bottom: 2.5rem;
+  text-align: center;
 }
 
 .page-header h1 {
@@ -145,6 +173,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .template-home .page-header img.logo {
   display: block;
+  // the centered title reads oddly next to a right-floated logo; center the
+  // logo above it instead
+  float: none;
+  margin: 0 auto 1rem;
 }
 
 code, pre, kbd, samp, .sourceCode {
@@ -210,53 +242,3 @@ code, pre, kbd, samp, .sourceCode {
   padding: 0.5rem 0.75rem;
 }
 
-/* on this page: a quiet, typographic outline, quarto-style ------------------ */
-
-#toc {
-  font-size: 0.85rem;
-}
-
-#toc > h2 {
-  font-size: 0.75rem;
-  font-weight: 400;
-  font-style: normal;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-  border-bottom: 1px solid var(--bs-border-color);
-  padding-bottom: 0.5rem;
-  margin-top: 0;
-}
-
-#toc > .nav {
-  border-left: 1px solid var(--bs-border-color);
-}
-
-#toc > .nav a.nav-link {
-  border-radius: 0;
-  border-left: 2px solid transparent;
-  margin-left: -1px;
-  padding: 0.2rem 0 0.2rem 0.75rem;
-  color: var(--bs-secondary-color);
-  font-style: italic;
-
-  &:hover,
-  &:focus {
-    background: transparent;
-    color: var(--bs-body-color);
-    border-left-color: var(--bs-border-color);
-  }
-
-  &.active {
-    background: transparent;
-    color: var(--bs-primary);
-    border-left-color: var(--bs-primary);
-    font-style: normal;
-  }
-}
-
-@include media-breakpoint-down(md) {
-  #toc > h2 {
-    text-align: left;
-  }
-}
