@@ -4,8 +4,7 @@
 fit_lg <- function() {
   set.seed(7)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.5),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   npe(prior, simulator, n_simulations = 1500,
       density_estimator = "linear_gaussian", seed = 7)
 }
@@ -41,8 +40,7 @@ test_that("summary of a fit returns training info invisibly", {
 test_that("plot_coverage runs on an sbc result and returns coverage", {
   skip_if_no_ggplot2()
   fit <- fit_lg()
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = 0.5),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
   res <- sbc(fit, simulator, n_sbc = 40L, n_posterior_samples = 200L, seed = 8)
   pdf(NULL)
   on.exit(dev.off())

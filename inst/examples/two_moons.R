@@ -12,14 +12,13 @@ torch::torch_manual_seed(1)
 prior <- prior_uniform(low = c(-1, -1), high = c(1, 1))
 
 two_moons_sim <- function(theta) {
-  n <- nrow(theta)
-  a <- runif(n, -pi / 2, pi / 2)
-  r <- rnorm(n, mean = 0.1, sd = 0.01)
+  a <- runif(1, -pi / 2, pi / 2)
+  r <- rnorm(1, mean = 0.1, sd = 0.01)
   p1 <- r * cos(a) + 0.25
   p2 <- r * sin(a)
-  x1 <- p1 - abs(theta[, 1] + theta[, 2]) / sqrt(2)
-  x2 <- p2 + (-theta[, 1] + theta[, 2]) / sqrt(2)
-  cbind(x1, x2)
+  x1 <- p1 - abs(theta[1] + theta[2]) / sqrt(2)
+  x2 <- p2 + (-theta[1] + theta[2]) / sqrt(2)
+  c(x1 = x1, x2 = x2)
 }
 
 fit <- npe(prior, two_moons_sim, n_simulations = 20000,

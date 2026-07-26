@@ -55,8 +55,7 @@ test_that("NSF trains end to end and yields a sane linear-Gaussian posterior", {
   set.seed(14)
   d <- 2; sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) theta + matrix(rnorm(length(theta), sd = sigma),
-                                              nrow = nrow(theta))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   fit <- npe(prior, simulator, n_simulations = 1200, density_estimator = "nsf",
              n_transforms = 2L, hidden = c(24L, 24L), max_epochs = 50L,
              seed = 14)

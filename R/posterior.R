@@ -19,9 +19,13 @@ NULL
 #' @param x_obs Optional default observation to condition on. If supplied it
 #'   becomes the default `x` for [sample()], [log_prob()] and [map_estimate()].
 #' @return An `nsbi_posterior` object.
+#' @seealso [save_npe()], which is how a torch-backed fit gets to disk and
+#'   back; `readRDS()` returns one whose network is dead, and `posterior()`
+#'   says so rather than failing later.
 #' @export
 posterior <- function(fit, x_obs = NULL) {
   stopifnot(inherits(fit, "nsbi_npe"))
+  check_fit_alive(fit)
   if (!is.null(x_obs)) x_obs <- as_theta_matrix(x_obs, fit$dim_x)
   structure(
     list(fit = fit, x_obs = x_obs),

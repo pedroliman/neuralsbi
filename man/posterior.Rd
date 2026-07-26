@@ -27,3 +27,8 @@ For bounded priors, samples that fall outside the prior support are rejected
 ("leakage" correction), and \code{\link[=log_prob]{log_prob()}} is renormalized by the estimated
 acceptance probability so it integrates to one over the support.
 }
+\seealso{
+\code{\link[=save_npe]{save_npe()}}, which is how a torch-backed fit gets to disk and
+back; \code{readRDS()} returns one whose network is dead, and \code{posterior()}
+says so rather than failing later.
+}

@@ -12,9 +12,7 @@ test_that("linear_gaussian NPE recovers the analytic Gaussian posterior", {
   set.seed(42)
   d <- 2; sigma <- 0.5
   prior <- prior_normal(mean = c(0, 0), sd = 1)
-  simulator <- function(theta) {
-    theta + matrix(rnorm(length(theta), sd = sigma), nrow = nrow(theta))
-  }
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
   fit <- npe(prior, simulator, n_simulations = 4000,
              density_estimator = "linear_gaussian")
   x_obs <- c(1.0, -0.5)
