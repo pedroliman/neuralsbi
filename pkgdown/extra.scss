@@ -1,0 +1,211 @@
+/* ---------------------------------------------------------------------------
+   Editorial reading theme: a centered, narrow prose column (40rem) with
+   figures, tables, and code left at the width of #main (56rem, widened from
+   pkgdown's default 50rem cap) so they read visibly wider than the text, a
+   warm paper background, and a quieter, typographic "on this page" outline
+   in place of the default pill nav. Serif throughout, including the outline.
+   --------------------------------------------------------------------------- */
+
+$prose-width: 40rem;
+
+/* paper background ---------------------------------------------------------- */
+
+html[data-bs-theme="light"] {
+  --bs-body-bg: #fbf9f4;
+  --bs-body-bg-rgb: 251, 249, 244;
+}
+
+html[data-bs-theme="dark"] {
+  --bs-body-bg: #16140f;
+  --bs-body-bg-rgb: 22, 20, 15;
+}
+
+/* main column ---------------------------------------------------------------- */
+
+#main {
+  margin-left: auto;
+  margin-right: auto;
+  // widen pkgdown's own 50rem cap a little so figures/tables read clearly
+  // wider than the $prose-width text column below
+  max-width: 56rem;
+}
+
+// Prose elements get a narrow, centered measure. Figures, tables, and code
+// are left at the width of #main itself, so they read visibly wider than
+// the text while still stopping well short of the sidebar.
+#main > .page-header,
+#main > p,
+#main > ul,
+#main > ol,
+#main > dl,
+#main > blockquote,
+#main > .abstract,
+#main > h1,
+#main > h2,
+#main > h3,
+#main > h4,
+#main > h5,
+#main > h6,
+#main .section > p,
+#main .section > ul,
+#main .section > ol,
+#main .section > dl,
+#main .section > blockquote,
+#main .section > h1,
+#main .section > h2,
+#main .section > h3,
+#main .section > h4,
+#main .section > h5,
+#main .section > h6 {
+  max-width: $prose-width;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+// A paragraph that's really just a figure (README's inline <img>) should
+// read as a figure, not as text.
+#main > p:has(> img:only-child),
+#main .section > p:has(> img:only-child) {
+  max-width: none;
+}
+
+/* typography ------------------------------------------------------------- */
+
+body {
+  font-feature-settings: "onum" 1, "kern" 1;
+  line-height: 1.65;
+}
+
+#main p {
+  margin-bottom: 1.25rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-feature-settings: "lnum" 1, "kern" 1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.page-header h1 {
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+}
+
+.page-header .subtitle,
+.page-header .author,
+.page-header .date {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--bs-secondary-color);
+}
+
+code, pre, kbd, samp, .sourceCode {
+  font-feature-settings: normal;
+}
+
+/* figures + tables --------------------------------------------------------- */
+
+// pandoc wraps captioned images in <div class="figure">, but Bootstrap
+// defines its own unrelated `.figure{display:inline-block}` component under
+// the same class name, which shrink-wraps the div to the image's natural
+// size and defeats `width: 100%` on the image inside it.
+#main .figure,
+#main div.figure {
+  display: block;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+#main .figure img,
+#main div.figure img {
+  width: 100%;
+  border: 1px solid var(--bs-border-color);
+}
+
+// Standalone images (e.g. the README's inline pairs plot) get the same
+// full-width-of-#main treatment as figures.
+#main > p > img:only-child,
+#main .section > p > img:only-child {
+  width: 100%;
+  display: block;
+}
+
+#main p.caption,
+#main .figure figcaption {
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--bs-secondary-color);
+  margin-top: 0.5rem;
+  max-width: $prose-width;
+}
+
+#main table.table {
+  font-size: 0.95rem;
+  border-top: 2px solid var(--bs-body-color);
+  border-bottom: 2px solid var(--bs-body-color);
+}
+
+#main table.table thead th {
+  border-bottom: 1px solid var(--bs-body-color);
+  font-weight: 700;
+  font-style: italic;
+}
+
+#main table.table td,
+#main table.table th {
+  border-color: var(--bs-border-color);
+  padding: 0.5rem 0.75rem;
+}
+
+/* on this page: a quiet, typographic outline, quarto-style ------------------ */
+
+#toc {
+  font-size: 0.85rem;
+}
+
+#toc > h2 {
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  border-bottom: 1px solid var(--bs-border-color);
+  padding-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+#toc > .nav {
+  border-left: 1px solid var(--bs-border-color);
+}
+
+#toc > .nav a.nav-link {
+  border-radius: 0;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  padding: 0.2rem 0 0.2rem 0.75rem;
+  color: var(--bs-secondary-color);
+  font-style: italic;
+
+  &:hover,
+  &:focus {
+    background: transparent;
+    color: var(--bs-body-color);
+    border-left-color: var(--bs-border-color);
+  }
+
+  &.active {
+    background: transparent;
+    color: var(--bs-primary);
+    border-left-color: var(--bs-primary);
+    font-style: normal;
+  }
+}
+
+@include media-breakpoint-down(md) {
+  #toc > h2 {
+    text-align: left;
+  }
+}
