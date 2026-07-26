@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -86,6 +86,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.2" id="neuralsbi-042">neuralsbi 0.4.2<a class="anchor" aria-label="anchor" href="#neuralsbi-042"></a></h2>
+<ul><li>
+<code><a href="../reference/pairplot.html">pairplot()</a></code>’s lower triangle now shows highest-density regions (via the new <code>ggdensity</code> Suggests, <code>geom_hdr()</code>, at the 50/80/95/99% probability levels) instead of a raw scatter of draws. A scatter of 10,000+ points overplots into an undifferentiated blob at the resolution most posteriors are viewed at; nested HDR contours show where the mass actually concentrates. The <code>truth</code> cross-hair markers are unchanged. <code>col</code> now sets the region fill colour; <code>alpha</code> applies only to the diagonal marginal densities, since the lower triangle shades itself by probability level.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.1" id="neuralsbi-041">neuralsbi 0.4.1<a class="anchor" aria-label="anchor" href="#neuralsbi-041"></a></h2>
 <ul><li>

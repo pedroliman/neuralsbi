@@ -32,13 +32,13 @@ torch::install_torch()
 ## Usage
 
 Simulation-based inference fits a posterior from a prior and a
-simulator, with no likelihood required. To keep the setup familiar, here
-is ordinary linear regression written as a simulator: a response `y`
-scattered around a line, `y ~ Normal(alpha + beta * x, sigma)` — the
-same model you might write in Stan. Its likelihood is easy to write
-down, which is exactly what makes it a good check: we know the
-coefficients that generated the data, so we can confirm the posterior
-recovers them.
+simulator, with no likelihood required. To keep the first example
+concrete, here is a textbook SIR epidemic model, solved as an ODE: a
+population of size `N` moves from Susceptible to Infected at
+transmission rate `Beta`, and from Infected to Recovered at rate
+`gamma`. Given `Beta` and `gamma`, solving the ODE deterministically
+produces one epidemic curve — we know the rates that generated it, so we
+can confirm the posterior recovers them.
 
 A simulator here is a function of one parameter set that returns one
 simulated data set. Whatever else it needs — a covariate, a time grid, a
@@ -48,54 +48,64 @@ population size — goes in `sim_args`. See
 ``` r
 
 library(neuralsbi)
-set.seed(1)
+library(deSolve)   # install.packages("deSolve")
 
-# Regression design: a single covariate x, measured at 50 fixed points.
-N <- 50
-x <- seq(-1, 1, length.out = N)
-
-# Simulator: one parameter set in, one response vector y out, drawn from
-# y ~ Normal(alpha + beta * x, sigma). An ordinary R function that only
-# generates data — no fitting happens here, and nothing is vectorised over
-# parameters. The covariate x is not a calibrated parameter, so it arrives as
-# an argument rather than being captured from the enclosing environment.
-simulator <- function(alpha, beta, sigma, x) {
-  rnorm(length(x), mean = alpha + beta * x, sd = sigma)
+# The SIR ODE. R is implied (N - S - I) and never used, so only S and I are
+# tracked. Defined once, at top level, and reused by simulator() below rather
+# than rebuilt on every one of the thousands of calls npe() makes to it.
+ode_model <- function(t, y, p) {
+  with(as.list(c(y, p)), {
+    dS <- -Beta * S * I / N
+    dI <-  Beta * S * I / N - gamma * I
+    list(c(dS, dI))
+  })
 }
 
-# Priors over the intercept, slope, and noise scale. Naming them matches them
-# to the simulator's arguments, so each one arrives by name.
-prior <- prior_uniform(low  = c(alpha = -3, beta = -3, sigma = 0.1),
-                       high = c(alpha =  3, beta =  3, sigma = 2))
-fit   <- npe(prior, simulator, n_simulations = 10000,
-             sim_args = list(x = x), seed = 1)
+# Observation design: infection counts read off the curve at 10 time points.
+times    <- seq(5, 60, length.out = 10)
+sim_args <- list(times = times, N = 1000, I0 = 5)
 
-# Simulate one data set from known coefficients, then infer them back. The
-# observation the posterior conditions on is the response vector y.
-theta_true <- c(alpha = 2, beta = -1, sigma = 0.5)
-set.seed(38)                       # a fixed, representative data set
-y_obs      <- with(as.list(theta_true), simulator(alpha, beta, sigma, x))
+# Simulator: one parameter set in, one simulated epidemic curve out. theta
+# arrives as a single named vector rather than one scalar argument per
+# parameter — neuralsbi accepts either convention (see ?nsbi_simulator) and
+# picks it up from the simulator's formals automatically.
+simulator <- function(theta, times, N, I0) {
+  ode(c(S = N - I0, I = I0), c(0, times), ode_model,
+      c(Beta = theta[["Beta"]], gamma = theta[["gamma"]], N = N))[-1, "I"]
+}
+
+# Priors over the transmission and recovery rates.
+prior <- prior_uniform(low = c(Beta = 0.1, gamma = 0.05), high = c(Beta = 1, gamma = 0.5))
+fit   <- npe(prior, simulator, n_simulations = 3000, sim_args = sim_args, seed = 1)
+
+# Simulate one epidemic from known rates, then infer them back. theta_true is
+# named to match, so do.call() unpacks it straight into one call — the same
+# convention npe() uses internally to dispatch a parameter set. Those names
+# carry through to fit, to draws, and to the plots below with nothing to keep
+# in sync by hand.
+theta_true <- c(Beta = 0.4, gamma = 0.15)
+y_obs      <- do.call(simulator, c(list(theta_true), sim_args))
 post       <- posterior(fit, x_obs = y_obs)
 draws      <- sample(post, 10000)
 ```
 
-The posterior mean recovers the coefficients that generated the data:
+The posterior mean recovers the rates that generated the epidemic:
 
 ``` r
 
 rbind(truth = theta_true, posterior_mean = colMeans(draws))
-#>                   alpha      beta     sigma
-#> truth          2.000000 -1.000000 0.5000000
-#> posterior_mean 1.980723 -1.047646 0.5304283
+#>                    Beta     gamma
+#> truth          0.400000 0.1500000
+#> posterior_mean 0.400028 0.1507464
 ```
 
 ``` r
 
-pairplot(draws, truth = theta_true, labels = c("alpha", "beta", "sigma"))
+pairplot(draws, truth = theta_true)
 ```
 
-![Pairwise posterior over the regression intercept, slope, and noise
-scale.](reference/figures/README-pairplot-1.png)
+![Pairwise posterior over the SIR transmission and recovery
+rates.](reference/figures/README-pairplot-1.svg)
 
 The same posterior gives a point estimate; calibration checks such as
 simulation-based calibration live in
@@ -104,8 +114,8 @@ simulation-based calibration live in
 ``` r
 
 map_estimate(post)     # posterior mode
-#>      alpha       beta      sigma 
-#>  1.9716464 -1.0480336  0.4950709
+#>      Beta     gamma 
+#> 0.4005247 0.1505056
 ```
 
 If you’re interested in sbi in other languages or functionality not

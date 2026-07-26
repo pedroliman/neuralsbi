@@ -1,5 +1,18 @@
 # Changelog
 
+## neuralsbi 0.4.2
+
+- [`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md)’s
+  lower triangle now shows highest-density regions (via the new
+  `ggdensity` Suggests, `geom_hdr()`, at the 50/80/95/99% probability
+  levels) instead of a raw scatter of draws. A scatter of 10,000+ points
+  overplots into an undifferentiated blob at the resolution most
+  posteriors are viewed at; nested HDR contours show where the mass
+  actually concentrates. The `truth` cross-hair markers are unchanged.
+  `col` now sets the region fill colour; `alpha` applies only to the
+  diagonal marginal densities, since the lower triangle shades itself by
+  probability level.
+
 ## neuralsbi 0.4.1
 
 - **Breaking: the simulator is now called once per parameter set and

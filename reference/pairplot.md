@@ -2,9 +2,11 @@
 
 A pair plot built on
 [`GGally::ggpairs()`](https://ggobi.github.io/ggally/reference/ggpairs.html):
-1-D marginal densities on the diagonal and 2-D scatter in the lower
-triangle, with optional markers for a reference (e.g. true) parameter
-value. Analogous to Python `sbi`'s `pairplot`.
+1-D marginal densities on the diagonal and 2-D highest-density regions
+(via
+[`ggdensity::geom_hdr()`](https://jamesotto852.github.io/ggdensity/reference/geom_hdr.html))
+in the lower triangle, with optional markers for a reference (e.g. true)
+parameter value. Analogous to Python `sbi`'s `pairplot`.
 
 ## Usage
 
@@ -48,16 +50,18 @@ pairplot(
 
 - col:
 
-  Point and density fill colour.
+  Density-region and marginal-density fill colour.
 
 - alpha:
 
-  Point and density fill transparency.
+  Marginal-density fill transparency. The lower-triangle highest-density
+  regions shade themselves by probability level (99/95/80/50%) instead,
+  via `ggdensity`'s own `alpha` mapping.
 
 - ...:
 
   Passed to the lower-triangle
-  [`ggplot2::geom_point()`](https://ggplot2.tidyverse.org/reference/geom_point.html)
+  [`ggdensity::geom_hdr()`](https://jamesotto852.github.io/ggdensity/reference/geom_hdr.html)
   layer.
 
 ## Value
