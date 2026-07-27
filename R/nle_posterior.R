@@ -23,16 +23,18 @@
 #'   pays almost nothing for more of them, and 4 for `"stan"`, where each chain
 #'   is a separate process with its own warmup to pay for.
 #' @param warmup Steps discarded at the start of each chain.
-#' @param thin Keep one draw in `thin`. Python `sbi` defaults to 10; the
-#'   default here is 2, because the slice width is adapted during warmup and
-#'   the resulting draws are already close to independent -- on a Gaussian
-#'   target with 20 chains, `thin = 2` gives a bulk ESS of about 96% of the
-#'   draws. Since each evaluation is a forward pass over every observation,
-#'   thinning by 10 would cost five times as much for that last 4%. Raise it if
-#'   the reported ESS says you need to.
-#' @param init_strategy `"resample"` (default) weights a pool of prior draws by
-#'   the posterior density and resamples the starting points from it;
-#'   `"proposal"` starts from plain prior draws.
+#' @param thin Keep one draw in `thin`. The default is 2: the slice width is
+#'   adapted during warmup, and with that the retained draws are already close
+#'   to independent -- on a Gaussian target with 20 chains, `thin = 2` gives a
+#'   bulk ESS of about 96% of them. Since each evaluation is a forward pass over
+#'   every observation, thinning harder buys very little for what it costs.
+#'   Raise it if the reported ESS says you need to. (Python `sbi` thins by 1 by
+#'   default; it thinned by 10 up to v0.21.)
+#' @param init_strategy `"resample"` (default, and `sbi`'s) weights a pool of
+#'   prior draws by the posterior density and resamples the starting points from
+#'   it; `"proposal"` starts from plain prior draws. The pool is 1000 draws, set
+#'   with `n_pool`. `sbi` uses 10,000 *per chain*, which on a surrogate summed
+#'   over thousands of observations is a large bill before the first MCMC step.
 #' @param seed Optional integer seed.
 #' @param ... Further arguments to the sampler: `width`, `max_steps` and
 #'   `n_pool` for `"slice"`, or `iter_warmup`, `iter_sampling` and `refresh`

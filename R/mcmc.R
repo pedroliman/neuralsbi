@@ -214,6 +214,15 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
 #' which matters because slice sampling has no adaptation phase to rescue a bad
 #' start. `"proposal"` just takes prior draws.
 #'
+#' Two departures from `sbi`, both about the case this exists for. `sbi` draws
+#' its pool once per chain, so 20 chains cost 20 pools; one pool shared across
+#' chains costs a twentieth of that and, drawn without replacement, gives
+#' distinct starting points rather than independent ones that may coincide. And
+#' the weighting stays in log space: `sbi` normalizes the log weights and
+#' exponentiates, which is fine until a few thousand independent observations
+#' spread the log-likelihood over prior draws by thousands of nats and every
+#' weight but a handful underflows to zero.
+#'
 #' @keywords internal
 mcmc_init <- function(prior, log_prob_fn, n_chains,
                       strategy = c("resample", "proposal"),
