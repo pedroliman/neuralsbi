@@ -189,7 +189,7 @@ leakage handling) and documented.
 ### v0.6+ — Breadth
 
 - Other families: NRE (ratio estimation) behind the same API. NLE landed in
-  0.5.0.
+  0.4.3.
 - NSF in the Stan exporter, which means generating the rational-quadratic
   spline transform.
 - A VI posterior for NLE, as an alternative to MCMC (`sbi` has one).
@@ -225,7 +225,7 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.5.0 neural-likelihood pass (branch
+pick up the work. Last updated for the 0.4.3 neural-likelihood pass (branch
 `claude/neural-likelihood-estimation-stan-x6jwxa`, July 2026): the package is
 no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood
 `q(x | theta)` by handing the existing estimator stack its arguments swapped,

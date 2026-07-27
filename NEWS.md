@@ -1,4 +1,4 @@
-# neuralsbi 0.5.0
+# neuralsbi 0.4.3
 
 * **New: Neural Likelihood Estimation, via `nle()`.** Where `npe()` learns the posterior directly, `nle()` learns a surrogate likelihood \eqn{q(x \mid \theta)}. The reason to want that is repeated observations. An NPE fit is trained for one fixed data dimension, so conditioning on \eqn{n} independent trials means retraining for every \eqn{n} or compressing to summary statistics; NLE learns the density of a single trial, so the log-likelihood of \eqn{n} of them is a sum and \eqn{n} is free at inference time. The cost is that the posterior is no longer a forward pass. For one fixed observation with high-dimensional data, `npe()` is still the better choice, and `?nle` says so.
 * `log_lik(fit, theta, x)` evaluates the surrogate likelihood, summing over the rows of `x` as independent observations, and `likelihood_fn(fit, x_obs)` returns it as a plain vectorized `function(theta)`. That closure is the point of contact with the rest of R: it goes straight into `optim()`, an MCMC package, an importance sampler, or a profile likelihood, with nothing downstream needing to know about `neuralsbi`.
