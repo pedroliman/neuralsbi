@@ -167,10 +167,6 @@ simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.1),
                                 b = nu + rnorm(1, sd = 0.1))
 fit <- npe(prior, simulator, n_simulations = 2000,
            density_estimator = "linear_gaussian")
-#> Running the simulator sequentially. To use all your cores:
-#>   library(future)
-#>   plan(multisession)
-#> Hide this hint with options(neuralsbi.parallel_hint = FALSE).
 post <- posterior(fit, x_obs = c(0.8, 0.6))
 draws <- sample(post, 1000)
 ```

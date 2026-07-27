@@ -55,7 +55,7 @@ once, you can condition on any observation without re-simulating."><meta propert
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,10 +67,7 @@ once, you can condition on any observation without re-simulating."><meta propert
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
-    <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
-    <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-time-varying-beta.html">Amortized R(t): a time-varying-beta SIR model across all US states</a></li>
+    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -255,10 +252,6 @@ with an ETA. See <a href="nsbi_parallel.html">nsbi_parallel</a> and <a href="nsb
 <span class="r-in"><span>                                b <span class="op">=</span> <span class="va">nu</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, sd <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">npe</span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span></span>
 <span class="r-in"><span>           density_estimator <span class="op">=</span> <span class="st">"linear_gaussian"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Running the simulator sequentially. To use all your cores:</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   library(future)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   plan(multisession)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Hide this hint with options(neuralsbi.parallel_hint = FALSE).</span>
 <span class="r-in"><span><span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">1000</span><span class="op">)</span></span></span>
 </code></pre></div>

@@ -3,11 +3,21 @@
 observation x_obs. It knows how to draw posterior samples, evaluate the
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
-space are handled internally."><meta property="og:description" content="A posterior wraps a trained npe() fit together with (optionally) a default
+space are handled internally.
+The two inference methods reach a posterior by different routes, and
+posterior() hides the difference. An npe() fit already is a posterior
+estimator, so the returned object samples with a forward pass. An nle()
+fit only knows the likelihood, so the returned object samples with MCMC and
+takes the extra arguments that implies."><meta property="og:description" content="A posterior wraps a trained npe() fit together with (optionally) a default
 observation x_obs. It knows how to draw posterior samples, evaluate the
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
-space are handled internally."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png"><meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
+space are handled internally.
+The two inference methods reach a posterior by different routes, and
+posterior() hides the difference. An npe() fit already is a posterior
+estimator, so the returned object samples with a forward pass. An nle()
+fit only knows the likelihood, so the returned object samples with MCMC and
+takes the extra arguments that implies."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/og-card.png"><meta property="og:image:alt" content="neuralsbi: neural simulation-based inference in R"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -55,7 +65,7 @@ space are handled internally."><meta property="og:image" content="https://neural
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,10 +77,7 @@ space are handled internally."><meta property="og:image" content="https://neural
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
-    <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
-    <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-time-varying-beta.html">Amortized R(t): a time-varying-beta SIR model across all US states</a></li>
+    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -101,11 +108,22 @@ observation <code>x_obs</code>. It knows how to draw posterior samples, evaluate
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
 space are handled internally.</p>
+<p>The two inference methods reach a posterior by different routes, and
+<code>posterior()</code> hides the difference. An <code><a href="npe.html">npe()</a></code> fit already <em>is</em> a posterior
+estimator, so the returned object samples with a forward pass. An <code><a href="nle.html">nle()</a></code>
+fit only knows the likelihood, so the returned object samples with MCMC and
+takes the extra arguments that implies.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">posterior</span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">posterior</span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Default S3 method</span></span>
+<span><span class="fu">posterior</span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'nsbi_npe'</span></span>
+<span><span class="fu">posterior</span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -113,12 +131,19 @@ space are handled internally.</p>
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>An <code>nsbi_npe</code> object from <code><a href="npe.html">npe()</a></code>.</p></dd>
+<dd><p>An <code>nsbi_npe</code> object from <code><a href="npe.html">npe()</a></code> or <code><a href="npe_sequential.html">npe_sequential()</a></code>, or an
+<code>nsbi_nle</code> object from <code><a href="nle.html">nle()</a></code>.</p></dd>
 
 
 <dt id="arg-x-obs">x_obs<a class="anchor" aria-label="anchor" href="#arg-x-obs"></a></dt>
 <dd><p>Optional default observation to condition on. If supplied it
-becomes the default <code>x</code> for <code><a href="sample.html">sample()</a></code>, <code><a href="log_prob.html">log_prob()</a></code> and <code><a href="map_estimate.html">map_estimate()</a></code>.</p></dd>
+becomes the default <code>x</code> for <code><a href="sample.html">sample()</a></code>, <code><a href="log_prob.html">log_prob()</a></code> and <code><a href="map_estimate.html">map_estimate()</a></code>.
+For an NLE fit, rows of <code>x_obs</code> are independent observations.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Passed to methods. See <code><a href="posterior.nsbi_nle.html">posterior.nsbi_nle()</a></code> for the MCMC
+controls an NLE fit accepts.</p></dd>
 
 </dl></div>
     <div class="section level2">

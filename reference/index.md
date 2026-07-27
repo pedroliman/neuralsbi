@@ -27,13 +27,37 @@ Generate training data and fit a neural posterior estimator.
   Posterior Estimation (NPE)
 - [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
   : Sequential NPE with truncated-prior proposals (TSNPE)
+- [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) : Neural
+  Likelihood Estimation (NLE)
 - [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
-  : Save and reload a fitted NPE model
+  [`save_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  [`load_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  : Save and reload a fitted model
 - [`density_estimator`](https://neuralsbi.pedrodelima.com/reference/density_estimator.md)
   : Conditional density estimators
 - [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
   : Embedding (summary) networks for structured observations
+
+## Neural likelihood estimation
+
+Learn a surrogate likelihood, sample it with MCMC, and export it to
+Stan.
+
+- [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  : Evaluate a surrogate likelihood
+- [`likelihood_fn()`](https://neuralsbi.pedrodelima.com/reference/likelihood_fn.md)
+  : A surrogate likelihood as a plain R function
+- [`posterior(`*`<nsbi_nle>`*`)`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
+  : Posterior from a neural likelihood
+- [`sample(`*`<nsbi_nle_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.md)
+  : Sample an NLE posterior with MCMC
+- [`nsbi_mcmc`](https://neuralsbi.pedrodelima.com/reference/nsbi_mcmc.md)
+  : MCMC over a learned likelihood
+- [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  : Export a learned likelihood to Stan
 
 ## Running the simulator
 

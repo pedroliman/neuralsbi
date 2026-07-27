@@ -55,7 +55,7 @@ the standard SBI metric for comparing an estimated posterior to a reference
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,10 +67,7 @@ the standard SBI metric for comparing an estimated posterior to a reference
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
-    <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
-    <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-time-varying-beta.html">Amortized R(t): a time-varying-beta SIR model across all US states</a></li>
+    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -113,7 +110,8 @@ the standard SBI metric for comparing an estimated posterior to a reference
 
 
 <dl><dt id="arg-x-y">x, y<a class="anchor" aria-label="anchor" href="#arg-x-y"></a></dt>
-<dd><p>Matrices of samples (rows = draws, cols = dimensions).</p></dd>
+<dd><p>Matrices of samples (rows = draws, cols = dimensions). Sizes need
+not match; the larger is subsampled down to the smaller.</p></dd>
 
 
 <dt id="arg-n-folds">n_folds<a class="anchor" aria-label="anchor" href="#arg-n-folds"></a></dt>
@@ -127,6 +125,19 @@ the standard SBI metric for comparing an estimated posterior to a reference
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with mean CV accuracy and per-fold accuracies.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The classifier is linear, which decides what the number can and cannot see.
+It picks up a shift in location readily; it is close to blind to two sample
+sets that share a mean and differ in spread or in the shape of their
+dependence, because no hyperplane separates those. Python <code>sbi</code> uses an MLP,
+so its C2ST sees more, and a 0.5 from here is the weaker claim of the two.
+Read it alongside the moments rather than on its own.</p>
+<p>Unequal sample sizes are balanced by subsampling the larger set, because
+accuracy against unbalanced classes is not a two-sample test: 8000 draws
+against 2000 identical ones scores 0.8 for a classifier that has learned
+nothing except to always answer with the bigger class.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -1,4 +1,4 @@
-# Save and reload a fitted NPE model
+# Save and reload a fitted model
 
 A fit whose estimator is `"maf"`, `"mdn"` or `"nsf"` holds a `torch`
 module, and a torch module is an external pointer.
@@ -14,6 +14,10 @@ round trip that works.
 save_npe(fit, path)
 
 load_npe(path)
+
+save_nle(fit, path)
+
+load_nle(path)
 ```
 
 ## Arguments
@@ -22,7 +26,9 @@ load_npe(path)
 
   An `nsbi_npe` object from
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) or
-  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md).
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  or an `nsbi_nle` object from
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md).
 
 - path:
 
@@ -30,8 +36,7 @@ load_npe(path)
 
 ## Value
 
-`save_npe()` returns `path` invisibly. `load_npe()` returns the
-`nsbi_npe` fit.
+`save_npe()` returns `path` invisibly. `load_npe()` returns the fit.
 
 ## Details
 
@@ -54,6 +59,10 @@ loads into a later one as long as the estimator's architecture has not
 changed; `load_npe()` reports the version that wrote the file when the
 rebuild fails.
 
+`save_nle()` and `load_nle()` are aliases; both pairs handle either kind
+of fit, and the two names exist only so calling code reads the way the
+fit was made.
+
 ## Examples
 
 ``` r
@@ -70,11 +79,11 @@ sample(posterior(fit2, x_obs = c(0.8, 0.6)), 100)
 #> <nsbi_samples> 100 draws x 2 parameters
 #>   support acceptance rate: 1.000
 #>             mu        nu
-#> [1,] 0.8409237 0.6299982
-#> [2,] 0.7963170 0.5584969
-#> [3,] 0.7290463 0.6580178
-#> [4,] 0.6987101 0.6188983
-#> [5,] 0.7956863 0.5846908
-#> [6,] 0.8042810 0.4436697
+#> [1,] 0.7834703 0.6850203
+#> [2,] 0.9073065 0.5592285
+#> [3,] 0.7287850 0.5026705
+#> [4,] 0.6951093 0.3997085
+#> [5,] 0.7223549 0.6151154
+#> [6,] 0.7333032 0.6719495
 unlink(path)
 ```

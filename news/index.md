@@ -1,5 +1,139 @@
 # Changelog
 
+## neuralsbi 0.4.3
+
+- **New: Neural Likelihood Estimation, via
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md).** Where
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) learns
+  the posterior directly,
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) learns a
+  surrogate likelihood . The reason to want that is repeated
+  observations. An NPE fit is trained for one fixed data dimension, so
+  conditioning on independent trials means retraining for every or
+  compressing to summary statistics; NLE learns the density of a single
+  trial, so the log-likelihood of of them is a sum and is free at
+  inference time. The cost is that the posterior is no longer a forward
+  pass. For one fixed observation with high-dimensional data,
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) is still
+  the better choice, and
+  [`?nle`](https://neuralsbi.pedrodelima.com/reference/nle.md) says so.
+- `log_lik(fit, theta, x)` evaluates the surrogate likelihood, summing
+  over the rows of `x` as independent observations, and
+  `likelihood_fn(fit, x_obs)` returns it as a plain vectorized
+  `function(theta)`. That closure is the point of contact with the rest
+  of R: it goes straight into
+  [`optim()`](https://rdrr.io/r/stats/optim.html), an MCMC package, an
+  importance sampler, or a profile likelihood, with nothing downstream
+  needing to know about `neuralsbi`.
+- [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  on an [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  fit returns an MCMC-backed posterior and gains `sampler`, `n_chains`,
+  `warmup`, `thin` and `init_strategy`. The default sampler is a
+  vectorized univariate slice sampler, matching Python `sbi`’s default:
+  nothing to tune, no dependency, and bounded priors need no special
+  handling. Its vectorization runs across chains, so one step costs one
+  batched forward pass rather than `n_chains` separate ones. The slice
+  width adapts to the target during warmup, which matters because a
+  width inherited from the prior is badly wrong once many observations
+  have concentrated the posterior, and every unit of mismatch is paid
+  for in wasted density evaluations. Draws carry split-Rhat and bulk
+  ESS, and are cached on the posterior so
+  [`summary()`](https://rdrr.io/r/base/summary.html) and repeat
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  calls do not re-run a chain. `n_chains` defaults to 20 under `"slice"`
+  and 4 under `"stan"`, because a slice chain rides along in a batch
+  someone else is already paying for and a Stan chain is a process with
+  its own warmup.
+- `thin` defaults to 2. With the adapted width, `thin = 2` already gives
+  a bulk ESS of about 96% of the retained draws on a Gaussian target, so
+  thinning harder buys very little for what it costs, and the reported
+  ESS is there to tell you when to raise it. Python `sbi` thins by 1 (it
+  thinned by 10 up to v0.21), so this sits between the two.
+- The i.i.d. sum takes a shortcut where the estimator allows one. An MDN
+  maps `theta` to a Gaussian mixture over `x` and never sees `x`, so for
+  `n` observations the network runs once and all `n` densities come off
+  the same mixture; the linear-Gaussian baseline behaves the same way. A
+  flow’s transforms depend on `x` too, so it has to run `n` times. With
+  a few thousand observations that is the difference between seconds and
+  minutes per MCMC step, and it is worth weighing when choosing an
+  estimator for repeated data.
+- Sampling an NLE posterior is about five times faster than it was when
+  the feature first worked, and samples exactly the same thing. Four
+  changes get it there. The slice sampler now carries several of a
+  chain’s future moves in one call: where an interval edge goes next is
+  a fixed step, and which point a chain tries after a rejection depends
+  only on that point’s side of the current value and a fresh uniform, so
+  neither needs a density and both can be computed in advance. No call
+  is ever made wider than the one that opened the coordinate, so this
+  spends batch width that was already being paid for rather than adding
+  any. Everything the observation alone decides – standardizing it, its
+  Jacobian, turning it into a tensor – is now settled when the posterior
+  is built instead of at every step. The summed log-likelihood is
+  reduced where the densities are produced, so the `n_theta x n_obs`
+  matrix, the largest object in the loop, is never built. And an MDN’s
+  chunking is sized by the pair count rather than by pairs times
+  components, which had been splitting a 5000-observation call ten ways
+  for a 400 KB intermediate. On the four-parameter g-and-k model in
+  [`vignette("neural-likelihood")`](https://neuralsbi.pedrodelima.com/articles/neural-likelihood.md),
+  2000 draws from 20 chains went from 117s to 25s at 500 observations
+  and from 342s to 68s at 5000, with split-Rhat and bulk ESS unchanged.
+- An MDN likelihood is replayed as TorchScript once a run is clearly a
+  loop. Every torch operation crosses from R into libtorch, and at MCMC
+  batch sizes that crossing costs more than the arithmetic behind it:
+  roughly 0.2 ms each and thirty per evaluation, against a few hundred
+  microseconds of real work.
+  [`torch::jit_trace()`](https://torch.mlverse.org/docs/reference/jit_trace.html)
+  records the same code and replays it in one crossing. It is a
+  shortcut, not a path. Nothing is recorded until an evaluator has been
+  called a few times, so a single
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  never pays for a compiler; a trace fixes the shapes it saw, so there
+  is one per parameter-row count and each is checked against the eager
+  result before anything uses it; and tracing or checking failing just
+  leaves the eager path in place. `options(neuralsbi.jit = FALSE)` turns
+  it off.
+- [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an NLE posterior returns the **unnormalized** log posterior. The
+  evidence is not available, so `normalize` is ignored with a warning
+  rather than returning a number that looks normalized and is not.
+- **New:
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md),
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  and
+  [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  export a fitted likelihood as Stan source.** The generated `functions`
+  block recomputes in Stan’s own language with the trained weights
+  passed as data, so Stan differentiates it and NUTS gets exact
+  gradients, with nothing linked against `torch` at run time. The result
+  is an ordinary Stan function of `theta`, which is what makes it worth
+  having: the surrogate stops being the whole model and becomes one term
+  in a model you write, next to a hierarchical prior, covariates, or a
+  second data source whose likelihood you do know. `"mdn"`, `"maf"` and
+  `"linear_gaussian"` are supported; `"nsf"` is refused with a message
+  naming the alternatives. `posterior(fit, x_obs, sampler = "stan")`
+  runs the generated model through `cmdstanr` or `rstan` and returns
+  draws like any other path.
+- [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) and
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  accept an
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) fit, and
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)/[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)
+  forward `...` to
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  so the MCMC controls reach it. Every SBC trial is a separate MCMC run,
+  so start small.
+- [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)/[`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  handle [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  fits too, with
+  [`save_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)/[`load_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  as aliases.
+- Internally,
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) now
+  share `prepare_simulations()` instead of each carrying its own copy of
+  the simulate/coerce/drop/standardize preamble.
+
 ## neuralsbi 0.4.2
 
 - [`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md)’s

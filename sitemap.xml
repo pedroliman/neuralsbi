@@ -6,6 +6,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/articles/diagnostics.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/articles/index.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/articles/neural-likelihood.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/articles/neuralsbi.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.html</loc></url>
@@ -26,6 +27,8 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_mdn.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_nsf.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/index.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/likelihood_fn.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/log_lik.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/log_prob.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/made_masks.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/made_module.html</loc></url>
@@ -41,8 +44,10 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/mdn_log_prob_tensor.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/mdn_module.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/neuralsbi-package.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/nle.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/npe.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/npe_sequential.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_mcmc.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_progress.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.html</loc></url>
@@ -58,6 +63,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/plot_sbc.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/plot_tarp.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/posterior.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/posterior_predictive.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/prior_custom.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/prior_normal.html</loc></url>
@@ -67,12 +73,14 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/require_torch.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/rq_spline.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_prior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/save_npe.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sbc.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/stan_export.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/standardize.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/standardizer_log_jac.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/summaries.html</loc></url>

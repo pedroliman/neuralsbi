@@ -77,7 +77,7 @@
 
     <a class="navbar-brand me-2" href="index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,10 +91,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
-    <li><a class="dropdown-item" href="articles/density-estimators.html">Choosing a density estimator</a></li>
-    <li><a class="dropdown-item" href="articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
-    <li><a class="dropdown-item" href="articles/sir-time-varying-beta.html">Amortized R(t): a time-varying-beta SIR model across all US states</a></li>
+    <li><a class="dropdown-item" href="articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
@@ -215,9 +212,23 @@
 <p>Simulation and neural training both report a progress bar with an ETA — one step per simulation, then one step per training epoch. If you use <a href="https://progressr.futureverse.org" class="external-link"><code>progressr</code></a>, <code>neuralsbi</code> speaks it natively (<code>handlers(global = TRUE)</code>); if not, it draws its own bar. See <code><a href="reference/nsbi_parallel.html">?nsbi_parallel</a></code> and <code><a href="reference/nsbi_progress.html">?nsbi_progress</a></code>.</p>
 </div>
 <div class="section level2">
+<h2 id="repeated-observations-and-a-bridge-to-stan">Repeated observations, and a bridge to Stan<a class="anchor" aria-label="anchor" href="#repeated-observations-and-a-bridge-to-stan"></a>
+</h2>
+<p><code><a href="reference/npe.html">npe()</a></code> learns the posterior for a fixed-length <code>x</code>, decided when the network is trained. If your data are <code>n</code> independent measurements of the same quantity, that is awkward: collect 300 instead of 200 and the fit no longer applies. <code><a href="reference/nle.html">nle()</a></code> learns the likelihood of a <em>single</em> observation instead, so their log-likelihoods add and <code>n</code> is free at inference time.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/nle.html">nle</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">20000</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">post</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">x_obs</span><span class="op">)</span>          <span class="co"># x_obs rows are independent observations</span></span>
+<span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">4000</span><span class="op">)</span>             <span class="co"># MCMC, not a forward pass</span></span></code></pre></div>
+<p>Because the result is a likelihood rather than a posterior, it is also a plain function of the parameters — <code>likelihood_fn(fit, x_obs)</code> hands it to <code><a href="https://rdrr.io/r/stats/optim.html" class="external-link">optim()</a></code> or any MCMC package — and it can be written out as Stan source:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/stan_export.html">write_stan_model</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"likelihood.stan"</span><span class="op">)</span></span></code></pre></div>
+<p>The generated <code>functions</code> block recomputes the density in Stan’s own language with the trained weights passed as data, so NUTS differentiates it directly and nothing has to be linked against <code>torch</code>. That makes the surrogate one term in a model you write, next to a hierarchical prior, covariates, or a second data source whose likelihood you do know. See <code><a href="articles/neural-likelihood.html">vignette("neural-likelihood")</a></code>.</p>
+</div>
+<div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
-<p>The <a href="https://neuralsbi.pedrodelima.com/">package website</a> has six vignettes that build on each other:</p>
+<p>The <a href="https://neuralsbi.pedrodelima.com/">package website</a> has seven vignettes that build on each other:</p>
 <ol style="list-style-type: decimal">
 <li>
 <a href="https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html">Introduction to neural SBI</a> — what SBI is for, on a simulator whose likelihood has no closed form.</li>
@@ -231,6 +242,8 @@
 <a href="https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a> — neural posterior estimation and pomp’s particle-filter MCMC on the same stochastic epidemic.</li>
 <li>
 <a href="https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.html">Amortized R(t) across all US states</a> — three time-varying-beta models fit once each, then conditioned on 51 case curves.</li>
+<li>
+<a href="https://neuralsbi.pedrodelima.com/articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a> — repeated independent observations, MCMC over a learned likelihood, and the generated Stan code.</li>
 </ol>
 </div>
 <div class="section level2">

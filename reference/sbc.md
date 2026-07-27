@@ -15,7 +15,8 @@ sbc(
   n_sbc = 200L,
   n_posterior_samples = 1000L,
   sim_args = list(),
-  seed = NULL
+  seed = NULL,
+  ...
 )
 ```
 
@@ -23,7 +24,12 @@ sbc(
 
 - fit:
 
-  An `nsbi_npe` fit (amortized posterior).
+  An `nsbi_npe` fit from
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md), or an
+  `nsbi_nle` fit from
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md). With an
+  NLE fit every trial is a separate MCMC run, so start with a small
+  `n_sbc` and raise it once the cost is known.
 
 - simulator:
 
@@ -50,6 +56,13 @@ sbc(
 - seed:
 
   Optional seed.
+
+- ...:
+
+  Passed to
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md),
+  which is how the MCMC controls (`n_chains`, `warmup`, `thin`,
+  `sampler`) reach an NLE fit.
 
 ## Value
 

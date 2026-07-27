@@ -8,10 +8,25 @@ the maximum-a-posteriori (MAP) estimate. All transforms between
 standardized training space and the original parameter space are handled
 internally.
 
+The two inference methods reach a posterior by different routes, and
+`posterior()` hides the difference. An
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) fit
+already *is* a posterior estimator, so the returned object samples with
+a forward pass. An
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) fit only
+knows the likelihood, so the returned object samples with MCMC and takes
+the extra arguments that implies.
+
 ## Usage
 
 ``` r
-posterior(fit, x_obs = NULL)
+posterior(fit, x_obs = NULL, ...)
+
+# Default S3 method
+posterior(fit, x_obs = NULL, ...)
+
+# S3 method for class 'nsbi_npe'
+posterior(fit, x_obs = NULL, ...)
 ```
 
 ## Arguments
@@ -19,7 +34,10 @@ posterior(fit, x_obs = NULL)
 - fit:
 
   An `nsbi_npe` object from
-  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md).
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) or
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  or an `nsbi_nle` object from
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md).
 
 - x_obs:
 
@@ -29,6 +47,13 @@ posterior(fit, x_obs = NULL)
   [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
   and
   [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md).
+  For an NLE fit, rows of `x_obs` are independent observations.
+
+- ...:
+
+  Passed to methods. See
+  [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
+  for the MCMC controls an NLE fit accepts.
 
 ## Value
 

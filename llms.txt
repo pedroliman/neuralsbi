@@ -160,9 +160,44 @@ natively (`handlers(global = TRUE)`); if not, it draws its own bar. See
 and
 [`?nsbi_progress`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md).
 
+## Repeated observations, and a bridge to Stan
+
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) learns the
+posterior for a fixed-length `x`, decided when the network is trained.
+If your data are `n` independent measurements of the same quantity, that
+is awkward: collect 300 instead of 200 and the fit no longer applies.
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) learns the
+likelihood of a *single* observation instead, so their log-likelihoods
+add and `n` is free at inference time.
+
+``` r
+
+fit <- nle(prior, simulator, n_simulations = 20000)
+
+post  <- posterior(fit, x_obs)          # x_obs rows are independent observations
+draws <- sample(post, 4000)             # MCMC, not a forward pass
+```
+
+Because the result is a likelihood rather than a posterior, it is also a
+plain function of the parameters — `likelihood_fn(fit, x_obs)` hands it
+to [`optim()`](https://rdrr.io/r/stats/optim.html) or any MCMC package —
+and it can be written out as Stan source:
+
+``` r
+
+write_stan_model(fit, "likelihood.stan")
+```
+
+The generated `functions` block recomputes the density in Stan’s own
+language with the trained weights passed as data, so NUTS differentiates
+it directly and nothing has to be linked against `torch`. That makes the
+surrogate one term in a model you write, next to a hierarchical prior,
+covariates, or a second data source whose likelihood you do know. See
+[`vignette("neural-likelihood")`](https://neuralsbi.pedrodelima.com/articles/neural-likelihood.md).
+
 ## Learn more
 
-The [package website](https://neuralsbi.pedrodelima.com/) has six
+The [package website](https://neuralsbi.pedrodelima.com/) has seven
 vignettes that build on each other:
 
 1.  [Introduction to neural
@@ -185,6 +220,10 @@ vignettes that build on each other:
     states](https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.html)
     — three time-varying-beta models fit once each, then conditioned on
     51 case curves.
+7.  [Neural likelihood estimation, and handing it to
+    Stan](https://neuralsbi.pedrodelima.com/articles/neural-likelihood.html)
+    — repeated independent observations, MCMC over a learned likelihood,
+    and the generated Stan code.
 
 ## License
 
@@ -219,13 +258,37 @@ Generate training data and fit a neural posterior estimator.
   Posterior Estimation (NPE)
 - [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
   : Sequential NPE with truncated-prior proposals (TSNPE)
+- [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) : Neural
+  Likelihood Estimation (NLE)
 - [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
-  : Save and reload a fitted NPE model
+  [`save_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  [`load_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  : Save and reload a fitted model
 - [`density_estimator`](https://neuralsbi.pedrodelima.com/reference/density_estimator.md)
   : Conditional density estimators
 - [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
   : Embedding (summary) networks for structured observations
+
+## Neural likelihood estimation
+
+Learn a surrogate likelihood, sample it with MCMC, and export it to
+Stan.
+
+- [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  : Evaluate a surrogate likelihood
+- [`likelihood_fn()`](https://neuralsbi.pedrodelima.com/reference/likelihood_fn.md)
+  : A surrogate likelihood as a plain R function
+- [`posterior(`*`<nsbi_nle>`*`)`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
+  : Posterior from a neural likelihood
+- [`sample(`*`<nsbi_nle_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.md)
+  : Sample an NLE posterior with MCMC
+- [`nsbi_mcmc`](https://neuralsbi.pedrodelima.com/reference/nsbi_mcmc.md)
+  : MCMC over a learned likelihood
+- [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  : Export a learned likelihood to Stan
 
 ## Running the simulator
 
@@ -312,39 +375,9 @@ Reference inference problems shared by the tests and benchmarks.
   simulator, observation, and how neuralsbi turns them into a posterior,
   illustrated with a simulator whose likelihood has no closed form.
 
-- [Getting started with
-  neuralsbi](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md):
+- [Neural likelihood estimation, and handing it to
+  Stan](https://neuralsbi.pedrodelima.com/articles/neural-likelihood.md):
 
-  Train a neural posterior estimator from a prior and a simulator to
-  perform amortized, likelihood-free Bayesian inference in R, then check
-  that the fit is trustworthy.
-
-- [Choosing a density
-  estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.md):
-
-  Compare the conditional density estimators behind neural posterior
-  estimation in R (mixture density network, masked autoregressive flow,
-  and neural spline flow) and pick one for your simulator.
-
-- [Checking the
-  posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.md):
-
-  Validate a neural posterior in R with simulation-based calibration
-  (SBC), expected coverage, TARP, and posterior predictive checks before
-  you trust its credible intervals.
-
-- [neuralsbi and pomp: two routes to an SIR
-  posterior](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md):
-
-  A side-by-side comparison on a stochastic SIR epidemic: infer the
-  transmission and recovery rates with pomp’s particle-filter MCMC and
-  with neuralsbi’s neural posterior estimation, and check whether the
-  two posteriors agree.
-
-- [Amortized R(t): behavioral SIR models across all US
-  states](https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.md):
-
-  Fit three competing epidemic models to daily reported cases in every
-  US state, summarize the 120-day case curve with a learned embedding
-  network, and ask which behavioral mechanism explains the shape of the
-  first SARS-CoV-2 wave.
+  Learn a surrogate likelihood with nle() when your data are repeated
+  independent observations, sample it with MCMC, and export it as Stan
+  code you can drop into a model of your own.

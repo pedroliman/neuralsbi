@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,10 +59,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
-    <li><a class="dropdown-item" href="../articles/density-estimators.html">Choosing a density estimator</a></li>
-    <li><a class="dropdown-item" href="../articles/diagnostics.html">Checking the posterior</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a></li>
-    <li><a class="dropdown-item" href="../articles/sir-time-varying-beta.html">Amortized R(t): a time-varying-beta SIR model across all US states</a></li>
+    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -169,10 +166,17 @@
 
         <dt>
 
-          <code><a href="save_npe.html">save_npe()</a></code> <code><a href="save_npe.html">load_npe()</a></code>
+          <code><a href="nle.html">nle()</a></code>
 
         </dt>
-        <dd>Save and reload a fitted NPE model</dd>
+        <dd>Neural Likelihood Estimation (NLE)</dd>
+
+        <dt>
+
+          <code><a href="save_npe.html">save_npe()</a></code> <code><a href="save_npe.html">load_npe()</a></code> <code><a href="save_npe.html">save_nle()</a></code> <code><a href="save_npe.html">load_nle()</a></code>
+
+        </dt>
+        <dd>Save and reload a fitted model</dd>
 
         <dt>
 
@@ -187,6 +191,57 @@
 
         </dt>
         <dd>Embedding (summary) networks for structured observations</dd>
+      </dl></div><div class="section level2">
+      <h2 id="neural-likelihood-estimation">Neural likelihood estimation<a class="anchor" aria-label="anchor" href="#neural-likelihood-estimation"></a></h2>
+
+      <div class="section-desc"><p>Learn a surrogate likelihood, sample it with MCMC, and export it to Stan.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="log_lik.html">log_lik()</a></code>
+
+        </dt>
+        <dd>Evaluate a surrogate likelihood</dd>
+
+        <dt>
+
+          <code><a href="likelihood_fn.html">likelihood_fn()</a></code>
+
+        </dt>
+        <dd>A surrogate likelihood as a plain R function</dd>
+
+        <dt>
+
+          <code><a href="posterior.nsbi_nle.html">posterior(<i>&lt;nsbi_nle&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Posterior from a neural likelihood</dd>
+
+        <dt>
+
+          <code><a href="sample.nsbi_nle_posterior.html">sample(<i>&lt;nsbi_nle_posterior&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Sample an NLE posterior with MCMC</dd>
+
+        <dt>
+
+          <code><a href="nsbi_mcmc.html">nsbi_mcmc</a></code>
+
+        </dt>
+        <dd>MCMC over a learned likelihood</dd>
+
+        <dt>
+
+          <code><a href="stan_export.html">stan_code()</a></code> <code><a href="stan_export.html">write_stan_model()</a></code> <code><a href="stan_export.html">stan_data()</a></code>
+
+        </dt>
+        <dd>Export a learned likelihood to Stan</dd>
       </dl></div><div class="section level2">
       <h2 id="running-the-simulator">Running the simulator<a class="anchor" aria-label="anchor" href="#running-the-simulator"></a></h2>
 
