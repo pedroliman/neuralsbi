@@ -225,15 +225,19 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.4.3 neural-likelihood pass (branch
-`claude/neural-likelihood-estimation-stan-x6jwxa`, July 2026): the package is
+pick up the work. Last updated for the 0.4.3 neural-likelihood pass (branches
+`claude/neural-likelihood-estimation-stan-x6jwxa` then
+`claude/nle-implementation-performance-lvfp92`, July 2026): the package is
 no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood
 `q(x | theta)` by handing the existing estimator stack its arguments swapped,
 `log_lik()`/`likelihood_fn()` (`R/likelihood.R`) evaluate it, a vectorized
 slice sampler (`R/mcmc.R`) turns it into posterior draws, and `stan_code()`
 (`R/stan.R`) writes it out as Stan source so the surrogate can live inside a
 model the user writes. `posterior()` and `log_prob()` became S3 generics to
-carry the second fit type. Before that, the 0.4.1 simulator-contract pass (branch
+carry the second fit type. The second branch made sampling about five times
+faster (speculative slice moves, observation-side work hoisted out of the loop,
+the i.i.d. sum reduced in place, and TorchScript replay for the MDN), exercised
+the `rstan` fallback for real, and baked the article. Before that, the 0.4.1 simulator-contract pass (branch
 `claude/issues-22-24-ql384x`, July 2026, issues #22 and #24): the simulator is
 now called once per parameter set and returns one observation (`R/simulator.R`
 holds the contract, `?nsbi_simulator` documents it), extra simulator arguments
@@ -291,8 +295,9 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
 | NLE | `nle()` in `R/nle.R` | done + analytic parity test; reuses every estimator by swapping the target and condition |
 | Surrogate likelihood | `log_lik()`, `likelihood_fn()` in `R/likelihood.R` | done; rows of `x` are i.i.d. observations and the log-density sums over them |
-| MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, slice width adapted during warmup, `thin` defaults to 2 rather than sbi's 10 (ESS ~96% of draws either way). Split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
-| i.i.d. fast path | `de_log_lik_iid()` in `R/likelihood.R` | done; MDN and linear_gaussian compute the conditional once per parameter and score every observation against it, MAF/NSF fall back to the cross-product expansion. Same factorization the Stan `_sum` entry point uses |
+| MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, slice width adapted during warmup, `thin` defaults to 2 rather than sbi's 10 (ESS ~96% of draws either way). Stepping out and shrinkage both carry several of a chain's future moves per call, capped so no call is wider than the one that opened the coordinate. Split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
+| i.i.d. fast path | `de_log_lik_iid()`, `de_iid_evaluator()` in `R/likelihood.R` | done; MDN and linear_gaussian compute the conditional once per parameter and score every observation against it, MAF/NSF fall back to the cross-product expansion. Same factorization the Stan `_sum` entry point uses. `de_iid_evaluator()` is the summed form the sampler uses: it closes over the observation so the estimator can hoist what depends on it, and reduces where the densities are produced so the `n_theta x n_obs` matrix is never built |
+| TorchScript replay | `mdn_trace_cache()` in `R/likelihood.R` | done + tested; an MDN's summed density is traced with `torch::jit_trace()` once an evaluator is called a few times, one trace per parameter-row count, each checked against the eager result before use. Any failure falls back to eager. `options(neuralsbi.jit = FALSE)` disables. Worth extending to the MAF path if someone needs it |
 | Stan export | `stan_code()`, `stan_data()`, `write_stan_model()` in `R/stan.R` | done for `linear_gaussian` (agrees to 7e-13), `mdn` and `maf` (7e-07, which is the float32 R fit vs. double-precision Stan). NSF refused. Only `prior_uniform`/`prior_normal` generate a model block |
 | Embedding net | `embedding_mlp()` in `R/embedding.R` | MLP done + tested; wired into MDN/MAF/NSF via `embedding_net`; CNN/RNN open |
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |

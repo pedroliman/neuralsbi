@@ -188,9 +188,9 @@ de_iid_evaluator.nsbi_de_mdn <- function(de, x, max_batch = 1e5) {
   if (is.null(traced)) return(eager)
 
   function(theta) {
-    tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-    fn <- traced(nrow(theta), tt)
+    fn <- traced(theta)
     if (is.null(fn)) return(eager(theta))
+    tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
     as.numeric(torch::with_no_grad(fn(tt)))
   }
 }
@@ -225,9 +225,9 @@ de_iid_evaluator.nsbi_de_mdn <- function(de, x, max_batch = 1e5) {
 #'   already a tensor.
 #' @param eager The evaluator to check each trace against, and to fall back to.
 #' @param warmup Calls to serve eagerly before recording anything.
-#' @return `function(n_theta, tt)` returning a traced function for that many
-#'   rows, or `NULL` when the eager path should be used. `NULL` if tracing is
-#'   switched off.
+#' @return `function(theta)` returning a traced function for that many rows, or
+#'   `NULL` when the eager path should be used. `NULL` if tracing is switched
+#'   off.
 #' @keywords internal
 mdn_trace_cache <- function(de, xt, max_batch, eager, warmup = 4L) {
   if (!isTRUE(getOption("neuralsbi.jit", TRUE))) return(NULL)
@@ -236,22 +236,23 @@ mdn_trace_cache <- function(de, xt, max_batch, eager, warmup = 4L) {
   cache <- new.env(parent = emptyenv())
   calls <- 0L
 
-  function(n_theta, tt) {
+  function(theta) {
     calls <<- calls + 1L
+    n_theta <- nrow(theta)
     if (calls <= warmup) return(NULL)
     if (mdn_chunk_size(n_theta, max_batch, budget) < n_obs) return(NULL)
     key <- as.character(n_theta)
     hit <- cache[[key]]
     if (!is.null(hit)) return(hit$fn)
 
+    tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
     fn <- tryCatch(mdn_trace(de, xt, tt), error = function(e) NULL)
     if (!is.null(fn)) {
       # A traced graph has no data-dependent branches, so agreeing once at this
       # shape is the whole guarantee. Disagreeing means a shape was baked in
       # somewhere it should not have been, and the trace is discarded.
       ok <- tryCatch(
-        isTRUE(all.equal(as.numeric(torch::with_no_grad(fn(tt))),
-                         eager(as.matrix(torch::as_array(tt))),
+        isTRUE(all.equal(as.numeric(torch::with_no_grad(fn(tt))), eager(theta),
                          tolerance = 1e-5)),
         error = function(e) FALSE)
       if (!ok) fn <- NULL
