@@ -40,6 +40,47 @@ test_that("the sampler never leaves a bounded support", {
   expect_equal(stats::var(as.numeric(res$draws)), 1 / 3, tolerance = 0.05)
 })
 
+test_that("one sweep of the kernel leaves the target alone", {
+  # The strongest statement available about a sampler: start the chains at
+  # exact draws from the target, take a single sweep, and the result must still
+  # be exact draws from the target. Recovering the moments of a normal, as the
+  # tests above do, is a weaker check -- it passes for a kernel that is slightly
+  # wrong in a direction the mean and sd do not see.
+  #
+  # This matters here because the sweep is not the textbook one. Stepping out
+  # carries several of an edge's future positions in one call and shrinkage
+  # several of a chain's future proposals, on the argument that both sequences
+  # are determined before any density is known. If that argument is wrong
+  # anywhere, invariance is what breaks.
+  #
+  # One chain per draw, one sweep, no warmup, so the draws are independent and
+  # the KS p-value is calibrated. No warmup also means no width adaptation, so
+  # this is a fixed kernel rather than an adapting one.
+  set.seed(12)
+  n <- 600L
+
+  normal_lp <- function(theta) stats::dnorm(theta[, 1], log = TRUE)
+  from_normal <- slice_sample(normal_lp, matrix(stats::rnorm(n), ncol = 1),
+                              n_draws = n, warmup = 0L, thin = 1L, width = 1)
+  expect_gt(stats::ks.test(as.numeric(from_normal$draws), "pnorm")$p.value, 0.01)
+
+  # A skewed, bounded-below target: a kernel that treats the two sides of the
+  # current point differently shows up here and not on a symmetric one.
+  gamma_lp <- function(theta) stats::dgamma(theta[, 1], shape = 2, log = TRUE)
+  from_gamma <- slice_sample(gamma_lp, matrix(stats::rgamma(n, 2), ncol = 1),
+                             n_draws = n, warmup = 0L, thin = 1L, width = 0.3)
+  expect_gt(stats::ks.test(as.numeric(from_gamma$draws), "pgamma",
+                           shape = 2)$p.value, 0.01)
+
+  # A width far narrower than the target forces the stepping-out loop deep,
+  # which is the path that batches several expansions into one call.
+  wide_lp <- function(theta) stats::dnorm(theta[, 1], sd = 10, log = TRUE)
+  from_wide <- slice_sample(wide_lp, matrix(stats::rnorm(n, sd = 10), ncol = 1),
+                            n_draws = n, warmup = 0L, thin = 1L, width = 0.2)
+  expect_gt(stats::ks.test(as.numeric(from_wide$draws), "pnorm",
+                           sd = 10)$p.value, 0.01)
+})
+
 test_that("warmup and thinning give the requested number of draws", {
   set.seed(4)
   lp <- function(theta) rowSums(stats::dnorm(theta, log = TRUE))

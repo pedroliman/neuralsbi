@@ -162,6 +162,10 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
 #' Starts from the best of a set of posterior draws and refines with a
 #' derivative-free optimizer.
 #'
+#' On a posterior from [nle()] the initial draws come from MCMC, so `n_init`
+#' buys a chain rather than a forward pass. They are cached on the posterior
+#' like any other run.
+#'
 #' @param post An `nsbi_posterior` object.
 #' @param x Observation to condition on (defaults to `x_obs`).
 #' @param n_init Number of initial draws used to seed the search.
@@ -170,7 +174,12 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
 map_estimate <- function(post, x = NULL, n_init = 1000L) {
   stopifnot(inherits(post, "nsbi_posterior"))
   fit <- post$fit
-  draws <- sample.nsbi_posterior(post, n = n_init, obs = x)
+  # Through the generic, not sample.nsbi_posterior() directly: an nle() fit's
+  # estimator has the roles swapped, so the NPE sampler asked to draw from it
+  # returns draws in x space. Where dim_x and dim_theta differ that is an error
+  # about non-conformable arguments; where they happen to match it is a set of
+  # starting points quietly drawn from the wrong distribution.
+  draws <- sample(post, n = n_init, obs = x)
   lp <- log_prob(post, draws, x = x, normalize = FALSE)
   start <- draws[which.max(lp), ]
   neg <- function(par) -log_prob(post, matrix(par, nrow = 1), x = x,

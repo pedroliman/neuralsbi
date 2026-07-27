@@ -20,3 +20,8 @@ Numeric vector: the MAP parameter estimate.
 Starts from the best of a set of posterior draws and refines with a
 derivative-free optimizer.
 }
+\details{
+On a posterior from \code{\link[=nle]{nle()}} the initial draws come from MCMC, so \code{n_init}
+buys a chain rather than a forward pass. They are cached on the posterior
+like any other run.
+}
