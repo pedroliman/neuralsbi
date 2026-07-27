@@ -73,6 +73,21 @@ test_that("mcmc_init puts chains where the mass is", {
   expect_lt(mean(abs(resampled - 5)), mean(abs(proposed - 5)))
 })
 
+test_that("resampling survives a likelihood peaked enough to underflow", {
+  # The case this broke on: a few thousand independent observations make the
+  # log-density spread across prior draws run to thousands, so exponentiating
+  # the weights before sampling leaves almost all of them at exactly zero.
+  set.seed(11)
+  prior <- prior_uniform(low = -10, high = 10)
+  lp <- function(theta) 5000 * stats::dnorm(theta[, 1], 5, 0.5, log = TRUE)
+
+  init <- mcmc_init(prior, lp, n_chains = 20, strategy = "resample")
+
+  expect_equal(dim(init), c(20L, 1L))
+  expect_true(all(is.finite(lp(init))))
+  expect_lt(mean(abs(init - 5)), 2)
+})
+
 test_that("mcmc_init reports an impossible start rather than looping", {
   prior <- prior_uniform(low = 0, high = 1)
   expect_error(

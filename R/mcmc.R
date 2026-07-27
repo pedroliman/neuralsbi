@@ -197,8 +197,13 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
   if (length(ok) <= n_chains) {
     return(pool[rep_len(ok, n_chains), , drop = FALSE])
   }
-  w <- exp(lp[ok] - max(lp[ok]))
-  idx <- ok[sample.int(length(ok), n_chains, replace = FALSE, prob = w)]
+  # Weighted sampling without replacement, done entirely in log space via the
+  # Gumbel top-k trick. Exponentiating the weights first does not survive the
+  # case this exists for: with a few thousand observations the log-likelihood
+  # spread across prior draws runs to thousands, every weight but a handful
+  # underflows to zero, and sample.int() refuses the job outright.
+  keys <- lp[ok] - log(-log(stats::runif(length(ok))))
+  idx <- ok[order(keys, decreasing = TRUE)[seq_len(n_chains)]]
   pool[idx, , drop = FALSE]
 }
 
