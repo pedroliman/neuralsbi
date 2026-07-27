@@ -286,7 +286,8 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |
 | NSF | `R/nsf.R` | done + tested; autoregressive (sbi uses coupling) |
 | Tasks | `R/tasks.R` | gaussian_linear (analytic ref), two_moons, slcp, sir |
-| Benchmarks vs sbi | `inst/benchmarks/01..04` | scripted, **never executed** |
+| Benchmarks vs sbi (NPE) | `inst/benchmarks/01..04` | scripted, **never executed** |
+| Benchmarks vs sbi (NLE) | `inst/benchmarks/05..08` | **run** against sbi 0.26.1; results in `docs/benchmarks/nle-vs-sbi.md` |
 | Summaries/tidy | `R/summaries.R` | done |
 | Coverage plot | `plot_coverage()` in `R/plotting.R` | done |
 | TARP coverage | `tarp()`, `plot_tarp()` | done + tested (calibrated & miscalibrated cases) |
@@ -337,6 +338,15 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
    CSVs + a short summary to `docs/benchmarks/`. Acceptance: C2ST ≤ 0.60.
+   **The NLE half is done** (`05`–`08`, sbi 0.26.1, MAF, 10k sims,
+   gaussian_linear at 5 dimensions, observation sets of 1/10/100):
+   indistinguishable from `sbi` and from the analytic posterior at one
+   observation (C2ST 0.499 / 0.510), and at a hundred observations both
+   implementations degrade by the same amount in the same way — the i.i.d.
+   sum amplifying the surrogate's per-observation error, not either
+   implementation. Write-up: `docs/benchmarks/nle-vs-sbi.md`. **Still open:**
+   the NPE half (`01`–`04`), which has never been executed, and NLE at other
+   tasks/estimators.
 3. **Two-moons calibration study** (finishes M2): done via
    `inst/benchmarks/two_moons_calibration.R` — `sbc()` + `plot_coverage()` +
    `tarp()` on a two-moons NSF fit, figures saved to `docs/figures/`. TARP
