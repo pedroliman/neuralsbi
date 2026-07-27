@@ -20,13 +20,20 @@ rgk <- function(u, A, B, g, k, c = 0.8) {
 # One call, one observation.
 simulator <- function(A, B, g, k) c(y = rgk(runif(1), A, B, g, k))
 
+# k enters as (1 + z^2)^k, so the usual U(0, 10) prior on it puts simulated
+# values around 1e12 -- twelve orders of magnitude that no single
+# standardization can cover. U(0, 1) keeps the tails interesting and the fit
+# possible. Run a prior predictive check before trusting any prior.
 prior <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
-                       high = c(A = 10, B = 10, g = 10, k = 10))
+                       high = c(A = 10, B = 10, g = 10, k = 1))
 
 ## Train once ---------------------------------------------------------------
 
+# An MDN rather than the default MAF: its network maps theta to a mixture over
+# x and never sees x, so n independent observations cost one forward pass
+# instead of n. See ?stan_code for the same argument in Stan.
 fit <- nle(prior, simulator, n_simulations = 20000,
-           density_estimator = "maf", seed = 1, verbose = TRUE)
+           density_estimator = "mdn", seed = 1, verbose = TRUE)
 print(fit)
 
 ## Condition on however many observations you have --------------------------
