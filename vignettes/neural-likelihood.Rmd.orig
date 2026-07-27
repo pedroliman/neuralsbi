@@ -80,14 +80,14 @@ simulator <- function(A, B, g, k) {
 }
 
 prior <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
-                       high = c(A = 10, B = 10, g = 10, k = 1))
+                       high = c(A = 10, B = 10, g = 4, k = 1))
 ```
 
 ## Look at the prior predictive first
 
-The ABC literature usually puts `k` on $[0, 10]$ along with the other three.
-That is a bad idea here, and the prior predictive says so before any training
-happens:
+The ABC literature usually puts `g` and `k` on $[0, 10]$ along with the other
+two. Both are bad ideas here, and simulating from the prior says so before any
+training happens. Start with `k`:
 
 ```{r prior-predictive}
 wide <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
@@ -106,20 +106,41 @@ covers twelve orders of magnitude: the fit would be dominated by a handful of
 enormous draws and useless everywhere else. Restricting `k` to $[0, 1]$ keeps
 the tails interesting and the problem well posed.
 
+`g` fails the opposite way. It enters through
+$(1 - e^{-gz}) / (1 + e^{-gz})$, which is a tanh in disguise and saturates:
+once $g$ is past about 4 the simulated distribution stops changing.
+
+```{r prior-predictive-g}
+u <- runif(200000)
+shift <- sapply(c(1, 2, 3, 4, 6, 10), function(g)
+  quantile(rgk(u, A = 3, B = 1, g = g, k = 0.5), c(0.1, 0.25, 0.75, 0.9)))
+colnames(shift) <- paste0("g=", c(1, 2, 3, 4, 6, 10))
+round(shift, 3)
+```
+
+The quantiles move by 0.7 per unit of `g` between 1 and 2, and by 0.005 per
+unit between 6 and 10. A prior of $[0, 10]$ therefore spends more than half its
+range on values the data cannot tell apart, and the estimator spends its
+capacity learning that nothing happens there. Worse, a likelihood that is flat
+in a parameter over most of its prior is one whose surrogate is *nearly* flat,
+and the difference between the two is noise the sampler will happily chase.
+`g` on $[0, 4]$ keeps the part that is identified.
+
 This is worth doing before every fit, not just this one. A prior predictive
 check costs a few seconds of simulation and catches the class of problem that
-otherwise shows up as an inexplicably bad posterior.
+otherwise shows up as an inexplicably bad posterior, or as chains that will not
+mix.
 
 ## Train the surrogate likelihood
 
 ```{r fit}
-fit <- nle(prior, simulator, n_simulations = 20000,
+fit <- nle(prior, simulator, n_simulations = 50000,
            density_estimator = "mdn", n_components = 10, seed = 1)
 fit
 ```
 
-Twenty thousand simulations of a four-parameter model, each producing a single
-scalar. That is a small budget by SBI standards, and it goes further here than
+Fifty thousand simulations of a four-parameter model, each producing a single
+scalar. That is a modest budget by SBI standards, and it goes further here than
 it would for NPE: the estimator is learning a one-dimensional conditional
 density rather than a four-dimensional posterior.
 
@@ -132,8 +153,8 @@ On this model at 5000 observations a slice step costs about seven times more
 with a MAF than with the MDN, which is the difference between a posterior that
 takes a minute and one that takes ten. `neuralsbi` takes the shortcut
 automatically when the estimator allows it. Choose `"maf"` when the conditional
-density is
-shaped in a way a mixture cannot follow and you can afford the passes.
+density is shaped in a way a mixture cannot follow and you can afford the
+passes.
 
 The fitted likelihood is a plain function, and `likelihood_fn()` hands it over
 as one:
@@ -164,7 +185,7 @@ x_all <- matrix(rgk(runif(5000), 3, 1, 2, 0.5), ncol = 1)
 
 draws <- lapply(c(50, 500, 5000), function(n) {
   post <- posterior(fit, x_all[seq_len(n), , drop = FALSE],
-                    n_chains = 20, warmup = 150, seed = 2)
+                    n_chains = 20, warmup = 300, seed = 2)
   sample(post, 2000)
 })
 names(draws) <- c("n = 50", "n = 500", "n = 5000")
@@ -194,6 +215,34 @@ par(op)
 The dashed line is the truth. Each posterior is narrower than the last, and
 none of them required a second fit.
 
+### The part nobody tells you about
+
+Look at `B` in the table above. Its posterior tightens with every extra
+observation, and it tightens around a value that is not 1. By `n = 5000` the
+truth is several posterior standard deviations away, and the posterior is
+perfectly confident about it.
+
+This is not a bug and it is not the sampler. It is the arithmetic of the sum
+this whole vignette is built on. Suppose the surrogate is wrong by an average
+of $\epsilon$ nats per observation in some direction of parameter space. The
+log-likelihood of `n` observations is off by $n\epsilon$, while the information
+the data carry about the parameter also grows like `n`. The two race each other,
+and which one wins is set by how good the surrogate is, not by how much data you
+have. Past some `n`, more observations buy you a tighter posterior around the
+surrogate's error rather than around the truth.
+
+So the honest reading of the panel above is: `A`, `g` and `k` are recovered,
+`B` is recovered at `n = 50` and `n = 500` and then over-shoots, and the fix
+for `B` is a better surrogate rather than more data. In practice that means
+more simulations, a more flexible estimator, or a narrower prior that lets the
+estimator spend its capacity where the data are. It is worth being suspicious of
+any parameter whose posterior keeps tightening without moving.
+
+Simulation-based calibration, below, will not catch this on its own: each SBC
+trial draws a single observation, so it validates the estimator at `n = 1`,
+which is exactly where the amplification has not happened yet. Comparing
+posteriors across `n`, as we just did, is the check that sees it.
+
 ## What the sampler did
 
 `sample()` on an NLE posterior runs a vectorized slice sampler, and reports
@@ -201,14 +250,22 @@ what happened rather than leaving you to trust it:
 
 ```{r diagnostics}
 post_500 <- posterior(fit, x_all[1:500, , drop = FALSE],
-                      n_chains = 20, warmup = 150, seed = 2)
+                      n_chains = 20, warmup = 300, seed = 2)
 d500 <- sample(post_500, 2000)
 attr(d500, "diagnostics")
 ```
 
-`rhat` near 1 and a bulk ESS close to the number of draws mean the chains
-agree with each other and are not autocorrelated enough to matter. If `rhat`
-were, say, 1.05, the numbers above would not be a posterior yet.
+`rhat` near 1 says the 20 chains agree with each other, and the bulk ESS says
+how many independent draws the retained ones are worth. Read them before
+reading the posterior: at `rhat` much above 1.01 the chains have not found the
+same distribution yet, and the means and intervals are describing wherever each
+chain happened to start.
+
+If they look bad, raise `warmup` first. A surrogate likelihood summed over
+thousands of observations can be a rugged thing to sample, and this one needed
+`warmup = 300` rather than the default 200 to settle. The other lever is the
+prior: the `g` we did not narrow, back at the start, gave chains that never
+mixed at all.
 
 ## Handing the likelihood to Stan
 
@@ -312,7 +369,7 @@ time and the trial count stays modest.
 
 ```{r sbc, fig.height = 4.5}
 res <- sbc(fit, simulator, n_sbc = 60, n_posterior_samples = 150, seed = 3,
-           n_chains = 10, warmup = 80)
+           n_chains = 10, warmup = 150)
 res
 
 op <- par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
