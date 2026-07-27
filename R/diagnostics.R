@@ -10,6 +10,16 @@
 #' @name diagnostics
 NULL
 
+#' Accept either kind of fit, and say which ones exist when neither matches
+#' @keywords internal
+check_inference_fit <- function(fit) {
+  if (inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle")) {
+    return(invisible(TRUE))
+  }
+  stop("Expected a fit from npe() or nle(), not an object of class ",
+       paste(class(fit), collapse = "/"), ".", call. = FALSE)
+}
+
 #' Simulation-Based Calibration (SBC)
 #'
 #' Repeatedly draws a "true" parameter from the prior, simulates data, and ranks
@@ -19,7 +29,9 @@ NULL
 #' A trial whose simulation returns non-finite output is dropped, which lowers
 #' the effective `n_sbc`.
 #'
-#' @param fit An `nsbi_npe` fit (amortized posterior).
+#' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
+#'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
+#'   with a small `n_sbc` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
@@ -28,6 +40,8 @@ NULL
 #' @param sim_args Named list of extra arguments passed to every simulator
 #'   call; see [nsbi_simulator].
 #' @param seed Optional seed.
+#' @param ... Passed to [posterior()], which is how the MCMC controls
+#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
 #' @details The `n_sbc` simulations run across `future` workers when a plan is
 #'   set (see [nsbi_parallel]); the ranking loop that follows calls the trained
 #'   network and always runs locally.
@@ -36,8 +50,8 @@ NULL
 #' @export
 sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
                 n_posterior_samples = 1000L, sim_args = list(),
-                seed = NULL) {
-  stopifnot(inherits(fit, "nsbi_npe"))
+                seed = NULL, ...) {
+  check_inference_fit(fit)
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
   theta_true <- sample_prior(prior, n_sbc)
@@ -52,8 +66,8 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
     p <- nsbi_progressor(steps = n_sbc, label = "Ranking")
     tryCatch({
       for (i in seq_len(n_sbc)) {
-        post <- posterior(fit, x_obs = x_all[i, ])
-        draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+        post <- posterior(fit, x_obs = x_all[i, ], ...)
+        draws <- sample(post, n = n_posterior_samples)
         ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
         p(1)
       }
@@ -141,7 +155,9 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' A trial whose simulation returns non-finite output is dropped, which lowers
 #' the effective `n_tarp`.
 #'
-#' @param fit An `nsbi_npe` fit (amortized posterior).
+#' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
+#'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
+#'   with a small `n_sbc` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
@@ -162,8 +178,8 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  n_posterior_samples = 1000L,
                  references = c("uniform", "prior"), sim_args = list(),
-                 seed = NULL) {
-  stopifnot(inherits(fit, "nsbi_npe"))
+                 seed = NULL, ...) {
+  check_inference_fit(fit)
   references <- match.arg(references)
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
@@ -196,8 +212,8 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
     p <- nsbi_progressor(steps = n_tarp, label = "Coverage")
     tryCatch({
       for (i in seq_len(n_tarp)) {
-        post <- posterior(fit, x_obs = x_all[i, ])
-        draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+        post <- posterior(fit, x_obs = x_all[i, ], ...)
+        draws <- sample(post, n = n_posterior_samples)
         draws_z <- apply_standardizer(std, draws)
         d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
         d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
@@ -292,7 +308,7 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
 posterior_predictive <- function(post, simulator, n = 1000L, x = NULL,
                                  sim_args = list()) {
   stopifnot(inherits(post, "nsbi_posterior"))
-  theta <- sample.nsbi_posterior(post, n = n, obs = x)
+  theta <- sample(post, n = n, obs = x)
   pred <- run_simulator(simulator, theta, sim_args = sim_args,
                         label = "Predicting")
   pred <- drop_failed_sims(NULL, pred, what = "predictive draws")$x
