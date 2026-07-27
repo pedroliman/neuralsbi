@@ -32,17 +32,19 @@ is a separate process with its own warmup to pay for.}
 
 \item{warmup}{Steps discarded at the start of each chain.}
 
-\item{thin}{Keep one draw in \code{thin}. Python \code{sbi} defaults to 10; the
-default here is 2, because the slice width is adapted during warmup and
-the resulting draws are already close to independent -- on a Gaussian
-target with 20 chains, \code{thin = 2} gives a bulk ESS of about 96\% of the
-draws. Since each evaluation is a forward pass over every observation,
-thinning by 10 would cost five times as much for that last 4\%. Raise it if
-the reported ESS says you need to.}
+\item{thin}{Keep one draw in \code{thin}. The default is 2: the slice width is
+adapted during warmup, and with that the retained draws are already close
+to independent -- on a Gaussian target with 20 chains, \code{thin = 2} gives a
+bulk ESS of about 96\% of them. Since each evaluation is a forward pass over
+every observation, thinning harder buys very little for what it costs.
+Raise it if the reported ESS says you need to. (Python \code{sbi} thins by 1 by
+default; it thinned by 10 up to v0.21.)}
 
-\item{init_strategy}{\code{"resample"} (default) weights a pool of prior draws by
-the posterior density and resamples the starting points from it;
-\code{"proposal"} starts from plain prior draws.}
+\item{init_strategy}{\code{"resample"} (default, and \code{sbi}'s) weights a pool of
+prior draws by the posterior density and resamples the starting points from
+it; \code{"proposal"} starts from plain prior draws. The pool is 1000 draws, set
+with \code{n_pool}. \code{sbi} uses 10,000 \emph{per chain}, which on a surrogate summed
+over thousands of observations is a large bill before the first MCMC step.}
 
 \item{seed}{Optional integer seed.}
 

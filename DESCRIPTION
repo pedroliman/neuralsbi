@@ -28,6 +28,7 @@ Suggests:
     cli,
     rlang,
     testthat (>= 3.0.0),
+    withr,
     knitr,
     rmarkdown,
     svglite

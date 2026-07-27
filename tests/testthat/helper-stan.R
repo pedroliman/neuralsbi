@@ -10,8 +10,22 @@ skip_if_no_cmdstan <- function() {
 # posterior(sampler = "stan") prefers cmdstanr and falls back to rstan, so on a
 # machine with cmdstanr the fallback is never reached by the dispatch. The
 # rstan test therefore calls stan_run_rstan() directly.
+#
+# Installing rstan is not enough to run it. rstan compiles the model at call
+# time and needs the headers it links against plus a C++ compiler, none of
+# which come with a binary install -- CI hit this as "Boost not found; call
+# install.packages('BH')" from inside stan_model(), which is a missing
+# toolchain reported as a test failure. Check for the toolchain up front so it
+# skips like every other optional dependency.
 skip_if_no_rstan <- function() {
   testthat::skip_if_not_installed("rstan")
+  for (pkg in c("BH", "RcppEigen", "StanHeaders")) {
+    testthat::skip_if_not_installed(pkg)
+  }
+  testthat::skip_if_not(
+    nzchar(Sys.which("g++")) || nzchar(Sys.which("clang++")),
+    "no C++ compiler for rstan to build against"
+  )
 }
 
 # Compile the generated `functions` block on its own and evaluate it at fixed
