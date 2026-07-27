@@ -85,29 +85,34 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
       lo <- x0 - width[d] * stats::runif(n_chains)
       hi <- lo + width[d]
 
+      # Both interval edges expand in the same pass. Each call to the density
+      # carries a fixed cost that dwarfs the per-row cost at these batch sizes,
+      # so what matters is the number of calls, not their width: putting the
+      # lower and upper candidates of every still-open chain into one matrix
+      # halves the stepping-out calls for free.
       lo_open <- rep(TRUE, n_chains)
-      for (s in seq_len(max_steps)) {
-        active <- which(lo_open)
-        if (!length(active)) break
-        cand <- state[active, , drop = FALSE]
-        cand[, d] <- lo[active]
-        lp <- log_prob_fn(cand)
-        n_evals <- n_evals + length(active)
-        grow <- lp > level[active]
-        lo[active[grow]] <- lo[active[grow]] - width[d]
-        lo_open[active[!grow]] <- FALSE
-      }
       hi_open <- rep(TRUE, n_chains)
       for (s in seq_len(max_steps)) {
-        active <- which(hi_open)
-        if (!length(active)) break
-        cand <- state[active, , drop = FALSE]
-        cand[, d] <- hi[active]
+        lo_i <- which(lo_open)
+        hi_i <- which(hi_open)
+        n_lo <- length(lo_i)
+        if (!n_lo && !length(hi_i)) break
+
+        cand <- state[c(lo_i, hi_i), , drop = FALSE]
+        cand[, d] <- c(lo[lo_i], hi[hi_i])
         lp <- log_prob_fn(cand)
-        n_evals <- n_evals + length(active)
-        grow <- lp > level[active]
-        hi[active[grow]] <- hi[active[grow]] + width[d]
-        hi_open[active[!grow]] <- FALSE
+        n_evals <- n_evals + nrow(cand)
+
+        if (n_lo) {
+          grow <- lp[seq_len(n_lo)] > level[lo_i]
+          lo[lo_i[grow]] <- lo[lo_i[grow]] - width[d]
+          lo_open[lo_i[!grow]] <- FALSE
+        }
+        if (length(hi_i)) {
+          grow <- lp[n_lo + seq_along(hi_i)] > level[hi_i]
+          hi[hi_i[grow]] <- hi[hi_i[grow]] + width[d]
+          hi_open[hi_i[!grow]] <- FALSE
+        }
       }
 
       # -- shrinkage ------------------------------------------------------

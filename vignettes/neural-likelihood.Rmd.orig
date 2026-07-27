@@ -162,8 +162,8 @@ x_all <- matrix(rgk(runif(5000), 3, 1, 2, 0.5), ncol = 1)
 
 draws <- lapply(c(50, 500, 5000), function(n) {
   post <- posterior(fit, x_all[seq_len(n), , drop = FALSE],
-                    n_chains = 20, warmup = 200, seed = 2)
-  sample(post, 4000)
+                    n_chains = 20, warmup = 150, seed = 2)
+  sample(post, 2000)
 })
 names(draws) <- c("n = 50", "n = 500", "n = 5000")
 
@@ -199,8 +199,8 @@ what happened rather than leaving you to trust it:
 
 ```{r diagnostics}
 post_500 <- posterior(fit, x_all[1:500, , drop = FALSE],
-                      n_chains = 20, warmup = 200, seed = 2)
-d500 <- sample(post_500, 4000)
+                      n_chains = 20, warmup = 150, seed = 2)
+d500 <- sample(post_500, 2000)
 attr(d500, "diagnostics")
 ```
 
@@ -239,7 +239,7 @@ model <- cmdstan_model(write_stan_model(fit, tempfile(fileext = ".stan")))
 stan_fit <- model$sample(
   data = stan_data(fit, x_all[1:500, , drop = FALSE]),
   chains = 4, parallel_chains = 4,
-  iter_warmup = 500, iter_sampling = 1000, refresh = 0
+  iter_warmup = 500, iter_sampling = 500, refresh = 0
 )
 stan_fit$summary("theta")[, c("variable", "mean", "sd", "rhat", "ess_bulk")]
 ```
@@ -309,8 +309,8 @@ Each SBC trial is a full MCMC run here, not a forward pass, so this costs real
 time and the trial count stays modest.
 
 ```{r sbc, fig.height = 4.5}
-res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 200, seed = 3,
-           n_chains = 10, warmup = 100)
+res <- sbc(fit, simulator, n_sbc = 60, n_posterior_samples = 150, seed = 3,
+           n_chains = 10, warmup = 80)
 res
 
 op <- par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
