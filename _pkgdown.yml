@@ -95,8 +95,10 @@ navbar:
       menu:
       - text: Introduction to neural simulation-based inference in R
         href: articles/intro-to-sbi.html
-      - text: "Neural likelihood estimation, and handing it to Stan"
-        href: articles/neural-likelihood.html
+# Un-comment once vignettes/neural-likelihood.Rmd has been baked from its
+# .Rmd.orig source; pkgdown fails on a missing article file.
+#      - text: "Neural likelihood estimation, and handing it to Stan"
+#        href: articles/neural-likelihood.html
 #      - text: Choosing a density estimator
 #        href: articles/density-estimators.html
 #      - text: Checking the posterior
@@ -111,7 +113,7 @@ articles:
   navbar: ~
   contents:
   - intro-to-sbi
-  - neural-likelihood
+#  - neural-likelihood        # bake it first; see the note in the navbar above
 #  - neuralsbi
 #  - density-estimators
 #  - diagnostics
