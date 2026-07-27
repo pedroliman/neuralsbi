@@ -21,7 +21,8 @@
 #'   31(3), 705-767.
 #'
 #' @name nsbi_mcmc
-#' @keywords internal
+#' @seealso [posterior.nsbi_nle()] for the arguments that control it, and
+#'   [stan_code()] for handing the same likelihood to NUTS instead.
 NULL
 
 #' Vectorized univariate slice sampler

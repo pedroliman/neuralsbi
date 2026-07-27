@@ -145,6 +145,7 @@ reference:
   - likelihood_fn
   - posterior.nsbi_nle
   - sample.nsbi_nle_posterior
+  - nsbi_mcmc
   - stan_export
 - title: Running the simulator
   desc: The simulator contract, parallel execution, and progress reporting.

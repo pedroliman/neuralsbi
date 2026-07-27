@@ -157,10 +157,12 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #'
 #' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
 #'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
-#'   with a small `n_sbc` and raise it once the cost is known.
+#'   with a small `n_tarp` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
+#' @param ... Passed to [posterior()], which is how the MCMC controls
+#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
 #' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial.
 #' @param references How to draw reference points: `"uniform"` (default, uniform
