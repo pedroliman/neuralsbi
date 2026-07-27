@@ -7,6 +7,13 @@ skip_if_no_cmdstan <- function() {
   testthat::skip_if_not(isTRUE(ok), "CmdStan not installed")
 }
 
+# posterior(sampler = "stan") prefers cmdstanr and falls back to rstan, so on a
+# machine with cmdstanr the fallback is never reached by the dispatch. The
+# rstan test therefore calls stan_run_rstan() directly.
+skip_if_no_rstan <- function() {
+  testthat::skip_if_not_installed("rstan")
+}
+
 # Compile the generated `functions` block on its own and evaluate it at fixed
 # (theta, x). This is the only way to check the transpiled code actually means
 # what log_lik() means: a whole model would fold in the prior and the

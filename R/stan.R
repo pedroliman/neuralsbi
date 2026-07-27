@@ -588,10 +588,14 @@ stan_run_rstan <- function(code, data, ctl, iter_warmup, iter_sampling,
                            refresh) {
   mod <- rstan::stan_model(model_code = code)
   fit <- rstan::sampling(mod, data = data, chains = ctl$n_chains,
+                         cores = min(ctl$n_chains, stan_cores()),
                          warmup = iter_warmup,
                          iter = iter_warmup + iter_sampling,
                          seed = ctl$seed %||% sample.int(.Machine$integer.max, 1L),
                          refresh = refresh)
+  # permuted = FALSE keeps the chains apart, which is what the diagnostics
+  # want, and puts them in the iterations x chains x dim order cmdstanr's
+  # draws_array already uses.
   d <- rstan::extract(fit, pars = "theta", permuted = FALSE)
   array(as.numeric(d), dim = dim(d))
 }

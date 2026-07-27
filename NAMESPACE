@@ -67,6 +67,10 @@ S3method(de_log_lik_iid, default)
 S3method(de_log_lik_iid, nsbi_de_lingauss)
 S3method(de_log_lik_iid, nsbi_de_mdn)
 
+S3method(de_iid_evaluator, default)
+S3method(de_iid_evaluator, nsbi_de_lingauss)
+S3method(de_iid_evaluator, nsbi_de_mdn)
+
 S3method(summary, nsbi_samples)
 S3method(summary, nsbi_posterior)
 S3method(summary, nsbi_npe)

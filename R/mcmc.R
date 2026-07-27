@@ -85,65 +85,101 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
       lo <- x0 - width[d] * stats::runif(n_chains)
       hi <- lo + width[d]
 
-      # Both interval edges expand in the same pass. Each call to the density
-      # carries a fixed cost that dwarfs the per-row cost at these batch sizes,
-      # so what matters is the number of calls, not their width: putting the
-      # lower and upper candidates of every still-open chain into one matrix
-      # halves the stepping-out calls for free.
       lo_open <- rep(TRUE, n_chains)
       hi_open <- rep(TRUE, n_chains)
-      for (s in seq_len(max_steps)) {
+      steps_left <- max_steps
+      while (steps_left > 0L) {
         lo_i <- which(lo_open)
         hi_i <- which(hi_open)
         n_lo <- length(lo_i)
-        if (!n_lo && !length(hi_i)) break
+        edges <- n_lo + length(hi_i)
+        if (!edges) break
 
-        cand <- state[c(lo_i, hi_i), , drop = FALSE]
-        cand[, d] <- c(lo[lo_i], hi[hi_i])
-        lp <- log_prob_fn(cand)
+        # Where an edge goes next is not random: it is the current end shifted
+        # by another width. So a call can carry several of an edge's future
+        # positions and stop at the first one below the level, which is what
+        # the sequential version would have found. `depth` spends whatever
+        # width the first pass already paid for, so no call is ever wider than
+        # the one that opened the coordinate.
+        depth <- min(steps_left, max(1L, n_chains %/% edges))
+        pos0 <- c(lo[lo_i], hi[hi_i])
+        sgn <- rep(c(-1, 1), c(n_lo, length(hi_i)))
+        shift <- rep(seq_len(depth) - 1L, each = edges) * width[d]
+
+        cand <- state[rep(c(lo_i, hi_i), times = depth), , drop = FALSE]
+        cand[, d] <- rep(pos0, depth) + rep(sgn, depth) * shift
+        lp <- matrix(log_prob_fn(cand), nrow = edges)
         n_evals <- n_evals + nrow(cand)
 
+        # The edge stops at the first position whose density falls below the
+        # level; an edge that never does stays open, one width past the last.
+        stop_at <- lp <= level[c(lo_i, hi_i)]
+        closed <- rowSums(stop_at) > 0
+        steps <- ifelse(closed, max.col(stop_at, "first") - 1L, depth)
+        pos <- pos0 + sgn * steps * width[d]
+
         if (n_lo) {
-          grow <- lp[seq_len(n_lo)] > level[lo_i]
-          lo[lo_i[grow]] <- lo[lo_i[grow]] - width[d]
-          lo_open[lo_i[!grow]] <- FALSE
+          k <- seq_len(n_lo)
+          lo[lo_i] <- pos[k]
+          lo_open[lo_i[closed[k]]] <- FALSE
         }
-        if (length(hi_i)) {
-          grow <- lp[n_lo + seq_along(hi_i)] > level[hi_i]
-          hi[hi_i[grow]] <- hi[hi_i[grow]] + width[d]
-          hi_open[hi_i[!grow]] <- FALSE
+        if (edges > n_lo) {
+          k <- n_lo + seq_len(edges - n_lo)
+          hi[hi_i] <- pos[k]
+          hi_open[hi_i[closed[k]]] <- FALSE
         }
+        steps_left <- steps_left - depth
       }
 
       # -- shrinkage ------------------------------------------------------
       pending <- chain_ids
       while (length(pending)) {
-        prop <- lo[pending] + stats::runif(length(pending)) * (hi[pending] - lo[pending])
-        cand <- state[pending, , drop = FALSE]
-        cand[, d] <- prop
-        lp <- log_prob_fn(cand)
-        n_evals <- n_evals + length(pending)
+        np <- length(pending)
+        # Which point a chain would try next after a rejection is decided by
+        # the rejected point's side of x0 and a fresh uniform, and neither
+        # needs the density. So the proposals a chain would make over the next
+        # `depth` rejections are all computable now and go in one call. Only
+        # the first accepted one is used; the rest cost nothing but width,
+        # which is again capped at what the first pass already pays for.
+        depth <- max(1L, n_chains %/% np)
+        left_end <- lo[pending]
+        right_end <- hi[pending]
+        origin <- x0[pending]
+        prop <- matrix(0, nrow = np, ncol = depth)
+        for (j in seq_len(depth)) {
+          try_j <- left_end + stats::runif(np) * (right_end - left_end)
+          prop[, j] <- try_j
+          left <- try_j < origin
+          left_end[left] <- try_j[left]
+          right_end[!left] <- try_j[!left]
+        }
+
+        cand <- state[rep(pending, times = depth), , drop = FALSE]
+        cand[, d] <- as.vector(prop)
+        lp <- matrix(log_prob_fn(cand), nrow = np)
+        n_evals <- n_evals + nrow(cand)
 
         accept <- lp > level[pending]
-        acc_id <- pending[accept]
-        if (length(acc_id)) {
-          state[acc_id, d] <- prop[accept]
-          state_lp[acc_id] <- lp[accept]
+        hit <- rowSums(accept) > 0
+        if (any(hit)) {
+          ai <- which(hit)
+          take <- cbind(ai, max.col(accept[ai, , drop = FALSE], "first"))
+          acc_id <- pending[ai]
+          state[acc_id, d] <- prop[take]
+          state_lp[acc_id] <- lp[take]
         }
-        # A rejected proposal becomes the new interval edge on its own side.
-        rej <- pending[!accept]
-        if (length(rej)) {
-          pr <- prop[!accept]
-          left <- pr < x0[rej]
-          lo[rej[left]] <- pr[left]
-          hi[rej[!left]] <- pr[!left]
-          # Guard against an interval collapsing to a point on a flat or
-          # numerically degenerate target. Such a chain stops shrinking and
-          # keeps its current value rather than looping forever.
-          stuck <- rej[(hi[rej] - lo[rej]) <= .Machine$double.eps * 8]
-          if (length(stuck)) rej <- setdiff(rej, stuck)
-        }
-        pending <- rej
+        # A chain that rejected every proposal carries on from the interval
+        # those rejections shrank.
+        rej <- which(!hit)
+        if (!length(rej)) break
+        rej_id <- pending[rej]
+        lo[rej_id] <- left_end[rej]
+        hi[rej_id] <- right_end[rej]
+        # Guard against an interval collapsing to a point on a flat or
+        # numerically degenerate target. Such a chain stops shrinking and
+        # keeps its current value rather than looping forever.
+        pending <- rej_id[(right_end[rej] - left_end[rej]) >
+                            .Machine$double.eps * 8]
       }
     }
 

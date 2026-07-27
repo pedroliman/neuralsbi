@@ -118,6 +118,77 @@ test_that("blocking does not change the answer", {
                log_lik(fit, theta, x, max_batch = 1e5))
 })
 
+test_that("blocking does not change a neural estimator's answer either", {
+  # The MDN chunks over observations and the flow over parameters, and both
+  # reuse a constant block that a short final block has to truncate. A batch
+  # size that divides neither count exercises that truncation.
+  skip_if_no_torch()
+  for (estimator in c("mdn", "maf")) {
+    fit <- nle(gauss_prior(), gauss_sim, n_simulations = 600,
+               density_estimator = estimator, hidden = c(16L, 16L),
+               n_components = 3L, n_transforms = 2L, max_epochs = 10L, seed = 1)
+    theta <- matrix(stats::runif(14, -2, 2), ncol = 2)
+    x <- matrix(stats::rnorm(14), ncol = 2)
+
+    expect_equal(log_lik(fit, theta, x, max_batch = 11),
+                 log_lik(fit, theta, x, max_batch = 1e5),
+                 tolerance = 1e-6, label = estimator)
+    expect_equal(log_lik(fit, theta, x, sum_iid = FALSE, max_batch = 11),
+                 log_lik(fit, theta, x, sum_iid = FALSE, max_batch = 1e5),
+                 tolerance = 1e-6, label = estimator)
+  }
+})
+
+test_that("the traced MDN likelihood agrees with the eager one", {
+  # de_iid_evaluator() serves the first few calls eagerly and then records a
+  # TorchScript trace per parameter-row count. The trace is checked internally
+  # before use, but that check is the thing most worth checking, so this walks
+  # past the warmup at two different row counts and compares every call.
+  skip_if_no_torch()
+  fit <- nle(gauss_prior(), gauss_sim, n_simulations = 800,
+             density_estimator = "mdn", hidden = c(16L, 16L),
+             n_components = 3L, max_epochs = 10L, seed = 1)
+  x_z <- apply_standardizer(fit$std_x, matrix(stats::rnorm(30), ncol = 2))
+  theta_z <- apply_standardizer(fit$std_theta,
+                                matrix(stats::runif(20, -2, 2), ncol = 2))
+  one <- theta_z[3, , drop = FALSE]
+
+  ref_many <- withr::with_options(
+    list(neuralsbi.jit = FALSE), de_iid_evaluator(fit$de, x_z)(theta_z))
+  ref_one <- withr::with_options(
+    list(neuralsbi.jit = FALSE), de_iid_evaluator(fit$de, x_z)(one))
+
+  ev <- de_iid_evaluator(fit$de, x_z)
+  for (i in seq_len(8)) {
+    expect_equal(ev(theta_z), ref_many, tolerance = 1e-6)
+    expect_equal(ev(one), ref_one, tolerance = 1e-6)
+  }
+})
+
+test_that("the summed path agrees with summing the per-observation matrix", {
+  # log_lik(sum_iid = TRUE) does not build the n_theta x n_obs matrix and sum
+  # it; it goes through de_iid_evaluator(), which sums where the densities are
+  # produced. The two have to agree, including at the corners where one of the
+  # counts is 1 and a matrix would collapse to a vector.
+  for (estimator in c("linear_gaussian", "mdn", "maf")) {
+    if (estimator != "linear_gaussian") skip_if_no_torch()
+    fit <- nle(gauss_prior(), gauss_sim, n_simulations = 600,
+               density_estimator = estimator, hidden = c(16L, 16L),
+               n_components = 3L, n_transforms = 2L, max_epochs = 10L, seed = 1)
+    for (n_theta in c(1L, 4L)) {
+      for (n_obs in c(1L, 5L)) {
+        theta <- matrix(stats::runif(2 * n_theta, -2, 2), ncol = 2)
+        x <- matrix(stats::rnorm(2 * n_obs), ncol = 2)
+        label <- sprintf("%s, %d theta, %d obs", estimator, n_theta, n_obs)
+
+        expect_equal(log_lik(fit, theta, x),
+                     rowSums(log_lik(fit, theta, x, sum_iid = FALSE)),
+                     tolerance = 1e-6, label = label)
+      }
+    }
+  }
+})
+
 test_that("wrongly shaped input is rejected by name", {
   fit <- lingauss_fit()
 

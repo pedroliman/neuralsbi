@@ -8,7 +8,7 @@
   fit,
   x_obs = NULL,
   sampler = c("slice", "stan"),
-  n_chains = 20L,
+  n_chains = NULL,
   warmup = 200L,
   thin = 2L,
   init_strategy = c("resample", "proposal"),
@@ -25,8 +25,10 @@ them.}
 
 \item{sampler}{\code{"slice"} (the default) or \code{"stan"}.}
 
-\item{n_chains}{Number of chains run in parallel. The slice sampler
-evaluates them in one batched call per step, so more chains cost little.}
+\item{n_chains}{Number of chains. The default depends on the sampler: 20 for
+\code{"slice"}, which evaluates every chain in one batched call per step and so
+pays almost nothing for more of them, and 4 for \code{"stan"}, where each chain
+is a separate process with its own warmup to pay for.}
 
 \item{warmup}{Steps discarded at the start of each chain.}
 

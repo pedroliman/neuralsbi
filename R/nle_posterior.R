@@ -18,8 +18,10 @@
 #'   observations from the same parameter, and the log-likelihood sums over
 #'   them.
 #' @param sampler `"slice"` (the default) or `"stan"`.
-#' @param n_chains Number of chains run in parallel. The slice sampler
-#'   evaluates them in one batched call per step, so more chains cost little.
+#' @param n_chains Number of chains. The default depends on the sampler: 20 for
+#'   `"slice"`, which evaluates every chain in one batched call per step and so
+#'   pays almost nothing for more of them, and 4 for `"stan"`, where each chain
+#'   is a separate process with its own warmup to pay for.
 #' @param warmup Steps discarded at the start of each chain.
 #' @param thin Keep one draw in `thin`. Python `sbi` defaults to 10; the
 #'   default here is 2, because the slice width is adapted during warmup and
@@ -50,13 +52,14 @@
 #' @export
 posterior.nsbi_nle <- function(fit, x_obs = NULL,
                                sampler = c("slice", "stan"),
-                               n_chains = 20L, warmup = 200L, thin = 2L,
+                               n_chains = NULL, warmup = 200L, thin = 2L,
                                init_strategy = c("resample", "proposal"),
                                seed = NULL, ...) {
   check_fit_alive(fit)
   sampler <- match.arg(sampler)
   init_strategy <- match.arg(init_strategy)
   if (!is.null(x_obs)) x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  n_chains <- n_chains %||% if (sampler == "stan") 4L else 20L
   if (n_chains < 2L) {
     stop("`n_chains` must be at least 2, so convergence can be diagnosed.",
          call. = FALSE)
