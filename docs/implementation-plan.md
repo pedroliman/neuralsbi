@@ -26,12 +26,13 @@ statistical modeling, but are *not* ML engineers.
 4. **Verifiable.** Every method is checked against an analytic ground truth
    where one exists, and against Python `sbi` on shared benchmarks.
 
-**In scope for v0.x:** amortized single-round NPE; MDN and (roadmap) normalizing
--flow density estimators; priors, simulators, posteriors, diagnostics, plots.
+**In scope for v0.x:** amortized single-round NPE; TSNPE for sequential
+inference; NLE with MCMC and a Stan exporter; MDN, MAF and NSF density
+estimators; MLP embedding nets; priors, simulators, posteriors, diagnostics,
+plots.
 
-**Out of scope (for now):** NLE, NRE, sequential/multi-round methods, embedding
-nets for high-dimensional/structured data, flow/score matching. All are on the
-roadmap.
+**Out of scope (for now):** NRE, SNPE-A/B/C, CNN/RNN embedding nets for
+structured data, flow/score matching. All are on the roadmap.
 
 ---
 
