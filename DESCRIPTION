@@ -1,10 +1,10 @@
 Package: neuralsbi
 Title: Neural Simulation-Based Inference
-Version: 0.4.2
+Version: 0.5.0
 Authors@R:
     person("Pedro", "Nascimento de Lima", email = "plima@rand.org",
            role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9057-198X"))
-Description: A native R implementation of neural simulation-based inference, focused on Neural Posterior Estimation. Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator to approximate the Bayesian posterior, enabling amortized, likelihood-free inference. Neural estimators run on the 'torch' back end. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
+Description: A native R implementation of neural simulation-based inference. Given a prior over parameters and a simulator, 'neuralsbi' trains a conditional neural density estimator for likelihood-free Bayesian inference: Neural Posterior Estimation approximates the posterior directly and samples it in a forward pass, while Neural Likelihood Estimation learns a surrogate likelihood that is sampled with MCMC, handles repeated independent observations, and can be exported as 'Stan' code for use inside a larger model. Neural estimators run on the 'torch' back end. It targets applied researchers who want an approachable interface with sensible defaults and built-in posterior diagnostics.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -16,6 +16,9 @@ Imports:
     utils
 Suggests:
     torch (>= 0.11.0),
+    cmdstanr (>= 0.7.0),
+    rstan (>= 2.26.0),
+    posterior (>= 1.4.0),
     deSolve,
     ggplot2 (>= 3.4.0),
     GGally (>= 2.2.0),
@@ -28,6 +31,7 @@ Suggests:
     knitr,
     rmarkdown,
     svglite
+Additional_repositories: https://mc-stan.org/r-packages/
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 URL: https://neuralsbi.pedrodelima.com/, https://github.com/pedroliman/neuralsbi

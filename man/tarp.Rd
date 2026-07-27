@@ -12,11 +12,14 @@ tarp(
   n_posterior_samples = 1000L,
   references = c("uniform", "prior"),
   sim_args = list(),
-  seed = NULL
+  seed = NULL,
+  ...
 )
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} fit (amortized posterior).}
+\item{fit}{An \code{nsbi_npe} fit from \code{\link[=npe]{npe()}}, or an \code{nsbi_nle} fit from
+\code{\link[=nle]{nle()}}. With an NLE fit every trial is a separate MCMC run, so start
+with a small \code{n_sbc} and raise it once the cost is known.}
 
 \item{simulator}{The simulator used for inference; called once per trial
 (see \link{nsbi_simulator}).}

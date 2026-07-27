@@ -42,16 +42,11 @@ log_lik <- function(fit, theta, x, ...) UseMethod("log_lik")
 log_lik.nsbi_nle <- function(fit, theta, x, sum_iid = TRUE,
                              max_batch = 1e5, ...) {
   check_fit_alive(fit)
-  theta <- as_theta_matrix(theta, fit$dim_theta)
-  x <- as_theta_matrix(x, fit$dim_x)
-  if (ncol(theta) != fit$dim_theta) {
-    stop(sprintf("`theta` must have %d columns, got %d.",
-                 fit$dim_theta, ncol(theta)), call. = FALSE)
-  }
-  if (ncol(x) != fit$dim_x) {
-    stop(sprintf("`x` must have %d columns (the per-observation data dimension), got %d.",
-                 fit$dim_x, ncol(x)), call. = FALSE)
-  }
+  # Both arguments are matrices with a required width, so a bare "expected 2
+  # columns" would leave the user guessing which one is wrong.
+  theta <- as_lik_matrix(theta, fit$dim_theta, "theta", "one parameter per column")
+  x <- as_lik_matrix(x, fit$dim_x, "x",
+                     "one row per independent observation")
 
   theta_z <- apply_standardizer(fit$std_theta, theta)
   x_z <- apply_standardizer(fit$std_x, x)
@@ -80,6 +75,18 @@ log_lik.nsbi_nle <- function(fit, theta, x, sum_iid = TRUE,
     return(out)
   }
   stats::setNames(rowSums(out), rownames(theta))
+}
+
+#' Coerce one of `log_lik()`'s two matrix arguments, naming it if it is wrong
+#' @keywords internal
+as_lik_matrix <- function(value, d, arg, what) {
+  tryCatch(
+    as_theta_matrix(value, d),
+    error = function(e) {
+      stop(sprintf("`%s` must have %d columns (%s).", arg, d, what),
+           call. = FALSE)
+    }
+  )
 }
 
 #' A surrogate likelihood as a plain R function
@@ -125,7 +132,12 @@ likelihood_fn <- function(fit, x_obs, ...) {
 #' @keywords internal
 nle_potential <- function(fit, x_obs, max_batch = 1e5) {
   prior <- fit$prior
-  if (is.null(prior$log_prob)) {
+  # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
+  # only way to find out is to ask it. Better here than as a puzzling
+  # initialization failure a few hundred lines later.
+  probe <- tryCatch(prior$log_prob(sample_prior(prior, 2L)),
+                    error = function(e) NA_real_)
+  if (is.null(prior$log_prob) || all(is.na(probe))) {
     stop("Sampling an NLE posterior needs a prior log-density, and this prior ",
          "does not have one.\nRebuild it with prior_custom(..., log_prob_fn = ).",
          call. = FALSE)

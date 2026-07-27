@@ -10,7 +10,7 @@ NULL
 
 #' @keywords internal
 new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
-                      type = "custom", param_names = NULL) {
+                      type = "custom", param_names = NULL, params = NULL) {
   structure(
     list(
       sample = sample_fn,
@@ -19,7 +19,11 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
       lower = lower,
       upper = upper,
       type = type,
-      param_names = param_names
+      param_names = param_names,
+      # Distribution parameters kept alongside the closures, for code that has
+      # to restate the prior somewhere else -- stan_code() writes it out as a
+      # Stan sampling statement.
+      params = params
     ),
     class = "nsbi_prior"
   )
@@ -96,7 +100,8 @@ prior_normal <- function(mean, sd = 1) {
     rowSums(lp)
   }
   new_prior(sample_fn, log_prob_fn, d, lower = NULL, upper = NULL,
-            type = "normal", param_names = param_names)
+            type = "normal", param_names = param_names,
+            params = list(mean = mean, sd = sd))
 }
 
 #' Build a prior from arbitrary sampling / density functions

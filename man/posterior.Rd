@@ -2,15 +2,26 @@
 % Please edit documentation in R/posterior.R
 \name{posterior}
 \alias{posterior}
+\alias{posterior.default}
+\alias{posterior.nsbi_npe}
 \title{Posterior objects}
 \usage{
-posterior(fit, x_obs = NULL)
+posterior(fit, x_obs = NULL, ...)
+
+\method{posterior}{default}(fit, x_obs = NULL, ...)
+
+\method{posterior}{nsbi_npe}(fit, x_obs = NULL, ...)
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}}.}
+\item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}, or an
+\code{nsbi_nle} object from \code{\link[=nle]{nle()}}.}
 
 \item{x_obs}{Optional default observation to condition on. If supplied it
-becomes the default \code{x} for \code{\link[=sample]{sample()}}, \code{\link[=log_prob]{log_prob()}} and \code{\link[=map_estimate]{map_estimate()}}.}
+becomes the default \code{x} for \code{\link[=sample]{sample()}}, \code{\link[=log_prob]{log_prob()}} and \code{\link[=map_estimate]{map_estimate()}}.
+For an NLE fit, rows of \code{x_obs} are independent observations.}
+
+\item{...}{Passed to methods. See \code{\link[=posterior.nsbi_nle]{posterior.nsbi_nle()}} for the MCMC
+controls an NLE fit accepts.}
 }
 \value{
 An \code{nsbi_posterior} object.
@@ -21,6 +32,12 @@ observation \code{x_obs}. It knows how to draw posterior samples, evaluate the
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
 space are handled internally.
+
+The two inference methods reach a posterior by different routes, and
+\code{posterior()} hides the difference. An \code{\link[=npe]{npe()}} fit already \emph{is} a posterior
+estimator, so the returned object samples with a forward pass. An \code{\link[=nle]{nle()}}
+fit only knows the likelihood, so the returned object samples with MCMC and
+takes the extra arguments that implies.
 }
 \details{
 For bounded priors, samples that fall outside the prior support are rejected

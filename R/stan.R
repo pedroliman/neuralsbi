@@ -96,8 +96,8 @@ stan_data <- function(fit, x_obs = NULL) {
     out$nsbi_low <- as.numeric(prior$lower)
     out$nsbi_high <- as.numeric(prior$upper)
   } else if (identical(prior$type, "normal")) {
-    out$nsbi_prior_mean <- as.numeric(prior$mean)
-    out$nsbi_prior_sd <- as.numeric(prior$sd)
+    out$nsbi_prior_mean <- as.numeric(prior$params$mean)
+    out$nsbi_prior_sd <- as.numeric(prior$params$sd)
   }
   out
 }
