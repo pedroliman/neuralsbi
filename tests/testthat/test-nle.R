@@ -77,6 +77,38 @@ test_that("sum_iid = FALSE returns the per-observation matrix", {
   expect_equal(rowSums(per_obs), log_lik(fit, theta, x))
 })
 
+test_that("the shape is right at every corner of the cross product", {
+  # The estimators that factorize the i.i.d. sum build their result a row at a
+  # time, and R drops a one-row matrix to a vector, which silently transposes
+  # the answer. Every combination of one and several is checked for both.
+  for (estimator in c("linear_gaussian", "mdn")) {
+    if (estimator == "mdn") skip_if_no_torch()
+    fit <- nle(gauss_prior(), gauss_sim, n_simulations = 600,
+               density_estimator = estimator, hidden = c(16L, 16L),
+               n_components = 3L, max_epochs = 10L, seed = 1)
+    for (n_theta in c(1L, 5L)) {
+      for (n_obs in c(1L, 3L)) {
+        theta <- matrix(stats::runif(2 * n_theta, -2, 2), ncol = 2)
+        x <- matrix(stats::rnorm(2 * n_obs), ncol = 2)
+
+        per_obs <- log_lik(fit, theta, x, sum_iid = FALSE)
+        label <- sprintf("%s, %d theta, %d obs", estimator, n_theta, n_obs)
+
+        expect_equal(dim(per_obs), c(n_theta, n_obs), label = label)
+        expect_equal(rowSums(per_obs), log_lik(fit, theta, x), label = label)
+        # The general path is the reference: the fast ones must agree with it.
+        expect_equal(
+          per_obs,
+          de_log_lik_iid.default(fit$de,
+                                 apply_standardizer(fit$std_x, x),
+                                 apply_standardizer(fit$std_theta, theta)) +
+            standardizer_log_jac(fit$std_x),
+          tolerance = 1e-5, ignore_attr = TRUE, label = label)
+      }
+    }
+  }
+})
+
 test_that("blocking does not change the answer", {
   fit <- lingauss_fit()
   theta <- matrix(stats::runif(40, -2, 2), ncol = 2)

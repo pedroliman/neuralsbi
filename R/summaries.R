@@ -47,7 +47,7 @@ summary.nsbi_samples <- function(object,
 #' @rdname summaries
 #' @export
 summary.nsbi_posterior <- function(object, n = 1000L, x = NULL, ...) {
-  draws <- sample.nsbi_posterior(object, n = n, obs = x)
+  draws <- sample(object, n = n, obs = x)
   summary(draws, ...)
 }
 

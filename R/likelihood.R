@@ -111,9 +111,12 @@ de_log_lik_iid.nsbi_de_lingauss <- function(de, x, theta, max_batch = 1e5) {
   # One conditional mean per parameter, then every observation scored against
   # it. No loop over observations at all.
   mu <- lingauss_mean(de, theta)
-  t(vapply(seq_len(nrow(mu)),
-           function(i) dmvnorm_chol(x, mu[i, ], de$chol, log = TRUE),
-           numeric(nrow(x))))
+  lp <- vapply(seq_len(nrow(mu)),
+               function(i) dmvnorm_chol(x, mu[i, ], de$chol, log = TRUE),
+               numeric(nrow(x)))
+  # vapply returns a vector, not a one-row matrix, when there is a single
+  # observation, so the shape is set explicitly rather than by transposing.
+  matrix(lp, nrow = nrow(mu), ncol = nrow(x), byrow = TRUE)
 }
 
 #' @export

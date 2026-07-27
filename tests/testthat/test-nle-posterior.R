@@ -117,6 +117,22 @@ test_that("posterior draws carry names and convergence diagnostics", {
   expect_output(print(post), "unnormalized")
 })
 
+test_that("summary() works through the sample generic", {
+  set.seed(20)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 1500, density_estimator = "linear_gaussian",
+             seed = 21)
+  x_obs <- matrix(stats::rnorm(30, 1, 0.5), ncol = 1)
+  post <- posterior(fit, x_obs, n_chains = 4, warmup = 50, seed = 22)
+
+  s <- summary(post, n = 500)
+
+  expect_s3_class(s, "data.frame")
+  expect_equal(s$parameter, "mu")
+  expect_lt(abs(s$mean - mean(x_obs)), 0.15)
+})
+
 test_that("log_prob is the unnormalized posterior and says so", {
   set.seed(6)
   prior <- prior_uniform(c(mu = -2), c(mu = 2))
