@@ -151,9 +151,40 @@ one step per simulation, then one step per training epoch. If you use
 natively (`handlers(global = TRUE)`); if not, it draws its own bar. See
 `?nsbi_parallel` and `?nsbi_progress`.
 
+## Repeated observations, and a bridge to Stan
+
+`npe()` learns the posterior for a fixed-length `x`, decided when the
+network is trained. If your data are `n` independent measurements of the
+same quantity, that is awkward: collect 300 instead of 200 and the fit no
+longer applies. `nle()` learns the likelihood of a *single* observation
+instead, so their log-likelihoods add and `n` is free at inference time.
+
+``` r
+fit <- nle(prior, simulator, n_simulations = 20000)
+
+post  <- posterior(fit, x_obs)          # x_obs rows are independent observations
+draws <- sample(post, 4000)             # MCMC, not a forward pass
+```
+
+Because the result is a likelihood rather than a posterior, it is also a
+plain function of the parameters — `likelihood_fn(fit, x_obs)` hands it
+to `optim()` or any MCMC package — and it can be written out as Stan
+source:
+
+``` r
+write_stan_model(fit, "likelihood.stan")
+```
+
+The generated `functions` block recomputes the density in Stan's own
+language with the trained weights passed as data, so NUTS differentiates
+it directly and nothing has to be linked against `torch`. That makes the
+surrogate one term in a model you write, next to a hierarchical prior,
+covariates, or a second data source whose likelihood you do know. See
+`vignette("neural-likelihood")`.
+
 ## Learn more
 
-The [package website](https://neuralsbi.pedrodelima.com/) has six
+The [package website](https://neuralsbi.pedrodelima.com/) has seven
 vignettes that build on each other:
 
 1.  [Introduction to neural
@@ -176,6 +207,10 @@ vignettes that build on each other:
     states](https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.html)
     — three time-varying-beta models fit once each, then conditioned on
     51 case curves.
+7.  [Neural likelihood estimation, and handing it to
+    Stan](https://neuralsbi.pedrodelima.com/articles/neural-likelihood.html)
+    — repeated independent observations, MCMC over a learned likelihood,
+    and the generated Stan code.
 
 ## License
 

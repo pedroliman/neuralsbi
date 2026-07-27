@@ -11,11 +11,14 @@ sbc(
   n_sbc = 200L,
   n_posterior_samples = 1000L,
   sim_args = list(),
-  seed = NULL
+  seed = NULL,
+  ...
 )
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} fit (amortized posterior).}
+\item{fit}{An \code{nsbi_npe} fit from \code{\link[=npe]{npe()}}, or an \code{nsbi_nle} fit from
+\code{\link[=nle]{nle()}}. With an NLE fit every trial is a separate MCMC run, so start
+with a small \code{n_sbc} and raise it once the cost is known.}
 
 \item{simulator}{The simulator used for inference; called once per trial
 (see \link{nsbi_simulator}).}
@@ -30,6 +33,9 @@ sbc(
 call; see \link{nsbi_simulator}.}
 
 \item{seed}{Optional seed.}
+
+\item{...}{Passed to \code{\link[=posterior]{posterior()}}, which is how the MCMC controls
+(\code{n_chains}, \code{warmup}, \code{thin}, \code{sampler}) reach an NLE fit.}
 }
 \value{
 An object of class \code{nsbi_sbc} with the rank matrix and a per-parameter

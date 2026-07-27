@@ -13,18 +13,38 @@
 #' @name posterior
 NULL
 
-#' Build a posterior from an NPE fit
+#' Build a posterior from a fit
 #'
-#' @param fit An `nsbi_npe` object from [npe()].
+#' The two inference methods reach a posterior by different routes, and
+#' `posterior()` hides the difference. An [npe()] fit already *is* a posterior
+#' estimator, so the returned object samples with a forward pass. An [nle()]
+#' fit only knows the likelihood, so the returned object samples with MCMC and
+#' takes the extra arguments that implies.
+#'
+#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
+#'   `nsbi_nle` object from [nle()].
 #' @param x_obs Optional default observation to condition on. If supplied it
 #'   becomes the default `x` for [sample()], [log_prob()] and [map_estimate()].
+#'   For an NLE fit, rows of `x_obs` are independent observations.
+#' @param ... Passed to methods. See [posterior.nsbi_nle()] for the MCMC
+#'   controls an NLE fit accepts.
 #' @return An `nsbi_posterior` object.
 #' @seealso [save_npe()], which is how a torch-backed fit gets to disk and
 #'   back; `readRDS()` returns one whose network is dead, and `posterior()`
 #'   says so rather than failing later.
 #' @export
-posterior <- function(fit, x_obs = NULL) {
-  stopifnot(inherits(fit, "nsbi_npe"))
+posterior <- function(fit, x_obs = NULL, ...) UseMethod("posterior")
+
+#' @rdname posterior
+#' @export
+posterior.default <- function(fit, x_obs = NULL, ...) {
+  stop("posterior() needs a fit from npe() or nle(), not an object of class ",
+       paste(class(fit), collapse = "/"), ".", call. = FALSE)
+}
+
+#' @rdname posterior
+#' @export
+posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
   check_fit_alive(fit)
   if (!is.null(x_obs)) x_obs <- as_theta_matrix(x_obs, fit$dim_x)
   structure(
@@ -106,11 +126,18 @@ standardized_obs <- function(post, obs) {
 #'   probability and return `-Inf` outside the prior support.
 #' @param n_normalization Number of draws used to estimate the normalizing
 #'   (acceptance) constant when `normalize = TRUE`.
-#' @return Numeric vector of log posterior densities.
+#' @param ... Passed to methods.
+#' @return Numeric vector of log posterior densities. For a posterior built
+#'   from an [nle()] fit the value is **unnormalized** -- the evidence
+#'   \eqn{p(x)} is not available -- so differences between two `theta` are
+#'   meaningful but the absolute level is not.
 #' @export
-log_prob <- function(post, theta, x = NULL, normalize = TRUE,
-                     n_normalization = 10000L) {
-  stopifnot(inherits(post, "nsbi_posterior"))
+log_prob <- function(post, theta, x = NULL, ...) UseMethod("log_prob")
+
+#' @rdname log_prob
+#' @export
+log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
+                                    n_normalization = 10000L, ...) {
   fit <- post$fit
   theta <- as_theta_matrix(theta, fit$dim_theta)
   xo_std <- standardized_obs(post, x)
@@ -135,6 +162,10 @@ log_prob <- function(post, theta, x = NULL, normalize = TRUE,
 #' Starts from the best of a set of posterior draws and refines with a
 #' derivative-free optimizer.
 #'
+#' On a posterior from [nle()] the initial draws come from MCMC, so `n_init`
+#' buys a chain rather than a forward pass. They are cached on the posterior
+#' like any other run.
+#'
 #' @param post An `nsbi_posterior` object.
 #' @param x Observation to condition on (defaults to `x_obs`).
 #' @param n_init Number of initial draws used to seed the search.
@@ -143,7 +174,12 @@ log_prob <- function(post, theta, x = NULL, normalize = TRUE,
 map_estimate <- function(post, x = NULL, n_init = 1000L) {
   stopifnot(inherits(post, "nsbi_posterior"))
   fit <- post$fit
-  draws <- sample.nsbi_posterior(post, n = n_init, obs = x)
+  # Through the generic, not sample.nsbi_posterior() directly: an nle() fit's
+  # estimator has the roles swapped, so the NPE sampler asked to draw from it
+  # returns draws in x space. Where dim_x and dim_theta differ that is an error
+  # about non-conformable arguments; where they happen to match it is a set of
+  # starting points quietly drawn from the wrong distribution.
+  draws <- sample(post, n = n_init, obs = x)
   lp <- log_prob(post, draws, x = x, normalize = FALSE)
   start <- draws[which.max(lp), ]
   neg <- function(par) -log_prob(post, matrix(par, nrow = 1), x = x,

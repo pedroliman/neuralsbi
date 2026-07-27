@@ -95,25 +95,26 @@ navbar:
       menu:
       - text: Introduction to neural simulation-based inference in R
         href: articles/intro-to-sbi.html
-#      - text: Choosing a density estimator
-#        href: articles/density-estimators.html
-#      - text: Checking the posterior
-#        href: articles/diagnostics.html
-#      - text: "Comparison with pomp: an SIR epidemic model"
-#        href: articles/sir-epidemic.html
-#      - text: "Amortized R(t): a time-varying-beta SIR model across all US states"
-#        href: articles/sir-time-varying-beta.html
+      - text: "Neural likelihood estimation, and handing it to Stan"
+        href: articles/neural-likelihood.html
 
 articles:
 - title: Learning the package
   navbar: ~
   contents:
   - intro-to-sbi
-#  - neuralsbi
-#  - density-estimators
-#  - diagnostics
-#  - sir-epidemic
-#  - sir-time-varying-beta
+  - neural-likelihood
+# Every vignette that ships with the package has to appear somewhere in this
+# index or pkgdown aborts the build. The `internal` title is how pkgdown says
+# "build it, do not list it": these four are still rendered and still reachable
+# by URL, they are just off the articles index and out of the navbar.
+- title: internal
+  contents:
+  - neuralsbi
+  - density-estimators
+  - diagnostics
+  - sir-epidemic
+  - sir-time-varying-beta
 
 reference:
 - title: Priors
@@ -131,9 +132,19 @@ reference:
   - simulate_for_sbi
   - npe
   - npe_sequential
+  - nle
   - save_npe
   - density_estimator
   - embedding_mlp
+- title: Neural likelihood estimation
+  desc: Learn a surrogate likelihood, sample it with MCMC, and export it to Stan.
+  contents:
+  - log_lik
+  - likelihood_fn
+  - posterior.nsbi_nle
+  - sample.nsbi_nle_posterior
+  - nsbi_mcmc
+  - stan_export
 - title: Running the simulator
   desc: The simulator contract, parallel execution, and progress reporting.
   contents:

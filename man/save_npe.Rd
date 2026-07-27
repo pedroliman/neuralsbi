@@ -3,20 +3,26 @@
 \name{save_npe}
 \alias{save_npe}
 \alias{load_npe}
-\title{Save and reload a fitted NPE model}
+\alias{save_nle}
+\alias{load_nle}
+\title{Save and reload a fitted model}
 \usage{
 save_npe(fit, path)
 
 load_npe(path)
+
+save_nle(fit, path)
+
+load_nle(path)
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}.}
+\item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}, or an
+\code{nsbi_nle} object from \code{\link[=nle]{nle()}}.}
 
 \item{path}{File to write to (or read from). The convention is \code{.rds}.}
 }
 \value{
-\code{save_npe()} returns \code{path} invisibly. \code{load_npe()} returns the
-\code{nsbi_npe} fit.
+\code{save_npe()} returns \code{path} invisibly. \code{load_npe()} returns the fit.
 }
 \description{
 A fit whose estimator is \code{"maf"}, \code{"mdn"} or \code{"nsf"} holds a \code{torch} module,
@@ -42,6 +48,10 @@ not have to know which estimator was used.
 Weights are saved, not code. A fit saved by one version of \code{neuralsbi} loads
 into a later one as long as the estimator's architecture has not changed;
 \code{load_npe()} reports the version that wrote the file when the rebuild fails.
+
+\code{save_nle()} and \code{load_nle()} are aliases; both pairs handle either kind of
+fit, and the two names exist only so calling code reads the way the fit was
+made.
 }
 \examples{
 prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))

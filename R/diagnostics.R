@@ -10,6 +10,16 @@
 #' @name diagnostics
 NULL
 
+#' Accept either kind of fit, and say which ones exist when neither matches
+#' @keywords internal
+check_inference_fit <- function(fit) {
+  if (inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle")) {
+    return(invisible(TRUE))
+  }
+  stop("Expected a fit from npe() or nle(), not an object of class ",
+       paste(class(fit), collapse = "/"), ".", call. = FALSE)
+}
+
 #' Simulation-Based Calibration (SBC)
 #'
 #' Repeatedly draws a "true" parameter from the prior, simulates data, and ranks
@@ -19,7 +29,9 @@ NULL
 #' A trial whose simulation returns non-finite output is dropped, which lowers
 #' the effective `n_sbc`.
 #'
-#' @param fit An `nsbi_npe` fit (amortized posterior).
+#' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
+#'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
+#'   with a small `n_sbc` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
@@ -28,6 +40,8 @@ NULL
 #' @param sim_args Named list of extra arguments passed to every simulator
 #'   call; see [nsbi_simulator].
 #' @param seed Optional seed.
+#' @param ... Passed to [posterior()], which is how the MCMC controls
+#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
 #' @details The `n_sbc` simulations run across `future` workers when a plan is
 #'   set (see [nsbi_parallel]); the ranking loop that follows calls the trained
 #'   network and always runs locally.
@@ -36,8 +50,8 @@ NULL
 #' @export
 sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
                 n_posterior_samples = 1000L, sim_args = list(),
-                seed = NULL) {
-  stopifnot(inherits(fit, "nsbi_npe"))
+                seed = NULL, ...) {
+  check_inference_fit(fit)
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
   theta_true <- sample_prior(prior, n_sbc)
@@ -52,8 +66,8 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
     p <- nsbi_progressor(steps = n_sbc, label = "Ranking")
     tryCatch({
       for (i in seq_len(n_sbc)) {
-        post <- posterior(fit, x_obs = x_all[i, ])
-        draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+        post <- posterior(fit, x_obs = x_all[i, ], ...)
+        draws <- sample(post, n = n_posterior_samples)
         ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
         p(1)
       }
@@ -141,10 +155,14 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' A trial whose simulation returns non-finite output is dropped, which lowers
 #' the effective `n_tarp`.
 #'
-#' @param fit An `nsbi_npe` fit (amortized posterior).
+#' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
+#'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
+#'   with a small `n_tarp` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior used for inference (defaults to `fit$prior`).
+#' @param ... Passed to [posterior()], which is how the MCMC controls
+#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
 #' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial.
 #' @param references How to draw reference points: `"uniform"` (default, uniform
@@ -162,8 +180,8 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  n_posterior_samples = 1000L,
                  references = c("uniform", "prior"), sim_args = list(),
-                 seed = NULL) {
-  stopifnot(inherits(fit, "nsbi_npe"))
+                 seed = NULL, ...) {
+  check_inference_fit(fit)
   references <- match.arg(references)
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
@@ -196,8 +214,8 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
     p <- nsbi_progressor(steps = n_tarp, label = "Coverage")
     tryCatch({
       for (i in seq_len(n_tarp)) {
-        post <- posterior(fit, x_obs = x_all[i, ])
-        draws <- sample.nsbi_posterior(post, n = n_posterior_samples)
+        post <- posterior(fit, x_obs = x_all[i, ], ...)
+        draws <- sample(post, n = n_posterior_samples)
         draws_z <- apply_standardizer(std, draws)
         d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
         d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
@@ -240,7 +258,20 @@ print.nsbi_tarp <- function(x, ...) {
 #' the standard SBI metric for comparing an estimated posterior to a reference
 #' (e.g. an analytic posterior or long-run MCMC draws).
 #'
-#' @param x,y Matrices of samples (rows = draws, cols = dimensions).
+#' The classifier is linear, which decides what the number can and cannot see.
+#' It picks up a shift in location readily; it is close to blind to two sample
+#' sets that share a mean and differ in spread or in the shape of their
+#' dependence, because no hyperplane separates those. Python `sbi` uses an MLP,
+#' so its C2ST sees more, and a 0.5 from here is the weaker claim of the two.
+#' Read it alongside the moments rather than on its own.
+#'
+#' Unequal sample sizes are balanced by subsampling the larger set, because
+#' accuracy against unbalanced classes is not a two-sample test: 8000 draws
+#' against 2000 identical ones scores 0.8 for a classifier that has learned
+#' nothing except to always answer with the bigger class.
+#'
+#' @param x,y Matrices of samples (rows = draws, cols = dimensions). Sizes need
+#'   not match; the larger is subsampled down to the smaller.
 #' @param n_folds Number of cross-validation folds.
 #' @param seed Optional seed.
 #' @return A list with mean CV accuracy and per-fold accuracies.
@@ -249,6 +280,11 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
   x <- as_theta_matrix(x)
   y <- as_theta_matrix(y)
+  n_each <- min(nrow(x), nrow(y))
+  # base::sample.int, not the package's sample() generic, which dispatches on
+  # its first argument.
+  if (nrow(x) > n_each) x <- x[base::sample.int(nrow(x), n_each), , drop = FALSE]
+  if (nrow(y) > n_each) y <- y[base::sample.int(nrow(y), n_each), , drop = FALSE]
   # standardize jointly for a fair, scale-free classifier
   data <- rbind(x, y)
   std <- fit_standardizer(data)
@@ -292,7 +328,7 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
 posterior_predictive <- function(post, simulator, n = 1000L, x = NULL,
                                  sim_args = list()) {
   stopifnot(inherits(post, "nsbi_posterior"))
-  theta <- sample.nsbi_posterior(post, n = n, obs = x)
+  theta <- sample(post, n = n, obs = x)
   pred <- run_simulator(simulator, theta, sim_args = sim_args,
                         label = "Predicting")
   pred <- drop_failed_sims(NULL, pred, what = "predictive draws")$x
