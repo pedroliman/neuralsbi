@@ -133,6 +133,32 @@ test_that("summary() works through the sample generic", {
   expect_lt(abs(s$mean - mean(x_obs)), 0.15)
 })
 
+test_that("map_estimate() finds the mode of an NLE posterior", {
+  # map_estimate() used to call sample.nsbi_posterior() rather than the
+  # generic, which on an nle() fit asks the estimator for draws with the roles
+  # swapped: it returns points in x space. With dim_x = 1 and dim_theta = 2
+  # that is a non-conformable error; where the two dimensions happen to match
+  # it is silently the wrong starting distribution.
+  set.seed(31)
+  prior <- prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+  simulator <- function(mu, nu) c(y = mu + 0.5 * nu + stats::rnorm(1, sd = 0.3))
+  fit <- nle(prior, simulator, n_simulations = 3000,
+             density_estimator = "linear_gaussian", seed = 32)
+  x_obs <- matrix(stats::rnorm(50, mean = 1, sd = 0.3), ncol = 1)
+  post <- posterior(fit, x_obs, n_chains = 6, warmup = 60, thin = 2, seed = 33)
+
+  map <- map_estimate(post, n_init = 400)
+
+  expect_length(map, 2L)
+  expect_equal(names(map), c("mu", "nu"))
+  # Only mu + nu/2 is identified, so the ridge is what can be checked.
+  expect_equal(unname(map[1] + 0.5 * map[2]), mean(x_obs), tolerance = 0.1)
+  # And the mode must beat the posterior mean at its own game.
+  expect_gte(log_prob(post, matrix(map, nrow = 1), normalize = FALSE),
+             log_prob(post, matrix(colMeans(sample(post, 400)), nrow = 1),
+                      normalize = FALSE) - 1e-6)
+})
+
 test_that("log_prob is the unnormalized posterior and says so", {
   set.seed(6)
   prior <- prior_uniform(c(mu = -2), c(mu = 2))
