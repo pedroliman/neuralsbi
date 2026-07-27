@@ -188,7 +188,13 @@ leakage handling) and documented.
 
 ### v0.6+ — Breadth
 
-- Other families: NLE, NRE (ratio estimation) behind the same API.
+- Other families: NRE (ratio estimation) behind the same API. NLE landed in
+  0.5.0.
+- NSF in the Stan exporter, which means generating the rational-quadratic
+  spline transform.
+- A VI posterior for NLE, as an alternative to MCMC (`sbi` has one).
+- Sequential NLE (SNLE): the round structure from `npe_sequential()` applied to
+  a likelihood target.
 - Ensemble posteriors; misspecification diagnostics; restriction estimators.
 - Performance: GPU via torch, batched simulators, parallel simulation.
 
@@ -219,7 +225,15 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.4.1 simulator-contract pass (branch
+pick up the work. Last updated for the 0.5.0 neural-likelihood pass (branch
+`claude/neural-likelihood-estimation-stan-x6jwxa`, July 2026): the package is
+no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood
+`q(x | theta)` by handing the existing estimator stack its arguments swapped,
+`log_lik()`/`likelihood_fn()` (`R/likelihood.R`) evaluate it, a vectorized
+slice sampler (`R/mcmc.R`) turns it into posterior draws, and `stan_code()`
+(`R/stan.R`) writes it out as Stan source so the surrogate can live inside a
+model the user writes. `posterior()` and `log_prob()` became S3 generics to
+carry the second fit type. Before that, the 0.4.1 simulator-contract pass (branch
 `claude/issues-22-24-ql384x`, July 2026, issues #22 and #24): the simulator is
 now called once per parameter set and returns one observation (`R/simulator.R`
 holds the contract, `?nsbi_simulator` documents it), extra simulator arguments
@@ -275,6 +289,10 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | Posterior-predictive plot | `plot_posterior_predictive()` | done |
 | Leakage normalization | tests in `test-posterior-normalization.R` | done |
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
+| NLE | `nle()` in `R/nle.R` | done + analytic parity test; reuses every estimator by swapping the target and condition |
+| Surrogate likelihood | `log_lik()`, `likelihood_fn()` in `R/likelihood.R` | done; rows of `x` are i.i.d. observations and the log-density sums over them |
+| MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
+| Stan export | `stan_code()`, `stan_data()`, `write_stan_model()` in `R/stan.R` | done for `linear_gaussian` (agrees to 7e-13), `mdn` and `maf` (7e-07, which is the float32 R fit vs. double-precision Stan). NSF refused. Only `prior_uniform`/`prior_normal` generate a model block |
 | Embedding net | `embedding_mlp()` in `R/embedding.R` | MLP done + tested; wired into MDN/MAF/NSF via `embedding_net`; CNN/RNN open |
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
