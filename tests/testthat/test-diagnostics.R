@@ -32,6 +32,23 @@ test_that("c2st of a sample set against itself is ~0.5", {
   expect_lt(res$accuracy, 0.6)
 })
 
+test_that("c2st is not fooled by unequal sample sizes", {
+  # Accuracy against unbalanced classes is not a two-sample test. Four times as
+  # many draws on one side and a classifier scores 0.8 by always answering with
+  # the bigger class, having learned nothing -- which is what the vignette hit
+  # comparing 8000 slice draws against 2000 from Stan.
+  set.seed(2)
+  a <- matrix(rnorm(16000), ncol = 2)
+  b <- matrix(rnorm(4000), ncol = 2)
+
+  expect_lt(c2st(a, b, seed = 1)$accuracy, 0.6)
+  expect_lt(c2st(b, a, seed = 1)$accuracy, 0.6)
+
+  # Balancing must not cost it the ability to see a real difference.
+  shifted <- matrix(rnorm(4000, mean = 3), ncol = 2)
+  expect_gt(c2st(a, shifted, seed = 1)$accuracy, 0.9)
+})
+
 test_that("posterior_predictive returns simulator-shaped output", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + rnorm(1, sd = 0.3)

@@ -265,7 +265,13 @@ print.nsbi_tarp <- function(x, ...) {
 #' so its C2ST sees more, and a 0.5 from here is the weaker claim of the two.
 #' Read it alongside the moments rather than on its own.
 #'
-#' @param x,y Matrices of samples (rows = draws, cols = dimensions).
+#' Unequal sample sizes are balanced by subsampling the larger set, because
+#' accuracy against unbalanced classes is not a two-sample test: 8000 draws
+#' against 2000 identical ones scores 0.8 for a classifier that has learned
+#' nothing except to always answer with the bigger class.
+#'
+#' @param x,y Matrices of samples (rows = draws, cols = dimensions). Sizes need
+#'   not match; the larger is subsampled down to the smaller.
 #' @param n_folds Number of cross-validation folds.
 #' @param seed Optional seed.
 #' @return A list with mean CV accuracy and per-fold accuracies.
@@ -274,6 +280,11 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
   x <- as_theta_matrix(x)
   y <- as_theta_matrix(y)
+  n_each <- min(nrow(x), nrow(y))
+  # base::sample.int, not the package's sample() generic, which dispatches on
+  # its first argument.
+  if (nrow(x) > n_each) x <- x[base::sample.int(nrow(x), n_each), , drop = FALSE]
+  if (nrow(y) > n_each) y <- y[base::sample.int(nrow(y), n_each), , drop = FALSE]
   # standardize jointly for a fair, scale-free classifier
   data <- rbind(x, y)
   std <- fit_standardizer(data)
