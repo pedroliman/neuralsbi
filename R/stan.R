@@ -533,7 +533,9 @@ stan_sample_nle <- function(fit, x_obs, ctl, n, verbose = FALSE) {
   code <- stan_code(fit)
   data <- stan_data(fit, x_obs)
 
-  iter_sampling <- dots$iter_sampling %||% ceiling(n / ctl$n_chains) * ctl$thin
+  # NUTS draws are close to independent already, so `thin` -- which exists to
+  # decorrelate the slice sampler's output -- does not apply here.
+  iter_sampling <- dots$iter_sampling %||% ceiling(n / ctl$n_chains)
   iter_warmup <- dots$iter_warmup %||% max(ctl$warmup, 200L)
   refresh <- dots$refresh %||% (if (isTRUE(verbose)) 100L else 0L)
 
@@ -583,5 +585,8 @@ stan_run_rstan <- function(code, data, ctl, iter_warmup, iter_sampling,
 
 #' @keywords internal
 stan_cores <- function() {
-  max(1L, min(parallel::detectCores(logical = FALSE) %||% 1L, 4L))
+  # detectCores() returns NA, not NULL, when it cannot tell.
+  n <- parallel::detectCores(logical = FALSE)
+  if (!is.finite(n)) n <- 1L
+  max(1L, min(as.integer(n), 4L))
 }

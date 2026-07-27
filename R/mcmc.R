@@ -33,7 +33,8 @@ NULL
 #' @param n_draws Number of retained draws in total, across all chains.
 #' @param warmup Steps discarded at the start of each chain.
 #' @param thin Keep one draw in `thin`.
-#' @param width Initial slice width per dimension (recycled).
+#' @param width Initial slice width per dimension (recycled). Adapted during
+#'   warmup and then held fixed.
 #' @param max_steps Cap on stepping-out expansions per coordinate.
 #' @param verbose Report progress.
 #' @return A list with `draws` (`n_draws x dim`), `chains` (`n_kept x n_chains x
@@ -131,18 +132,26 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
           lo[rej[left]] <- pr[left]
           hi[rej[!left]] <- pr[!left]
           # Guard against an interval collapsing to a point on a flat or
-          # numerically degenerate target: accept and move on.
+          # numerically degenerate target. Such a chain stops shrinking and
+          # keeps its current value rather than looping forever.
           stuck <- rej[(hi[rej] - lo[rej]) <= .Machine$double.eps * 8]
-          if (length(stuck)) {
-            accept[match(stuck, pending)] <- TRUE
-            rej <- setdiff(rej, stuck)
-          }
+          if (length(stuck)) rej <- setdiff(rej, stuck)
         }
         pending <- rej
       }
     }
 
-    if (iter > warmup && ((iter - warmup) %% thin == 0L)) {
+    if (iter <= warmup) {
+      # Adapt the slice width to the target's own scale. A width set from the
+      # prior is badly wrong once the posterior is much narrower -- which is
+      # exactly what many independent observations produce -- and every unit of
+      # mismatch is paid for in stepping-out or shrinkage evaluations. The
+      # across-chain spread is a free estimate of that scale. Adaptation stops
+      # at the end of warmup, so the retained draws come from a fixed kernel.
+      spread <- apply(state, 2, stats::sd)
+      ok <- is.finite(spread) & spread > 0
+      width[ok] <- 0.5 * width[ok] + 0.5 * (2 * spread[ok])
+    } else if ((iter - warmup) %% thin == 0L) {
       keep_i <- keep_i + 1L
       kept[keep_i, , ] <- state
     }

@@ -90,7 +90,7 @@ $[0, 10]^4$.
 
 ```{r fit}
 fit <- nle(prior, simulator, n_simulations = 20000,
-           density_estimator = "maf", seed = 1)
+           density_estimator = "mdn", n_components = 10, seed = 1)
 fit
 ```
 
@@ -98,6 +98,16 @@ Twenty thousand simulations of a four-parameter model, each producing a single
 scalar. That is a small budget by SBI standards, and it goes further here than
 it would for NPE: the estimator is learning a one-dimensional conditional
 density rather than a four-dimensional posterior.
+
+The estimator is an MDN rather than the package default MAF, and the reason is
+worth knowing. An MDN maps `theta` to the parameters of a Gaussian mixture over
+`x`; the network never sees `x` at all. So for `n` independent observations the
+network runs **once** and all `n` densities are read off the same mixture. A
+flow's transforms depend on `x` as well as `theta`, so it has to run `n` times.
+With a few thousand observations that is the difference between seconds and
+minutes per MCMC step, and `neuralsbi` takes the shortcut automatically when
+the estimator allows it. Reach for `"maf"` when the conditional density is
+shaped in a way a mixture cannot follow and you can afford the passes.
 
 The fitted likelihood is a plain function, and `likelihood_fn()` hands it over
 as one:
@@ -128,7 +138,7 @@ x_all <- matrix(rgk(runif(5000), 3, 1, 2, 0.5), ncol = 1)
 
 draws <- lapply(c(50, 500, 5000), function(n) {
   post <- posterior(fit, x_all[seq_len(n), , drop = FALSE],
-                    n_chains = 20, warmup = 200, thin = 10, seed = 2)
+                    n_chains = 20, warmup = 200, seed = 2)
   sample(post, 4000)
 })
 names(draws) <- c("n = 50", "n = 500", "n = 5000")
@@ -141,20 +151,22 @@ The posterior contracts as the observations accumulate, which is what it should
 do and what an NPE fit trained at one `n` cannot show you.
 
 ```{r contraction, fig.height = 4.5}
+cols <- c("grey60", "steelblue", "firebrick")
+
 op <- par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
 for (j in 1:4) {
   dens <- lapply(draws, function(d) density(d[, j]))
-  plot(dens[[1]], main = colnames(draws[[1]])[j], xlab = "",
+  plot(dens[[1]], main = colnames(draws[[1]])[j], xlab = "", col = cols[1],
        ylim = c(0, max(sapply(dens, function(d) max(d$y)))))
-  for (i in 2:3) lines(dens[[i]], col = i)
+  for (i in 2:3) lines(dens[[i]], col = cols[i])
   abline(v = theta_true[j], lty = 2)
+  if (j == 1) legend("topright", names(draws), col = cols, lty = 1, bty = "n")
 }
 par(op)
-legend_labels <- names(draws)
 ```
 
-Grey through to the darker curves are `n = 50`, `500` and `5000`; the dashed
-line is the truth.
+The dashed line is the truth. Each posterior is narrower than the last, and
+none of them required a second fit.
 
 ## What the sampler did
 
@@ -163,7 +175,7 @@ what happened rather than leaving you to trust it:
 
 ```{r diagnostics}
 post_500 <- posterior(fit, x_all[1:500, , drop = FALSE],
-                      n_chains = 20, warmup = 200, thin = 10, seed = 2)
+                      n_chains = 20, warmup = 200, seed = 2)
 d500 <- sample(post_500, 4000)
 attr(d500, "diagnostics")
 ```
@@ -181,8 +193,9 @@ likelihood out as Stan source, so it does not have to:
 cat(stan_code(fit, model = FALSE))
 ```
 
-The generated `functions` block recomputes the flow's log-density in Stan's own
-language: masked matrix multiplies, a relu, the change-of-variables term. The
+The generated `functions` block recomputes the mixture's log-density in Stan's
+own language: the MLP as matrix multiplies and a relu, a softplus on the
+Cholesky diagonal, then `log_sum_exp` over the components. The
 trained weights arrive as `data` in the packed vector `w`, which is why the
 block reads as a lot of `segment()` calls. Stan differentiates the code itself,
 so NUTS gets exact gradients and nothing has to be linked against `torch`.
@@ -273,7 +286,7 @@ time and the trial count stays modest.
 
 ```{r sbc, fig.height = 4.5}
 res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 200, seed = 3,
-           n_chains = 10, warmup = 100, thin = 5)
+           n_chains = 10, warmup = 100)
 res
 
 op <- par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))

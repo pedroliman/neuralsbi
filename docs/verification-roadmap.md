@@ -291,7 +291,8 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
 | NLE | `nle()` in `R/nle.R` | done + analytic parity test; reuses every estimator by swapping the target and condition |
 | Surrogate likelihood | `log_lik()`, `likelihood_fn()` in `R/likelihood.R` | done; rows of `x` are i.i.d. observations and the log-density sums over them |
-| MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
+| MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, slice width adapted during warmup, `thin` defaults to 2 rather than sbi's 10 (ESS ~96% of draws either way). Split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
+| i.i.d. fast path | `de_log_lik_iid()` in `R/likelihood.R` | done; MDN and linear_gaussian compute the conditional once per parameter and score every observation against it, MAF/NSF fall back to the cross-product expansion. Same factorization the Stan `_sum` entry point uses |
 | Stan export | `stan_code()`, `stan_data()`, `write_stan_model()` in `R/stan.R` | done for `linear_gaussian` (agrees to 7e-13), `mdn` and `maf` (7e-07, which is the float32 R fit vs. double-precision Stan). NSF refused. Only `prior_uniform`/`prior_normal` generate a model block |
 | Embedding net | `embedding_mlp()` in `R/embedding.R` | MLP done + tested; wired into MDN/MAF/NSF via `embedding_net`; CNN/RNN open |
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
