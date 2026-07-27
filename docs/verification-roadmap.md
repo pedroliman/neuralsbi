@@ -188,7 +188,13 @@ leakage handling) and documented.
 
 ### v0.6+ — Breadth
 
-- Other families: NLE, NRE (ratio estimation) behind the same API.
+- Other families: NRE (ratio estimation) behind the same API. NLE landed in
+  0.4.3.
+- NSF in the Stan exporter, which means generating the rational-quadratic
+  spline transform.
+- A VI posterior for NLE, as an alternative to MCMC (`sbi` has one).
+- Sequential NLE (SNLE): the round structure from `npe_sequential()` applied to
+  a likelihood target.
 - Ensemble posteriors; misspecification diagnostics; restriction estimators.
 - Performance: GPU via torch, batched simulators, parallel simulation.
 
@@ -219,7 +225,19 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.4.1 simulator-contract pass (branch
+pick up the work. Last updated for the 0.4.3 neural-likelihood pass (branches
+`claude/neural-likelihood-estimation-stan-x6jwxa` then
+`claude/nle-implementation-performance-lvfp92`, July 2026): the package is
+no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood
+`q(x | theta)` by handing the existing estimator stack its arguments swapped,
+`log_lik()`/`likelihood_fn()` (`R/likelihood.R`) evaluate it, a vectorized
+slice sampler (`R/mcmc.R`) turns it into posterior draws, and `stan_code()`
+(`R/stan.R`) writes it out as Stan source so the surrogate can live inside a
+model the user writes. `posterior()` and `log_prob()` became S3 generics to
+carry the second fit type. The second branch made sampling about five times
+faster (speculative slice moves, observation-side work hoisted out of the loop,
+the i.i.d. sum reduced in place, and TorchScript replay for the MDN), exercised
+the `rstan` fallback for real, and baked the article. Before that, the 0.4.1 simulator-contract pass (branch
 `claude/issues-22-24-ql384x`, July 2026, issues #22 and #24): the simulator is
 now called once per parameter set and returns one observation (`R/simulator.R`
 holds the contract, `?nsbi_simulator` documents it), extra simulator arguments
@@ -268,13 +286,20 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |
 | NSF | `R/nsf.R` | done + tested; autoregressive (sbi uses coupling) |
 | Tasks | `R/tasks.R` | gaussian_linear (analytic ref), two_moons, slcp, sir |
-| Benchmarks vs sbi | `inst/benchmarks/01..04` | scripted, **never executed** |
+| Benchmarks vs sbi (NPE) | `inst/benchmarks/01..04` | scripted, **never executed** |
+| Benchmarks vs sbi (NLE) | `inst/benchmarks/05..08` | **run** against sbi 0.26.1; results in `docs/benchmarks/nle-vs-sbi.md` |
 | Summaries/tidy | `R/summaries.R` | done |
 | Coverage plot | `plot_coverage()` in `R/plotting.R` | done |
 | TARP coverage | `tarp()`, `plot_tarp()` | done + tested (calibrated & miscalibrated cases) |
 | Posterior-predictive plot | `plot_posterior_predictive()` | done |
 | Leakage normalization | tests in `test-posterior-normalization.R` | done |
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
+| NLE | `nle()` in `R/nle.R` | done + analytic parity test; reuses every estimator by swapping the target and condition |
+| Surrogate likelihood | `log_lik()`, `likelihood_fn()` in `R/likelihood.R` | done; rows of `x` are i.i.d. observations and the log-density sums over them |
+| MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, slice width adapted during warmup, `thin` defaults to 2 rather than sbi's 10 (ESS ~96% of draws either way). Stepping out and shrinkage both carry several of a chain's future moves per call, capped so no call is wider than the one that opened the coordinate. Split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
+| i.i.d. fast path | `de_log_lik_iid()`, `de_iid_evaluator()` in `R/likelihood.R` | done; MDN and linear_gaussian compute the conditional once per parameter and score every observation against it, MAF/NSF fall back to the cross-product expansion. Same factorization the Stan `_sum` entry point uses. `de_iid_evaluator()` is the summed form the sampler uses: it closes over the observation so the estimator can hoist what depends on it, and reduces where the densities are produced so the `n_theta x n_obs` matrix is never built |
+| TorchScript replay | `mdn_trace_cache()` in `R/likelihood.R` | done + tested; an MDN's summed density is traced with `torch::jit_trace()` once an evaluator is called a few times, one trace per parameter-row count, each checked against the eager result before use. Any failure falls back to eager. `options(neuralsbi.jit = FALSE)` disables. Worth extending to the MAF path if someone needs it |
+| Stan export | `stan_code()`, `stan_data()`, `write_stan_model()` in `R/stan.R` | done for `linear_gaussian` (agrees to 7e-13), `mdn` and `maf` (7e-07, which is the float32 R fit vs. double-precision Stan). NSF refused. Only `prior_uniform`/`prior_normal` generate a model block |
 | Embedding net | `embedding_mlp()` in `R/embedding.R` | MLP done + tested; wired into MDN/MAF/NSF via `embedding_net`; CNN/RNN open |
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
@@ -313,6 +338,15 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
    CSVs + a short summary to `docs/benchmarks/`. Acceptance: C2ST ≤ 0.60.
+   **The NLE half is done** (`05`–`08`, sbi 0.26.1, MAF, 10k sims,
+   gaussian_linear at 5 dimensions, observation sets of 1/10/100):
+   indistinguishable from `sbi` and from the analytic posterior at one
+   observation (C2ST 0.499 / 0.510), and at a hundred observations both
+   implementations degrade by the same amount in the same way — the i.i.d.
+   sum amplifying the surrogate's per-observation error, not either
+   implementation. Write-up: `docs/benchmarks/nle-vs-sbi.md`. **Still open:**
+   the NPE half (`01`–`04`), which has never been executed, and NLE at other
+   tasks/estimators.
 3. **Two-moons calibration study** (finishes M2): done via
    `inst/benchmarks/two_moons_calibration.R` — `sbc()` + `plot_coverage()` +
    `tarp()` on a two-moons NSF fit, figures saved to `docs/figures/`. TARP

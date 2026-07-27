@@ -1,4 +1,4 @@
-#' Save and reload a fitted NPE model
+#' Save and reload a fitted model
 #'
 #' A fit whose estimator is `"maf"`, `"mdn"` or `"nsf"` holds a `torch` module,
 #' and a torch module is an external pointer. `saveRDS()` writes the pointer,
@@ -23,10 +23,14 @@
 #' into a later one as long as the estimator's architecture has not changed;
 #' `load_npe()` reports the version that wrote the file when the rebuild fails.
 #'
-#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()].
+#' `save_nle()` and `load_nle()` are aliases; both pairs handle either kind of
+#' fit, and the two names exist only so calling code reads the way the fit was
+#' made.
+#'
+#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
+#'   `nsbi_nle` object from [nle()].
 #' @param path File to write to (or read from). The convention is `.rds`.
-#' @return `save_npe()` returns `path` invisibly. `load_npe()` returns the
-#'   `nsbi_npe` fit.
+#' @return `save_npe()` returns `path` invisibly. `load_npe()` returns the fit.
 #'
 #' @examples
 #' prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))
@@ -46,7 +50,7 @@ NULL
 #' @rdname save_npe
 #' @export
 save_npe <- function(fit, path) {
-  stopifnot(inherits(fit, "nsbi_npe"))
+  stopifnot(inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle"))
   if (!is.character(path) || length(path) != 1L) {
     stop("`path` must be a single file path.", call. = FALSE)
   }
@@ -106,6 +110,14 @@ load_npe <- function(path) {
   fit$de$net <- net
   fit
 }
+
+#' @rdname save_npe
+#' @export
+save_nle <- function(fit, path) save_npe(fit, path)
+
+#' @rdname save_npe
+#' @export
+load_nle <- function(path) load_npe(path)
 
 #' The fit without its torch module, for R-level serialization
 #' @keywords internal
