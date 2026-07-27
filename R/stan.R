@@ -30,6 +30,19 @@
 #' linear-Gaussian estimator the conditional distribution depends on `theta`
 #' alone, so it is computed once and reused across every row.
 #'
+#' @section Why the code is generated rather than called:
+#'
+#' Python `sbi` hands its learned likelihood to Pyro or PyMC as a callable,
+#' because everything lives in one process and the sampler can differentiate
+#' the same graph the estimator was trained in. Stan cannot work that way: it
+#' compiles to C++ and needs the gradient inside its own autodiff. The
+#' alternative would be an external C++ header (`--allow-undefined` plus a
+#' `USER_HEADER`) linking `torch` into every Stan compile, with the gradients
+#' plumbed by hand. Generating source keeps the run-time dependency at zero and
+#' makes the result something you can read, edit, and check -- which is what the
+#' package's own tests do, by evaluating the emitted functions and comparing
+#' them against [log_lik()].
+#'
 #' @section Supported estimators:
 #'
 #' `"mdn"`, `"maf"` and `"linear_gaussian"`. `"nsf"` is not exported -- its
