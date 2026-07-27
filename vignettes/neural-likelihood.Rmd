@@ -11,25 +11,16 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
-# This vignette is precomputed: see vignettes/precompute.R. Edit the .Rmd.orig,
-# re-run the precompute script, and commit the regenerated .Rmd and figures.
-knitr::opts_chunk$set(
-  collapse = TRUE, comment = "#>", error = FALSE,
-  fig.path = "figures/neural-likelihood-", fig.width = 6, fig.height = 3.6,
-  dpi = 96, fig.retina = NULL, dev = "svglite"
-)
-set.seed(1)
 
-if (requireNamespace("future", quietly = TRUE)) {
-  future::plan(future::multisession)
-}
-has_cmdstan <- requireNamespace("cmdstanr", quietly = TRUE) &&
-  !is.null(tryCatch(cmdstanr::cmdstan_version(), error = function(e) NULL))
-```
 
-```{r setup}
+
+``` r
 library(neuralsbi)
+#> 
+#> Attaching package: 'neuralsbi'
+#> The following object is masked from 'package:base':
+#> 
+#>     sample
 ```
 
 `npe()` learns the posterior directly. That is the right default, and most of
@@ -67,7 +58,8 @@ uniform, push it through `Q`. Writing down the density is not, because `Q` has
 no closed-form inverse. So the model is easy to simulate and impossible to fit
 by ordinary maximum likelihood, which is exactly the situation SBI is for.
 
-```{r simulator}
+
+``` r
 rgk <- function(u, A, B, g, k, c = 0.8) {
   z <- qnorm(u)
   A + B * (1 + c * (1 - exp(-g * z)) / (1 + exp(-g * z))) *
@@ -89,14 +81,19 @@ The ABC literature usually puts `g` and `k` on $[0, 10]$ along with the other
 two. Both are bad ideas here, and simulating from the prior says so before any
 training happens. Start with `k`:
 
-```{r prior-predictive}
+
+``` r
 wide <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
                       high = c(A = 10, B = 10, g = 10, k = 10))
 
 quantile(abs(simulate_for_sbi(simulator, wide, 5000, seed = 1)$x),
          c(0.5, 0.99, 1))
+#>          50%          99%         100% 
+#> 1.080501e+01 2.391925e+07 1.237661e+11
 quantile(abs(simulate_for_sbi(simulator, prior, 5000, seed = 1)$x),
          c(0.5, 0.99, 1))
+#>        50%        99%       100% 
+#>   6.040338  78.061778 379.911342
 ```
 
 `k` is the tail-weight parameter and it enters as $(1 + z^2)^k$, so `k = 10`
@@ -110,12 +107,18 @@ the tails interesting and the problem well posed.
 $(1 - e^{-gz}) / (1 + e^{-gz})$, which is a tanh in disguise and saturates:
 once $g$ is past about 4 the simulated distribution stops changing.
 
-```{r prior-predictive-g}
+
+``` r
 u <- runif(200000)
 shift <- sapply(c(1, 2, 3, 4, 6, 10), function(g)
   quantile(rgk(u, A = 3, B = 1, g = g, k = 0.5), c(0.1, 0.25, 0.75, 0.9)))
 colnames(shift) <- paste0("g=", c(1, 2, 3, 4, 6, 10))
 round(shift, 3)
+#>       g=1   g=2   g=3   g=4   g=6  g=10
+#> 10% 1.858 2.344 2.513 2.563 2.581 2.583
+#> 25% 2.396 2.568 2.685 2.755 2.814 2.835
+#> 75% 4.023 4.194 4.310 4.380 4.440 4.461
+#> 90% 6.007 6.491 6.660 6.710 6.729 6.730
 ```
 
 The quantiles move by 0.7 per unit of `g` between 1 and 2, and by 0.005 per
@@ -133,10 +136,20 @@ mix.
 
 ## Train the surrogate likelihood
 
-```{r fit}
+
+``` r
 fit <- nle(prior, simulator, n_simulations = 50000,
            density_estimator = "mdn", n_components = 10, seed = 1)
 fit
+#> <nsbi_nle> Neural Likelihood Estimation fit
+#>   density estimator : mdn  (learns q(x | theta))
+#>   parameters (dim)  : 4
+#>     names           : A, B, g, k 
+#>   data (dim)        : 1  per observation
+#>     names           : y 
+#>   simulations       : 50000
+#>   best val loss     : 0.1176
+#>   -> log_lik(fit, theta, x), posterior(fit, x_obs = ...), stan_code(fit)
 ```
 
 Fifty thousand simulations of a four-parameter model, each producing a single
@@ -159,12 +172,14 @@ passes.
 The fitted likelihood is a plain function, and `likelihood_fn()` hands it over
 as one:
 
-```{r loglik}
+
+``` r
 theta_true <- c(A = 3, B = 1, g = 2, k = 0.5)
 x_obs <- matrix(rgk(runif(500), 3, 1, 2, 0.5), ncol = 1)
 
 loglik <- likelihood_fn(fit, x_obs)
 loglik(theta_true)
+#> [1] -783.0119
 
 # Nothing downstream needs to know about neuralsbi.
 profile_A <- sapply(seq(2, 4, by = 0.1), function(a) {
@@ -175,12 +190,15 @@ plot(seq(2, 4, by = 0.1), profile_A, type = "l",
 abline(v = 3, lty = 2)
 ```
 
+![plot of chunk loglik](figures/neural-likelihood-loglik-1.svg)
+
 ## One fit, any number of observations
 
 This is the payoff. The same `fit` conditions on 50 observations, 500, or
 5000, with no retraining:
 
-```{r n-obs}
+
+``` r
 x_all <- matrix(rgk(runif(5000), 3, 1, 2, 0.5), ncol = 1)
 
 draws <- lapply(c(50, 500, 5000), function(n) {
@@ -191,13 +209,22 @@ draws <- lapply(c(50, 500, 5000), function(n) {
 names(draws) <- c("n = 50", "n = 500", "n = 5000")
 
 t(sapply(draws, colMeans))
+#>                 A        B        g         k
+#> n = 50   3.361437 1.819317 2.446080 0.3563905
+#> n = 500  3.104044 1.136909 1.822757 0.6066267
+#> n = 5000 3.068538 1.073896 1.690570 0.6052047
 t(sapply(draws, function(d) apply(d, 2, sd)))
+#>                   A          B          g          k
+#> n = 50   0.24783002 0.43942949 0.71211816 0.14812811
+#> n = 500  0.07774668 0.08218999 0.34056131 0.04239406
+#> n = 5000 0.01988842 0.02115621 0.06665379 0.01171446
 ```
 
 The posterior contracts as the observations accumulate, which is what it should
 do and what an NPE fit trained at one `n` cannot show you.
 
-```{r contraction, fig.height = 4.5}
+
+``` r
 cols <- c("grey60", "steelblue", "firebrick")
 
 op <- par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
@@ -209,6 +236,11 @@ for (j in 1:4) {
   abline(v = theta_true[j], lty = 2)
   if (j == 1) legend("topright", names(draws), col = cols, lty = 1, bty = "n")
 }
+```
+
+![plot of chunk contraction](figures/neural-likelihood-contraction-1.svg)
+
+``` r
 par(op)
 ```
 
@@ -220,11 +252,16 @@ none of them required a second fit.
 Now compare each posterior against the truth in the units the posterior itself
 is quoting -- its own standard deviations:
 
-```{r amplification}
+
+``` r
 z_score <- t(sapply(draws, function(d) {
   (colMeans(d) - theta_true) / apply(d, 2, sd)
 }))
 round(z_score, 1)
+#>            A   B    g    k
+#> n = 50   1.5 1.9  0.6 -1.0
+#> n = 500  1.3 1.7 -0.5  2.5
+#> n = 5000 3.4 3.5 -4.6  9.0
 ```
 
 The absolute errors are small and mostly getting smaller. The numbers above are
@@ -263,11 +300,17 @@ second half.
 `sample()` on an NLE posterior runs a vectorized slice sampler, and reports
 what happened rather than leaving you to trust it:
 
-```{r diagnostics}
+
+``` r
 post_500 <- posterior(fit, x_all[1:500, , drop = FALSE],
                       n_chains = 20, warmup = 500, seed = 2)
 d500 <- sample(post_500, 8000)
 attr(d500, "diagnostics")
+#>       rhat  ess_bulk
+#> A 1.022598  662.6971
+#> B 1.023026 1154.1432
+#> g 1.033257  575.6867
+#> k 1.011480 2209.0063
 ```
 
 `rhat` compares the spread within each chain against the spread across them, so
@@ -303,8 +346,61 @@ too short to prove itself rather than chains in different places.
 Everything so far stayed inside `neuralsbi`. `stan_code()` writes the fitted
 likelihood out as Stan source, so it does not have to:
 
-```{r stan-code}
+
+``` r
 cat(stan_code(fit, model = FALSE))
+#> // Generated by neuralsbi::stan_code(). Do not edit by hand.
+#> // Surrogate likelihood q(x | theta) from an nle() fit (mdn, 50000 simulations).
+#> functions {
+#>   vector nsbi_log_lik_relu(vector v) {
+#>     vector[num_elements(v)] out;
+#>     for (i in 1:num_elements(v)) out[i] = fmax(v[i], 0.0);
+#>     return out;
+#>   }
+#> 
+#>   // MLP head: mixture logits, means and Cholesky factors, all functions
+#>   // of theta alone. Returned packed so the i.i.d. sum can hoist it out
+#>   // of the observation loop.
+#>   vector nsbi_log_lik_head(vector ts, vector w) {
+#>     vector[50] h1 = nsbi_log_lik_relu(to_matrix(segment(w, 1, 200), 50, 4) * ts + segment(w, 201, 50));
+#>     vector[50] h2 = nsbi_log_lik_relu(to_matrix(segment(w, 251, 2500), 50, 50) * h1 + segment(w, 2751, 50));
+#>     return append_row(append_row(to_matrix(segment(w, 2801, 500), 10, 50) * h2 + segment(w, 3301, 10), to_matrix(segment(w, 3311, 500), 10, 50) * h2 + segment(w, 3811, 10)), to_matrix(segment(w, 3821, 500), 10, 50) * h2 + segment(w, 4321, 10));
+#>   }
+#> 
+#>   real nsbi_log_lik_from_head(vector xs, vector head) {
+#>     vector[10] logits = head[1:10];
+#>     vector[10] mflat = head[11:20];
+#>     vector[10] tflat = head[21:30];
+#>     vector[10] lp;
+#>     for (k in 1:10) {
+#>       matrix[1, 1] L = rep_matrix(0.0, 1, 1);
+#>       vector[1] mu = mflat[((k - 1) * 1 + 1):(k * 1)];
+#>       {
+#>         L[1, 1] = log1p_exp(tflat[(k - 1) * 1 + 1]) + 1e-6;
+#>       }
+#>       lp[k] = logits[k] + multi_normal_cholesky_lpdf(xs | mu, L);
+#>     }
+#>     return log_sum_exp(lp) - log_sum_exp(logits);
+#>   }
+#> 
+#>   real nsbi_log_lik_lpdf(vector x, vector theta, vector w) {
+#>     vector[1] xs = (x - [8.8893274325512426]') ./ [16.741656276369508]';
+#>     vector[4] ts = (theta - [5.0028162992720491, 4.989676804957166, 1.9967429687478766, 0.50097727076713461]') ./ [2.8874993568662277, 2.9013129093596519, 1.1517685672968496, 0.28881718509330867]';
+#>     return nsbi_log_lik_from_head(xs, nsbi_log_lik_head(ts, w)) - 2.8179000014076787;
+#>   }
+#> 
+#>   real nsbi_log_lik_sum_lpdf(matrix x, vector theta, vector w) {
+#>     vector[4] ts = (theta - [5.0028162992720491, 4.989676804957166, 1.9967429687478766, 0.50097727076713461]') ./ [2.8874993568662277, 2.9013129093596519, 1.1517685672968496, 0.28881718509330867]';
+#>     vector[30] head = nsbi_log_lik_head(ts, w);
+#>     vector[1] xc = [8.8893274325512426]';
+#>     vector[1] xsc = [16.741656276369508]';
+#>     real total = 0;
+#>     for (n in 1:rows(x)) {
+#>       total += nsbi_log_lik_from_head((x[n]' - xc) ./ xsc, head);
+#>     }
+#>     return total + rows(x) * (-2.8179000014076787);
+#>   }
+#> }
 ```
 
 The generated `functions` block recomputes the mixture's log-density in Stan's
@@ -316,14 +412,89 @@ so NUTS gets exact gradients and nothing has to be linked against `torch`.
 
 A complete model comes with the prior and data blocks attached:
 
-```{r stan-model}
+
+``` r
 cat(stan_code(fit))
+#> // Generated by neuralsbi::stan_code(). Do not edit by hand.
+#> // Surrogate likelihood q(x | theta) from an nle() fit (mdn, 50000 simulations).
+#> functions {
+#>   vector nsbi_log_lik_relu(vector v) {
+#>     vector[num_elements(v)] out;
+#>     for (i in 1:num_elements(v)) out[i] = fmax(v[i], 0.0);
+#>     return out;
+#>   }
+#> 
+#>   // MLP head: mixture logits, means and Cholesky factors, all functions
+#>   // of theta alone. Returned packed so the i.i.d. sum can hoist it out
+#>   // of the observation loop.
+#>   vector nsbi_log_lik_head(vector ts, vector w) {
+#>     vector[50] h1 = nsbi_log_lik_relu(to_matrix(segment(w, 1, 200), 50, 4) * ts + segment(w, 201, 50));
+#>     vector[50] h2 = nsbi_log_lik_relu(to_matrix(segment(w, 251, 2500), 50, 50) * h1 + segment(w, 2751, 50));
+#>     return append_row(append_row(to_matrix(segment(w, 2801, 500), 10, 50) * h2 + segment(w, 3301, 10), to_matrix(segment(w, 3311, 500), 10, 50) * h2 + segment(w, 3811, 10)), to_matrix(segment(w, 3821, 500), 10, 50) * h2 + segment(w, 4321, 10));
+#>   }
+#> 
+#>   real nsbi_log_lik_from_head(vector xs, vector head) {
+#>     vector[10] logits = head[1:10];
+#>     vector[10] mflat = head[11:20];
+#>     vector[10] tflat = head[21:30];
+#>     vector[10] lp;
+#>     for (k in 1:10) {
+#>       matrix[1, 1] L = rep_matrix(0.0, 1, 1);
+#>       vector[1] mu = mflat[((k - 1) * 1 + 1):(k * 1)];
+#>       {
+#>         L[1, 1] = log1p_exp(tflat[(k - 1) * 1 + 1]) + 1e-6;
+#>       }
+#>       lp[k] = logits[k] + multi_normal_cholesky_lpdf(xs | mu, L);
+#>     }
+#>     return log_sum_exp(lp) - log_sum_exp(logits);
+#>   }
+#> 
+#>   real nsbi_log_lik_lpdf(vector x, vector theta, vector w) {
+#>     vector[1] xs = (x - [8.8893274325512426]') ./ [16.741656276369508]';
+#>     vector[4] ts = (theta - [5.0028162992720491, 4.989676804957166, 1.9967429687478766, 0.50097727076713461]') ./ [2.8874993568662277, 2.9013129093596519, 1.1517685672968496, 0.28881718509330867]';
+#>     return nsbi_log_lik_from_head(xs, nsbi_log_lik_head(ts, w)) - 2.8179000014076787;
+#>   }
+#> 
+#>   real nsbi_log_lik_sum_lpdf(matrix x, vector theta, vector w) {
+#>     vector[4] ts = (theta - [5.0028162992720491, 4.989676804957166, 1.9967429687478766, 0.50097727076713461]') ./ [2.8874993568662277, 2.9013129093596519, 1.1517685672968496, 0.28881718509330867]';
+#>     vector[30] head = nsbi_log_lik_head(ts, w);
+#>     vector[1] xc = [8.8893274325512426]';
+#>     vector[1] xsc = [16.741656276369508]';
+#>     real total = 0;
+#>     for (n in 1:rows(x)) {
+#>       total += nsbi_log_lik_from_head((x[n]' - xc) ./ xsc, head);
+#>     }
+#>     return total + rows(x) * (-2.8179000014076787);
+#>   }
+#> }
+#> 
+#> data {
+#>   int<lower=1> N;                 // number of independent observations
+#>   matrix[N, 1] x;                 // the observations
+#>   int<lower=1> nsbi_nw;
+#>   vector[nsbi_nw] nsbi_w;         // trained weights, from stan_data()
+#>   vector[4] nsbi_low;
+#>   vector[4] nsbi_high;
+#> }
+#> 
+#> parameters {
+#>   vector<lower=nsbi_low, upper=nsbi_high>[4] theta;
+#> }
+#> 
+#> model {
+#>   x ~ nsbi_log_lik_sum(theta, nsbi_w);
+#> }
 ```
 
 Running it is the ordinary `cmdstanr` workflow:
 
-```{r stan-run, eval = has_cmdstan}
+
+``` r
 library(cmdstanr)
+#> This is cmdstanr version 0.8.0
+#> - CmdStanR documentation and vignettes: mc-stan.org/cmdstanr
+#> - CmdStan path: /root/.cmdstan/cmdstan-2.36.0
+#> - CmdStan version: 2.36.0
 
 model <- cmdstan_model(write_stan_model(fit, tempfile(fileext = ".stan")))
 stan_fit <- model$sample(
@@ -331,16 +502,38 @@ stan_fit <- model$sample(
   chains = 4, parallel_chains = 4,
   iter_warmup = 500, iter_sampling = 500, refresh = 0
 )
+#> Running MCMC with 4 parallel chains...
+#> 
+#> Chain 1 finished in 65.8 seconds.
+#> Chain 3 finished in 68.3 seconds.
+#> Chain 2 finished in 69.5 seconds.
+#> Chain 4 finished in 69.3 seconds.
+#> 
+#> All 4 chains finished successfully.
+#> Mean chain execution time: 68.2 seconds.
+#> Total execution time: 69.8 seconds.
 stan_fit$summary("theta")[, c("variable", "mean", "sd", "rhat", "ess_bulk")]
+#> # A tibble: 4 x 5
+#>   variable  mean     sd  rhat ess_bulk
+#>   <chr>    <dbl>  <dbl> <dbl>    <dbl>
+#> 1 theta[1] 3.11  0.0763  1.01     413.
+#> 2 theta[2] 1.13  0.0800  1.02     360.
+#> 3 theta[3] 1.79  0.336   1.02     307.
+#> 4 theta[4] 0.608 0.0401  1.02     366.
 ```
 
 `posterior(fit, x_obs, sampler = "stan")` does the same thing in one call when
 you only want draws. Both routes land in the same place:
 
-```{r stan-vs-slice, eval = has_cmdstan}
+
+``` r
 by_stan <- matrix(stan_fit$draws("theta", format = "draws_matrix"), ncol = 4)
 round(rbind(slice = colMeans(d500), stan = colMeans(by_stan)), 3)
+#>           A     B     g     k
+#> slice 3.104 1.137 1.823 0.607
+#> stan  3.109 1.133 1.793 0.608
 c2st(d500, by_stan, seed = 1)$accuracy
+#> [1] 0.51225
 ```
 
 A C2ST near 0.5 says a classifier cannot tell the two sets of draws apart. Two
@@ -403,13 +596,22 @@ posterior draws. Calibrated inference gives uniform ranks.
 Each SBC trial is a full MCMC run here, not a forward pass, so this costs real
 time and the trial count stays modest.
 
-```{r sbc, fig.height = 4.5, warning = FALSE}
+
+``` r
 res <- sbc(fit, simulator, n_sbc = 60, n_posterior_samples = 150, seed = 3,
            n_chains = 10, warmup = 150)
 res
+#> <nsbi_sbc> 60 trials, 150 posterior samples each
+#>   per-parameter uniformity p-values (large = calibrated):
+#>     A=0.172  B=0.436  g=0.436  k=0.000
 
 op <- par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
 for (j in 1:4) plot_sbc(res, param = j)
+```
+
+![plot of chunk sbc](figures/neural-likelihood-sbc-1.svg)![plot of chunk sbc](figures/neural-likelihood-sbc-2.svg)![plot of chunk sbc](figures/neural-likelihood-sbc-3.svg)![plot of chunk sbc](figures/neural-likelihood-sbc-4.svg)
+
+``` r
 par(op)
 ```
 
@@ -438,10 +640,13 @@ p-value rounds to zero.
 And a posterior predictive check, which is the only diagnostic that looks at
 the observation you actually have:
 
-```{r ppc}
+
+``` r
 pred <- posterior_predictive(post_500, simulator, n = 1000)
 plot_posterior_predictive(pred, x_all[1, , drop = FALSE])
 ```
+
+![plot of chunk ppc](figures/neural-likelihood-ppc-1.svg)
 
 ## When to use which
 
@@ -455,8 +660,4 @@ measurements, when you want the likelihood itself rather than the posterior, or
 when the surrogate needs to live inside a larger model. Budget for MCMC, and
 read the `rhat` column before reading the posterior.
 
-```{r cleanup, include = FALSE}
-if (requireNamespace("future", quietly = TRUE)) {
-  future::plan(future::sequential)
-}
-```
+
