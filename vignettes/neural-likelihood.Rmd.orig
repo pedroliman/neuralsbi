@@ -80,11 +80,35 @@ simulator <- function(A, B, g, k) {
 }
 
 prior <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
-                       high = c(A = 10, B = 10, g = 10, k = 10))
+                       high = c(A = 10, B = 10, g = 10, k = 1))
 ```
 
-The prior is the one the ABC literature uses for this model: uniform on
-$[0, 10]^4$.
+## Look at the prior predictive first
+
+The ABC literature usually puts `k` on $[0, 10]$ along with the other three.
+That is a bad idea here, and the prior predictive says so before any training
+happens:
+
+```{r prior-predictive}
+wide <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
+                      high = c(A = 10, B = 10, g = 10, k = 10))
+
+quantile(abs(simulate_for_sbi(simulator, wide, 5000, seed = 1)$x),
+         c(0.5, 0.99, 1))
+quantile(abs(simulate_for_sbi(simulator, prior, 5000, seed = 1)$x),
+         c(0.5, 0.99, 1))
+```
+
+`k` is the tail-weight parameter and it enters as $(1 + z^2)^k$, so `k = 10`
+puts simulated values around $10^{12}$ while `k = 0.5` puts them around 10. A
+density estimator standardizes its training data once, and no single scale
+covers twelve orders of magnitude: the fit would be dominated by a handful of
+enormous draws and useless everywhere else. Restricting `k` to $[0, 1]$ keeps
+the tails interesting and the problem well posed.
+
+This is worth doing before every fit, not just this one. A prior predictive
+check costs a few seconds of simulation and catches the class of problem that
+otherwise shows up as an inexplicably bad posterior.
 
 ## Train the surrogate likelihood
 
