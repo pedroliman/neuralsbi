@@ -34,11 +34,36 @@ in CI — run manually and commit the resulting metrics to `docs/benchmarks/`.
    Rscript 04_compare.R --task gaussian_linear --estimator maf
    ```
 
+## The NLE protocol (scripts 05–08)
+
+`nle()` learns `q(x | theta)` from single observations and is then conditioned
+on however many independent ones you have, so it needs its own data layout:
+observation *sets* of several sizes drawn from one fixed parameter, rather than
+one observation per row. Scripts `05`–`08` do that on `gaussian_linear`, whose
+posterior stays conjugate for every set size, so both implementations are scored
+against an exact answer rather than against each other.
+
+```sh
+Rscript 05_generate_data_nle.R --dim 5 --n 10000 --seed 42
+python  06_run_sbi_nle.py      --estimator maf --n_samples 5000
+Rscript 07_run_neuralsbi_nle.R --estimator maf --n_samples 5000
+Rscript 08_compare_nle.R       --estimator maf
+```
+
+Both sides get the same simulations, the same estimator family and the same
+sampler family (a vectorized slice sampler), and both run on their own
+defaults. Tuning either one would answer a different question.
+
+Read `c2st_*_vs_ref` next to the mean error and the sd ratio, not on its own:
+`c2st()` here trains a logistic regression, which sees a shift in location and
+is close to blind to a difference in spread (`?c2st` says so).
+
 ## Acceptance criteria (roadmap M3)
 
 On `gaussian_linear` and `two_moons` at 10k simulations:
 C2ST(neuralsbi, sbi) <= 0.60, and both within C2ST <= 0.60 of the
-reference posterior where one exists.
+reference posterior where one exists. The NLE run holds itself to the same
+0.60 against the conjugate reference, at every observation-set size.
 
 ## File formats
 
@@ -46,4 +71,10 @@ reference posterior where one exists.
 - `data/<task>/x_obs.csv` — one row per observation.
 - `results/<task>/<impl>_<estimator>_obs<i>.csv` — posterior draws, one row per draw.
 
-Python environment: `pip install sbi pandas` (sbi >= 0.22).
+NLE runs use `data/gaussian_linear_iid/`: `x_obs_n<k>.csv` holds the first `k`
+observations of one nested set, `theta_true.csv` the parameter they came from,
+`meta.txt` the dimension followed by the set sizes. Draws land in
+`results/gaussian_linear_iid/<impl>_<estimator>_n<k>.csv`.
+
+Python environment: `pip install sbi pandas` (sbi >= 0.22; the NLE scripts were
+run against 0.26.1).
