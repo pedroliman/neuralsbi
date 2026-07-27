@@ -94,46 +94,17 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
             call. = FALSE)
   }
 
-  if (is.null(theta) || is.null(x)) {
-    if (is.null(simulator)) {
-      stop("Provide either `simulator` or both `theta` and `x`.", call. = FALSE)
-    }
-    sims <- simulate_for_sbi(simulator, prior, n_simulations,
-                             sim_args = sim_args, seed = seed,
-                             verbose = verbose)
-    theta <- sims$theta
-    x <- sims$x
-    n_dropped <- sims$n_dropped
-  } else {
-    # pre-computed simulations get the same finiteness check, so the rule does
-    # not depend on who ran the simulator
-    theta <- as_theta_matrix(theta, prior$dim)
-    x <- as_theta_matrix(x)
-    if (nrow(theta) != nrow(x)) {
-      stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
-    }
-    kept <- drop_failed_sims(theta, x)
-    theta <- kept$theta
-    x <- kept$x
-    n_dropped <- kept$n_dropped
-  }
-  theta <- as_theta_matrix(theta, prior$dim)
-  x <- as_theta_matrix(x)
-  param_names <- colnames(theta) %||% prior$param_names
-  x_names <- colnames(x)
-
-  # standardization
-  if (standardize) {
-    std_theta <- fit_standardizer(theta)
-    std_x <- fit_standardizer(x)
-  } else {
-    std_theta <- fit_standardizer(matrix(0, 1, ncol(theta)))
-    std_theta$scale[] <- 1; std_theta$center[] <- 0
-    std_x <- fit_standardizer(matrix(0, 1, ncol(x)))
-    std_x$scale[] <- 1; std_x$center[] <- 0
-  }
-  theta_z <- apply_standardizer(std_theta, theta)
-  x_z <- apply_standardizer(std_x, x)
+  prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
+                              theta, x, standardize, seed, verbose)
+  theta <- prep$theta
+  x <- prep$x
+  n_dropped <- prep$n_dropped
+  param_names <- prep$param_names
+  x_names <- prep$x_names
+  std_theta <- prep$std_theta
+  std_x <- prep$std_x
+  theta_z <- prep$theta_z
+  x_z <- prep$x_z
 
   de <- fit_density_estimator(
     density_estimator, theta_z, x_z,
@@ -161,6 +132,65 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
         density_estimator[1] else "custom"
     ),
     class = "nsbi_npe"
+  )
+}
+
+#' Everything both [npe()] and [nle()] do before touching a density estimator
+#'
+#' Get the simulations (running the simulator or taking pre-computed ones),
+#' coerce them to matrices, drop non-finite draws, and learn the two
+#' standardizers. Shared so the two entry points cannot drift apart -- they
+#' differ only in which side of `(theta, x)` the estimator treats as its target.
+#'
+#' @return A list with the cleaned `theta`/`x`, their standardized versions,
+#'   the two `nsbi_standardizer`s, the column names, and `n_dropped`.
+#' @keywords internal
+prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
+                                theta, x, standardize, seed, verbose) {
+  if (is.null(theta) || is.null(x)) {
+    if (is.null(simulator)) {
+      stop("Provide either `simulator` or both `theta` and `x`.", call. = FALSE)
+    }
+    sims <- simulate_for_sbi(simulator, prior, n_simulations,
+                             sim_args = sim_args, seed = seed,
+                             verbose = verbose)
+    theta <- sims$theta
+    x <- sims$x
+    n_dropped <- sims$n_dropped
+  } else {
+    # pre-computed simulations get the same finiteness check, so the rule does
+    # not depend on who ran the simulator
+    theta <- as_theta_matrix(theta, prior$dim)
+    x <- as_theta_matrix(x)
+    if (nrow(theta) != nrow(x)) {
+      stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
+    }
+    kept <- drop_failed_sims(theta, x)
+    theta <- kept$theta
+    x <- kept$x
+    n_dropped <- kept$n_dropped
+  }
+  theta <- as_theta_matrix(theta, prior$dim)
+  x <- as_theta_matrix(x)
+
+  if (standardize) {
+    std_theta <- fit_standardizer(theta)
+    std_x <- fit_standardizer(x)
+  } else {
+    std_theta <- fit_standardizer(matrix(0, 1, ncol(theta)))
+    std_theta$scale[] <- 1; std_theta$center[] <- 0
+    std_x <- fit_standardizer(matrix(0, 1, ncol(x)))
+    std_x$scale[] <- 1; std_x$center[] <- 0
+  }
+
+  list(
+    theta = theta, x = x,
+    theta_z = apply_standardizer(std_theta, theta),
+    x_z = apply_standardizer(std_x, x),
+    std_theta = std_theta, std_x = std_x,
+    param_names = colnames(theta) %||% prior$param_names,
+    x_names = colnames(x),
+    n_dropped = n_dropped
   )
 }
 
