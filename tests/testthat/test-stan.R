@@ -182,3 +182,30 @@ test_that("Stan NUTS and the slice sampler reach the same posterior", {
   expect_lt(max(abs(colMeans(by_stan) - colMeans(reference))), 0.05)
   expect_lt(c2st(by_stan, reference, seed = 1)$accuracy, 0.6)
 })
+
+test_that("the rstan fallback compiles, samples, and hands back the same shape", {
+  # The dispatch prefers cmdstanr, so the fallback is unreachable through
+  # posterior() on a machine that has both. Calling it directly is the only way
+  # to find out whether the branch works.
+  skip_if_no_rstan()
+  set.seed(10)
+  task <- task_gaussian_linear(dim = 2L)
+  fit <- nle(task$prior, task$simulator, n_simulations = 4000,
+             density_estimator = "linear_gaussian", seed = 11)
+  x_obs <- matrix(task$simulator(c(0.2, -0.1)), nrow = 1)
+
+  draws <- stan_run_rstan(stan_code(fit), stan_data(fit, x_obs),
+                          ctl = list(n_chains = 2L, seed = 12),
+                          iter_warmup = 400L, iter_sampling = 400L,
+                          refresh = 0L)
+
+  # iterations x chains x dim, which is what mcmc_diagnostics() reads and what
+  # the cmdstanr branch produces.
+  expect_equal(dim(draws), c(400L, 2L, 2L))
+  expect_true(all(is.finite(draws)))
+  expect_true(all(mcmc_diagnostics(draws)$rhat < 1.05))
+
+  flat <- matrix(aperm(draws, c(2, 1, 3)), ncol = 2)
+  reference <- task$reference_posterior(x_obs, 2000)
+  expect_lt(max(abs(colMeans(flat) - colMeans(reference))), 0.06)
+})
