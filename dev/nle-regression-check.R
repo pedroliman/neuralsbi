@@ -1,8 +1,12 @@
 ## Sanity check: does nle() recover a posterior we already know the answer to?
 ##
-##     Rscript dev/nle-regression-check.R [n_obs] [n_simulations] [seed] [n_components]
+##     Rscript dev/nle-regression-check.R [n_obs] [n_sims] [seed] [n_components] [estimator]
 ##
-## Defaults to 500 observations, 50000 simulations, seed 1, 5 components.
+## Defaults to 500 observations, 10000 simulations, seed 1, 5 components, mdn.
+##
+## `estimator = "linear_gaussian"` is torch-free and finishes in seconds, and it
+## is the wrong model for this problem, on purpose: see the note next to the
+## nle() call. Use it to exercise the pipeline, not to check the answer.
 ##
 ## The model is a linear regression with three covariates and Gaussian noise,
 ## so its likelihood is available in closed form and Stan can sample the exact
@@ -22,11 +26,13 @@ suppressPackageStartupMessages(library(neuralsbi))
 
 args   <- commandArgs(trailingOnly = TRUE)
 n_obs  <- if (length(args) >= 1) as.integer(args[1]) else 500L
-n_sim  <- if (length(args) >= 2) as.integer(args[2]) else 50000L
+n_sim  <- if (length(args) >= 2) as.integer(args[2]) else 10000L
 seed   <- if (length(args) >= 3) as.integer(args[3]) else 1L
 n_comp <- if (length(args) >= 4) as.integer(args[4]) else 5L
+de_kind <- if (length(args) >= 5) args[5] else "mdn"
 
-if (!requireNamespace("torch", quietly = TRUE) || !torch::torch_is_installed()) {
+if (de_kind != "linear_gaussian" &&
+    (!requireNamespace("torch", quietly = TRUE) || !torch::torch_is_installed())) {
   stop("torch (libtorch) is required: install.packages('torch'); torch::install_torch()",
        call. = FALSE)
 }
@@ -141,14 +147,28 @@ print(round(rbind(mean = colMeans(d_exact), sd = apply(d_exact, 2, sd)), 4))
 # nle() sees the prior and the simulator. It never sees the normal density,
 # the design matrix, or the fact that this is a regression.
 
-section("nle(), ", format(n_sim, big.mark = ","), " simulations")
+section("nle(), ", format(n_sim, big.mark = ","), " simulations, ", de_kind)
 t0 <- Sys.time()
 # An MDN maps theta to a mixture over the observation and never looks at the
 # observation itself, so all n rows are scored from one forward pass; a flow
 # would run once per row. With Gaussian covariates and Gaussian noise the joint
 # density of a row is a 4-d Gaussian, so the components are more than enough.
+#
+# "linear_gaussian" cannot do this problem, and it is worth knowing why. It
+# fits a mean linear in the conditioning variable and one covariance shared by
+# every conditioning value. Here the conditioning variable is theta, and the
+# true row density given theta is N((b0, 0, 0, 0), S(theta)) with
+#
+#     S(theta) = [[b' Sx b + sigma^2, (Sx b)'], [Sx b, Sx]].
+#
+# The mean is linear in theta, so the estimator gets b0. Everything else about
+# theta lives in the covariance, which the estimator holds fixed, so b1, b2, b3
+# and sigma leave almost no trace in the learned likelihood and their
+# posteriors fall back to the prior. Exact for a linear-Gaussian simulator
+# means x = A theta + noise with the noise not depending on theta; a regression
+# read as a density over (y, x) is not that model.
 fit <- nle(prior, simulator, n_simulations = n_sim,
-           density_estimator = "mdn", n_components = n_comp, seed = seed)
+           density_estimator = de_kind, n_components = n_comp, seed = seed)
 cat("  trained in ", elapsed(t0), "\n", sep = "")
 print(fit)
 
@@ -223,7 +243,10 @@ draws <- list(exact = d_exact, slice = d_slice, `nle-stan` = d_nle_stan)
 section("posterior means")
 print(round(rbind(truth = theta_true, t(sapply(draws, colMeans))), 4))
 section("posterior sds")
-print(round(t(sapply(draws, function(d) apply(d, 2, sd))), 4))
+# The prior sd is the "learned nothing" reference: a posterior sitting on it is
+# one the surrogate carries no information about.
+print(round(rbind(prior = apply(sample_prior(prior, 20000), 2, sd),
+                  t(sapply(draws, function(d) apply(d, 2, sd)))), 4))
 
 # The units that matter are the reference posterior's own standard deviations:
 # a shift of 0.1 sd is invisible in practice, a shift of 2 sd is a different
@@ -281,11 +304,14 @@ if (!identical(Sys.getenv("NLE_CHECK_SWEEP"), "0") && length(sweep_n) > 1L) {
 
 section("verdicts")
 # The two NLE routes target the same distribution, so they should agree much
-# more tightly than either agrees with the exact posterior.
+# more tightly than either agrees with the exact posterior. Measure that gap in
+# the surrogate posterior's own sds, not the exact posterior's: when the
+# surrogate is far wider than the reference, a gap that is negligible for the
+# two samplers looks enormous in the reference's units.
+gap <- max(abs(colMeans(d_slice) - colMeans(d_nle_stan)) / apply(d_slice, 2, sd))
 check("slice and NUTS agree on the surrogate posterior",
-      max(abs(z["nle-stan", ] - z["slice", ])) < 0.15 && acc[["slice_vs_stan"]] < 0.6,
-      sprintf("max gap %.2f sd, c2st %.2f",
-              max(abs(z["nle-stan", ] - z["slice", ])), acc[["slice_vs_stan"]]))
+      gap < 0.15 && acc[["slice_vs_stan"]] < 0.6,
+      sprintf("max gap %.3f of its own sd, c2st %.2f", gap, acc[["slice_vs_stan"]]))
 check("NLE posterior means within 0.5 sd of exact",
       max(abs(z)) < 0.5, sprintf("max |shift| %.2f sd", max(abs(z))))
 check("NLE posterior widths within 25% of exact",
