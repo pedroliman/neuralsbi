@@ -106,8 +106,16 @@ print(round(head(obs, 3), 3))
 X <- cbind(1, obs[, c("x1", "x2", "x3")])
 b_ols <- drop(solve(crossprod(X), crossprod(X, obs[, "y"])))
 s_ols <- sqrt(sum((obs[, "y"] - X %*% b_ols)^2) / (n_obs - 4))
+se_ols <- sqrt(diag(solve(crossprod(X))) * s_ols^2)
+ols <- setNames(c(b_ols, s_ols), pnames)
 cat("\nOLS: ", paste(sprintf("%s=%.3f", pnames[1:4], b_ols), collapse = "  "),
     sprintf("  residual sd=%.3f\n", s_ols))
+cat("     standard errors: ",
+    paste(sprintf("%.4f", se_ols), collapse = "  "), "\n", sep = "")
+
+# The prior sd is the "learned nothing" yardstick: a posterior sitting on it
+# carries no information from the data.
+prior_sd <- apply(sample_prior(prior, 20000), 2, sd)
 
 # ---- the reference: exact likelihood, in Stan -----------------------------
 
@@ -243,10 +251,46 @@ draws <- list(exact = d_exact, slice = d_slice, `nle-stan` = d_nle_stan)
 section("posterior means")
 print(round(rbind(truth = theta_true, t(sapply(draws, colMeans))), 4))
 section("posterior sds")
-# The prior sd is the "learned nothing" reference: a posterior sitting on it is
-# one the surrogate carries no information about.
-print(round(rbind(prior = apply(sample_prior(prior, 20000), 2, sd),
+print(round(rbind(prior = prior_sd,
                   t(sapply(draws, function(d) apply(d, 2, sd)))), 4))
+
+# ---- can it recover the parameters at all? --------------------------------
+#
+# This is the coarse question, and the one to ask first. Matching the exact
+# posterior to within a fraction of its sd is a high bar at 500 rows, because
+# the surrogate's per-row error is summed 500 times. Landing on the right
+# parameters is a much lower bar, and if that fails something is broken rather
+# than merely imprecise.
+
+section("parameter recovery, against OLS on the same data")
+recovery <- rbind(truth = theta_true, ols = ols,
+                  t(sapply(draws, colMeans)))
+print(round(recovery, 4))
+
+err <- t(sapply(draws, function(d) colMeans(d) - ols))
+cat("\nerror against OLS, absolute:\n")
+print(round(err, 4))
+cat("\nerror against OLS, as a fraction of the prior sd",
+    "(1.0 = no better than guessing from the prior):\n")
+print(round(sweep(abs(err), 2, prior_sd, "/"), 3))
+
+contraction <- t(sapply(draws, function(d) apply(d, 2, sd) / prior_sd))
+cat("\nposterior sd as a fraction of the prior sd (small = the data spoke):\n")
+print(round(contraction, 3))
+
+nle_err <- max(abs(err["slice", ]))
+check("nle() recovers the parameters (within 0.1 of OLS)",
+      nle_err < 0.1, sprintf("max |error| %.3f", nle_err))
+check("nle() posterior is much tighter than the prior (< 20%)",
+      max(contraction["slice", ]) < 0.2,
+      sprintf("max sd/prior sd %.2f", max(contraction["slice", ])))
+covered <- vapply(seq_along(pnames), function(j) {
+  q <- quantile(d_slice[, j], c(0.025, 0.975))
+  theta_true[[j]] >= q[[1]] && theta_true[[j]] <= q[[2]]
+}, logical(1))
+check("truth inside the nle() 95% interval, every parameter",
+      all(covered),
+      sprintf("%d of %d", sum(covered), length(covered)))
 
 # The units that matter are the reference posterior's own standard deviations:
 # a shift of 0.1 sd is invisible in practice, a shift of 2 sd is a different
