@@ -52,9 +52,15 @@ ref <- utils::read.csv(bzfile(file.path(sbibm_root(), "sbibm", "tasks",
                                         "reference_posterior_samples.csv.bz2")))
 say(sprintf("  two_moons reference posterior: %d x %d", nrow(ref), ncol(ref)))
 
-say("checking neuralsbi and torch")
+say("checking neuralsbi, torch and deSolve")
 load_neuralsbi()
 say("  neuralsbi ", as.character(utils::packageVersion("neuralsbi")))
+if (!requireNamespace("deSolve", quietly = TRUE)) {
+  say("  deSolve NOT available. The sir and lotka_volterra tasks need it: ",
+      "install.packages('deSolve')")
+} else {
+  say("  deSolve ", as.character(utils::packageVersion("deSolve")), " ready")
+}
 if (!requireNamespace("torch", quietly = TRUE) || !torch::torch_is_installed()) {
   say("  torch/libtorch NOT available. The benchmark needs it: the estimators ",
       "the paper used (nsf for NPE, maf for NLE) are torch-backed.")

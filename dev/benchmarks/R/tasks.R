@@ -7,13 +7,14 @@
 # simulator would make that unbearably slow, so the scripts pass `theta` and `x`
 # to `npe()`/`nle()` directly.
 #
-# Two deliberate departures from sbibm, both documented in the README:
+# SIR and Lotka-Volterra are the exception to the vectorization: sbibm solves
+# their ODEs one parameter set at a time with Julia's DifferentialEquations, and
+# we do the same with deSolve's `lsoda`, which is the closest thing R has to
+# that solver (adaptive step, automatic stiff/non-stiff switching). The noise
+# model on top of the trajectories is still vectorized.
 #
-#   * SIR and Lotka-Volterra integrate their ODEs with a fixed-step vectorized
-#     RK4 instead of Julia's adaptive Tsit5. The step sizes below put the
-#     integration error orders of magnitude below the observation noise.
-#   * Everything else is exact, including the frozen constants (GLM stimulus,
-#     SLCP distractor noise) that are read from sbibm's own `.pt` files.
+# Everything else is exact, including the frozen constants (GLM stimulus, SLCP
+# distractor noise) that are read from sbibm's own `.pt` files.
 
 sbibm_task_names <- function() {
   c("gaussian_linear", "gaussian_linear_uniform", "gaussian_mixture",
@@ -296,49 +297,77 @@ task_glm <- function(raw) {
 
 # --- ODE tasks ---------------------------------------------------------------
 
-#' One vectorized RK4 step over a list-of-vectors state.
-rk4_step <- function(state, deriv, h) {
-  k1 <- deriv(state)
-  s2 <- Map(function(u, k) u + 0.5 * h * k, state, k1)
-  k2 <- deriv(s2)
-  s3 <- Map(function(u, k) u + 0.5 * h * k, state, k2)
-  k3 <- deriv(s3)
-  s4 <- Map(function(u, k) u + h * k, state, k3)
-  k4 <- deriv(s4)
-  Map(function(u, a, b, c, d) u + (h / 6) * (a + 2 * b + 2 * c + d),
-      state, k1, k2, k3, k4)
-}
-
-#' Integrate `state` forward, recording it at each of `n_out` equally spaced
-#' output times separated by `interval`.
-integrate_grid <- function(state, deriv, interval, n_out, steps_per_interval) {
-  h <- interval / steps_per_interval
-  out <- vector("list", n_out)
-  out[[1]] <- state
-  for (j in seq_len(n_out - 1)) {
-    for (s in seq_len(steps_per_interval)) state <- rk4_step(state, deriv, h)
-    out[[j + 1]] <- state
+require_desolve <- function() {
+  if (!requireNamespace("deSolve", quietly = TRUE)) {
+    stop("The sir and lotka_volterra tasks need deSolve: ",
+         'install.packages("deSolve")', call. = FALSE)
   }
-  out
 }
 
-task_sir_ <- function(N = 1e6, I0 = 1, R0 = 0, steps_per_interval = 170L) {
+#' Solve one ODE per row of `theta` and return the trajectories stacked.
+#'
+#' sbibm solves these one parameter set at a time and replaces a trajectory it
+#' could not integrate with NaN, which then propagates into the observation.
+#' Same here: a solve that errors, stops short of the last requested time, or
+#' returns anything non-finite becomes a row of NaN.
+#'
+#' @param func A deSolve derivative function `function(t, u, parms)`.
+#' @param y0 Initial state.
+#' @param times Output grid, matching sbibm's `saveat`.
+#' @return An `n x (length(times) * length(y0))` matrix, state-major within each
+#'   row (all times of state 1, then all times of state 2), which is how sbibm
+#'   flattens `num_parameters x num_states x num_times`.
+solve_ode_rows <- function(theta, func, y0, times) {
+  require_desolve()
+  n_state <- length(y0)
+  n_time <- length(times)
+  blank <- rep(NA_real_, n_state * n_time)
+
+  one <- function(i) {
+    out <- tryCatch(
+      suppressWarnings(
+        deSolve::ode(y = y0, times = times, func = func, parms = theta[i, ])
+      ),
+      error = function(e) NULL
+    )
+    if (is.null(out) || nrow(out) != n_time) return(blank)
+    u <- out[, -1, drop = FALSE]           # drop the time column
+    if (!all(is.finite(u))) return(blank)
+    as.numeric(u)                          # column-major: state-major, as wanted
+  }
+
+  rows <- bench_lapply(seq_len(nrow(theta)), one)
+  matrix(unlist(rows, use.names = FALSE), nrow = nrow(theta), byrow = TRUE)
+}
+
+#' `lapply`, or `mclapply` when NEURALSBI_BENCH_CORES asks for it.
+#'
+#' Only the deterministic ODE solves go through this. The stochastic part of
+#' each simulator stays in the parent process, so the number of cores does not
+#' change the draws for a given seed.
+bench_lapply <- function(x, f) {
+  cores <- suppressWarnings(as.integer(Sys.getenv("NEURALSBI_BENCH_CORES", "1")))
+  if (is.na(cores) || cores <= 1 || .Platform$OS.type == "windows") {
+    return(lapply(x, f))
+  }
+  parallel::mclapply(x, f, mc.cores = cores)
+}
+
+task_sir_ <- function(N = 1e6, I0 = 1, R0 = 0) {
   prior <- prior_lognormal(c(log(0.4), log(0.125)), c(0.5, 0.2))
+  # saveat = 1 day over 160 days, then every 17th point: 10 points from day 0.
+  times <- seq(0, 160, by = 1)
+  keep <- seq(1, length(times), by = 17)[1:10]
+  deriv <- function(t, u, p) {
+    inf <- p[1] * u[1] * u[2] / N
+    rec <- p[2] * u[2]
+    list(c(-inf, inf - rec, rec))
+  }
   simulate <- function(theta) {
     n <- nrow(theta)
-    beta <- theta[, 1]; gamma <- theta[, 2]
-    deriv <- function(u) {
-      inf <- beta * u$S * u$I / N
-      rec <- gamma * u$I
-      list(S = -inf, I = inf - rec, R = rec)
-    }
-    # sbibm saves daily and then keeps every 17th day: 10 points from day 0.
-    grid <- integrate_grid(list(S = rep(N - I0 - R0, n), I = rep(I0, n),
-                                R = rep(R0, n)),
-                           deriv, interval = 17, n_out = 10L,
-                           steps_per_interval = steps_per_interval)
-    I <- vapply(grid, function(u) u$I, numeric(n))
-    if (n == 1) I <- matrix(I, nrow = 1)
+    us <- solve_ode_rows(theta, deriv, c(N - I0 - R0, I0, R0), times)
+    # Columns are state-major, so the infected compartment is the second block.
+    I <- us[, length(times) + keep, drop = FALSE]
     bad <- !is.finite(rowSums(I))
     p <- pmin(pmax(I / N, 0), 1)
     p[bad, ] <- 0
@@ -350,24 +379,19 @@ task_sir_ <- function(N = 1e6, I0 = 1, R0 = 0, steps_per_interval = 170L) {
   new_bench_task("sir", 2L, 10L, prior, simulate, "sir")
 }
 
-task_lv <- function(steps_per_interval = 200L) {
+task_lv <- function() {
   prior <- prior_lognormal(c(-0.125, -3, -0.125, -3), rep(0.5, 4))
+  # saveat = 0.1 over 20 days, then every 21st point: 10 points, 2.1 apart.
+  times <- seq(0, 20, by = 0.1)
+  keep <- seq(1, length(times), by = 21)[1:10]
+  deriv <- function(t, u, p) {
+    list(c(p[1] * u[1] - p[2] * u[1] * u[2],
+           -p[3] * u[2] + p[4] * u[1] * u[2]))
+  }
   simulate <- function(theta) {
     n <- nrow(theta)
-    alpha <- theta[, 1]; beta <- theta[, 2]
-    gamma <- theta[, 3]; delta <- theta[, 4]
-    deriv <- function(u) {
-      list(x = alpha * u$x - beta * u$x * u$y,
-           y = -gamma * u$y + delta * u$x * u$y)
-    }
-    # saveat = 0.1 over 20 days, then every 21st point: 10 points, 2.1 apart.
-    grid <- integrate_grid(list(x = rep(30, n), y = rep(1, n)),
-                           deriv, interval = 2.1, n_out = 10L,
-                           steps_per_interval = steps_per_interval)
-    xs <- vapply(grid, function(u) u$x, numeric(n))
-    ys <- vapply(grid, function(u) u$y, numeric(n))
-    if (n == 1) { xs <- matrix(xs, nrow = 1); ys <- matrix(ys, nrow = 1) }
-    us <- cbind(xs, ys)                     # sbibm flattens species-major
+    all_states <- solve_ode_rows(theta, deriv, c(30, 1), times)
+    us <- all_states[, c(keep, length(times) + keep), drop = FALSE]
     bad <- !is.finite(rowSums(us))
     clamped <- pmin(pmax(us, 1e-10), 1e4)
     clamped[bad, ] <- 1

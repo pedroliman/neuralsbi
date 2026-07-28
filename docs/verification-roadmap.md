@@ -282,8 +282,10 @@ same tasks, the same observations, the same reference posteriors and the same
 metric. `dev/benchmarks/` holds that harness. See its README for how to run it.
 
 What is there: all ten `sbibm` tasks reimplemented in R and vectorized
-(`R/tasks.R`), including the ODE tasks and the two that depend on frozen
-constants pickled as PyTorch tensors, which `R/pt_io.R` reads without Python;
+(`R/tasks.R`), except the ODE tasks, which go through `deSolve::ode()` one
+parameter set at a time the way sbibm goes through Julia; the two tasks that
+depend on frozen constants pickled as PyTorch tensors work because `R/pt_io.R`
+reads those files without Python;
 sbibm's C2ST reimplemented in base R (`R/c2st.R`), because `c2st()` in the
 package is a logistic regression and not comparable to the paper's MLP; a runner
 that reproduces the paper's NPE and NLE hyperparameters (`R/runner.R`); and a
@@ -381,9 +383,9 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    tasks with three observations each, then widen. Commit the resulting
    `comparison.csv` and `report.md` to `docs/benchmarks/`. Any cell that comes
    out WORSE by a wide margin is the interesting output: triage against the
-   four documented departures from sbibm (fixed-step ODE integration, NLE in
-   the original parameter space, autoregressive vs. coupling NSF, the C2ST
-   epoch cap) before blaming the estimator.
+   four documented departures from sbibm (`deSolve::ode()` in place of Julia's
+   solver, NLE in the original parameter space, autoregressive vs. coupling
+   NSF, the C2ST epoch cap) before blaming the estimator.
 4. **Two-moons calibration study** (finishes M2): done via
    `inst/benchmarks/two_moons_calibration.R` — `sbc()` + `plot_coverage()` +
    `tarp()` on a two-moons NSF fit, figures saved to `docs/figures/`. TARP

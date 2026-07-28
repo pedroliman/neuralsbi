@@ -114,6 +114,16 @@ for (nm in tasks) {
   check(sprintf("%s: sbibm observation has matching width", nm),
         ncol(obs1) == tk$dim_x)
 
+  if (nm %in% c("sir", "lotka_volterra")) {
+    # A solve that fails becomes a NaN row and is dropped before training, so a
+    # rising failure rate quietly shrinks the simulation budget.
+    big <- tk$simulate(sample_prior(tk$prior, 300))
+    failed <- mean(!is.finite(rowSums(big)))
+    check(sprintf("%s: deSolve integrates the prior without failing", nm),
+          failed < 0.02, sprintf("%.1f%% of 300 prior draws unsolvable",
+                                 100 * failed))
+  }
+
   # Simulate replicates at the parameters that generated each observation and
   # ask where the observation falls in the simulated marginals. If our
   # simulator matched sbibm's, those ranks are uniform; if it did not, they pile
