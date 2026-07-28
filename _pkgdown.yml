@@ -95,21 +95,21 @@ navbar:
       menu:
       - text: Introduction to neural simulation-based inference in R
         href: articles/intro-to-sbi.html
-      - text: "Neural likelihood estimation, and handing it to Stan"
-        href: articles/neural-likelihood.html
+#      - text: "Neural likelihood estimation, and handing it to Stan"
+#        href: articles/neural-likelihood.html
 
 articles:
 - title: Learning the package
   navbar: ~
   contents:
   - intro-to-sbi
-  - neural-likelihood
 # Every vignette that ships with the package has to appear somewhere in this
 # index or pkgdown aborts the build. The `internal` title is how pkgdown says
-# "build it, do not list it": these four are still rendered and still reachable
+# "build it, do not list it": these five are still rendered and still reachable
 # by URL, they are just off the articles index and out of the navbar.
 - title: internal
   contents:
+  - neural-likelihood
   - neuralsbi
   - density-estimators
   - diagnostics
