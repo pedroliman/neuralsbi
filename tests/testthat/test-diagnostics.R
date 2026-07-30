@@ -24,6 +24,41 @@ test_that("expected_coverage produces a monotone-ish curve near the diagonal", {
   expect_gt(cov$param1[2], cov$param1[1])
 })
 
+test_that("sbc errors instead of ranking against draws it never got", {
+  # A bounded prior plus an estimator that leaks means sample() comes back
+  # short, and sbc() used to bin those ranks against n_posterior_samples: every
+  # rank compressed toward zero and the run read as miscalibrated. Force the
+  # leak by pushing the fitted conditional mean 50 standardized units off the
+  # prior box, so every draw is rejected.
+  set.seed(11)
+  prior <- prior_uniform(low = c(0, 0), high = c(1, 1))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  fit$de$B[1, ] <- fit$de$B[1, ] + 50
+
+  expect_error(
+    suppressWarnings(sbc(fit, simulator, n_sbc = 2L,
+                         n_posterior_samples = 20L, seed = 1)),
+    "0 of 20 posterior draws"
+  )
+})
+
+test_that("tarp errors on a short posterior draw too", {
+  set.seed(12)
+  prior <- prior_uniform(low = c(0, 0), high = c(1, 1))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  fit$de$B[1, ] <- fit$de$B[1, ] + 50
+
+  expect_error(
+    suppressWarnings(tarp(fit, simulator, n_tarp = 2L,
+                          n_posterior_samples = 20L, seed = 1)),
+    "posterior draws"
+  )
+})
+
 test_that("c2st of a sample set against itself is ~0.5", {
   set.seed(1)
   a <- matrix(rnorm(2000), ncol = 2)
