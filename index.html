@@ -123,8 +123,7 @@
 </div>
 <!-- badges: start -->
 
-<p><code>neuralsbi</code> brings <a href="https://simulation-based-inference.org" class="external-link">neural simulation-based inference</a> (SBI) to R. Given a prior over parameters and a simulator, it trains a neural network to approximate the Bayesian posterior <code>p(theta | x)</code>: amortized, likelihood-free Bayesian inference, with no likelihood function and no Python. It mirrors the workflow of the Python <a href="https://github.com/sbi-dev/sbi" class="external-link"><code>sbi</code></a> package, but is a native R implementation: the neural density estimators for posterior estimation (mixture density networks, masked autoregressive flows, neural spline flows) run directly on the <a href="https://torch.mlverse.org/" class="external-link"><code>torch</code></a> R package (libtorch), not through a Python bridge.</p>
-<p>It targets applied researchers rather than ML engineers: a familiar prior/simulator/posterior workflow, sensible defaults, and built-in posterior diagnostics: simulation-based calibration, expected coverage, TARP, and posterior predictive checks.</p>
+<p><code>neuralsbi</code> implements <a href="https://simulation-based-inference.org" class="external-link">neural simulation-based inference</a> (SBI) methods directly in R. Given a prior over parameters and a simulator, it trains a neural network to approximate the Bayesian posterior <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | x)</annotation></semantics></math>. The neural density estimators for posterior estimation (mixture density networks, masked autoregressive flows, neural spline flows) run directly on the <a href="https://torch.mlverse.org/" class="external-link"><code>torch</code></a> R package (libtorch). You don’t need python or Julia to use <code>neuralsbi</code>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -139,111 +138,178 @@
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>Simulation-based inference fits a posterior from a prior and a simulator, with no likelihood required. To keep the first example concrete, here is a textbook SIR epidemic model, solved as an ODE: a population of size <code>N</code> moves from Susceptible to Infected at transmission rate <code>Beta</code>, and from Infected to Recovered at rate <code>gamma</code>. Given <code>Beta</code> and <code>gamma</code>, solving the ODE deterministically produces one epidemic curve — we know the rates that generated it, so we can confirm the posterior recovers them.</p>
-<p>A simulator here is a function of one parameter set that returns one simulated data set. Whatever else it needs — a covariate, a time grid, a population size — goes in <code>sim_args</code>. See <code><a href="reference/nsbi_simulator.html">?nsbi_simulator</a></code>.</p>
+<p>All you need to provide <code>neuralsbi</code> is a simulator that takes a vector of parameters, other inputs it needs and returns a vector of outcomes. Unlike in stan where you need to provide a likelihood function, here you only need to simulate your data generation process.</p>
+<p>In this example, we create an SIR model, where only a fraction <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math> of cases is observed. Parameters to be fit are <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>. We know in this example that the quantity that is better identified by the model is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mi>β</mi><mi>/</mi><mi>γ</mi></mrow><annotation encoding="application/x-tex">R_0=\beta/\gamma</annotation></semantics></math>, but that is fine. In a real-world application, we would constrain <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math> given external information.</p>
+<div class="section level3">
+<h3 id="define-your-simulator">Define your simulator:<a class="anchor" aria-label="anchor" href="#define-your-simulator"></a>
+</h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tpetzoldt/deSolve/" class="external-link">deSolve</a></span><span class="op">)</span>   <span class="co"># install.packages("deSolve")</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># The SIR ODE. R is implied (N - S - I) and never used, so only S and I are</span></span>
-<span><span class="co"># tracked. Defined once, at top level, and reused by simulator() below rather</span></span>
-<span><span class="co"># than rebuilt on every one of the thousands of calls npe() makes to it.</span></span>
+<span></span>
+<span><span class="co"># Set up ------------------------------------------------------------------</span></span>
+<span></span>
+<span><span class="co"># An SIR ODE:</span></span>
 <span><span class="va">ode_model</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">t</span>, <span class="va">y</span>, <span class="va">p</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">as.list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">p</span><span class="op">)</span><span class="op">)</span>, <span class="op">{</span></span>
-<span>    <span class="va">dS</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="va">Beta</span> <span class="op">*</span> <span class="va">S</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span></span>
-<span>    <span class="va">dI</span> <span class="op">&lt;-</span>  <span class="va">Beta</span> <span class="op">*</span> <span class="va">S</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span> <span class="op">-</span> <span class="va">gamma</span> <span class="op">*</span> <span class="va">I</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">dS</span>, <span class="va">dI</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">dS</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="va">beta</span> <span class="op">*</span> <span class="va">S</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span></span>
+<span>    <span class="va">dI</span> <span class="op">&lt;-</span>  <span class="va">beta</span> <span class="op">*</span> <span class="va">S</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span> <span class="op">-</span> <span class="va">gamma</span> <span class="op">*</span> <span class="va">I</span></span>
+<span>    <span class="va">dCumInfections</span> <span class="op">&lt;-</span> <span class="va">beta</span> <span class="op">*</span> <span class="va">S</span> <span class="op">*</span> <span class="va">I</span> <span class="op">/</span> <span class="va">N</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">dS</span>, <span class="va">dI</span>, <span class="va">dCumInfections</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># Observation design: infection counts read off the curve at 10 time points.</span></span>
-<span><span class="va">times</span>    <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">60</span>, length.out <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span><span class="va">sim_args</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>times <span class="op">=</span> <span class="va">times</span>, N <span class="op">=</span> <span class="fl">1000</span>, I0 <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Simulator: one parameter set in, one simulated epidemic curve out. theta</span></span>
-<span><span class="co"># arrives as a single named vector rather than one scalar argument per</span></span>
-<span><span class="co"># parameter — neuralsbi accepts either convention (see ?nsbi_simulator) and</span></span>
-<span><span class="co"># picks it up from the simulator's formals automatically.</span></span>
-<span><span class="va">simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span>, <span class="va">times</span>, <span class="va">N</span>, <span class="va">I0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/deSolve/man/ode.html" class="external-link">ode</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>S <span class="op">=</span> <span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>, I <span class="op">=</span> <span class="va">I0</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">times</span><span class="op">)</span>, <span class="va">ode_model</span>,</span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"Beta"</span><span class="op">]</span><span class="op">]</span>, gamma <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"gamma"</span><span class="op">]</span><span class="op">]</span>, N <span class="op">=</span> <span class="va">N</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span>, <span class="st">"I"</span><span class="op">]</span></span>
+<span><span class="co"># Simulator function</span></span>
+<span><span class="co"># Here we are already only making the simulator return only 10 observations</span></span>
+<span><span class="va">my_simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span>, <span class="va">times</span> <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">60</span>, <span class="va">N</span> <span class="op">=</span> <span class="fl">100000</span>, <span class="va">I0</span> <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Let's use just a deterministic ODE, so there's no randomness in transmission:</span></span>
+<span>  <span class="co"># WE could make it fully stochastic if we want. </span></span>
+<span>  <span class="co"># I just want to make this as fast as it can be for this vignette build</span></span>
+<span>  <span class="va">ode_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/deSolve/man/ode.html" class="external-link">ode</a></span><span class="op">(</span>y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>S <span class="op">=</span> <span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>, I <span class="op">=</span> <span class="va">I0</span>, CumInfections <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>                    times <span class="op">=</span> <span class="va">times</span>,</span>
+<span>                    func <span class="op">=</span> <span class="va">ode_model</span>,</span>
+<span>                    parms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"beta"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                              gamma <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"gamma"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                              N <span class="op">=</span> <span class="va">N</span><span class="op">)</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">cases</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="va">ode_result</span><span class="op">[</span>, <span class="st">"CumInfections"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">obs_cases</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cases</span><span class="op">)</span>, size<span class="op">=</span> <span class="va">cases</span>, prob <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"rho"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="co"># return output vector</span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">obs_cases</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># Priors over the transmission and recovery rates.</span></span>
-<span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">0.1</span>, gamma <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span>, high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">1</span>, gamma <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">fit</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">3000</span>, sim_args <span class="op">=</span> <span class="va">sim_args</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Simulate one epidemic from known rates, then infer them back. theta_true is</span></span>
-<span><span class="co"># named to match, so do.call() unpacks it straight into one call — the same</span></span>
-<span><span class="co"># convention npe() uses internally to dispatch a parameter set. Those names</span></span>
-<span><span class="co"># carry through to fit, to draws, and to the plots below with nothing to keep</span></span>
-<span><span class="co"># in sync by hand.</span></span>
-<span><span class="va">theta_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">0.4</span>, gamma <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
-<span><span class="va">y_obs</span>      <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">simulator</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">theta_true</span><span class="op">)</span>, <span class="va">sim_args</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">post</span>       <span class="op">&lt;-</span> <span class="fu"><a href="reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">y_obs</span><span class="op">)</span></span>
-<span><span class="va">draws</span>      <span class="op">&lt;-</span> <span class="fu"><a href="reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">10000</span><span class="op">)</span></span></code></pre></div>
-<p>The posterior mean recovers the rates that generated the epidemic:</p>
+<span><span class="co"># test simulator, returns a time-series of two months of data</span></span>
+<span><span class="fu">my_simulator</span><span class="op">(</span>theta<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.5</span>, gamma <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">7</span>, rho <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  [1]    0    3    3    4    5    9   11   20   26   39   51   79  110  163  229</span></span>
+<span><span class="co">#&gt; [16]  293  397  578  831 1137 1495 1914 2530 2926 3388 3752 3806 3703 3515 3062</span></span>
+<span><span class="co">#&gt; [31] 2639 2197 1793 1427 1133  894  716  591  498  376  349  258  210  185  142</span></span>
+<span><span class="co">#&gt; [46]  136  107   92   76   72   62   44   49   38   23   27   29   18   15   17</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="train-your-neural-posterior-estimator">Train your neural posterior estimator<a class="anchor" aria-label="anchor" href="#train-your-neural-posterior-estimator"></a>
+</h3>
+<p>Now we train our neural posterior estimator with the <code>npe</code> function. We need just a prior over which we will train the model. It takes about a minute to train it with 5,000 runs, which is a modest simulation budget.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>truth <span class="op">=</span> <span class="va">theta_true</span>, posterior_mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                    Beta     gamma</span></span>
-<span><span class="co">#&gt; truth          0.400000 0.1500000</span></span>
-<span><span class="co">#&gt; posterior_mean 0.400028 0.1507464</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Set up our priors</span></span>
+<span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.1</span>, gamma <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">10</span>, rho <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>                       high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.7</span>, gamma <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">4</span>, rho <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Set up parallel simulations:</span></span>
+<span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span>, workers <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Observation times: the simulator returns I at these points.</span></span>
+<span><span class="va">times</span> <span class="op">&lt;-</span> <span class="fl">0</span><span class="op">:</span><span class="fl">60</span></span>
+<span><span class="va">sim_args</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>times <span class="op">=</span> <span class="va">times</span>, N <span class="op">=</span> <span class="fl">100000</span>, I0 <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Here we fit the neural posterior estimator with neuralsbi's npe function:</span></span>
+<span></span>
+<span><span class="va">fit</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">my_simulator</span>, n_simulations <span class="op">=</span> <span class="fl">5000</span>, sim_args <span class="op">=</span> <span class="va">sim_args</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fit</span></span>
+<span><span class="co">#&gt; &lt;nsbi_npe&gt; Neural Posterior Estimation fit</span></span>
+<span><span class="co">#&gt;   density estimator : maf</span></span>
+<span><span class="co">#&gt;   parameters (dim)  : 3</span></span>
+<span><span class="co">#&gt;     names           : beta, gamma, rho </span></span>
+<span><span class="co">#&gt;   data (dim)        : 60</span></span>
+<span><span class="co">#&gt;   simulations       : 5000</span></span>
+<span><span class="co">#&gt;   best val loss     : -2.4076</span></span>
+<span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span></code></pre></div>
+<p>Looks like it works. We don’t know if it is any good yet, let’s see!</p>
+</div>
+<div class="section level3">
+<h3 id="condition-on-your-data-to-get-a-posterior-distribution">Condition on your data to get a posterior distribution<a class="anchor" aria-label="anchor" href="#condition-on-your-data-to-get-a-posterior-distribution"></a>
+</h3>
+<p>Now, let’s create some data with the model. Let’s say there’s an outbreak that looks like COVID-19, with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mn>2.5</mn></mrow><annotation encoding="application/x-tex">R_0=2.5</annotation></semantics></math> and a recovery rate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>=</mo><mn>1</mn><mi>/</mi><mn>7</mn></mrow><annotation encoding="application/x-tex">\gamma = 1/7</annotation></semantics></math>. Note that our neural posterior estimator <em>hasn’t seen any data yet</em>. We get a posterior by calling the <code>posterior</code> function on our <code>npe</code> and giving it a data vector. The <code>posterior</code> call is fast.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-pairplot-1.svg" alt="Pairwise posterior over the SIR transmission and recovery rates." width="100%"></p>
-<p>The same posterior gives a point estimate; calibration checks such as simulation-based calibration live in <code><a href="articles/diagnostics.html">vignette("diagnostics")</a></code>.</p>
+<code class="sourceCode R"><span><span class="va">true_r0</span> <span class="op">=</span> <span class="fl">2</span></span>
+<span><span class="va">true_gamma</span> <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">7</span></span>
+<span><span class="va">true_params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">true_r0</span> <span class="op">*</span> <span class="va">true_gamma</span>, gamma <span class="op">=</span> <span class="va">true_gamma</span>, rho <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Make some data (or read in your data)</span></span>
+<span><span class="va">y_obs</span>   <span class="op">&lt;-</span> <span class="fu">my_simulator</span><span class="op">(</span><span class="va">true_params</span>, times <span class="op">=</span> <span class="va">times</span>, N <span class="op">=</span> <span class="fl">100000</span>, I0 <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Get posterior - this is instantaneous.</span></span>
+<span><span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">y_obs</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">post_draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">1000</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">post_draws</span>, <span class="va">true_params</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-recovery-1.svg" alt="" width="100%"></p>
+<p>Our posterior distribution covers our ground-truth value. We knew that the SIR model posterior was a ridge; no surprises there. We can still get some identification from this data; that’s nice.</p>
+</div>
+<div class="section level3">
+<h3 id="posterior-predictive-distribution">Posterior Predictive Distribution<a class="anchor" aria-label="anchor" href="#posterior-predictive-distribution"></a>
+</h3>
+<p>Now, what if <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>0</mn></msub><annotation encoding="application/x-tex">R_0</annotation></semantics></math> was lower, or higher? Does this machinery still work? Also, how do you fit the model to multiple data sets, like multiple cities?</p>
+<p>Thanks to neural poesterior estimation, that is no problem. We can just condition again on new data and get a new posterior. Let’s do that on a loop for a few values of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>0</mn></msub><annotation encoding="application/x-tex">R_0</annotation></semantics></math> and do a posterior predictive distribution test. If everything is working we should be able to estimate the model anywhere in the parameter space that we used as a prior.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/map_estimate.html">map_estimate</a></span><span class="op">(</span><span class="va">post</span><span class="op">)</span>     <span class="co"># posterior mode</span></span>
-<span><span class="co">#&gt;      Beta     gamma </span></span>
-<span><span class="co">#&gt; 0.4005247 0.1505056</span></span></code></pre></div>
-<p>If you’re interested in sbi in other languages or functionality not available here, see the <a href="https://github.com/smsharma/awesome-neural-sbi" class="external-link">awesome neural SBI repo</a>; there are some good implementations in python and in Julia.</p>
-</div>
-<div class="section level2">
-<h2 id="running-the-simulator-in-parallel">Running the simulator in parallel<a class="anchor" aria-label="anchor" href="#running-the-simulator-in-parallel"></a>
-</h2>
-<p>Simulation is usually the expensive part of a fit, and it is embarrassingly parallel. Declare a <a href="https://future.futureverse.org" class="external-link"><code>future</code></a> plan and every function that calls your simulator — <code><a href="reference/npe.html">npe()</a></code>, <code><a href="reference/simulate_for_sbi.html">simulate_for_sbi()</a></code>, <code><a href="reference/npe_sequential.html">npe_sequential()</a></code>, <code><a href="reference/sbc.html">sbc()</a></code>, <code><a href="reference/tarp.html">tarp()</a></code>, <code><a href="reference/posterior_predictive.html">posterior_predictive()</a></code> — spreads the work across cores:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">10000</span><span class="op">)</span></span></code></pre></div>
-<p>There is nothing else to change: no extra argument, no parallel variant of <code><a href="reference/npe.html">npe()</a></code>. Without a plan everything runs sequentially, as before. Each simulation draws from its own random-number stream, so a given <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> gives the same results on one core or on 32.</p>
-<p>Simulation and neural training both report a progress bar with an ETA — one step per simulation, then one step per training epoch. If you use <a href="https://progressr.futureverse.org" class="external-link"><code>progressr</code></a>, <code>neuralsbi</code> speaks it natively (<code>handlers(global = TRUE)</code>); if not, it draws its own bar. See <code><a href="reference/nsbi_parallel.html">?nsbi_parallel</a></code> and <code><a href="reference/nsbi_progress.html">?nsbi_progress</a></code>.</p>
-</div>
-<div class="section level2">
-<h2 id="repeated-observations-and-a-bridge-to-stan">Repeated observations, and a bridge to Stan<a class="anchor" aria-label="anchor" href="#repeated-observations-and-a-bridge-to-stan"></a>
-</h2>
-<p><code><a href="reference/npe.html">npe()</a></code> learns the posterior for a fixed-length <code>x</code>, decided when the network is trained. If your data are <code>n</code> independent measurements of the same quantity, that is awkward: collect 300 instead of 200 and the fit no longer applies. <code><a href="reference/nle.html">nle()</a></code> learns the likelihood of a <em>single</em> observation instead, so their log-likelihoods add and <code>n</code> is free at inference time.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/nle.html">nle</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">20000</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">post</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">x_obs</span><span class="op">)</span>          <span class="co"># x_obs rows are independent observations</span></span>
-<span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">4000</span><span class="op">)</span>             <span class="co"># MCMC, not a forward pass</span></span></code></pre></div>
-<p>Because the result is a likelihood rather than a posterior, it is also a plain function of the parameters — <code>likelihood_fn(fit, x_obs)</code> hands it to <code><a href="https://rdrr.io/r/stats/optim.html" class="external-link">optim()</a></code> or any MCMC package — and it can be written out as Stan source:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/stan_export.html">write_stan_model</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">"likelihood.stan"</span><span class="op">)</span></span></code></pre></div>
-<p>The generated <code>functions</code> block recomputes the density in Stan’s own language with the trained weights passed as data, so NUTS differentiates it directly and nothing has to be linked against <code>torch</code>. That makes the surrogate one term in a model you write, next to a hierarchical prior, covariates, or a second data source whose likelihood you do know. See <code><a href="articles/neural-likelihood.html">vignette("neural-likelihood")</a></code>.</p>
+<span><span class="co"># Set gamma fixed and let beta vary</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">R0s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">2</span>, <span class="fl">2.5</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="va">gamma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">7</span>,<span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="va">R0s</span> <span class="op">*</span> <span class="va">gamma</span></span>
+<span><span class="va">rho</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="va">theta_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">beta</span>, <span class="va">gamma</span>, <span class="va">rho</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">4</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"gamma"</span>, <span class="st">"rho"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="co"># For each drawn theta: simulate an observation, condition the (single) fit on</span></span>
+<span><span class="co"># it, then build a posterior-predictive band. Everything reuses `fit`.</span></span>
+<span><span class="va">pp_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">theta_grid</span><span class="op">)</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  </span>
+<span>  <span class="va">theta_i</span> <span class="op">&lt;-</span> <span class="va">theta_grid</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span></span>
+<span>  <span class="va">R0_i</span> <span class="op">&lt;-</span> <span class="va">R0s</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>  <span class="va">y_obs</span>   <span class="op">&lt;-</span> <span class="fu">my_simulator</span><span class="op">(</span><span class="va">theta_i</span>, times <span class="op">=</span> <span class="va">times</span>, N <span class="op">=</span> <span class="fl">100000</span>, I0 <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">y_obs</span><span class="op">)</span></span>
+<span>  <span class="va">pp</span>   <span class="op">&lt;-</span> <span class="fu"><a href="reference/posterior_predictive.html">posterior_predictive</a></span><span class="op">(</span><span class="va">post</span>, <span class="va">my_simulator</span>, <span class="fl">1000</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    obs_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Case %d: R0=%.2f"</span>,</span>
+<span>                     <span class="va">i</span>, <span class="va">R0_i</span><span class="op">)</span>,</span>
+<span>    time   <span class="op">=</span> <span class="va">times</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>    mean   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">pp</span><span class="op">)</span>,</span>
+<span>    lower  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">pp</span>, <span class="fl">2</span>, <span class="va">quantile</span>, probs <span class="op">=</span> <span class="fl">0.005</span><span class="op">)</span>,</span>
+<span>    upper  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">pp</span>, <span class="fl">2</span>, <span class="va">quantile</span>, probs <span class="op">=</span> <span class="fl">0.995</span><span class="op">)</span>,</span>
+<span>    obs    <span class="op">=</span> <span class="va">y_obs</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Posterior predictive plot</span></span>
+<span><span class="va">pp_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pp_summary</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html" class="external-link">geom_ribbon</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lower</span>, ymax <span class="op">=</span> <span class="va">upper</span>, fill <span class="op">=</span> <span class="st">"Posterior predictive 90%"</span><span class="op">)</span>,</span>
+<span>              alpha <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">mean</span>, colour <span class="op">=</span> <span class="st">"Posterior predictive mean"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">obs</span>, colour <span class="op">=</span> <span class="st">"Observed (Ground Truth)"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">obs_id</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span> <span class="fl">2</span>, scales <span class="op">=</span> <span class="st">"free_y"</span>, axes <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_colour_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Observed (Ground Truth)"</span> <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>                                 <span class="st">"Posterior predictive mean"</span> <span class="op">=</span> <span class="st">"steelblue"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Posterior predictive 99%"</span> <span class="op">=</span> <span class="st">"steelblue"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time"</span>, y <span class="op">=</span> <span class="st">"Observed cases"</span>, colour <span class="op">=</span> <span class="cn">NULL</span>, fill <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_classic</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span>, strip.background <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pp_plot</span></span>
+<span><span class="co">#&gt; Warning: No shared levels found between `names(values)` of the manual scale and the</span></span>
+<span><span class="co">#&gt; data's fill values.</span></span>
+<span><span class="co">#&gt; No shared levels found between `names(values)` of the manual scale and the</span></span>
+<span><span class="co">#&gt; data's fill values.</span></span></code></pre></div>
+<p><img src="reference/figures/README-posterior-predictive-1.svg" alt="" width="100%"></p>
+<p>Note we didn’t have to re-run the estimation process to do this. We just needed to call <code>post &lt;- posterior(fit, x_obs = y_obs)</code> then get our posterior predictive distribution with <code>posterior_predictive(post, my_simulator, 1000)</code>.</p>
+<p>Isn’t neural SBI awesome? Go tell your friends that neural simulation-based inference is awesome.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
-<p>The <a href="https://neuralsbi.pedrodelima.com/">package website</a> has seven vignettes that build on each other:</p>
-<ol style="list-style-type: decimal">
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html">Introduction to neural SBI</a> — what SBI is for, on a simulator whose likelihood has no closed form.</li>
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/neuralsbi.html">Getting started</a> — the core prior/simulator/posterior workflow.</li>
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/density-estimators.html">Choosing a density estimator</a> — MDN, MAF, NSF, and the torch-free baseline.</li>
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/diagnostics.html">Checking the posterior</a> — calibration and predictive diagnostics.</li>
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html">Comparison with pomp: an SIR epidemic model</a> — neural posterior estimation and pomp’s particle-filter MCMC on the same stochastic epidemic.</li>
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.html">Amortized R(t) across all US states</a> — three time-varying-beta models fit once each, then conditioned on 51 case curves.</li>
-<li>
-<a href="https://neuralsbi.pedrodelima.com/articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a> — repeated independent observations, MCMC over a learned likelihood, and the generated Stan code.</li>
-</ol>
+<p>The <a href="https://neuralsbi.pedrodelima.com/">package website</a> has some more documentation.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
