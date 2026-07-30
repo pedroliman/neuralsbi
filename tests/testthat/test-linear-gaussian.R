@@ -44,3 +44,38 @@ test_that("pre-computed simulations can be passed directly", {
   expect_s3_class(fit, "nsbi_npe")
   expect_equal(fit$n_simulations, 500L)
 })
+
+test_that("a non-finite theta is dropped on the pre-computed path", {
+  set.seed(11)
+  prior <- prior_normal(mean = 0, sd = 1)
+  theta <- sample_prior(prior, 200)
+  x <- theta + matrix(rnorm(200, sd = 0.3), ncol = 1)
+  theta[3, 1] <- NA
+
+  # without this the NA reaches chol() in the estimator and comes back as
+  # "the leading minor of order 1 is not positive"
+  expect_warning(
+    fit <- npe(prior, theta = theta, x = x,
+               density_estimator = "linear_gaussian"),
+    "Dropped 1 of 200 simulations with non-finite parameters"
+  )
+  expect_equal(fit$n_simulations, 199L)
+  expect_equal(fit$n_dropped, 1L)
+
+  # a bad theta and a bad x on different rows both go
+  x[7, 1] <- Inf
+  expect_warning(
+    fit2 <- npe(prior, theta = theta, x = x,
+                density_estimator = "linear_gaussian"),
+    "Dropped 2 of 200 simulations with non-finite parameters or output"
+  )
+  expect_equal(fit2$n_simulations, 198L)
+
+  # nothing left is an error, and it points at theta rather than the simulator
+  x[7, 1] <- 0
+  theta[] <- NA_real_
+  expect_error(
+    npe(prior, theta = theta, x = x, density_estimator = "linear_gaussian"),
+    "All 200 simulations returned non-finite parameters"
+  )
+})
