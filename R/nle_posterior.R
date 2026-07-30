@@ -62,19 +62,20 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
   init_strategy <- match.arg(init_strategy)
   if (!is.null(x_obs)) x_obs <- as_theta_matrix(x_obs, fit$dim_x)
   n_chains <- n_chains %||% if (sampler == "stan") 4L else 20L
-  if (n_chains < 2L) {
-    stop("`n_chains` must be at least 2, so convergence can be diagnosed.",
-         call. = FALSE)
-  }
+  n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
+                               "so convergence can be diagnosed")
+  warmup <- check_mcmc_count(warmup, "warmup", 0L)
+  thin <- check_mcmc_count(thin, "thin", 1L,
+                           "since one draw in `thin` is kept")
 
   structure(
     list(
       fit = fit,
       x_obs = x_obs,
       sampler = sampler,
-      control = list(n_chains = as.integer(n_chains),
-                     warmup = as.integer(warmup),
-                     thin = as.integer(thin),
+      control = list(n_chains = n_chains,
+                     warmup = warmup,
+                     thin = thin,
                      init_strategy = init_strategy,
                      seed = seed,
                      dots = list(...)),
@@ -82,6 +83,30 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
     ),
     class = c("nsbi_nle_posterior", "nsbi_posterior")
   )
+}
+
+#' Validate one MCMC count argument and return it as an integer
+#'
+#' `as.integer()` on its own lets a nonsensical count through. `thin = 0` is the
+#' one that bites: [slice_sample()] then runs `warmup` iterations and no kept
+#' ones, and returns its zero-initialized array of draws with diagnostics
+#' computed on it. The counts are checked here, before anything is stored on the
+#' posterior object.
+#'
+#' @param value The supplied value.
+#' @param name Argument name, for the error message.
+#' @param min Smallest value allowed.
+#' @param why Optional clause explaining the bound.
+#' @keywords internal
+check_mcmc_count <- function(value, name, min, why = NULL) {
+  ok <- is.numeric(value) && length(value) == 1L && is.finite(value) &&
+    value == trunc(value) && value >= min
+  if (!ok) {
+    stop(sprintf("`%s` must be a single whole number, at least %d%s.",
+                 name, min, if (is.null(why)) "" else paste0(", ", why)),
+         call. = FALSE)
+  }
+  as.integer(value)
 }
 
 #' All rows of the observation, unlike [resolve_x()] which keeps only the first
