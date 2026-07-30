@@ -9,7 +9,9 @@ test_that("parameters arrive by name when they match the formals", {
   # a spare formal is fine; a missing one is not
   expect_equal(sim_dispatch(function(mu, sigma, n) NULL, c("mu", "sigma")),
                "named")
-  expect_equal(sim_dispatch(function(mu) NULL, c("mu", "sigma")), "vector")
+  expect_warning(
+    expect_equal(sim_dispatch(function(mu) NULL, c("mu", "sigma")), "vector"),
+    "sigma has no formal")
   expect_equal(sim_dispatch(function(theta) NULL, c("mu", "sigma")), "vector")
   # `...` cannot stand in for a parameter: the match has to be explicit
   expect_equal(sim_dispatch(function(...) NULL, c("mu", "sigma")), "vector")
@@ -20,6 +22,34 @@ test_that("parameters arrive by name when they match the formals", {
                            prior, 20, seed = 1)
   expect_equal(colnames(sims$x), c("m", "s"))
   expect_equal(unname(sims$x), unname(sims$theta))
+})
+
+test_that("a partial match between parameter names and formals warns", {
+  # Two of three formals match, so the vector form sends the whole parameter
+  # vector to `mu` and `ls` keeps its default. Silently fitting on that is the
+  # bug this warning exists for.
+  expect_warning(
+    expect_equal(
+      sim_dispatch(function(mu, sigma, ls = 0) NULL, c("mu", "sigma", "tau")),
+      "vector"),
+    "tau has no formal")
+  expect_warning(
+    sim_dispatch(function(mu, ls = 0) NULL, c("a", "mu")),
+    "Passing the whole parameter vector to `mu`", fixed = TRUE)
+  expect_warning(
+    sim_dispatch(function(mu, ls = 0) NULL, c("mu", "a", "b")),
+    "a, b have no formal")
+
+  prior <- prior_uniform(low = c(a = -3, b = -1), high = c(a = 3, b = 1))
+  expect_warning(
+    simulate_for_sbi(function(a, ls = 0) rnorm(1, a, exp(ls)), prior, 5,
+                     seed = 1),
+    "b has no formal")
+
+  # a plain vector-signature simulator stays silent
+  expect_silent(sim_dispatch(function(theta) NULL, c("mu", "sigma")))
+  expect_silent(sim_dispatch(function(mu, sigma) NULL, c("mu", "sigma")))
+  expect_silent(sim_dispatch(function(...) NULL, c("mu", "sigma")))
 })
 
 test_that("a non-syntactic parameter name always takes the vector form", {
