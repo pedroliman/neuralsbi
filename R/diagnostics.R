@@ -20,6 +20,31 @@ check_inference_fit <- function(fit) {
        paste(class(fit), collapse = "/"), ".", call. = FALSE)
 }
 
+#' Draw posterior samples for one diagnostic trial, insisting on the full count
+#'
+#' `sample.nsbi_posterior()` returns fewer rows than asked for when a bounded
+#' prior and a leaky estimator leave rejection sampling short, and only warns.
+#' The diagnostics cannot absorb that quietly. `sbc()` bins its ranks against
+#' `n_posterior_samples`, so a trial that came back short is scored on a scale it
+#' was never drawn on, and the ranks compress toward zero; rescaling that one
+#' trial on its own would instead make it incomparable to the others. Either way
+#' the run reports a miscalibrated posterior when the real cause is lost draws,
+#' so stop and say so.
+#' @keywords internal
+diagnostic_draws <- function(post, n, trial) {
+  draws <- sample(post, n = n)
+  if (nrow(draws) < n) {
+    stop(sprintf(
+      paste0("Trial %d returned %d of %d posterior draws. The estimator is ",
+             "leaking mass outside the prior support, and a short draw would ",
+             "be scored against %d, biasing the diagnostic toward ",
+             "'miscalibrated'. Train on more simulations, or lower ",
+             "`n_posterior_samples`."),
+      trial, nrow(draws), n, n), call. = FALSE)
+  }
+  draws
+}
+
 #' Simulation-Based Calibration (SBC)
 #'
 #' Repeatedly draws a "true" parameter from the prior, simulates data, and ranks
@@ -27,7 +52,11 @@ check_inference_fit <- function(fit) {
 #' posterior is well calibrated, the ranks are uniformly distributed.
 #'
 #' A trial whose simulation returns non-finite output is dropped, which lowers
-#' the effective `n_sbc`.
+#' the effective `n_sbc`. A trial whose posterior comes back with fewer than
+#' `n_posterior_samples` draws, which happens when a bounded prior and a leaky
+#' estimator defeat rejection sampling, is an error: ranks are binned against
+#' `n_posterior_samples`, so a short draw would be scored on a scale it was
+#' never drawn on and would read as miscalibration.
 #'
 #' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
 #'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
@@ -67,7 +96,7 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
     tryCatch({
       for (i in seq_len(n_sbc)) {
         post <- posterior(fit, x_obs = x_all[i, ], ...)
-        draws <- sample(post, n = n_posterior_samples)
+        draws <- diagnostic_draws(post, n_posterior_samples, i)
         ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
         p(1)
       }
@@ -153,7 +182,9 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' scales contribute comparably.
 #'
 #' A trial whose simulation returns non-finite output is dropped, which lowers
-#' the effective `n_tarp`.
+#' the effective `n_tarp`. A trial whose posterior comes back with fewer than
+#' `n_posterior_samples` draws is an error, for the same reason as in [sbc()]:
+#' a trial scored on a different number of draws is not comparable to the rest.
 #'
 #' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
 #'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
@@ -215,7 +246,7 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
     tryCatch({
       for (i in seq_len(n_tarp)) {
         post <- posterior(fit, x_obs = x_all[i, ], ...)
-        draws <- sample(post, n = n_posterior_samples)
+        draws <- diagnostic_draws(post, n_posterior_samples, i)
         draws_z <- apply_standardizer(std, draws)
         d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
         d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
