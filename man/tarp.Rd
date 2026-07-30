@@ -64,7 +64,9 @@ parameter (using the spread of the true draws), so parameters on different
 scales contribute comparably.
 
 A trial whose simulation returns non-finite output is dropped, which lowers
-the effective \code{n_tarp}.
+the effective \code{n_tarp}. A trial whose posterior comes back with fewer than
+\code{n_posterior_samples} draws is an error, for the same reason as in \code{\link[=sbc]{sbc()}}:
+a trial scored on a different number of draws is not comparable to the rest.
 }
 \references{
 Lemos, Coogan, Hezaveh & Perreault-Levasseur (2023),
