@@ -146,6 +146,15 @@
   are swapped. That errored with `non-conformable arguments` when
   `dim_theta` and `dim_x` differ, and returned draws from the wrong
   distribution without complaint when they happen to match.
+- Fixed:
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  on an [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  fit now validates `n_chains`, `warmup` and `thin` instead of coercing
+  them with [`as.integer()`](https://rdrr.io/r/base/integer.html).
+  `thin = 0` ran the warmup and kept nothing, so the slice sampler
+  returned its zero-initialized array and every draw was 0, with no
+  error and an Rhat computed on those zeros. Values below the bound,
+  fractional values and `NA` are now errors.
 
 ## neuralsbi 0.4.2
 
