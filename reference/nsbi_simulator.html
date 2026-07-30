@@ -119,7 +119,9 @@ simulator's formals, the parameters are passed <strong>by name</strong>, one sca
 <span><span class="op">}</span></span></code></pre><p></p></div>
 <p>An unnamed prior always takes the vector form, and so does a prior whose
 names are not syntactic R names (<code>"beta[1]"</code>), since those can never match a
-formal.</p>
+formal. A partial match warns and names the parameters that found no formal,
+because the vector form then hands every parameter to the first argument and
+the remaining formals fall back to their defaults.</p>
     </div>
     <div class="section level2">
     <h2 id="everything-else-the-simulator-needs">Everything else the simulator needs<a class="anchor" aria-label="anchor" href="#everything-else-the-simulator-needs"></a></h2>

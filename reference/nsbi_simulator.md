@@ -35,7 +35,10 @@ argument:
 
 An unnamed prior always takes the vector form, and so does a prior whose
 names are not syntactic R names (`"beta[1]"`), since those can never
-match a formal.
+match a formal. A partial match warns and names the parameters that
+found no formal, because the vector form then hands every parameter to
+the first argument and the remaining formals fall back to their
+defaults.
 
 ## Everything else the simulator needs
 

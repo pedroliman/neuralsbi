@@ -193,6 +193,17 @@
   miscalibrated posterior. Rescaling the short trial on its own is no
   better, since it is then scored on a different resolution from the
   rest, so both functions stop and name the trial and the shortfall.
+- Fixed: a simulator whose formals match some parameter names but not
+  all now warns. The choice between the two simulator signatures was all
+  or nothing and the fallback was silent, so
+  `prior_uniform(c(a = -3, b = -1), c(a = 3, b = 1))` with
+  `function(mu, ls = 0)` sent the whole two-parameter vector to `mu`,
+  left `ls` at its default, and trained on the result without complaint.
+  One typo in a prior name was enough. The warning names the parameters
+  that found no formal and points at
+  [`?nsbi_simulator`](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
+  It is a warning and not an error because a vector-signature simulator
+  whose first argument happens to carry a parameter’s name is legal.
 
 ## neuralsbi 0.4.2
 
