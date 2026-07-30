@@ -222,7 +222,7 @@ bind_sim_draws <- function(draws, d = NULL) {
   as_theta_matrix(x, d)
 }
 
-#' Drop simulations whose output is not finite
+#' Drop simulations whose parameters or output are not finite
 #'
 #' A row survives only when every value in both `theta` and `x` is finite, and
 #' the two are subset together so the training set stays paired. Checking
