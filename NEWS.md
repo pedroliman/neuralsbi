@@ -13,6 +13,7 @@
 * `save_npe()`/`load_npe()` handle `nle()` fits too, with `save_nle()`/`load_nle()` as aliases.
 * Internally, `npe()` and `nle()` now share `prepare_simulations()` instead of each carrying its own copy of the simulate/coerce/drop/standardize preamble.
 * Fixed: `sample_posterior()` now goes through the `sample()` generic instead of calling `sample.nsbi_posterior()` directly. An `nle()` posterior inherits `nsbi_posterior`, so the old call ran the NPE forward-pass sampler against an estimator whose target and condition are swapped. That errored with `non-conformable arguments` when `dim_theta` and `dim_x` differ, and returned draws from the wrong distribution without complaint when they happen to match.
+* Fixed: `posterior()` on an `nle()` fit now validates `n_chains`, `warmup` and `thin` instead of coercing them with `as.integer()`. `thin = 0` ran the warmup and kept nothing, so the slice sampler returned its zero-initialized array and every draw was 0, with no error and an Rhat computed on those zeros. Values below the bound, fractional values and `NA` are now errors.
 
 # neuralsbi 0.4.2
 
