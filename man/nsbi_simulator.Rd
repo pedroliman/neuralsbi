@@ -81,7 +81,9 @@ name the outcome deliberately with \code{c(r0 = ...)}.
 A draw whose output contains \code{NA}, \code{NaN} or an infinite value is dropped,
 together with its parameters, and one warning per run reports the count and
 the rate. A single non-finite value would otherwise poison the training loss
-for the whole fit and surface much later as a \code{NaN} validation loss.
+for the whole fit and surface much later as a \code{NaN} validation loss. The
+parameters are checked the same way, so a pre-computed pair with a missing
+\code{theta} is dropped instead of reaching the density estimator.
 
 Dropping conditions on the simulator having succeeded. When failure depends
 on the parameters -- an ODE that diverges for large \code{beta}, a model that
