@@ -73,6 +73,10 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE) {
   stopifnot(inherits(prior, "nsbi_prior"))
+  # See npe(): the estimator name is matched before the simulator runs.
+  if (!is.function(density_estimator)) {
+    density_estimator <- match.arg(density_estimator)
+  }
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
