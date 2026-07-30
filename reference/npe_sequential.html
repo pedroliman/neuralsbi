@@ -147,12 +147,15 @@ simulated observation; see <a href="nsbi_simulator.html">nsbi_simulator</a>.</p>
 
 
 <dt id="arg-x-obs">x_obs<a class="anchor" aria-label="anchor" href="#arg-x-obs"></a></dt>
-<dd><p>The observation to target. Sequential inference concentrates
-simulations around the posterior for this observation.</p></dd>
+<dd><p>The observation to target, as one numeric vector, one-row
+matrix or one-row data frame whose width matches the simulator's output.
+Sequential inference concentrates simulations around the posterior for
+this observation.</p></dd>
 
 
 <dt id="arg-n-rounds">n_rounds<a class="anchor" aria-label="anchor" href="#arg-n-rounds"></a></dt>
-<dd><p>Number of rounds. Round 1 is ordinary single-round NPE.</p></dd>
+<dd><p>Number of rounds, at least 1. Round 1 is ordinary
+single-round NPE.</p></dd>
 
 
 <dt id="arg-n-simulations">n_simulations<a class="anchor" aria-label="anchor" href="#arg-n-simulations"></a></dt>

@@ -165,6 +165,18 @@
   validation loss”, which blames training for a bad input. Such rows are
   now dropped like any other failure, and the warning says which side
   was non-finite (“parameters”, “output”, or “parameters or output”).
+- Fixed:
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now checks `x_obs` against the simulator’s output width, at the end of
+  round 1, which is the first moment that width is known. An `x_obs` of
+  the wrong length was reshaped into several rows and only the first was
+  targeted, so the run truncated its proposals around a value the caller
+  never gave while [`print()`](https://rdrr.io/r/base/print.html)
+  reported all of them as targeted. A TSNPE fit is not amortized, so
+  targeting the wrong observation is the whole failure. A missing,
+  `NULL`, non-numeric, `NA` or multi-row `x_obs` is an error as well,
+  and `n_rounds` must be a single integer of at least 1: `n_rounds = 0`
+  skipped the loop and returned a bare list classed `nsbi_snpe`.
 
 ## neuralsbi 0.4.2
 

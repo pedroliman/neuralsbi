@@ -49,12 +49,14 @@ npe_sequential(
 
 - x_obs:
 
-  The observation to target. Sequential inference concentrates
-  simulations around the posterior for this observation.
+  The observation to target, as one numeric vector, one-row matrix or
+  one-row data frame whose width matches the simulator's output.
+  Sequential inference concentrates simulations around the posterior for
+  this observation.
 
 - n_rounds:
 
-  Number of rounds. Round 1 is ordinary single-round NPE.
+  Number of rounds, at least 1. Round 1 is ordinary single-round NPE.
 
 - n_simulations:
 
