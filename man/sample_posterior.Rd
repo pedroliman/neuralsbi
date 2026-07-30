@@ -13,7 +13,7 @@ sample_posterior(post, n = 1000, obs = NULL, ...)
 
 \item{obs}{Observation to condition on (defaults to the posterior's \code{x_obs}).}
 
-\item{...}{Passed to \code{\link[=sample.nsbi_posterior]{sample.nsbi_posterior()}}.}
+\item{...}{Passed to the dispatched \code{\link[=sample]{sample()}} method.}
 }
 \value{
 An \verb{n x dim} matrix of posterior draws.

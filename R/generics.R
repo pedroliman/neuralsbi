@@ -25,9 +25,14 @@ sample.default <- function(x, ...) base::sample(x, ...)
 #' @param post An `nsbi_posterior` object.
 #' @param n Number of posterior draws.
 #' @param obs Observation to condition on (defaults to the posterior's `x_obs`).
-#' @param ... Passed to [sample.nsbi_posterior()].
+#' @param ... Passed to the dispatched [sample()] method.
 #' @return An `n x dim` matrix of posterior draws.
 #' @export
 sample_posterior <- function(post, n = 1000, obs = NULL, ...) {
-  sample.nsbi_posterior(post, n = n, obs = obs, ...)
+  # Through the generic, not sample.nsbi_posterior() directly: an nle() fit's
+  # posterior inherits nsbi_posterior but samples with MCMC, and its estimator
+  # has the roles of theta and x swapped. The NPE sampler asked to draw from it
+  # errors where dim_x and dim_theta differ, and where they happen to match it
+  # returns draws from the wrong distribution without complaint.
+  sample(post, n = n, obs = obs, ...)
 }

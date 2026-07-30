@@ -12,6 +12,7 @@
 * `sbc()`, `tarp()` and `posterior_predictive()` accept an `nle()` fit, and `sbc()`/`tarp()` forward `...` to `posterior()` so the MCMC controls reach it. Every SBC trial is a separate MCMC run, so start small.
 * `save_npe()`/`load_npe()` handle `nle()` fits too, with `save_nle()`/`load_nle()` as aliases.
 * Internally, `npe()` and `nle()` now share `prepare_simulations()` instead of each carrying its own copy of the simulate/coerce/drop/standardize preamble.
+* Fixed: `sample_posterior()` now goes through the `sample()` generic instead of calling `sample.nsbi_posterior()` directly. An `nle()` posterior inherits `nsbi_posterior`, so the old call ran the NPE forward-pass sampler against an estimator whose target and condition are swapped. That errored with `non-conformable arguments` when `dim_theta` and `dim_x` differ, and returned draws from the wrong distribution without complaint when they happen to match.
 
 # neuralsbi 0.4.2
 
