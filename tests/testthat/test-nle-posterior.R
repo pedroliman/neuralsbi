@@ -198,6 +198,28 @@ test_that("a single chain is refused, since it cannot be diagnosed", {
   expect_error(posterior(fit, matrix(0), n_chains = 1), "at least 2")
 })
 
+test_that("thin and warmup are validated, and thin = 1 keeps every draw", {
+  prior <- prior_uniform(c(mu = -2), c(mu = 2))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 500, density_estimator = "linear_gaussian",
+             seed = 40)
+  x_obs <- matrix(stats::rnorm(10, 0.5, 0.5), ncol = 1)
+
+  # thin = 0 used to run warmup only and hand back the zero-initialized array
+  # of kept draws, with no error and a plausible-looking rhat.
+  expect_error(posterior(fit, x_obs, thin = 0), "`thin` must be")
+  expect_error(posterior(fit, x_obs, thin = -1), "`thin` must be")
+  expect_error(posterior(fit, x_obs, thin = 1.5), "`thin` must be")
+  expect_error(posterior(fit, x_obs, thin = NA), "`thin` must be")
+  expect_error(posterior(fit, x_obs, warmup = -5), "`warmup` must be")
+
+  post <- posterior(fit, x_obs, n_chains = 4, warmup = 40, thin = 1, seed = 41)
+  draws <- sample(post, 200)
+  expect_equal(nrow(draws), 200L)
+  expect_false(all(draws == 0))
+  expect_gt(stats::sd(as.numeric(draws)), 0)
+})
+
 test_that("posterior() rejects an object that is neither fit", {
   expect_error(posterior(list(a = 1)), "needs a fit from npe\\(\\) or nle\\(\\)")
 })
