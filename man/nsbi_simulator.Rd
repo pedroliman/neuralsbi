@@ -35,7 +35,9 @@ Otherwise the whole \strong{named parameter vector} goes to the first argument:
 
 An unnamed prior always takes the vector form, and so does a prior whose
 names are not syntactic R names (\code{"beta[1]"}), since those can never match a
-formal.
+formal. A partial match warns and names the parameters that found no formal,
+because the vector form then hands every parameter to the first argument and
+the remaining formals fall back to their defaults.
 }
 
 \section{Everything else the simulator needs}{
