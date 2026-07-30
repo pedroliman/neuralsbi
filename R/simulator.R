@@ -73,7 +73,9 @@
 #' A draw whose output contains `NA`, `NaN` or an infinite value is dropped,
 #' together with its parameters, and one warning per run reports the count and
 #' the rate. A single non-finite value would otherwise poison the training loss
-#' for the whole fit and surface much later as a `NaN` validation loss.
+#' for the whole fit and surface much later as a `NaN` validation loss. The
+#' parameters are checked the same way, so a pre-computed pair with a missing
+#' `theta` is dropped instead of reaching the density estimator.
 #'
 #' Dropping conditions on the simulator having succeeded. When failure depends
 #' on the parameters -- an ODE that diverges for large `beta`, a model that
@@ -220,11 +222,15 @@ bind_sim_draws <- function(draws, d = NULL) {
   as_theta_matrix(x, d)
 }
 
-#' Drop simulations whose output is not finite
+#' Drop simulations whose parameters or output are not finite
 #'
-#' `theta` and `x` go together so the training set stays paired. Returns the
-#' surviving pair and the number dropped; warns once, and errors when nothing
-#' survives. See the "Failed simulations" section of [nsbi_simulator].
+#' A row survives only when every value in both `theta` and `x` is finite, and
+#' the two are subset together so the training set stays paired. Checking
+#' `theta` matters on the pre-computed path, where a user-supplied `NA` would
+#' otherwise reach `chol()` in the estimator and surface as a linear-algebra
+#' error. Returns the surviving pair and the number dropped; warns once, and
+#' errors when nothing survives. See the "Failed simulations" section of
+#' [nsbi_simulator].
 #'
 #' @param theta Parameter matrix, or `NULL` when the caller has no parameters
 #'   to keep aligned.
@@ -234,17 +240,34 @@ bind_sim_draws <- function(draws, d = NULL) {
 drop_failed_sims <- function(theta, x, what = "simulations") {
   n <- nrow(x)
   if (n == 0L) return(list(theta = theta, x = x, n_dropped = 0L, ok = logical(0)))
-  ok <- rowSums(!is.finite(x)) == 0L
+  bad_x <- rowSums(!is.finite(x)) > 0L
+  bad_theta <- if (is.null(theta)) {
+    rep(FALSE, n)
+  } else {
+    rowSums(!is.finite(theta)) > 0L
+  }
+  ok <- !(bad_x | bad_theta)
   n_dropped <- sum(!ok)
   if (n_dropped > 0L) {
-    if (!any(ok)) {
-      stop(sprintf(
-        paste0("All %d %s returned non-finite output (NA, NaN or Inf). ",
-               "Check the simulator on a single prior draw."),
-        n, what), call. = FALSE)
+    cause <- if (!any(bad_theta)) {
+      "output"
+    } else if (!any(bad_x)) {
+      "parameters"
+    } else {
+      "parameters or output"
     }
-    warning(sprintf("Dropped %d of %d %s with non-finite output (%.1f%%).",
-                    n_dropped, n, what, 100 * n_dropped / n), call. = FALSE)
+    if (!any(ok)) {
+      hint <- if (any(bad_x)) {
+        "Check the simulator on a single prior draw."
+      } else {
+        "Check `theta` for NA, NaN or Inf."
+      }
+      stop(sprintf("All %d %s returned non-finite %s (NA, NaN or Inf). %s",
+                   n, what, cause, hint), call. = FALSE)
+    }
+    warning(sprintf("Dropped %d of %d %s with non-finite %s (%.1f%%).",
+                    n_dropped, n, what, cause, 100 * n_dropped / n),
+            call. = FALSE)
   }
   list(theta = if (is.null(theta)) NULL else theta[ok, , drop = FALSE],
        x = x[ok, , drop = FALSE], n_dropped = n_dropped, ok = ok)
