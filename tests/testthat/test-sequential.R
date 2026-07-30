@@ -69,6 +69,40 @@ test_that("npe_sequential requires a simulator function", {
                "simulator")
 })
 
+test_that("npe_sequential rejects an x_obs the simulator cannot have produced", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.5)
+  # dim_x is 1: a length-3 x_obs used to be folded into three rows, of which
+  # only the first was ever targeted
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = c(1, 2, 3), n_rounds = 1,
+                   n_simulations = 100, density_estimator = "linear_gaussian",
+                   seed = 6),
+    "3 value\\(s\\) but the simulator returns 1")
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = matrix(c(1, 2), ncol = 1),
+                   n_rounds = 1, n_simulations = 100,
+                   density_estimator = "linear_gaussian", seed = 6),
+    "2 rows")
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = NULL, n_rounds = 1,
+                   n_simulations = 100, density_estimator = "linear_gaussian"),
+    "`x_obs` is required")
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = NA_real_, n_rounds = 1,
+                   n_simulations = 100, density_estimator = "linear_gaussian"),
+    "missing values")
+})
+
+test_that("npe_sequential requires at least one round", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.5)
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 0,
+                   n_simulations = 100, density_estimator = "linear_gaussian"),
+    "n_rounds")
+})
+
 test_that("truncation works with a bounded prior", {
   set.seed(24)
   prior <- prior_uniform(c(-2, -2), c(2, 2))

@@ -26,10 +26,13 @@ npe_sequential(
 \item{simulator}{A function called once per parameter set, returning one
 simulated observation; see \link{nsbi_simulator}.}
 
-\item{x_obs}{The observation to target. Sequential inference concentrates
-simulations around the posterior for this observation.}
+\item{x_obs}{The observation to target, as one numeric vector, one-row
+matrix or one-row data frame whose width matches the simulator's output.
+Sequential inference concentrates simulations around the posterior for
+this observation.}
 
-\item{n_rounds}{Number of rounds. Round 1 is ordinary single-round NPE.}
+\item{n_rounds}{Number of rounds, at least 1. Round 1 is ordinary
+single-round NPE.}
 
 \item{n_simulations}{Simulation budget per round; either a scalar or a
 vector of length \code{n_rounds}.}
