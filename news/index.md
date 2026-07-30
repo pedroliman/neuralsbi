@@ -155,6 +155,16 @@
   returned its zero-initialized array and every draw was 0, with no
   error and an Rhat computed on those zeros. Values below the bound,
   fractional values and `NA` are now errors.
+- Fixed: the non-finite check now covers `theta` as well as `x`. A row
+  was dropped only when its simulator output was non-finite, so an `NA`
+  among pre-computed parameters passed straight through to the
+  estimator: `npe(prior, theta = theta, x = x)` with one missing
+  parameter failed inside [`chol()`](https://rdrr.io/r/base/chol.html)
+  with “the leading minor of order 1 is not positive”, and on the torch
+  path it became “Training failed: no restart produced a finite
+  validation loss”, which blames training for a bad input. Such rows are
+  now dropped like any other failure, and the warning says which side
+  was non-finite (“parameters”, “output”, or “parameters or output”).
 
 ## neuralsbi 0.4.2
 
