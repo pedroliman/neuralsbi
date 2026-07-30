@@ -72,7 +72,12 @@ uniformity test.
 ## Details
 
 A trial whose simulation returns non-finite output is dropped, which
-lowers the effective `n_sbc`.
+lowers the effective `n_sbc`. A trial whose posterior comes back with
+fewer than `n_posterior_samples` draws, which happens when a bounded
+prior and a leaky estimator defeat rejection sampling, is an error:
+ranks are binned against `n_posterior_samples`, so a short draw would be
+scored on a scale it was never drawn on and would read as
+miscalibration.
 
 The `n_sbc` simulations run across `future` workers when a plan is set
 (see

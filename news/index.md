@@ -177,6 +177,22 @@
   `NULL`, non-numeric, `NA` or multi-row `x_obs` is an error as well,
   and `n_rounds` must be a single integer of at least 1: `n_rounds = 0`
   skipped the loop and returned a bare list classed `nsbi_snpe`.
+- Fixed: [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)
+  and [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)
+  now error when a trial’s posterior returns fewer draws than
+  `n_posterior_samples` instead of scoring it anyway.
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  comes back short when a bounded prior and an estimator that leaks mass
+  outside it defeat rejection sampling, and it only warns.
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) then
+  binned those ranks against `n_posterior_samples` while they were drawn
+  from a smaller set, which compressed every rank toward zero: the
+  chi-square uniformity test rejected and
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  fell below the diagonal, so lost draws were reported as a
+  miscalibrated posterior. Rescaling the short trial on its own is no
+  better, since it is then scored on a different resolution from the
+  rest, so both functions stop and name the trial and the shortfall.
 
 ## neuralsbi 0.4.2
 

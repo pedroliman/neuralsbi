@@ -156,7 +156,11 @@ uniformity test.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>A trial whose simulation returns non-finite output is dropped, which lowers
-the effective <code>n_sbc</code>.</p>
+the effective <code>n_sbc</code>. A trial whose posterior comes back with fewer than
+<code>n_posterior_samples</code> draws, which happens when a bounded prior and a leaky
+estimator defeat rejection sampling, is an error: ranks are binned against
+<code>n_posterior_samples</code>, so a short draw would be scored on a scale it was
+never drawn on and would read as miscalibration.</p>
 <p>The <code>n_sbc</code> simulations run across <code>future</code> workers when a plan is
 set (see <a href="nsbi_parallel.html">nsbi_parallel</a>); the ranking loop that follows calls the trained
 network and always runs locally.</p>

@@ -91,7 +91,11 @@ parameter (using the spread of the true draws), so parameters on
 different scales contribute comparably.
 
 A trial whose simulation returns non-finite output is dropped, which
-lowers the effective `n_tarp`.
+lowers the effective `n_tarp`. A trial whose posterior comes back with
+fewer than `n_posterior_samples` draws is an error, for the same reason
+as in [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md): a
+trial scored on a different number of draws is not comparable to the
+rest.
 
 ## References
 

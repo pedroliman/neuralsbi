@@ -183,7 +183,9 @@ correlation structure is wrong. Distances are computed after z-scoring each
 parameter (using the spread of the true draws), so parameters on different
 scales contribute comparably.</p>
 <p>A trial whose simulation returns non-finite output is dropped, which lowers
-the effective <code>n_tarp</code>.</p>
+the effective <code>n_tarp</code>. A trial whose posterior comes back with fewer than
+<code>n_posterior_samples</code> draws is an error, for the same reason as in <code><a href="sbc.html">sbc()</a></code>:
+a trial scored on a different number of draws is not comparable to the rest.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
