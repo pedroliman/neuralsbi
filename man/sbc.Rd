@@ -48,7 +48,11 @@ posterior is well calibrated, the ranks are uniformly distributed.
 }
 \details{
 A trial whose simulation returns non-finite output is dropped, which lowers
-the effective \code{n_sbc}.
+the effective \code{n_sbc}. A trial whose posterior comes back with fewer than
+\code{n_posterior_samples} draws, which happens when a bounded prior and a leaky
+estimator defeat rejection sampling, is an error: ranks are binned against
+\code{n_posterior_samples}, so a short draw would be scored on a scale it was
+never drawn on and would read as miscalibration.
 
 The \code{n_sbc} simulations run across \code{future} workers when a plan is
 set (see \link{nsbi_parallel}); the ranking loop that follows calls the trained
