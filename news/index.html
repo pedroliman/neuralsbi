@@ -104,6 +104,7 @@
 <li>
 <code><a href="../reference/save_npe.html">save_npe()</a></code>/<code><a href="../reference/save_npe.html">load_npe()</a></code> handle <code><a href="../reference/nle.html">nle()</a></code> fits too, with <code><a href="../reference/save_npe.html">save_nle()</a></code>/<code><a href="../reference/save_npe.html">load_nle()</a></code> as aliases.</li>
 <li>Internally, <code><a href="../reference/npe.html">npe()</a></code> and <code><a href="../reference/nle.html">nle()</a></code> now share <code>prepare_simulations()</code> instead of each carrying its own copy of the simulate/coerce/drop/standardize preamble.</li>
+<li>Fixed: <code><a href="../reference/sample_posterior.html">sample_posterior()</a></code> now goes through the <code><a href="../reference/sample.html">sample()</a></code> generic instead of calling <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> directly. An <code><a href="../reference/nle.html">nle()</a></code> posterior inherits <code>nsbi_posterior</code>, so the old call ran the NPE forward-pass sampler against an estimator whose target and condition are swapped. That errored with <code>non-conformable arguments</code> when <code>dim_theta</code> and <code>dim_x</code> differ, and returned draws from the wrong distribution without complaint when they happen to match.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.2" id="neuralsbi-042">neuralsbi 0.4.2<a class="anchor" aria-label="anchor" href="#neuralsbi-042"></a></h2>

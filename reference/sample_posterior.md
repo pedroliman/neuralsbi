@@ -25,8 +25,9 @@ sample_posterior(post, n = 1000, obs = NULL, ...)
 
 - ...:
 
-  Passed to
-  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md).
+  Passed to the dispatched
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  method.
 
 ## Value
 

@@ -133,6 +133,19 @@
   [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) now
   share `prepare_simulations()` instead of each carrying its own copy of
   the simulate/coerce/drop/standardize preamble.
+- Fixed:
+  [`sample_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample_posterior.md)
+  now goes through the
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  generic instead of calling
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  directly. An
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  posterior inherits `nsbi_posterior`, so the old call ran the NPE
+  forward-pass sampler against an estimator whose target and condition
+  are swapped. That errored with `non-conformable arguments` when
+  `dim_theta` and `dim_x` differ, and returned draws from the wrong
+  distribution without complaint when they happen to match.
 
 ## neuralsbi 0.4.2
 
