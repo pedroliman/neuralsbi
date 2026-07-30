@@ -32,7 +32,9 @@
 #'
 #' An unnamed prior always takes the vector form, and so does a prior whose
 #' names are not syntactic R names (`"beta[1]"`), since those can never match a
-#' formal.
+#' formal. A partial match warns and names the parameters that found no formal,
+#' because the vector form then hands every parameter to the first argument and
+#' the remaining formals fall back to their defaults.
 #'
 #' @section Everything else the simulator needs:
 #'
@@ -92,6 +94,14 @@ NULL
 #'
 #' Decided once per run from `formals()`, never by probing the simulator: a
 #' wrong guess would produce a wrong posterior with no error.
+#'
+#' A partial match warns. When some parameter names appear among the formals
+#' and others do not, both signatures are plausible and the vector form wins,
+#' which sends the whole parameter vector to the first formal and lets the rest
+#' take their defaults. That trains on nonsense without erroring, and one typo
+#' in a prior name is enough to cause it. A warning rather than an error,
+#' because a vector-signature simulator whose first argument happens to carry a
+#' parameter's name is legal.
 #' @return `"named"` (one scalar per formal) or `"vector"` (the named parameter
 #'   vector as the first argument).
 #' @keywords internal
@@ -103,7 +113,19 @@ sim_dispatch <- function(simulator, param_names) {
   if (is.null(param_names) || !all(nzchar(param_names))) return("vector")
   fmls <- names(formals(args(simulator)))
   if (is.null(fmls)) return("vector")
-  if (all(param_names %in% setdiff(fmls, "..."))) "named" else "vector"
+  named <- setdiff(fmls, "...")
+  matched <- param_names %in% named
+  if (all(matched)) return("named")
+  if (any(matched)) {
+    warning(sprintf(paste0(
+      "Simulator formals match some parameter names but not all: %s %s no ",
+      "formal. Passing the whole parameter vector to `%s` instead, which is ",
+      "probably not what you want. See ?nsbi_simulator."),
+      paste(param_names[!matched], collapse = ", "),
+      if (sum(!matched) == 1L) "has" else "have",
+      fmls[1L]), call. = FALSE)
+  }
+  "vector"
 }
 
 #' Build the closure that calls the simulator for one parameter set
