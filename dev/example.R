@@ -18,7 +18,7 @@ ode_model <- function(t, y, p) {
 
 # Simulator function
 # Here we are already only making the simulator return only 10 observations
-sir_model <- function(theta, times = 0:60, N = 100000, I0 = 5) {
+my_simulator <- function(theta, times = 0:60, N = 100000, I0 = 5) {
   # Let's use just a deterministic ODE, so there's no randomness in transmission:
   # WE could make it fully stochastic if we want. 
   # I just want to make this as fast as it can be for this vignette build
@@ -32,12 +32,12 @@ sir_model <- function(theta, times = 0:60, N = 100000, I0 = 5) {
   cases <- round(diff(ode_result[, "CumInfections"]))
   obs_cases <- rbinom(n = length(cases), size= cases, prob = theta[["rho"]])
   
-  # return observed cases time-series:
+  # return output vector
   return(obs_cases)
 }
 
 # test simulator
-sir_model(theta=c(beta = 0.5, gamma = 1/7, rho = 0.5))
+my_simulator(theta=c(beta = 0.5, gamma = 1/7, rho = 0.5))
 
 # Train neural posterior estimator (NPE) ----------------------------------
 
@@ -52,19 +52,15 @@ plan(multisession, workers = 8)
 times <- 0:60
 sim_args <- list(times = times, N = 100000, I0 = 5)
 
-# Fit neural posterior estimator (npe), use "only" 3000 model runs, default npe args:
-# Note that the training doesn't see any data!.
-# For this model, this takes ~ 1 minute.
+# Here we fit the neural posterior estimator with neuralsbi's npe function:
 
-emb_network <- embedding_mlp()
-
-fit   <- npe(prior, sir_model, n_simulations = 5000, sim_args = sim_args, seed = 1)
+fit   <- npe(prior, my_simulator, n_simulations = 5000, sim_args = sim_args, seed = 1)
 
 true_r0 = 2
 true_gamma = 1/7
 true_params <- c(beta = true_r0 * true_gamma, gamma = true_gamma, rho = 0.7)
 
-y_obs   <- sir_model(true_params, times = times, N = 100000, I0 = 5)
+y_obs   <- my_simulator(true_params, times = times, N = 100000, I0 = 5)
 
 post <- posterior(fit, x_obs = y_obs)
 
@@ -94,10 +90,10 @@ pp_summary <- do.call(rbind, lapply(seq_len(nrow(theta_grid)), function(i) {
   
   theta_i <- theta_grid[i, ]
   R0_i <- R0s[i]
-  y_obs   <- sir_model(theta_i, times = times, N = 100000, I0 = 5)
+  y_obs   <- my_simulator(theta_i, times = times, N = 100000, I0 = 5)
 
   post <- posterior(fit, x_obs = y_obs)
-  pp   <- posterior_predictive(post, sir_model, 1000)
+  pp   <- posterior_predictive(post, my_simulator, 1000)
 
   data.frame(
     obs_id = sprintf("Case %d: R0=%.2f",
