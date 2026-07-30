@@ -29,9 +29,12 @@
 #'   simulated observation; see [nsbi_simulator].
 #' @param sim_args Named list of extra arguments passed to every simulator
 #'   call; see [nsbi_simulator].
-#' @param x_obs The observation to target. Sequential inference concentrates
-#'   simulations around the posterior for this observation.
-#' @param n_rounds Number of rounds. Round 1 is ordinary single-round NPE.
+#' @param x_obs The observation to target, as one numeric vector, one-row
+#'   matrix or one-row data frame whose width matches the simulator's output.
+#'   Sequential inference concentrates simulations around the posterior for
+#'   this observation.
+#' @param n_rounds Number of rounds, at least 1. Round 1 is ordinary
+#'   single-round NPE.
 #' @param n_simulations Simulation budget per round; either a scalar or a
 #'   vector of length `n_rounds`.
 #' @param density_estimator Passed to [npe()] each round.
@@ -72,8 +75,17 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
     stop("`simulator` must be a function; sequential NPE has to simulate ",
          "each round.", call. = FALSE)
   }
+  if (missing(x_obs)) {
+    stop("`x_obs` is required: sequential NPE targets a single observation.",
+         call. = FALSE)
+  }
+  check_x_obs(x_obs)
   if (!is.null(seed)) set.seed(seed)
-  n_rounds <- as.integer(n_rounds)
+  n_rounds <- suppressWarnings(as.integer(n_rounds))
+  if (length(n_rounds) != 1L || is.na(n_rounds) || n_rounds < 1L) {
+    stop("`n_rounds` must be a single integer >= 1; round 1 is the initial ",
+         "NPE fit.", call. = FALSE)
+  }
   budgets <- rep_len(as.integer(n_simulations), n_rounds)
 
   theta_all <- NULL
@@ -124,6 +136,9 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
     x_new <- kept$x
     theta_all <- rbind(theta_all, theta_new)
     x_all <- rbind(x_all, x_new)
+    # the simulator's output width is only known once it has run, so this is
+    # the earliest point at which x_obs can be checked against it
+    if (r == 1L) x_obs <- check_x_obs(x_obs, ncol(x_all))
     verbose_cat(verbose, sprintf(
       "Round %d/%d: %d new simulations (%d total), proposal acceptance %.2f\n",
       r, n_rounds, nrow(theta_new), nrow(theta_all), acceptance))
@@ -135,10 +150,53 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   }
 
   fit$rounds <- rounds
-  fit$x_obs <- as.numeric(as_theta_matrix(x_obs, fit$dim_x))
+  fit$x_obs <- as.numeric(x_obs)
   fit$method <- "tsnpe"
   class(fit) <- c("nsbi_snpe", class(fit))
   fit
+}
+
+#' Check the observation a sequential fit targets
+#'
+#' TSNPE spends its whole budget near one observation, so a mis-sized `x_obs`
+#' is not a detail. Without this check `as_theta_matrix()` folds a length-3
+#' vector into a 3 x 1 matrix and `resolve_x()` keeps row 1, so the run
+#' truncates its proposals around a value the user never asked for and nothing
+#' says so. Called twice: once at the top of [npe_sequential()] for shape, and
+#' once after round 1 with `dim_x`, which is the first moment the simulator's
+#' output width is known.
+#'
+#' @param x_obs The observation passed to [npe_sequential()].
+#' @param dim_x Simulator output width, or `NULL` to check shape only.
+#' @return With `dim_x`, `x_obs` as a one-row matrix; otherwise `x_obs`
+#'   unchanged, invisibly.
+#' @keywords internal
+check_x_obs <- function(x_obs, dim_x = NULL) {
+  if (is.null(x_obs)) {
+    stop("`x_obs` is required: sequential NPE targets a single observation.",
+         call. = FALSE)
+  }
+  if (is.data.frame(x_obs)) x_obs <- as.matrix(x_obs)
+  if (!is.numeric(x_obs) || length(x_obs) == 0L || anyNA(x_obs)) {
+    stop("`x_obs` must be a non-empty numeric vector, one-row matrix or ",
+         "one-row data frame, with no missing values.", call. = FALSE)
+  }
+  n_obs <- if (is.null(dim(x_obs))) 1L else nrow(x_obs)
+  if (n_obs != 1L) {
+    stop(sprintf(paste0("`x_obs` has %d rows. Sequential NPE targets one ",
+                        "observation; run npe_sequential() once per ",
+                        "observation, or use npe() for an amortized fit."),
+                 n_obs), call. = FALSE)
+  }
+  if (is.null(dim_x)) return(invisible(x_obs))
+  len <- if (is.null(dim(x_obs))) length(x_obs) else ncol(x_obs)
+  if (len != dim_x) {
+    stop(sprintf(paste0("`x_obs` has %d value(s) but the simulator returns ",
+                        "%d. Sequential NPE truncates its proposals around ",
+                        "`x_obs`, so a mismatch would target the wrong ",
+                        "observation."), len, dim_x), call. = FALSE)
+  }
+  as_theta_matrix(x_obs, dim_x)
 }
 
 #' @export
