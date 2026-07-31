@@ -22,6 +22,8 @@ NPE needs no correction for this. Training on $\theta \sim \tilde\pi$ and $x \si
 
 Everything turns on the last factor. When $x_2 \perp x_1 \mid \theta$ it reduces to $p(x_2 \mid \theta_A, \theta_B)$ and the cascade is exact. When it does not, passing the parameter posterior forward is not enough. The two examples below are one of each.
 
+Seven MAF fits at 20,000 simulations each, so a cold render takes on the order of two hours on four CPU cores. Chunk caching is on; drop `NSIM` to 5000 for a quick pass, at some cost in how tightly the fits agree.
+
 ```{r setup}
 library(neuralsbi)
 set.seed(1)
@@ -201,7 +203,16 @@ plot_marginals(list(d1, d_exact, d_joint, d_seq), pnames,
 round(compare(list(joint = d_joint, sequential = d_seq), d_exact, pnames), 3)
 ```
 
-Both fits land on the exact posterior. Adding the trial identifies $\sigma$ and also tightens $\lambda$ and $\mu$, which is the point: the second dataset informs first-stage parameters it shares with the second simulator.
+The registry posterior is a tight ridge: $\lambda$ and $\mu$ trade off, because incidence pins their combination better than either rate alone. Drawing the stage-2 prior from `post1` carries that ridge across intact, which refitting independent marginals would not.
+
+```{r cancer-ridge}
+vapply(list(exact = d_exact, joint = d_joint, sequential = d_seq),
+       function(d) cor(d[, "lambda"], d[, "mu"]), numeric(1))
+```
+
+Both fits land on the exact posterior, within about 0.2 posterior standard deviations on every parameter and with spreads correct to a few percent. The sequential cascade is no worse than the one-shot fit, which is the claim being checked.
+
+Adding the trial identifies $\sigma$, which the registry says nothing about, and also tightens $\lambda$ and $\mu$: exactly the case where a second dataset informs first-stage parameters it shares with the second simulator.
 
 # 2. An epidemic in two phases
 
