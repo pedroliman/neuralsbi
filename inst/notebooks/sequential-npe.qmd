@@ -1,0 +1,375 @@
+---
+title: "Sequential NPE: calibrating against one dataset, then another"
+format:
+  html:
+    toc: true
+    code-fold: false
+    fig-width: 9
+    fig-height: 3.2
+execute:
+  cache: true
+  warning: false
+  message: false
+---
+
+Two calibrations in sequence: fit a model to one dataset, then use that posterior as the prior for a second fit against a different dataset, possibly with a different simulator and extra parameters.
+
+The target is
+
+$$p(\theta_A, \theta_B \mid x_1, x_2) \propto \underbrace{\big[\,p(\theta_A \mid x_1)\, p(\theta_B)\,\big]}_{\text{stage-2 prior}} \; p(x_2 \mid \theta_A, \theta_B, x_1).$$
+
+NPE needs no correction for this. Training on $\theta \sim \tilde\pi$ and $x \sim p(x \mid \theta)$ makes the loss converge to the posterior *under prior* $\tilde\pi$, and here the stage-2 proposal and the stage-2 prior are the same object by construction.
+
+Everything turns on the last factor. When $x_2 \perp x_1 \mid \theta$ it reduces to $p(x_2 \mid \theta_A, \theta_B)$ and the cascade is exact. When it does not, passing the parameter posterior forward is not enough. The two examples below are one of each.
+
+```{r setup}
+library(neuralsbi)
+set.seed(1)
+
+NSIM  <- 20000L   # simulations per fit
+NDRAW <- 4000L    # posterior draws
+DE    <- "maf"
+
+plot_marginals <- function(sets, pars, cols, truth = NULL, main = "") {
+  op <- graphics::par(mfrow = c(1, length(pars)), mar = c(4, 2, 2.5, 1))
+  on.exit(graphics::par(op))
+  for (p in pars) {
+    ds <- lapply(sets, function(d) stats::density(d[, p]))
+    plot(NA, xlim = range(vapply(ds, function(z) range(z$x), numeric(2))),
+         ylim = c(0, max(vapply(ds, function(z) max(z$y), numeric(1)))),
+         xlab = p, ylab = "", main = if (p == pars[1]) main else "", yaxt = "n")
+    for (i in seq_along(ds)) lines(ds[[i]], col = cols[i], lwd = 2)
+    if (!is.null(truth)) abline(v = truth[[p]], col = "grey50", lty = 3)
+  }
+}
+
+compare <- function(sets, ref, pars) {
+  t(vapply(sets, function(d) c(
+    setNames(colMeans(d[, pars]), paste0("mean.", pars)),
+    setNames(apply(d[, pars], 2, stats::sd) / apply(ref[, pars], 2, stats::sd),
+             paste0("sdratio.", pars)),
+    c2st = c2st(ref[, pars], d[, pars], seed = 1)$accuracy), numeric(2 * length(pars) + 1)))
+}
+```
+
+# 1. Two cohorts, one natural history model
+
+A three-state cancer model: healthy $\to$ preclinical (screen-detectable) $\to$ clinical (symptomatic, observed). Onset hazard $\lambda$, progression hazard $\mu$, screening sensitivity $\sigma$.
+
+Stage 1 is a registry cohort followed 20 years with no screening: clinical incidence counts in four 5-year bands. Stage 2 is a separate trial cohort screened once at year 10: pre-screen clinical cases, screen-detected cases, and post-screen clinical cases. The stage shift between the last two identifies $\sigma$.
+
+The two cohorts are different people, so $x_1 \perp x_2 \mid \theta$ holds exactly.
+
+```{r cancer-model}
+cancer_probs <- function(lambda, mu, sens, years = 20L, screen_year = 10L,
+                         bands = 4L) {
+  a <- 1 - exp(-lambda); b <- 1 - exp(-mu)
+  h <- 1; p <- 0; inc <- numeric(years); h_s <- p_s <- NA_real_
+  for (t in seq_len(years)) {
+    inc[t] <- p * b
+    p <- p - inc[t] + h * a
+    h <- h * (1 - a)
+    if (t == screen_year) { h_s <- h; p_s <- p }
+  }
+  registry <- as.numeric(tapply(inc, rep(seq_len(bands), each = years %/% bands), sum))
+
+  q_early <- sum(inc[seq_len(screen_year)])       # clinical before the screen
+  q_screen <- p_s * sens                          # caught by the screen
+  h2 <- h_s; p2 <- p_s * (1 - sens); q_late <- 0
+  for (t in seq.int(screen_year + 1L, years)) {   # clinical after the screen
+    i_t <- p2 * b
+    q_late <- q_late + i_t
+    p2 <- p2 - i_t + h2 * a
+    h2 <- h2 * (1 - a)
+  }
+  list(registry = registry, trial = c(q_early, q_screen, q_late))
+}
+
+N_REG <- 20000L; N_TRI <- 10000L
+draw <- function(pr, n, k) as.numeric(rmultinom(1, n, c(pr, 1 - sum(pr))))[seq_len(k)]
+
+sim_registry <- function(lambda, mu)
+  setNames(log1p(draw(cancer_probs(lambda, mu, 0)$registry, N_REG, 4L)),
+           paste0("inc", 1:4))
+
+sim_trial <- function(lambda, mu, sens)
+  setNames(log1p(draw(cancer_probs(lambda, mu, sens)$trial, N_TRI, 3L)),
+           c("pre", "screen", "late"))
+
+sim_both <- function(lambda, mu, sens)
+  c(sim_registry(lambda, mu), sim_trial(lambda, mu, sens))
+
+LOW  <- c(lambda = 0.002, mu = 0.10, sens = 0.40)
+HIGH <- c(lambda = 0.020, mu = 0.60, sens = 0.95)
+```
+
+Both cohorts are multinomial with closed-form cell probabilities, so this toy has an exact posterior to check the fits against. That is the only reason for the multinomial: NPE never sees it.
+
+```{r cancer-exact}
+loglik <- function(theta, x_reg, x_tri) {
+  theta <- matrix(theta, ncol = 3)
+  k_r <- round(expm1(x_reg)); k_t <- round(expm1(x_tri))
+  vapply(seq_len(nrow(theta)), function(i) {
+    pr <- cancer_probs(theta[i, 1], theta[i, 2], theta[i, 3])
+    dmultinom(c(k_r, N_REG - sum(k_r)), prob = c(pr$registry, 1 - sum(pr$registry)),
+              log = TRUE) +
+    (if (is.null(x_tri)) 0 else
+      dmultinom(c(k_t, N_TRI - sum(k_t)), prob = c(pr$trial, 1 - sum(pr$trial)),
+                log = TRUE))
+  }, numeric(1))
+}
+
+set.seed(42)
+th_true <- c(lambda = 0.008, mu = 0.25, sens = 0.70)
+x_reg <- sim_registry(th_true[["lambda"]], th_true[["mu"]])
+x_tri <- sim_trial(th_true[["lambda"]], th_true[["mu"]], th_true[["sens"]])
+round(expm1(c(x_reg, x_tri)))
+```
+
+```{r cancer-grid}
+grid <- as.matrix(expand.grid(
+  lambda = seq(LOW[1], HIGH[1], length.out = 70),
+  mu     = seq(LOW[2], HIGH[2], length.out = 70),
+  sens   = seq(LOW[3], HIGH[3], length.out = 45)))
+wts <- function(ll) { p <- exp(ll - max(ll)); p / sum(p) }
+w_both <- wts(loglik(grid, x_reg, x_tri))
+w_reg  <- wts(loglik(grid, x_reg, NULL))
+d_exact <- grid[sample.int(nrow(grid), NDRAW, replace = TRUE, prob = w_both), ]
+```
+
+## Reference: one fit on both datasets
+
+```{r cancer-joint}
+prior_full <- prior_uniform(LOW, HIGH)
+fit_joint <- npe(prior_full, sim_both, n_simulations = NSIM,
+                 density_estimator = DE, seed = 11)
+d_joint <- sample(posterior(fit_joint, x_obs = c(x_reg, x_tri)), NDRAW)
+```
+
+## Stage 1: the registry alone
+
+```{r cancer-stage1}
+prior_lm <- prior_uniform(LOW[1:2], HIGH[1:2])
+fit1 <- npe(prior_lm, sim_registry, n_simulations = NSIM,
+            density_estimator = DE, seed = 12)
+post1 <- posterior(fit1, x_obs = x_reg)
+d1 <- sample(post1, NDRAW)
+```
+
+The registry pins $\lambda$ and $\mu$ and says nothing at all about $\sigma$, which never enters `sim_registry()`.
+
+## Stage 2: stage-1 posterior as the prior
+
+`prior_custom()` takes arbitrary sampling and density closures, so the stage-2 prior is the stage-1 posterior for $(\lambda, \mu)$ crossed with an ordinary prior for $\sigma$.
+
+Three things this closure has to get right. `sample.nsbi_posterior()` returns short when leakage rejection bites, so it loops. `prior_custom()` drops parameter names, and simulator dispatch reads `colnames(theta)`, so it sets them. Support bounds are passed explicitly, since conditioning does not move a box prior's edges.
+
+```{r cancer-stage2}
+prior_sens <- prior_uniform(LOW[3], HIGH[3])
+pnames <- c("lambda", "mu", "sens")
+
+prior_seq <- prior_custom(
+  dim = 3L, lower = LOW, upper = HIGH,
+  sample_fn = function(n) {
+    a <- matrix(0, 0, 2, dimnames = list(NULL, c("lambda", "mu")))
+    while (nrow(a) < n) a <- rbind(a, sample(post1, n = n))
+    out <- cbind(a[seq_len(n), , drop = FALSE], sample_prior(prior_sens, n))
+    colnames(out) <- pnames
+    out
+  },
+  log_prob_fn = function(theta) {
+    theta <- matrix(theta, ncol = 3L, dimnames = list(NULL, pnames))
+    log_prob(post1, theta[, 1:2, drop = FALSE]) +
+      prior_sens$log_prob(theta[, 3, drop = FALSE])
+  })
+
+fit2 <- npe(prior_seq, sim_trial, n_simulations = NSIM,
+            density_estimator = DE, seed = 13)
+d_seq <- sample(posterior(fit2, x_obs = x_tri), NDRAW)
+```
+
+`x_reg` is not passed to the second fit. It is already in the prior; conditioning on it again would count it twice.
+
+## Result
+
+```{r cancer-result}
+#| fig-height: 3.2
+plot_marginals(list(d1, d_exact, d_joint, d_seq), pnames,
+               c("grey70", "black", "#D55E00", "#0072B2"), th_true,
+               main = "stage 1 (grey) | exact (black) | joint (orange) | sequential (blue)")
+
+round(compare(list(joint = d_joint, sequential = d_seq), d_exact, pnames), 3)
+```
+
+Both fits land on the exact posterior. Adding the trial identifies $\sigma$ and also tightens $\lambda$ and $\mu$, which is the point: the second dataset informs first-stage parameters it shares with the second simulator.
+
+# 2. An epidemic in two phases
+
+A stochastic SIR, $N = 20{,}000$, run in two 8-week phases. Phase 1 has contact rate $\beta_1$; an intervention at week 8 moves it to $\beta_2$. Recovery rate $\gamma$ and reporting fraction $\rho$ are shared. Weekly reported cases are the data.
+
+Here $x_2 \not\perp x_1 \mid \theta$. Phase 2 depends on the *realized* $(S, I)$ at week 8, and the phase-1 case curve says a great deal about which of those the epidemic reached, beyond what $\theta$ says. With a noise-free ODE the seam state would be a function of $\theta$ and this section would have nothing to show.
+
+```{r sir-model}
+NPOP <- 20000L; I0 <- 20L; WK <- 8L
+
+sir_run <- function(S, I, beta, gamma, rho, weeks = WK) {
+  reported <- numeric(weeks)
+  for (w in seq_len(weeks)) {
+    infections <- 0
+    for (d in seq_len(7L)) {
+      new_inf <- rbinom(1, S, 1 - exp(-beta * I / NPOP))
+      new_rec <- rbinom(1, I, 1 - exp(-gamma))
+      S <- S - new_inf; I <- I + new_inf - new_rec
+      infections <- infections + new_inf
+    }
+    reported[w] <- rbinom(1, infections, rho)
+  }
+  list(x = log1p(reported), S = S, I = I)
+}
+
+sim_phase1 <- function(beta1, gamma, rho)
+  setNames(sir_run(NPOP - I0, I0, beta1, gamma, rho)$x, paste0("w", 1:WK))
+
+# the same run, also reporting where the epidemic ended up
+sim_phase1_state <- function(beta1, gamma, rho) {
+  r <- sir_run(NPOP - I0, I0, beta1, gamma, rho)
+  list(x = setNames(r$x, paste0("w", 1:WK)),
+       state = c(log_I = log(max(r$I, 1)), log_cum = log(max(NPOP - r$S, 1))))
+}
+
+# phase 2 restarted from the epidemic's beginning: what the naive cascade must
+# do, because it never learned where phase 1 ended
+sim_phase2_restart <- function(beta1, beta2, gamma, rho) {
+  r1 <- sir_run(NPOP - I0, I0, beta1, gamma, rho)
+  setNames(sir_run(r1$S, r1$I, beta2, gamma, rho)$x, paste0("w", WK + 1:WK))
+}
+
+# phase 2 resumed from a carried seam state
+sim_phase2_state <- function(beta1, beta2, gamma, rho, log_I, log_cum) {
+  I <- min(max(round(exp(log_I)), 1L), NPOP - 1L)
+  S <- NPOP - min(max(round(exp(log_cum)), I), NPOP - 1L)
+  setNames(sir_run(max(S, 0L), I, beta2, gamma, rho)$x, paste0("w", WK + 1:WK))
+}
+
+sim_joint <- function(beta1, beta2, gamma, rho) {
+  r1 <- sir_run(NPOP - I0, I0, beta1, gamma, rho)
+  r2 <- sir_run(r1$S, r1$I, beta2, gamma, rho)
+  setNames(c(r1$x, r2$x), paste0("w", 1:(2 * WK)))
+}
+
+SLOW  <- c(beta1 = 0.17, beta2 = 0.08, gamma = 0.10, rho = 0.30)
+SHIGH <- c(beta1 = 0.23, beta2 = 0.20, gamma = 0.13, rho = 0.70)
+P4 <- names(SLOW); P3 <- c("beta1", "gamma", "rho")
+```
+
+How much does the phase-1 curve tell you about the seam state that $\theta$ does not?
+
+```{r sir-informative}
+rep_state <- t(replicate(400, {
+  s <- sim_phase1_state(0.20, 0.115, 0.55); c(s$state, wk8 = tail(s$x, 1)) }))
+c(sd_logI_given_theta = sd(rep_state[, "log_I"]),
+  cor_with_week8      = cor(rep_state[, "log_I"], rep_state[, 3]))
+```
+
+At fixed $\theta$ the seam state still varies by a factor of about $e^{0.3}$, and week 8's case count tracks it almost perfectly. That variation is what the naive cascade throws away.
+
+```{r sir-obs}
+set.seed(7)
+th_sir <- c(beta1 = 0.20, beta2 = 0.11, gamma = 0.115, rho = 0.55)
+x_all  <- sim_joint(th_sir[1], th_sir[2], th_sir[3], th_sir[4])
+x1_obs <- x_all[1:WK]; x2_obs <- x_all[WK + 1:WK]
+round(expm1(x_all))
+```
+
+## Reference: one fit on all 16 weeks
+
+```{r sir-joint}
+prior4 <- prior_uniform(SLOW, SHIGH)
+fit_sir_joint <- npe(prior4, sim_joint, n_simulations = NSIM,
+                     density_estimator = DE, seed = 21)
+d_sir_joint <- sample(posterior(fit_sir_joint, x_obs = x_all), NDRAW)
+```
+
+## Cascade A: carry the parameters only
+
+```{r sir-naive}
+prior3 <- prior_uniform(SLOW[P3], SHIGH[P3])
+fit1n <- npe(prior3, sim_phase1, n_simulations = NSIM,
+             density_estimator = DE, seed = 22)
+post1n <- posterior(fit1n, x_obs = x1_obs)
+
+prior_b2 <- prior_uniform(SLOW["beta2"], SHIGH["beta2"])
+
+mk_prior <- function(post, names_in, lo, hi) {
+  nm <- c(names_in, "beta2")
+  prior_custom(
+    dim = length(nm), lower = c(lo, SLOW[["beta2"]]), upper = c(hi, SHIGH[["beta2"]]),
+    sample_fn = function(n) {
+      a <- matrix(0, 0, length(names_in), dimnames = list(NULL, names_in))
+      while (nrow(a) < n) a <- rbind(a, sample(post, n = n))
+      out <- cbind(a[seq_len(n), , drop = FALSE], sample_prior(prior_b2, n))
+      colnames(out) <- nm
+      out
+    })
+}
+
+fit2n <- npe(mk_prior(post1n, P3, SLOW[P3], SHIGH[P3]), sim_phase2_restart,
+             n_simulations = NSIM, density_estimator = DE, seed = 24)
+d_naive <- sample(posterior(fit2n, x_obs = x2_obs), NDRAW)
+```
+
+## Cascade B: carry the seam state too
+
+`npe()` cannot ask a simulator for a latent, so the training set is built by hand: the same runs, with the seam state recorded and appended to the target. The estimator contract does not care that two of its target columns are latent states rather than prior draws; they only have to come from the same run that produced `x`.
+
+```{r sir-state}
+set.seed(23)
+theta1 <- sample_prior(prior3, NSIM)
+runs <- lapply(seq_len(NSIM), function(i)
+  sim_phase1_state(theta1[i, 1], theta1[i, 2], theta1[i, 3]))
+x1_sims <- t(vapply(runs, `[[`, numeric(WK), "x"))
+state1  <- t(vapply(runs, `[[`, numeric(2), "state"))
+
+P5 <- c(P3, "log_I", "log_cum")
+lo5 <- c(SLOW[P3], log_I = 0, log_cum = log(I0))
+hi5 <- c(SHIGH[P3], log_I = log(NPOP), log_cum = log(NPOP))
+```
+
+With `theta` and `x` precomputed, `npe()` uses the prior only for its dimension; `posterior()` later uses only `lower`/`upper`. So the augmented prior never needs the true pushforward of the seam state, which could not be written down anyway.
+
+```{r sir-state-fit}
+prior_aug <- prior_custom(
+  dim = 5L, lower = lo5, upper = hi5,
+  sample_fn = function(n) stop("not needed: theta and x are precomputed"))
+
+fit1s <- npe(prior_aug, theta = cbind(theta1, state1), x = x1_sims,
+             density_estimator = DE, seed = 23)
+post1s <- posterior(fit1s, x_obs = x1_obs)
+
+fit2s <- npe(mk_prior(post1s, P5, lo5, hi5), sim_phase2_state,
+             n_simulations = NSIM, density_estimator = DE, seed = 25)
+d_state <- sample(posterior(fit2s, x_obs = x2_obs), NDRAW)
+```
+
+Note `sim_phase2_state()` never uses `beta1`. It is carried anyway so its marginal can be read off at the end, and it updates only through its correlation with the seam state, which is the correct update.
+
+## Result
+
+```{r sir-result}
+#| fig-height: 3.2
+#| fig-width: 11
+plot_marginals(list(d_sir_joint, d_naive, d_state), P4,
+               c("#D55E00", "grey45", "#0072B2"), th_sir,
+               main = "joint (orange) | cascade A, no state (grey) | cascade B, with state (blue)")
+
+round(compare(list(`no state` = d_naive, `with state` = d_state),
+              d_sir_joint, P4), 3)
+```
+
+# Notes
+
+- **Do not pass stage-1 data to stage 2.** It is in the prior already.
+- **Carry the joint, not marginal summaries.** Refitting independent normals to each parameter destroys the $\beta/\gamma$ ridge. Drawing from the stage-1 posterior keeps it.
+- **A cascade only ever narrows.** If stage 1 is overconfident anywhere, no amount of stage-2 simulation recovers that region. Run `sbc()` on stage 1 before building on it. A defensive proposal, mixing a little of the original prior back in, needs an importance reweight by $p(\theta_A \mid x_1) / \tilde\pi(\theta_A)$ to stay exact; both densities are computable.
+- **Sufficiency decides what to carry.** Carry whatever makes the next dataset conditionally independent of the last. For a Markov dynamical model that is the state at the seam, which means old phase parameters can be dropped and the carried vector stays fixed-size across many stages. That buys filtering, not smoothing: dropping $\beta_1$ means never revising it later.
+- **Neither cascade is amortized.** Each stage-2 prior is conditioned on one realized $x_1$.
