@@ -1,193 +1,244 @@
 # Getting started with neuralsbi
 
-`neuralsbi` performs **Neural Posterior Estimation (NPE)**: given a
-prior and a simulator, it trains a neural network to approximate the
-Bayesian posterior `p(theta | x)` — no likelihood required. This
-vignette walks through the core workflow and shows how to check that the
-result is trustworthy.
+`neuralsbi` needs two things from you: a prior over the parameters you
+want to learn, and a simulator that turns one parameter set into one
+data set. It trains a neural network on simulated pairs and hands back
+the Bayesian posterior $`p(\theta | x)`$. You never write a likelihood.
 
-## The three ingredients
+We use a stochastic SIR epidemic here, a close relative of the model in
+the package README. It is small enough to read in one screen, and it has
+no likelihood you would want to write down.
 
-Every SBI problem needs (1) a **prior**, (2) a **simulator**, and (3) an
-**observation**. Here is a small linear-Gaussian model whose posterior
-we happen to know in closed form, so we can check our answer.
+## Define your simulator
+
+A population of size $`N`$ splits into susceptible, infected and
+recovered. The contact rate $`\beta`$ drives new infections, the
+recovery rate $`\gamma`$ drives recoveries, and we see a fraction
+$`\rho`$ of the new infections as reported cases, totalled by week.
+Infections and recoveries are binomial draws, so two runs at the same
+parameters give different curves.
 
 ``` r
 
 library(neuralsbi)
-#> 
-#> Attaching package: 'neuralsbi'
-#> The following object is masked from 'package:base':
-#> 
-#>     sample
 
-# (1) prior over two parameters
-prior <- prior_normal(mean = c(mu1 = 0, mu2 = 0), sd = 1)
-
-# (2) simulator: one parameter set in, one observation out. The prior names
-# match the arguments, so mu1 and mu2 arrive by name.
-sigma <- 0.5
-simulator <- function(mu1, mu2) c(mu1, mu2) + rnorm(2, sd = sigma)
-
-# (3) the observation we want to explain
-x_obs <- c(1.0, -0.5)
+sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
+  S <- N - I0; I <- I0
+  reported <- numeric(weeks)
+  for (w in seq_len(weeks)) {
+    infections <- 0
+    for (d in seq_len(7)) {                             # a day at a time
+      new_inf <- rbinom(1, S, 1 - exp(-beta * I / N))
+      new_rec <- rbinom(1, I, 1 - exp(-gamma))
+      S <- S - new_inf
+      I <- I + new_inf - new_rec
+      infections <- infections + new_inf
+    }
+    reported[w] <- rbinom(1, infections, rho)           # only rho of them are seen
+  }
+  log1p(reported)
+}
 ```
 
-## Train an amortized posterior
+That is the whole model specification. Note what is missing: nowhere do
+we write down how probable a case curve is at a given
+$`(\beta, \gamma, \rho)`$. `neuralsbi` only ever calls the simulator.
 
-[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) draws
-parameters from the prior, runs the simulator, and trains a conditional
-density estimator. For this linear-Gaussian model, we use the
-closed-form conditional-Gaussian estimator, which is *exact* and
-requires no neural network training.
+The simulator returns $`\log(1 + \text{cases})`$ rather than raw counts.
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+standardizes whatever the simulator gives it, and across this prior the
+weekly counts run from a handful to tens of thousands, which is a wide
+range to ask one scale to cover. The log keeps the small outbreaks
+legible next to the large ones.
+
+Here is one epidemic, on the natural count scale:
 
 ``` r
 
-fit <- npe(prior, simulator, n_simulations = 2000,
-           density_estimator = "linear_gaussian", seed = 1)
+theta_true <- c(beta = 2 / 7, gamma = 1 / 7, rho = 0.6)   # R0 = 2, 7-day recovery
+
+set.seed(1)
+x_obs <- sir_simulator(theta_true[["beta"]], theta_true[["gamma"]],
+                       theta_true[["rho"]])
+
+plot(1:12, expm1(x_obs), type = "b", pch = 16,
+     xlab = "week", ylab = "reported cases", main = "One simulated outbreak")
+```
+
+![Weekly reported cases from one simulated SIR
+outbreak.](figures/neuralsbi-outbreak-1.svg)
+
+plot of chunk outbreak
+
+## Train your neural posterior estimator
+
+The prior says where the simulator is allowed to look. We put uniform
+priors on all three parameters, wide enough to cover slow and fast
+epidemics and any reporting rate between 10% and 90%.
+
+``` r
+
+prior <- prior_uniform(low  = c(beta = 0.20, gamma = 0.08, rho = 0.1),
+                       high = c(beta = 0.60, gamma = 0.20, rho = 0.9))
+
+fit <- npe(prior, sir_simulator, n_simulations = 8000, seed = 1)
 fit
 #> <nsbi_npe> Neural Posterior Estimation fit
-#>   density estimator : linear_gaussian
-#>   parameters (dim)  : 2
-#>     names           : mu1, mu2 
-#>   data (dim)        : 2
-#>   simulations       : 2000
+#>   density estimator : maf
+#>   parameters (dim)  : 3
+#>     names           : beta, gamma, rho 
+#>   data (dim)        : 12
+#>   simulations       : 8000
+#>   best val loss     : -3.3695
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 ```
 
-The fitted network approximates the posterior for *any* observation, not
-just the one at hand — this is what “amortized” means. You train once,
-then condition on new data without refitting.
+That is the whole fit.
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) drew 8000
+parameter sets from the prior, ran the simulator on each, and trained a
+masked autoregressive flow on the resulting $`(\theta, x)`$ pairs.
+`best val loss` is the average negative log density on held-out
+simulations. It is useful for comparing fits on the same problem and
+means nothing across problems.
+
+Simulation is usually the expensive part, and it is embarrassingly
+parallel. Declare a `future` plan once and every `neuralsbi` function
+that calls a simulator spreads the work across cores:
+
+``` r
+
+library(future)
+plan(multisession)
+```
+
+Each simulation draws from its own random-number stream, so a given
+[`set.seed()`](https://rdrr.io/r/base/Random.html) gives the same answer
+on one core and on 32. This article is built with a plan declared. See
+[`?nsbi_parallel`](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md).
+
+## Condition on your data to get a posterior
+
+[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+conditions the trained estimator on an observation. It is a forward pass
+through the network, so it returns immediately, and
+[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+draws from it.
 
 ``` r
 
 post  <- posterior(fit, x_obs = x_obs)
-draws <- sample(post, 2000)
+draws <- sample(post, 4000)
 
-colMeans(draws)          # posterior mean
-#>        mu1        mu2 
-#>  0.7951043 -0.4207836
-map_estimate(post)       # MAP point estimate
-#>        mu1        mu2 
-#>  0.8023301 -0.4156778
-pairplot(draws)          # joint + marginal view
+round(colMeans(draws), 3)
+#>  beta gamma   rho 
+#> 0.285 0.140 0.593
+pairplot(draws, truth = theta_true)
 ```
 
-![Pairs plot of posterior draws for the two
-parameters.](figures/neuralsbi-unnamed-chunk-4-1.png)
+![Pairs plot of the posterior over beta, gamma and rho with the true
+values marked.](figures/neuralsbi-posterior-1.svg)
 
-plot of chunk unnamed-chunk-4
+plot of chunk posterior
 
-## Did it work? Check against the truth
+The posterior covers the values that generated `x_obs`. It also shows
+the ridge every SIR fit runs into: $`\beta`$ and $`\gamma`$ trade off
+against each other, because a case curve pins down their ratio
+$`R_0 = \beta/\gamma`$ much better than either rate alone.
+[`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md)
+picks that up and reads $`R_0`$ off the draws.
 
-For this model the posterior is a known Gaussian. Let us compare.
+## One fit, any number of outbreaks
+
+The fit is amortized. It was trained over the whole prior, not around
+one observation, so a second outbreak costs a forward pass and nothing
+else. No re-simulating and no retraining.
 
 ``` r
 
-d <- 2
-Sigma <- solve(diag(d) + diag(d) / sigma^2)
-mu    <- as.numeric(Sigma %*% (x_obs / sigma^2))
+theta_2 <- c(beta = 0.5, gamma = 0.1, rho = 0.3)          # R0 = 5, poorly reported
+x_obs_2 <- sir_simulator(theta_2[["beta"]], theta_2[["gamma"]], theta_2[["rho"]])
 
-rbind(analytic = mu, estimated = colMeans(draws))
-#>                 mu1        mu2
-#> analytic  0.8000000 -0.4000000
-#> estimated 0.7951043 -0.4207836
-
-# classifier two-sample test: ~0.5 => our samples look like analytic samples
-z <- matrix(rnorm(2000 * d), ncol = d)
-analytic_draws <- sweep(z %*% chol(Sigma), 2, mu, `+`)
-c2st(draws, analytic_draws)$accuracy
-#> [1] 0.5055
+draws_2 <- sample(posterior(fit, x_obs = x_obs_2), 4000)
+round(colMeans(draws_2), 3)
+#>  beta gamma   rho 
+#> 0.513 0.115 0.305
+pairplot(draws_2, truth = theta_2)
 ```
 
-## Calibration when you *don’t* know the truth
+![Pairs plot of the posterior for a second, faster outbreak from the
+same fit.](figures/neuralsbi-second-1.svg)
 
-Usually there is no analytic posterior. **Simulation-based calibration
-(SBC)** still tells you whether the posterior is well calibrated: it
-should produce uniform rank statistics.
+plot of chunk second
+
+This is the practical difference from likelihood-based MCMC, which
+starts over for every new data set. Fit once, then condition on as many
+outbreaks as you have.
+
+## Check the fit before you trust it
+
+A trained estimator always returns something. Draws, means, intervals,
+all of it, whether or not the fit is any good. Simulation-based
+calibration tells you whether to believe the widths: draw $`\theta`$
+from the prior, simulate $`x`$ from it, and rank that known $`\theta`$
+among posterior draws conditioned on $`x`$. A calibrated posterior puts
+the truth anywhere in the ranking with equal probability, so the ranks
+come out uniform.
 
 ``` r
 
-res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 100, seed = 2)
-expected_coverage(res)        # nominal vs empirical credible-interval coverage
-#>    nominal  mu1  mu2
-#> 1     0.05 0.05 0.03
-#> 2     0.10 0.09 0.06
-#> 3     0.15 0.15 0.12
-#> 4     0.20 0.16 0.20
-#> 5     0.25 0.21 0.23
-#> 6     0.30 0.26 0.28
-#> 7     0.35 0.30 0.34
-#> 8     0.40 0.34 0.37
-#> 9     0.45 0.46 0.44
-#> 10    0.50 0.50 0.47
-#> 11    0.55 0.55 0.51
-#> 12    0.60 0.61 0.56
-#> 13    0.65 0.66 0.60
-#> 14    0.70 0.75 0.65
-#> 15    0.75 0.82 0.71
-#> 16    0.80 0.85 0.75
-#> 17    0.85 0.88 0.77
-#> 18    0.90 0.94 0.86
-#> 19    0.95 0.98 0.95
-plot_sbc(res)                 # flat histogram = calibrated
+res <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
+res
+#> <nsbi_sbc> 150 trials, 300 posterior samples each
+#>   per-parameter uniformity p-values (large = calibrated):
+#>     beta=0.191  gamma=0.023  rho=0.040
+
+plot_sbc(res, param = 1)
 ```
 
-![SBC rank histogram; a flat histogram indicates
-calibration.](figures/neuralsbi-unnamed-chunk-6-1.png)
+![SBC rank histogram and coverage curve for the fitted
+posterior.](figures/neuralsbi-sbc-1.svg)
 
-plot of chunk unnamed-chunk-6
-
-## Neural estimators with torch
-
-For non-Gaussian posteriors, you need a neural density estimator like
-the **Mixture Density Network (MDN)**. This requires `torch`.
+plot of chunk sbc
 
 ``` r
 
-fit_mdn <- npe(prior, simulator, n_simulations = 2000,
-               density_estimator = "mdn", max_epochs = 200, seed = 1)
-fit_mdn
-#> <nsbi_npe> Neural Posterior Estimation fit
-#>   density estimator : mdn
-#>   parameters (dim)  : 2
-#>     names           : mu1, mu2 
-#>   data (dim)        : 2
-#>   simulations       : 2000
-#>   best val loss     : 1.2096
-#>   -> build a posterior with posterior(fit, x_obs = ...)
-
-# on this Gaussian model the MDN matches the exact linear_gaussian posterior
-draws_mdn <- sample(posterior(fit_mdn, x_obs = x_obs), 2000)
-rbind(analytic = mu, mdn = colMeans(draws_mdn))
-#>                mu1        mu2
-#> analytic 0.8000000 -0.4000000
-#> mdn      0.8393949 -0.4265376
-c2st(draws_mdn, analytic_draws)$accuracy
-#> [1] 0.525
+plot_coverage(res)
 ```
 
-## Non-Gaussian posteriors
+![SBC rank histogram and coverage curve for the fitted
+posterior.](figures/neuralsbi-sbc-2.svg)
 
-The MDN is not limited to Gaussian posteriors: it recovers the bimodal,
-crescent-shaped posterior of the classic **two-moons** task, and the
-flow estimators (`"maf"`, `"nsf"`) go further still. That comparison is
-the subject of
-[`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md).
+plot of chunk sbc
+
+Read the p-values, not the fact that the check ran. $`\beta`$ comes back
+clean at 0.19. $`\gamma`$ (0.023) and $`\rho`$ (0.040) fall just under
+the conventional 0.05, and the coverage curve runs slightly below the
+diagonal, which is mild overconfidence: the intervals are a little too
+narrow rather than in the wrong place. That is a realistic first pass at
+8000 simulations, and the standard remedy is more simulations before a
+bigger network.
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
+covers how to read these plots and what to do when a fit does not pass.
 
 ## Where to go next
 
-The vignettes build on each other:
-
-1.  [`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md)
-    — which estimator to use, and when.
-2.  [`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
-    — calibration and predictive checks for a fitted posterior.
-3.  [`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md)
-    — the complete Bayesian workflow on an applied epidemic-model
-    calibration.
+- [`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md)
+  explains what the method is doing with the same model: why a simulator
+  replaces the likelihood, what amortization buys you across many
+  outbreaks, and how to read a derived quantity like $`R_0`$ off the
+  posterior.
+- [`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md)
+  compares the estimators behind
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and says
+  when each one is worth using.
+- [`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
+  covers the full set of checks: SBC, expected coverage, TARP, and
+  posterior predictive checks.
+- [`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md)
+  puts `neuralsbi` next to `pomp` on the same epidemic and compares the
+  two posteriors.
 
 [`?npe`](https://neuralsbi.pedrodelima.com/reference/npe.md),
-[`?posterior`](https://neuralsbi.pedrodelima.com/reference/posterior.md),
+[`?posterior`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
 and [`?sbc`](https://neuralsbi.pedrodelima.com/reference/sbc.md)
 document every argument.

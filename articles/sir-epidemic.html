@@ -131,38 +131,40 @@
     
     
 <p><a href="https://kingaa.github.io/pomp/" class="external-link"><code>pomp</code></a> is the
-established R toolkit for partially observed Markov process models — the
-stochastic dynamical systems common in epidemiology and ecology. It fits
-them by <em>particle filtering</em>: a sequential Monte Carlo scheme
-that only ever <em>simulates</em> the latent state process, so you never
+established R toolkit for partially observed Markov process models, the
+stochastic dynamical systems that show up all over epidemiology and
+ecology. It fits them by particle filtering: a sequential Monte Carlo
+scheme that only ever simulates the latent state process, so you never
 write down its transition density. That makes <code>pomp</code>
 simulation-based in the same spirit as <code>neuralsbi</code>. The two
-packages differ in what they do next, and this vignette puts them on the
-same problem to see whether their posteriors agree.</p>
-<p>The problem is a stochastic <strong>SIR</strong> epidemic. A
-population of size <code>N</code> splits into Susceptible, Infected, and
-Recovered; the contact rate
+packages differ in what they do next, and here we put them on the same
+problem to see whether their posteriors agree.</p>
+<p>The problem is a stochastic SIR epidemic. A population of size
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
+splits into Susceptible, Infected and Recovered; the contact rate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
 drives new infections and the recovery rate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
 drives recoveries. We infer
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>β</mi><mo>,</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\beta, \gamma)</annotation></semantics></math>
-from a single noisy incidence curve. The dynamics are genuinely
-stochastic — infections and recoveries are random events, not a smooth
-ODE — so there is no tractable likelihood for the observed curve.</p>
-<p>(A note on notation: SBI writes the observed data
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
+from a single noisy incidence curve. Infections and recoveries are
+random events rather than a smooth ODE, so there is no tractable
+likelihood for the observed curve.</p>
+<p>A note on notation: SBI writes the observed data as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>,
 the role regression gives to
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>.
 Here
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐱</mi><annotation encoding="application/x-tex">\mathbf{x}</annotation></semantics></math>
-is the reported-case time series.)</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
+is the reported-case time series.</p>
 <div class="section level2">
 <h2 id="the-model-written-twice">The model, written twice<a class="anchor" aria-label="anchor" href="#the-model-written-twice"></a>
 </h2>
 <p>Both packages need the same generative model. <code>pomp</code> wants
-it as C snippets; <code>neuralsbi</code> wants a plain R function. The
-dynamics are identical: an Euler step with binomial transitions, and
+it as C snippets and <code>neuralsbi</code> wants a plain R function.
+The dynamics are identical: an Euler step with binomial transitions, and
 reported cases drawn as a binomial thinning of the true weekly
 incidence.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -183,12 +185,12 @@ incidence.</p>
 <span><span class="co"># (dmeasure): the particle filter has to evaluate p(reports | H).</span></span>
 <span><span class="va">rmeas</span> <span class="op">&lt;-</span> <span class="fu">Csnippet</span><span class="op">(</span><span class="st">"reports = rbinom(H, rho);"</span><span class="op">)</span></span>
 <span><span class="va">dmeas</span> <span class="op">&lt;-</span> <span class="fu">Csnippet</span><span class="op">(</span><span class="st">"lik = dbinom(reports, H, rho, give_log);"</span><span class="op">)</span></span></code></pre></div>
-<p>Fixed settings and the true rates that generate our observation:</p>
+<p>Fixed settings, and the true rates that generate our observation:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">1000</span>; <span class="va">I0</span> <span class="op">&lt;-</span> <span class="fl">10</span>; <span class="va">rho</span> <span class="op">&lt;-</span> <span class="fl">0.5</span>; <span class="va">Tobs</span> <span class="op">&lt;-</span> <span class="fl">20</span></span>
 <span><span class="va">theta_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">2</span>, gamma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>      <span class="co"># basic reproduction number R0 = 2</span></span></code></pre></div>
 <p>We assemble the <code>pomp</code> object and simulate one outbreak.
-That simulated curve is the data both methods will condition on.</p>
+That simulated curve is the data both methods condition on.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sir</span> <span class="op">&lt;-</span> <span class="fu">pomp</span><span class="op">(</span></span>
 <span>  data       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>time <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">Tobs</span>, reports <span class="op">=</span> <span class="cn">NA</span><span class="op">)</span>,</span>
@@ -214,7 +216,7 @@ plot of chunk unnamed-chunk-4
 </div>
 </div>
 <div class="section level2">
-<h2 id="route-1-pomp-particle-filter-mcmc">Route 1 — pomp: particle-filter MCMC<a class="anchor" aria-label="anchor" href="#route-1-pomp-particle-filter-mcmc"></a>
+<h2 id="route-1-pomp-and-particle-filter-mcmc">Route 1: pomp and particle-filter MCMC<a class="anchor" aria-label="anchor" href="#route-1-pomp-and-particle-filter-mcmc"></a>
 </h2>
 <p>The particle filter estimates the likelihood at any parameter value
 by propagating a swarm of simulated state trajectories and weighting
@@ -224,8 +226,8 @@ them by <code>dmeasure</code>.</p>
 <span><span class="co">#&gt; [1] -39.34408</span></span></code></pre></div>
 <p>For a Bayesian posterior, <code>pmcmc</code> embeds that filter
 inside a Metropolis-Hastings sampler. We put uniform priors on the two
-rates — the same priors <code>neuralsbi</code> will use — and run a
-short adaptive chain.</p>
+rates, the same priors <code>neuralsbi</code> will use, and run a short
+adaptive chain.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sir_bayes</span> <span class="op">&lt;-</span> <span class="fu">pomp</span><span class="op">(</span><span class="va">sir</span>,</span>
 <span>  dprior <span class="op">=</span> <span class="fu">Csnippet</span><span class="op">(</span><span class="st">"</span></span>
@@ -245,19 +247,19 @@ short adaptive chain.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">post_pomp</span>, <span class="fl">2</span>, <span class="va">sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  Beta gamma </span></span>
 <span><span class="co">#&gt; 0.221 0.168</span></span></code></pre></div>
-<p>The chain concentrates around the true rates. This posterior is
-specific to this one outbreak: a different curve means running the
-sampler again.</p>
+<p>The chain concentrates around the true rates. This posterior belongs
+to this one outbreak: a different curve means running the sampler
+again.</p>
 </div>
 <div class="section level2">
-<h2 id="route-2-neuralsbi-neural-posterior-estimation">Route 2 — neuralsbi: neural posterior estimation<a class="anchor" aria-label="anchor" href="#route-2-neuralsbi-neural-posterior-estimation"></a>
+<h2 id="route-2-neuralsbi-and-neural-posterior-estimation">Route 2: neuralsbi and neural posterior estimation<a class="anchor" aria-label="anchor" href="#route-2-neuralsbi-and-neural-posterior-estimation"></a>
 </h2>
 <p><code>neuralsbi</code> never evaluates a measurement density. It only
-needs to <em>draw</em> from the model, so we write the same dynamics as
-a simulator: one pair
+needs to draw from the model, so we write the same dynamics as a
+simulator: one pair
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>β</mi><mo>,</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\beta, \gamma)</annotation></semantics></math>
 in, one reported incidence curve of length 20 out. The prior names the
-two parameters after the simulator’s arguments, so each arrives by
+two parameters after the simulator’s arguments, so each one arrives by
 name.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
@@ -281,15 +283,13 @@ name.</p>
 <span>  <span class="op">}</span></span>
 <span>  <span class="va">out</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>Neural Posterior Estimation (NPE) trains a conditional density
-estimator
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>𝛉</mi><mo>∣</mo><mi>𝐱</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(\boldsymbol{\theta} \mid \mathbf{x})</annotation></semantics></math>
+<p>Neural posterior estimation trains a conditional density estimator
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(\theta | x)</annotation></semantics></math>
 on simulated
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>𝛉</mi><mo>,</mo><mi>𝐱</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\boldsymbol{\theta}, \mathbf{x})</annotation></semantics></math>
-pairs, then conditions it on the observed curve. Training is
-<em>amortized</em>: one fit works for any incidence curve, not just this
-one. A mixture density network suits this smooth, unimodal
-posterior.</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\theta, x)</annotation></semantics></math>
+pairs, then conditions it on the observed curve. Training is amortized:
+one fit works for any incidence curve, not just this one. A mixture
+density network suits this smooth, single-mode posterior.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">0.5</span>, gamma <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,   <span class="co"># same as pomp's dprior</span></span>
 <span>                       high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Beta <span class="op">=</span> <span class="fl">5</span>,   gamma <span class="op">=</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
@@ -312,9 +312,9 @@ posterior.</p>
 <div class="section level2">
 <h2 id="do-the-posteriors-agree">Do the posteriors agree?<a class="anchor" aria-label="anchor" href="#do-the-posteriors-agree"></a>
 </h2>
-<p>Overlay the two posterior clouds and score them with a classifier
-two-sample test (C2ST): an accuracy near 0.5 means a classifier cannot
-tell the two sets of draws apart.</p>
+<p>We overlay the two posterior clouds and score them with a classifier
+two-sample test. An accuracy near 0.5 means a classifier cannot tell the
+two sets of draws apart.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># thin the NPE draws to pomp's count so neither cloud simply outnumbers the other</span></span>
 <span><span class="va">npe_thin</span> <span class="op">&lt;-</span> <span class="va">draws_npe</span><span class="op">[</span><span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">draws_npe</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">post_pomp</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span></span>
@@ -336,21 +336,23 @@ plot of chunk unnamed-chunk-9
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">draws_npe</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">post_pomp</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
 <span><span class="co">#&gt; [1] 0.7270909</span></span></code></pre></div>
-<p>The two posteriors sit on top of each other: same location, same
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>–<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-ridge (the two rates trade off because the data mostly pin down their
+<p>The two posteriors land on top of each other, on the same
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
+ridge. The two rates trade off because the data mostly pin down their
 ratio
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>0</mn></msub><annotation encoding="application/x-tex">R_0</annotation></semantics></math>).
-The C2ST lands well above 0.5, and the plot shows why — the
-<code>neuralsbi</code> cloud is a little broader. That is the expected
-signature of the trade-off. <code>pomp</code>’s particle filter exploits
-the <em>known</em> binomial measurement density to extract the sharpest
-posterior this dataset supports; NPE is handed only simulations and, at
-an 8000-simulation budget, stays slightly more cautious. More
-simulations tighten it toward <code>pomp</code>.</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mi>β</mi><mi>/</mi><mi>γ</mi></mrow><annotation encoding="application/x-tex">R_0 = \beta/\gamma</annotation></semantics></math>,
+which is the same ridge the package README runs into on a different SIR
+model. The C2ST lands well above 0.5, and the plot shows why: the
+<code>neuralsbi</code> cloud is a little broader. <code>pomp</code>’s
+particle filter uses the known binomial measurement density to extract
+the sharpest posterior this data set supports. NPE gets only
+simulations, and at an 8000-simulation budget it stays slightly more
+cautious. More simulations tighten it toward <code>pomp</code>.</p>
 <p>Is that extra width honest or a bug? Simulation-based calibration
-answers it without a reference posterior: draw
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛉</mi><annotation encoding="application/x-tex">\boldsymbol{\theta}</annotation></semantics></math>
+answers that without a reference posterior. Draw
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
 from the prior, simulate, and rank the truth among the posterior draws.
 Calibrated posteriors give uniform ranks.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -366,10 +368,10 @@ Calibrated posteriors give uniform ranks.</p>
 plot of chunk unnamed-chunk-10
 </p>
 </div>
-<p>The ranks are flat and the p-values large: NPE’s wider intervals are
-calibrated, not broken. <code>neuralsbi</code> and <code>pomp</code>
-give the same answer here, and NPE simply reports a touch more
-uncertainty for the simulations it was given.</p>
+<p>The ranks are flat and the p-values are large, so NPE’s wider
+intervals are calibrated rather than broken. The two packages give the
+same answer here, and NPE reports a touch more uncertainty for the
+simulations it was given.</p>
 </div>
 <div class="section level2">
 <h2 id="similarities-and-differences">Similarities and differences<a class="anchor" aria-label="anchor" href="#similarities-and-differences"></a>
@@ -395,9 +397,8 @@ uncertainty for the simulations it was given.</p>
 </tr>
 <tr class="even">
 <td>Measurement model</td>
-<td>needs the <strong>density</strong> (<code>dmeasure</code>)</td>
-<td>needs only to <strong>simulate</strong>
-</td>
+<td>needs the density (<code>dmeasure</code>)</td>
+<td>needs only to simulate</td>
 </tr>
 <tr class="odd">
 <td>Inference</td>
@@ -405,33 +406,33 @@ uncertainty for the simulations it was given.</p>
 <td>train a neural density estimator</td>
 </tr>
 <tr class="even">
-<td>Reusable across datasets</td>
-<td>no — refit per observation</td>
-<td>yes — amortized</td>
+<td>Reusable across data sets</td>
+<td>no, refit per observation</td>
+<td>yes, amortized</td>
 </tr>
 <tr class="odd">
 <td>Cost structure</td>
-<td>cheap setup, rerun per dataset</td>
+<td>cheap setup, rerun per data set</td>
 <td>expensive training, then instant</td>
 </tr>
 <tr class="even">
 <td>Exactness</td>
 <td>exact in the MCMC limit</td>
-<td>approximate; <strong>must</strong> be calibration-checked</td>
+<td>approximate, so check the calibration</td>
 </tr>
 </tbody>
 </table>
-<p>Reach for <code>pomp</code> when you can write the measurement
-density and have one or a few datasets to fit — it will give the
-sharpest, best-understood posterior. Reach for <code>neuralsbi</code>
-when the measurement model itself is a black box, or when you need to
-condition on many datasets and amortization pays for the training up
-front. On this problem they agree, which is the reassuring outcome: two
+<p>Use <code>pomp</code> when you can write the measurement density and
+have one or a few data sets to fit. It will give you the sharpest and
+best understood posterior. Use <code>neuralsbi</code> when the
+measurement model itself is a black box, or when you need to condition
+on many data sets and amortization pays for the training up front. On
+this problem the two agree, which is the reassuring outcome: two
 different simulation-based machines, pointed at the same stochastic
 model, recover the same rates.</p>
 <p>For the <code>neuralsbi</code> workflow in more depth, see
 <code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code> and
-<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>; for <code>pomp</code>, the <a href="https://kingaa.github.io/pomp/docs.html" class="external-link">package
+<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>. For <code>pomp</code>, see the <a href="https://kingaa.github.io/pomp/docs.html" class="external-link">package
 tutorials</a>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
