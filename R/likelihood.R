@@ -284,9 +284,9 @@ mdn_trace <- function(de, xt, tt) {
 
 #' Walk the theta blocks of the cross product, calling `collect(idx, lp)`
 #'
-#' `lp` is the flat vector [de_log_prob()] returns for the block, running
-#' theta-major: the whole observation set for the first parameter, then for the
-#' second, and so on.
+#' `lp` is the flat vector [de_log_prob()][density_estimator] returns for the
+#' block, running theta-major: the whole observation set for the first
+#' parameter, then for the second, and so on.
 #' @keywords internal
 cross_iid <- function(de, x, theta, max_batch, collect) {
   n_theta <- nrow(theta)

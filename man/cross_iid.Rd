@@ -7,8 +7,8 @@
 cross_iid(de, x, theta, max_batch, collect)
 }
 \description{
-\code{lp} is the flat vector \code{\link[=de_log_prob]{de_log_prob()}} returns for the block, running
-theta-major: the whole observation set for the first parameter, then for the
-second, and so on.
+\code{lp} is the flat vector \link[=density_estimator]{de_log_prob()} returns for the
+block, running theta-major: the whole observation set for the first
+parameter, then for the second, and so on.
 }
 \keyword{internal}

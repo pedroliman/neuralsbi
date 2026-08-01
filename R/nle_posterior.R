@@ -109,7 +109,7 @@ check_mcmc_count <- function(value, name, min, why = NULL) {
   as.integer(value)
 }
 
-#' All rows of the observation, unlike [resolve_x()] which keeps only the first
+#' All rows of the observation, unlike `resolve_x()` which keeps only the first
 #' @keywords internal
 resolve_x_iid <- function(post, x) {
   x <- x %||% post$x_obs
