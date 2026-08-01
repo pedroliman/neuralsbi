@@ -29,43 +29,29 @@ if (requireNamespace("future", quietly = TRUE)) {
 }
 ```
 
-This is the first in a short series of tutorials on neural simulation-based
-inference (SBI) in R. It covers the basics: what problem SBI solves, the three
+This tutorial covers the basics of neural simulation-based
+inference (SBI) in R. It explains what problem SBI solves, the three
 ingredients every analysis needs, and what it means for a fit to be
-*amortized*. If you would rather see SBI recover a posterior you can verify by
-hand first, start with `vignette("neuralsbi")`, which runs the same workflow
-on a linear-Gaussian model with a closed-form answer. Later tutorials go
-deeper on density estimators, calibration, and applied case studies; this one
-stays small on purpose.
+*amortized*.
 
 ## The problem
 
-Ordinary Bayesian inference needs a likelihood, $p(\mathbf{x} \mid \boldsymbol{\theta})$: a
-formula for how likely the data are, given the parameters. A simulator is
-code that generates synthetic data by drawing random numbers internally. It
-can sample from that data-generating process without effort; it just cannot
-evaluate the probability of any particular output, because doing so would
-mean integrating over every random draw the simulator makes internally. SBI
-replaces likelihood *evaluation* with simulation. Several methods do this in
-different ways; the one this package implements, neural posterior estimation,
-learns $p(\boldsymbol{\theta} \mid \mathbf{x})$ directly from (parameter,
-simulated-data) pairs.
+Ordinary Bayesian inference requires an explicit likelihood function $p(\mathbf{x} \mid \boldsymbol{\theta})$: an equation describing how likely the data are, given the parameters.
 
-A concrete example. The **g-and-k distribution** is a flexible model for
-skewed, heavy-tailed data such as rainfall totals, incomes, and financial
-returns, defined not by a density but by its quantile function:
+But in many scientific problems, the models we want to work with are complicated enough that we can write them down but we cannot write the likelihood function for that model. We can can sample from that data-generating process; we just cannot explicilty evaluate the probability of any particular output. SBI replaces likelihood *evaluation* with simulation. Several methods do this in different ways and a canonical family of methods that does this is called Approximate Bayesian Computation (ABC).
+
+This package implements a new sets of methods called Neural Simulation-Based Inference, specifically neural posterior estimation, where we learn an approximation to  $p(\boldsymbol{\theta} \mid \mathbf{x})$ directly from (parameter, simulated-data) pairs.
+
+
+## An example: The g-k distribution
+The **g-and-k distribution** is a flexible model for skewed, heavy-tailed data such as rainfall totals, incomes, and financial returns, defined not by a density but by its quantile function:
 
 $$Q(r) = A + B\left(1 + c\,\tanh\!\left(\frac{g z}{2}\right)\right)\left(1 + z^{2}\right)^{k} z,
 \qquad z = \Phi^{-1}(r), \qquad c = 0.8.$$
 
-Here $r \in (0,1)$ and $\Phi^{-1}$ is the standard normal quantile function.
-Because this is an inverse-CDF construction, simulating is simply a matter of
-drawing $z$ from a standard normal and evaluating the expression, which is
-what `rgk()` below does. $A$ and $B$ are location and scale; $g$ and $k$
-control skewness and tail weight; $c$ is a fixed asymmetry constant
-conventionally set to 0.8.
+Here $r \in (0,1)$ and $\Phi^{-1}$ is the standard normal quantile function. Because this is an inverse-CDF construction, simulating is easy; we simply a matter of drawing $z$ from a standard normal and evaluating the expression, which is what `rgk()` below does. $A$ and $B$ are location and scale; $g$ and $k$ control skewness and tail weight; $c$ is a fixed asymmetry constant conventionally set to 0.8.
 
-But writing down the density means inverting $Q$, which has no closed form.
+But writing down the likelihood function would require inverting $Q$, which has no closed form.
 The density can be recovered numerically, one root-find per observation,
 which is how `gk::dgk()` works and how Rayner and MacGillivray (2002)
 computed maximum likelihood estimates. That is exactly the position SBI is
