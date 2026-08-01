@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://neuralsbi.pedrodelima.com/)
+[![DOI](https://zenodo.org/badge/1306051575.svg)](https://doi.org/10.5281/zenodo.21540271)
 <!-- badges: end -->
 
 `neuralsbi` implements [neural simulation-based inference](https://simulation-based-inference.org) (SBI) methods directly in R. Given a prior over parameters and a simulator, it trains a neural network to approximate the Bayesian posterior $p(\theta | x)$. The neural density estimators for posterior estimation (mixture density networks, masked autoregressive flows, neural spline flows) run directly on the [`torch`](https://torch.mlverse.org/) R package (libtorch). You don't need python or Julia to use `neuralsbi`.

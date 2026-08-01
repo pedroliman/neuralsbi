@@ -12,13 +12,12 @@ template:
     base_font: {google: "Source Serif 4"}
     heading_font: {google: "Source Serif 4"}
     code_font: {google: "JetBrains Mono"}
-  # Social-share card and Twitter/X preview. pkgdown turns the relative image
-  # path into an absolute og:image against `url`; og-card.png ships from
-  # pkgdown/assets/.
+  # Social-share card and Twitter/X preview: the package's hex logo. pkgdown
+  # turns the relative image path into an absolute og:image against `url`.
   opengraph:
     image:
-      src: og-card.png
-      alt: "neuralsbi: neural simulation-based inference in R"
+      src: man/figures/logo.png
+      alt: "neuralsbi hex logo: a neural network feeding a posterior density"
     twitter:
       creator: "@PedroNdeLima"
       card: summary_large_image

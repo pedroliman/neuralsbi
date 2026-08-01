@@ -2,14 +2,14 @@
 % Please edit documentation in R/progress.R
 \name{nsbi_progress}
 \alias{nsbi_progress}
-\alias{progress-bars}
 \title{Progress reporting}
 \description{
 Long-running steps -- running the simulator, training a neural density
 estimator -- report progress through one mechanism, so a fit that simulates
 and then trains shows the same style of bar for both phases. Each bar
 reports the elapsed time and an ETA extrapolated from the work done so far.
-
+}
+\details{
 If the \pkg{progressr} package is installed, \code{neuralsbi} emits standard
 progressr updates, so \code{progressr::handlers()} and
 \code{progressr::with_progress()} control reporting exactly as they do for any
@@ -34,6 +34,7 @@ scripts, \verb{R CMD check}, and knitr.
 }
 }
 \section{Training progress}{
+
 
 While a neural estimator trains, one progress step is one epoch. The total
 is not known in advance because training stops early, so the bar targets the
