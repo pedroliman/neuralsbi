@@ -10,6 +10,12 @@ execute:
   cache: true
   warning: false
   message: false
+knitr:
+  opts_chunk:
+    # Caching without this is a trap: edit a chunk and every chunk downstream
+    # keeps serving cached output computed from the old objects. autodep tracks
+    # which globals each chunk reads and invalidates accordingly.
+    autodep: true
 ---
 
 Two calibrations in sequence: fit a model to one dataset, then use that posterior as the prior for a second fit against a different dataset, possibly with a different simulator and extra parameters.
@@ -145,14 +151,33 @@ round(expm1(c(x_reg, x_tri)))
 ```
 
 ```{r cancer-grid}
-grid <- as.matrix(expand.grid(
-  lambda = seq(LOW[1], HIGH[1], length.out = 70),
-  mu     = seq(LOW[2], HIGH[2], length.out = 70),
-  sens   = seq(LOW[3], HIGH[3], length.out = 45)))
+grid_of <- function(lo, hi, n)
+  as.matrix(expand.grid(lambda = seq(lo[1], hi[1], length.out = n[1]),
+                        mu     = seq(lo[2], hi[2], length.out = n[2]),
+                        sens   = seq(lo[3], hi[3], length.out = n[3])))
 wts <- function(ll) { p <- exp(ll - max(ll)); p / sum(p) }
-w_both <- wts(loglik(grid, x_reg, x_tri))
-w_reg  <- wts(loglik(grid, x_reg, NULL))
-d_exact <- grid[sample.int(nrow(grid), NDRAW, replace = TRUE, prob = w_both), ]
+moments <- function(p) rbind(mean = colSums(p$g * p$w),
+                             sd = sqrt(pmax(colSums(p$g^2 * p$w) -
+                                              colSums(p$g * p$w)^2, 0)))
+
+# The lambda posterior is about a hundred times narrower than its prior, so a
+# single uniform grid over the prior box puts only two or three points across
+# it. Weighted moments come out right either way, but draws from that grid plot
+# as a comb rather than a density. Locate the posterior coarsely, then regrid
+# tightly around it.
+exact_post <- function(x_tri, pad = 6) {
+  g0 <- grid_of(LOW, HIGH, c(50, 50, 35))
+  m0 <- moments(list(g = g0, w = wts(loglik(g0, x_reg, x_tri))))
+  lo <- pmax(LOW,  m0["mean", ] - pad * m0["sd", ])
+  hi <- pmin(HIGH, m0["mean", ] + pad * m0["sd", ])
+  g <- grid_of(lo, hi, c(120, 100, 60))
+  list(g = g, w = wts(loglik(g, x_reg, x_tri)))
+}
+
+ex_both <- exact_post(x_tri)
+ex_reg  <- exact_post(NULL)
+d_exact <- ex_both$g[base::sample.int(nrow(ex_both$g), NDRAW,
+                                      replace = TRUE, prob = ex_both$w), ]
 ```
 
 ## Reference: one fit on both datasets
@@ -174,7 +199,13 @@ post1 <- posterior(fit1, x_obs = x_reg)
 d1 <- sample(post1, NDRAW)
 ```
 
-The registry pins $\lambda$ and $\mu$ and says nothing at all about $\sigma$, which never enters `sim_registry()`.
+The registry pins $\lambda$ and $\mu$ and says nothing at all about $\sigma$, which never enters `sim_registry()`. Stage 1 matches its own exact posterior, so anything that goes wrong downstream is not inherited from here.
+
+```{r cancer-stage1-check}
+list(exact = signif(moments(ex_reg)[, c("lambda", "mu")], 3),
+     npe   = signif(rbind(mean = colMeans(d1),
+                          sd = apply(d1, 2, stats::sd)), 3))
+```
 
 ## Stage 2: stage-1 posterior as the prior
 
