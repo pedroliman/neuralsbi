@@ -34,17 +34,21 @@ DE    <- "maf"
 
 # Sets need not all carry every parameter: the stage-1 posterior has no `sens`
 # column, and the state-carrying cascade has two columns the others lack.
-plot_marginals <- function(sets, pars, cols, truth = NULL, main = "") {
-  op <- graphics::par(mfrow = c(1, length(pars)), mar = c(4, 2, 2.5, 1))
+plot_marginals <- function(sets, pars, cols, truth = NULL) {
+  op <- graphics::par(mfrow = c(1, length(pars)), mar = c(4, 2, 1, 1))
   on.exit(graphics::par(op))
   for (p in pars) {
     has <- vapply(sets, function(d) p %in% colnames(d), logical(1))
     ds <- lapply(sets[has], function(d) stats::density(d[, p]))
     plot(NA, xlim = range(vapply(ds, function(z) range(z$x), numeric(2))),
          ylim = c(0, max(vapply(ds, function(z) max(z$y), numeric(1)))),
-         xlab = p, ylab = "", main = if (p == pars[1]) main else "", yaxt = "n")
+         xlab = p, ylab = "", yaxt = "n")
     for (i in seq_along(ds)) lines(ds[[i]], col = cols[has][i], lwd = 2)
     if (!is.null(truth)) abline(v = truth[[p]], col = "grey50", lty = 3)
+    # legend in the first panel only, so a long set of labels cannot clip a title
+    if (p == pars[1])
+      legend("topleft", legend = names(sets), col = cols, lwd = 2,
+             bty = "n", cex = 0.75)
   }
 }
 
@@ -208,9 +212,9 @@ d_seq <- sample(posterior(fit2, x_obs = x_tri), NDRAW)
 
 ```{r cancer-result}
 #| fig-height: 3.2
-plot_marginals(list(d1, d_exact, d_joint, d_seq), pnames,
-               c("grey70", "black", "#D55E00", "#0072B2"), th_true,
-               main = "stage 1 (grey) | exact (black) | joint (orange) | sequential (blue)")
+plot_marginals(list(`stage 1 only` = d1, exact = d_exact, `joint one-shot` = d_joint,
+                    sequential = d_seq), pnames,
+               c("grey70", "black", "#D55E00", "#0072B2"), th_true)
 
 round(compare(list(joint = d_joint, sequential = d_seq), d_exact, pnames), 3)
 ```
@@ -391,16 +395,16 @@ d_sir_joint_b <- sample(posterior(fit_sir_joint_b, x_obs = x_all), NDRAW)
 ```{r sir-result}
 #| fig-height: 3.2
 #| fig-width: 11
-plot_marginals(list(d_sir_joint, d_naive, d_state), P4,
-               c("#D55E00", "grey45", "#0072B2"), th_sir,
-               main = "joint (orange) | cascade A, no state (grey) | cascade B, with state (blue)")
+plot_marginals(list(`joint one-shot` = d_sir_joint, `A: no state` = d_naive,
+                    `B: with state` = d_state), P4,
+               c("#D55E00", "grey45", "#0072B2"), th_sir)
 
 round(compare(list(`joint refit (noise floor)` = d_sir_joint_b,
                    `no state` = d_naive,
                    `with state` = d_state), d_sir_joint, P4), 3)
 ```
 
-Cascade A is 37% too wide on $\beta_2$ and biased by about a full posterior standard deviation. That is the seam-state uncertainty being re-injected: every phase-2 simulation restarts the epidemic and rolls its own week-8 state, spreading $x_2$ over a range the observed phase-1 curve had already narrowed.
+Cascade A comes out roughly a third too wide on $\beta_2$ and biased by close to a full posterior standard deviation. That is the seam-state uncertainty being re-injected: every phase-2 simulation restarts the epidemic and rolls its own week-8 state, spreading $x_2$ over a range the observed phase-1 curve had already narrowed.
 
 Cascade B sits at the noise floor. Its c2st against the reference is no worse than a refit of the reference, its spreads are within a few percent, and its biases are the same size as the refit's. On $\rho$ it is closer to the reference than the refit is. So carrying $(S, I)$ across the seam recovers the joint posterior to within the reproducibility of the method itself, and carrying the parameters alone does not.
 
