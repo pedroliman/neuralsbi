@@ -32,15 +32,18 @@ NSIM  <- 20000L   # simulations per fit
 NDRAW <- 4000L    # posterior draws
 DE    <- "maf"
 
+# Sets need not all carry every parameter: the stage-1 posterior has no `sens`
+# column, and the state-carrying cascade has two columns the others lack.
 plot_marginals <- function(sets, pars, cols, truth = NULL, main = "") {
   op <- graphics::par(mfrow = c(1, length(pars)), mar = c(4, 2, 2.5, 1))
   on.exit(graphics::par(op))
   for (p in pars) {
-    ds <- lapply(sets, function(d) stats::density(d[, p]))
+    has <- vapply(sets, function(d) p %in% colnames(d), logical(1))
+    ds <- lapply(sets[has], function(d) stats::density(d[, p]))
     plot(NA, xlim = range(vapply(ds, function(z) range(z$x), numeric(2))),
          ylim = c(0, max(vapply(ds, function(z) max(z$y), numeric(1)))),
          xlab = p, ylab = "", main = if (p == pars[1]) main else "", yaxt = "n")
-    for (i in seq_along(ds)) lines(ds[[i]], col = cols[i], lwd = 2)
+    for (i in seq_along(ds)) lines(ds[[i]], col = cols[has][i], lwd = 2)
     if (!is.null(truth)) abline(v = truth[[p]], col = "grey50", lty = 3)
   }
 }
