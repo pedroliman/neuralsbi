@@ -5,6 +5,11 @@
 # expensive first run pays off across sessions.
 set -euo pipefail
 
+# Activate the repo's tracked git hooks (.githooks/pre-commit refuses
+# commits attributed to Claude). Cheap and idempotent, so it runs for both
+# local and remote sessions.
+git -C "$CLAUDE_PROJECT_DIR" config core.hooksPath .githooks
+
 # Only needed on Claude Code on the web; local machines manage their own R.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
