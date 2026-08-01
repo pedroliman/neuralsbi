@@ -2,11 +2,11 @@
 % Please edit documentation in R/nle_posterior.R
 \name{resolve_x_iid}
 \alias{resolve_x_iid}
-\title{All rows of the observation, unlike \code{\link[=resolve_x]{resolve_x()}} which keeps only the first}
+\title{All rows of the observation, unlike \code{resolve_x()} which keeps only the first}
 \usage{
 resolve_x_iid(post, x)
 }
 \description{
-All rows of the observation, unlike \code{\link[=resolve_x]{resolve_x()}} which keeps only the first
+All rows of the observation, unlike \code{resolve_x()} which keeps only the first
 }
 \keyword{internal}
