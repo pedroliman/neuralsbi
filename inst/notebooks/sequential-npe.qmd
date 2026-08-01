@@ -22,7 +22,7 @@ NPE needs no correction for this. Training on $\theta \sim \tilde\pi$ and $x \si
 
 Everything turns on the last factor. When $x_2 \perp x_1 \mid \theta$ it reduces to $p(x_2 \mid \theta_A, \theta_B)$ and the cascade is exact. When it does not, passing the parameter posterior forward is not enough. The two examples below are one of each.
 
-Seven MAF fits at 20,000 simulations each, so a cold render takes on the order of two hours on four CPU cores. Chunk caching is on; drop `NSIM` to 5000 for a quick pass, at some cost in how tightly the fits agree.
+Eight MAF fits at 20,000 simulations each, so a cold render takes a couple of hours on four CPU cores. Chunk caching is on; drop `NSIM` to 5000 for a quick pass, at some cost in how tightly the fits agree.
 
 ```{r setup}
 library(neuralsbi)
@@ -108,16 +108,20 @@ HIGH <- c(lambda = 0.020, mu = 0.60, sens = 0.95)
 Both cohorts are multinomial with closed-form cell probabilities, so this toy has an exact posterior to check the fits against. That is the only reason for the multinomial: NPE never sees it.
 
 ```{r cancer-exact}
+# x_tri = NULL gives the registry-only likelihood, which is how the stage-1
+# posterior is checked separately from the combined one.
 loglik <- function(theta, x_reg, x_tri) {
   theta <- matrix(theta, ncol = 3)
-  k_r <- round(expm1(x_reg)); k_t <- round(expm1(x_tri))
+  k_r <- round(expm1(x_reg))
+  k_t <- if (is.null(x_tri)) NULL else round(expm1(x_tri))
   vapply(seq_len(nrow(theta)), function(i) {
     pr <- cancer_probs(theta[i, 1], theta[i, 2], theta[i, 3])
-    dmultinom(c(k_r, N_REG - sum(k_r)), prob = c(pr$registry, 1 - sum(pr$registry)),
-              log = TRUE) +
-    (if (is.null(x_tri)) 0 else
-      dmultinom(c(k_t, N_TRI - sum(k_t)), prob = c(pr$trial, 1 - sum(pr$trial)),
-                log = TRUE))
+    ll <- dmultinom(c(k_r, N_REG - sum(k_r)),
+                    prob = c(pr$registry, 1 - sum(pr$registry)), log = TRUE)
+    if (!is.null(k_t))
+      ll <- ll + dmultinom(c(k_t, N_TRI - sum(k_t)),
+                           prob = c(pr$trial, 1 - sum(pr$trial)), log = TRUE)
+    ll
   }, numeric(1))
 }
 
@@ -364,6 +368,16 @@ d_state <- sample(posterior(fit2s, x_obs = x2_obs), NDRAW)
 
 Note `sim_phase2_state()` never uses `beta1`. It is carried anyway so its marginal can be read off at the end, and it updates only through its correlation with the seam state, which is the correct update.
 
+## A noise floor to compare against
+
+Unlike example 1 there is no exact posterior here, so "close to the reference" needs a scale. Refitting the reference itself under a different seed gives one: two independent MAF fits of the same posterior differ by some amount, and no cascade can be expected to do better.
+
+```{r sir-control}
+fit_sir_joint_b <- npe(prior4, sim_joint, n_simulations = NSIM,
+                       density_estimator = DE, seed = 99)
+d_sir_joint_b <- sample(posterior(fit_sir_joint_b, x_obs = x_all), NDRAW)
+```
+
 ## Result
 
 ```{r sir-result}
@@ -373,9 +387,14 @@ plot_marginals(list(d_sir_joint, d_naive, d_state), P4,
                c("#D55E00", "grey45", "#0072B2"), th_sir,
                main = "joint (orange) | cascade A, no state (grey) | cascade B, with state (blue)")
 
-round(compare(list(`no state` = d_naive, `with state` = d_state),
-              d_sir_joint, P4), 3)
+round(compare(list(`joint refit (noise floor)` = d_sir_joint_b,
+                   `no state` = d_naive,
+                   `with state` = d_state), d_sir_joint, P4), 3)
 ```
+
+Cascade A is 37% too wide on $\beta_2$ and biased by about a full posterior standard deviation. That is the seam-state uncertainty being re-injected: every phase-2 simulation restarts the epidemic and rolls its own week-8 state, spreading $x_2$ over a range the observed phase-1 curve had already narrowed.
+
+Cascade B sits at the noise floor. Its c2st against the reference is no worse than a refit of the reference, its spreads are within a few percent, and its biases are the same size as the refit's. On $\rho$ it is closer to the reference than the refit is. So carrying $(S, I)$ across the seam recovers the joint posterior to within the reproducibility of the method itself, and carrying the parameters alone does not.
 
 # Notes
 
