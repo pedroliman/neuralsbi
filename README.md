@@ -7,6 +7,7 @@
 
 [![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://neuralsbi.pedrodelima.com/)
+[![DOI](https://zenodo.org/badge/1306051575.svg)](https://doi.org/10.5281/zenodo.21540271)
 <!-- badges: end -->
 
 `neuralsbi` implements [neural simulation-based
