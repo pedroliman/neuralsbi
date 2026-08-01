@@ -312,7 +312,6 @@ The simulator contract, parallel execution, and progress reporting.
 - [`nsbi_parallel`](https://neuralsbi.pedrodelima.com/reference/nsbi_parallel.md)
   : Running the simulator in parallel
 - [`nsbi_progress`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md)
-  [`progress-bars`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md)
   : Progress reporting
 
 ## Working with the posterior

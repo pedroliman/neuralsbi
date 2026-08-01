@@ -1,0 +1,14 @@
+# Deal `seq_len(n)` out to the current plan's workers
+
+Batching is a scheduling detail, not a setting: it exists only because
+one `future` per simulation would cost more in dispatch than it saves in
+parallelism, and it cannot change a result because every simulation
+carries its own RNG stream. A few batches per worker, so uneven
+simulator run times even out without re-serializing the simulator
+hundreds of times. Sequential runs get one batch, i.e. a plain loop.
+
+## Usage
+
+``` r
+sim_batches(n, workers = nsbi_workers())
+```

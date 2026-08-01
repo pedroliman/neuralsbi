@@ -6,6 +6,8 @@ simulates and then trains shows the same style of bar for both phases.
 Each bar reports the elapsed time and an ETA extrapolated from the work
 done so far.
 
+## Details
+
 If the progressr package is installed, `neuralsbi` emits standard
 progressr updates, so
 [`progressr::handlers()`](https://progressr.futureverse.org/reference/handlers.html)

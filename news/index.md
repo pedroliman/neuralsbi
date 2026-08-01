@@ -131,8 +131,10 @@
 - Internally,
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and
   [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) now
-  share `prepare_simulations()` instead of each carrying its own copy of
-  the simulate/coerce/drop/standardize preamble.
+  share
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  instead of each carrying its own copy of the
+  simulate/coerce/drop/standardize preamble.
 - Fixed:
   [`sample_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample_posterior.md)
   now goes through the
