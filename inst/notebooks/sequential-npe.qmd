@@ -22,7 +22,7 @@ NPE needs no correction for this. Training on $\theta \sim \tilde\pi$ and $x \si
 
 Everything turns on the last factor. When $x_2 \perp x_1 \mid \theta$ it reduces to $p(x_2 \mid \theta_A, \theta_B)$ and the cascade is exact. When it does not, passing the parameter posterior forward is not enough. The two examples below are one of each.
 
-Eight MAF fits at 20,000 simulations each, so a cold render takes a couple of hours on four CPU cores. Chunk caching is on; drop `NSIM` to 5000 for a quick pass, at some cost in how tightly the fits agree.
+Eight MAF fits at 20,000 simulations each, so a cold render takes a couple of hours on four CPU cores. Chunk caching is on. Lowering `NSIM` checks that the code runs but not that the result holds: at 1500 simulations the estimator noise is larger than every effect below, and none of the comparisons separate.
 
 ```{r setup}
 library(neuralsbi)
@@ -48,12 +48,17 @@ plot_marginals <- function(sets, pars, cols, truth = NULL, main = "") {
   }
 }
 
+# Bias in units of the reference posterior's own sd, and spread as a ratio to
+# it. Both are scale-free, so the four SIR parameters are readable side by side.
 compare <- function(sets, ref, pars) {
-  t(vapply(sets, function(d) c(
-    setNames(colMeans(d[, pars]), paste0("mean.", pars)),
-    setNames(apply(d[, pars], 2, stats::sd) / apply(ref[, pars], 2, stats::sd),
-             paste0("sdratio.", pars)),
-    c2st = c2st(ref[, pars], d[, pars], seed = 1)$accuracy), numeric(2 * length(pars) + 1)))
+  rm <- colMeans(ref[, pars]); rs <- apply(ref[, pars], 2, stats::sd)
+  out <- t(vapply(sets, function(d) c(
+    (colMeans(d[, pars]) - rm) / rs,
+    apply(d[, pars], 2, stats::sd) / rs,
+    c2st(ref[, pars], d[, pars], seed = 1)$accuracy),
+    numeric(2 * length(pars) + 1)))
+  colnames(out) <- c(paste0("bias/sd:", pars), paste0("sdratio:", pars), "c2st")
+  out
 }
 ```
 
