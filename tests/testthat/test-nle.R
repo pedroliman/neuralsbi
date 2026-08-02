@@ -145,6 +145,9 @@ test_that("the traced MDN likelihood agrees with the eager one", {
   # before use, but that check is the thing most worth checking, so this walks
   # past the warmup at two different row counts and compares every call.
   skip_if_no_torch()
+  # withr is a Suggests, so under _R_CHECK_FORCE_SUGGESTS_=false this has to
+  # skip rather than error on the with_options() calls below.
+  skip_if_not_installed("withr")
   fit <- nle(gauss_prior(), gauss_sim, n_simulations = 800,
              density_estimator = "mdn", hidden = c(16L, 16L),
              n_components = 3L, max_epochs = 10L, seed = 1)
