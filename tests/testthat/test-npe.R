@@ -145,3 +145,20 @@ test_that("simulate_for_sbi() checks n and the prior", {
   expect_equal(nrow(simulate_for_sbi(toy_simulator, toy_prior(), n = 5)$theta),
                5L)
 })
+
+test_that("simulate_for_sbi() names a swapped (simulator, prior) pair", {
+  expect_error(simulate_for_sbi(toy_prior(), toy_simulator, 100),
+               "`simulator` and `prior` look swapped")
+  expect_error(simulate_for_sbi(toy_prior(), toy_simulator, 100),
+               "reverse of npe\\(prior, simulator")
+
+  # A simulator that is neither a function nor a prior is a different mistake,
+  # and gets the plain check_function() message.
+  err <- expect_error(simulate_for_sbi("not a function", toy_prior(), 10),
+                      "`simulator` must be a function of one argument")
+  expect_false(grepl("look swapped", conditionMessage(err), fixed = TRUE))
+
+  expect_error(simulate_for_sbi(toy_simulator, list(dim = 1), 10),
+               "`prior` must be an nsbi_prior object")
+  expect_equal(nrow(simulate_for_sbi(toy_simulator, toy_prior(), 5)$x), 5L)
+})

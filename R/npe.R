@@ -290,10 +290,16 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 #' Simulations whose output is not finite are dropped together with their
 #' parameters, with a warning.
 #'
+#' The simulator comes first here and second in [npe()], [nle()] and
+#' [npe_sequential()]. That is the reverse of the fitting functions and it is
+#' easy to get backwards, so a call with the two swapped is detected and named
+#' rather than left to fail inside [sample_prior()].
+#'
 #' @inheritParams npe
 #' @param simulator A function called once per parameter set, returning one
 #'   simulated observation: a numeric vector, a scalar, or a one-row matrix or
-#'   data frame. See [nsbi_simulator].
+#'   data frame. See [nsbi_simulator]. Note the order: the simulator is the
+#'   first argument here and the second in `npe(prior, simulator, ...)`.
 #' @param n Number of simulations.
 #' @return A list with `theta` (`n x dim`) and `x` (`n x d`) matrices and
 #'   `n_dropped`, the number of simulations discarded for non-finite output.
@@ -304,6 +310,16 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 #' @export
 simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
                              seed = NULL, verbose = FALSE) {
+  # A prior object is never a function and a simulator is never an nsbi_prior,
+  # so this pattern can only be the arguments the wrong way round. It goes
+  # first: the general checks below would blame whichever argument they reached
+  # and send the user looking at a prior that is fine.
+  if (inherits(simulator, "nsbi_prior") && is.function(prior)) {
+    stop("`simulator` and `prior` look swapped. simulate_for_sbi() takes the ",
+         "simulator first: simulate_for_sbi(simulator, prior, n). Note this ",
+         "is the reverse of npe(prior, simulator, ...).", call. = FALSE)
+  }
+  check_function(simulator, "simulator", what = "one parameter set per call")
   check_prior(prior)
   n <- check_count(n, "n")
   if (!is.null(seed)) set.seed(seed)
