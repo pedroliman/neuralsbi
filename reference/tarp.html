@@ -61,7 +61,7 @@ alpha."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/ref
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -139,7 +139,12 @@ with a small <code>n_tarp</code> and raise it once the cost is known.</p></dd>
 
 
 <dt id="arg-prior">prior<a class="anchor" aria-label="anchor" href="#arg-prior"></a></dt>
-<dd><p>The prior used for inference (defaults to <code>fit$prior</code>).</p></dd>
+<dd><p>The prior to draw the true parameters from, and the reference
+points when <code>references = "prior"</code> (defaults to <code>fit$prior</code>). As in
+<code><a href="sbc.html">sbc()</a></code>, the coverage claim is about the prior the fit was trained on, so
+the default is what tests this fit; another prior tests how the fit does on
+parameters it was not calibrated against. It must cover the same
+parameters as the fit.</p></dd>
 
 
 <dt id="arg-n-tarp">n_tarp<a class="anchor" aria-label="anchor" href="#arg-n-tarp"></a></dt>

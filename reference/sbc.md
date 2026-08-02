@@ -38,7 +38,13 @@ sbc(
 
 - prior:
 
-  The prior used for inference (defaults to `fit$prior`).
+  The prior to draw the true parameters from (defaults to `fit$prior`).
+  SBC is a test of the posterior against the prior it was trained on, so
+  the default is the only choice that answers "is this fit calibrated".
+  Overriding it changes the question to how the fit behaves on
+  parameters drawn from somewhere else, which is a reasonable local
+  check but is no longer SBC. It must cover the same parameters as the
+  fit.
 
 - n_sbc:
 

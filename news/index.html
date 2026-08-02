@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.13" id="neuralsbi-0413">neuralsbi 0.4.13<a class="anchor" aria-label="anchor" href="#neuralsbi-0413"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sbc.html">sbc()</a></code> and <code><a href="../reference/tarp.html">tarp()</a></code> now check that the <code>prior</code> they are given covers the parameters the fit was trained on.</strong> Both take <code>prior = fit$prior</code> as a default, so the argument is there to be overridden, and passing something else is legitimate: <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> trains on truncated proposals, and SBC against a narrower prior is a fair local calibration check. Nothing checked the width, though. <code><a href="../reference/sbc.html">sbc()</a></code> sizes its rank matrix from <code>fit$dim_theta</code> and draws the truths from <code>prior</code>, so a mismatch reached <code><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep()</a></code>, which recycles one against the other and ranks the truth against a comparison nobody asked for; in <code><a href="../reference/tarp.html">tarp()</a></code> the same mismatch reached the z-scoring and the distances. Both now call <code>check_prior(prior, dim = fit$dim_theta)</code> before any simulation runs, so a wrong prior costs no simulator calls. <code><a href="../reference/sbc.html">?sbc</a></code> and <code><a href="../reference/tarp.html">?tarp</a></code> say what overriding <code>prior</code> changes about the diagnostic.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.12" id="neuralsbi-0412">neuralsbi 0.4.12<a class="anchor" aria-label="anchor" href="#neuralsbi-0412"></a></h2>
 <ul><li>

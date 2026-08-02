@@ -1,5 +1,30 @@
 # Changelog
 
+## neuralsbi 0.4.13
+
+- **[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) now
+  check that the `prior` they are given covers the parameters the fit
+  was trained on.** Both take `prior = fit$prior` as a default, so the
+  argument is there to be overridden, and passing something else is
+  legitimate:
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  trains on truncated proposals, and SBC against a narrower prior is a
+  fair local calibration check. Nothing checked the width, though.
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) sizes
+  its rank matrix from `fit$dim_theta` and draws the truths from
+  `prior`, so a mismatch reached
+  [`sweep()`](https://rdrr.io/r/base/sweep.html), which recycles one
+  against the other and ranks the truth against a comparison nobody
+  asked for; in
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) the
+  same mismatch reached the z-scoring and the distances. Both now call
+  `check_prior(prior, dim = fit$dim_theta)` before any simulation runs,
+  so a wrong prior costs no simulator calls.
+  [`?sbc`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`?tarp`](https://neuralsbi.pedrodelima.com/reference/tarp.md) say
+  what overriding `prior` changes about the diagnostic.
+
 ## neuralsbi 0.4.12
 
 - **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now

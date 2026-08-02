@@ -43,7 +43,13 @@ tarp(
 
 - prior:
 
-  The prior used for inference (defaults to `fit$prior`).
+  The prior to draw the true parameters from, and the reference points
+  when `references = "prior"` (defaults to `fit$prior`). As in
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md), the
+  coverage claim is about the prior the fit was trained on, so the
+  default is what tests this fit; another prior tests how the fit does
+  on parameters it was not calibrated against. It must cover the same
+  parameters as the fit.
 
 - n_tarp:
 
