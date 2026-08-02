@@ -1,3 +1,7 @@
+# neuralsbi 0.4.4
+
+* Fixed: an NPE posterior given a multi-row observation now warns. `resolve_x()` kept row 1 and said nothing about the rest, which is right for NPE and invisible to the user. The trap is the asymmetry with `nle()`, where the rows of `x_obs` are independent observations that the log-likelihood sums over: the same matrix means "200 observations" to `nle()` and "the first observation" to `npe()`, so moving a working call from one to the other silently dropped all but one data point. The warning names the row count and points at `nle()`. It stays a warning because taking row 1 of a simulation matrix is a reasonable thing to ask for, and `sbc()`/`tarp()` pass single rows anyway.
+
 # neuralsbi 0.4.3
 
 * **New: Neural Likelihood Estimation, via `nle()`.** Where `npe()` learns the posterior directly, `nle()` learns a surrogate likelihood \eqn{q(x \mid \theta)}. The reason to want that is repeated observations. An NPE fit is trained for one fixed data dimension, so conditioning on \eqn{n} independent trials means retraining for every \eqn{n} or compressing to summary statistics; NLE learns the density of a single trial, so the log-likelihood of \eqn{n} of them is a sum and \eqn{n} is free at inference time. The cost is that the posterior is no longer a forward pass. For one fixed observation with high-dimensional data, `npe()` is still the better choice, and `?nle` says so.
