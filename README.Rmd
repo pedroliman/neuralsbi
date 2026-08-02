@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedroliman/neuralsbi/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/pedroliman/neuralsbi/graph/badge.svg)](https://app.codecov.io/gh/pedroliman/neuralsbi)
 [![pkgdown](https://github.com/pedroliman/neuralsbi/actions/workflows/pkgdown.yaml/badge.svg)](https://neuralsbi.pedrodelima.com/)
 [![DOI](https://zenodo.org/badge/1306051575.svg)](https://doi.org/10.5281/zenodo.21540271)
 <!-- badges: end -->
