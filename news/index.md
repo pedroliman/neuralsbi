@@ -1,5 +1,33 @@
 # Changelog
 
+## neuralsbi 0.4.14
+
+- **[`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)
+  now recognises a call with `simulator` and `prior` the wrong way
+  round.** It takes the simulator first and
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  take it second, so the two functions a user calls in the same breath
+  disagree. Getting it backwards used to fail inside
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md),
+  whose [`stopifnot()`](https://rdrr.io/r/base/stopifnot.html) reports
+  `inherits(prior, "nsbi_prior") is not TRUE` about a local that holds
+  the simulator. A user reading that concludes the prior object is
+  broken. `inherits(simulator, "nsbi_prior") && is.function(prior)` can
+  only be the swap, since a prior is never a function and a simulator is
+  never an `nsbi_prior`, so that case now says so and shows the right
+  call.
+  [`?simulate_for_sbi`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)
+  says the order is reversed.
+- [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)
+  also checks that `simulator` is a function and that `prior` is an
+  `nsbi_prior` before it draws anything.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  has had the simulator check since it was written;
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)
+  left both to surface further down.
+
 ## neuralsbi 0.4.13
 
 - **[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and

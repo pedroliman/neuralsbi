@@ -28,6 +28,8 @@ simulate_for_sbi(
   observation: a numeric vector, a scalar, or a one-row matrix or data
   frame. See
   [nsbi_simulator](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
+  Note the order: the simulator is the first argument here and the
+  second in `npe(prior, simulator, ...)`.
 
 - prior:
 
@@ -62,6 +64,15 @@ A list with `theta` (`n x dim`) and `x` (`n x d`) matrices and
 
 Simulations whose output is not finite are dropped together with their
 parameters, with a warning.
+
+The simulator comes first here and second in
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md).
+That is the reverse of the fitting functions and it is easy to get
+backwards, so a call with the two swapped is detected and named rather
+than left to fail inside
+[`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md).
 
 ## Examples
 

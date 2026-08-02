@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,13 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.14" id="neuralsbi-0414">neuralsbi 0.4.14<a class="anchor" aria-label="anchor" href="#neuralsbi-0414"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/simulate_for_sbi.html">simulate_for_sbi()</a></code> now recognises a call with <code>simulator</code> and <code>prior</code> the wrong way round.</strong> It takes the simulator first and <code><a href="../reference/npe.html">npe()</a></code>, <code><a href="../reference/nle.html">nle()</a></code> and <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> take it second, so the two functions a user calls in the same breath disagree. Getting it backwards used to fail inside <code><a href="../reference/sample_prior.html">sample_prior()</a></code>, whose <code><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot()</a></code> reports <code>inherits(prior, "nsbi_prior") is not TRUE</code> about a local that holds the simulator. A user reading that concludes the prior object is broken. <code>inherits(simulator, "nsbi_prior") &amp;&amp; is.function(prior)</code> can only be the swap, since a prior is never a function and a simulator is never an <code>nsbi_prior</code>, so that case now says so and shows the right call. <code><a href="../reference/simulate_for_sbi.html">?simulate_for_sbi</a></code> says the order is reversed.</li>
+<li>
+<code><a href="../reference/simulate_for_sbi.html">simulate_for_sbi()</a></code> also checks that <code>simulator</code> is a function and that <code>prior</code> is an <code>nsbi_prior</code> before it draws anything. <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> has had the simulator check since it was written; <code><a href="../reference/simulate_for_sbi.html">simulate_for_sbi()</a></code> left both to surface further down.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.13" id="neuralsbi-0413">neuralsbi 0.4.13<a class="anchor" aria-label="anchor" href="#neuralsbi-0413"></a></h2>
 <ul><li>

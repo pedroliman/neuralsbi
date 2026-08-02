@@ -51,7 +51,7 @@ nsbi_simulator, nsbi_parallel and nsbi_progress."><meta property="og:image" cont
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,8 @@ draw. Under a <span class="pkg">future</span> plan the draws are spread across w
 <dl><dt id="arg-simulator">simulator<a class="anchor" aria-label="anchor" href="#arg-simulator"></a></dt>
 <dd><p>A function called once per parameter set, returning one
 simulated observation: a numeric vector, a scalar, or a one-row matrix or
-data frame. See <a href="nsbi_simulator.html">nsbi_simulator</a>.</p></dd>
+data frame. See <a href="nsbi_simulator.html">nsbi_simulator</a>. Note the order: the simulator is the
+first argument here and the second in <code>npe(prior, simulator, ...)</code>.</p></dd>
 
 
 <dt id="arg-prior">prior<a class="anchor" aria-label="anchor" href="#arg-prior"></a></dt>
@@ -146,6 +147,10 @@ settings. See <a href="nsbi_simulator.html">nsbi_simulator</a>.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Simulations whose output is not finite are dropped together with their
 parameters, with a warning.</p>
+<p>The simulator comes first here and second in <code><a href="npe.html">npe()</a></code>, <code><a href="nle.html">nle()</a></code> and
+<code><a href="npe_sequential.html">npe_sequential()</a></code>. That is the reverse of the fitting functions and it is
+easy to get backwards, so a call with the two swapped is detected and named
+rather than left to fail inside <code><a href="sample_prior.html">sample_prior()</a></code>.</p>
     </div>
 
     <div class="section level2">
