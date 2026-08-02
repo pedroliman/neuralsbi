@@ -8,8 +8,8 @@ prior_normal(mean, sd = 1)
 }
 \arguments{
 \item{mean}{Numeric vector of means (one per parameter). Naming the vector
-(e.g. \code{c(beta = 0, gamma = 0)}) attaches those names to every
-downstream parameter matrix, posterior sample, and diagnostic plot.}
+(e.g. \code{c(beta = 0, gamma = 0)}) attaches those names to every downstream
+parameter matrix, posterior sample, and diagnostic plot.}
 
 \item{sd}{Numeric scalar or vector of standard deviations.}
 }

@@ -1,0 +1,19 @@
+#!/bin/sh
+# Refuse commits whose resolved author or committer identity is Claude
+# Code's bot identity. `git var` reports the identity git will actually use
+# for this commit (env vars and config already resolved by the time hooks
+# run), so this catches the case where GIT_AUTHOR_*/GIT_COMMITTER_* aren't
+# set to the project's human identity, e.g. a session where
+# .claude/settings.json's env block didn't apply. See
+# .claude/hooks/session-start.sh, which activates this hook.
+
+author=$(git var GIT_AUTHOR_IDENT)
+committer=$(git var GIT_COMMITTER_IDENT)
+
+case "$author $committer" in
+  *'<noreply@anthropic.com>'*)
+    echo "error: refusing to commit as Claude <noreply@anthropic.com>." >&2
+    echo "Set GIT_AUTHOR_NAME/EMAIL and GIT_COMMITTER_NAME/EMAIL (see .claude/settings.json env) before committing." >&2
+    exit 1
+    ;;
+esac
