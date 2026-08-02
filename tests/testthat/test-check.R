@@ -50,6 +50,82 @@ test_that("check_matrix() suggests a transpose when the rows match", {
   expect_false(grepl("transpose", msg))
 })
 
+test_that("check_numeric() names the offending columns and leaves shape alone", {
+  expect_error(check_numeric(data.frame(a = 1:3, b = letters[1:3]), "x"),
+               "`x` has non-numeric columns: b")
+  expect_error(check_numeric(data.frame(a = 1:3, b = factor("u"),
+                                        cc = letters[1:3]), "x"),
+               "non-numeric columns: b, cc")
+  expect_error(check_numeric(letters[1:3], "theta"),
+               "`theta` must be numeric, but it is of type character")
+  expect_error(check_numeric(list(1, 2), "theta"), "not a list")
+
+  # a bare vector keeps its length: the pre-computed path reads it as a column
+  # of values, not as one row.
+  expect_identical(check_numeric(c(1, 2, 3), "x"), c(1, 2, 3))
+  expect_equal(check_numeric(data.frame(a = 1:2, b = 3:4), "x"),
+               matrix(1:4, ncol = 2, dimnames = list(NULL, c("a", "b"))))
+})
+
+test_that("pre-computed theta/x reject a non-numeric column by name", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  th <- sample_prior(prior, 50)
+  x_ok <- th + stats::rnorm(50, sd = 0.3)
+
+  # the coercion used to turn column b into NA, drop every row, and blame a
+  # simulator that was never called
+  expect_error(
+    npe(prior, theta = th,
+        x = data.frame(a = as.numeric(x_ok), b = rep(c("p", "q"), 25)),
+        density_estimator = "linear_gaussian"),
+    "`x` has non-numeric columns: b")
+  expect_error(
+    npe(prior, theta = data.frame(mu = as.numeric(th), tag = "a"), x = x_ok,
+        density_estimator = "linear_gaussian"),
+    "`theta` has non-numeric columns: tag")
+  expect_error(
+    nle(prior, theta = th,
+        x = data.frame(a = as.numeric(x_ok), b = rep(c("p", "q"), 25)),
+        density_estimator = "linear_gaussian"),
+    "`x` has non-numeric columns: b")
+
+  # and a numeric data frame still trains
+  fit <- npe(prior, theta = th, x = data.frame(a = as.numeric(x_ok)),
+             density_estimator = "linear_gaussian")
+  expect_equal(fit$n_simulations, 50L)
+})
+
+test_that("the pre-computed path does not blame the simulator for a bad x", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  th <- sample_prior(prior, 20)
+  x <- matrix(NA_real_, nrow = 20, ncol = 1)
+
+  msg <- tryCatch(npe(prior, theta = th, x = x,
+                      density_estimator = "linear_gaussian"),
+                  error = conditionMessage)
+  expect_match(msg, "All 20 simulations returned non-finite output")
+  expect_match(msg, "Check `x` for NA, NaN or Inf.", fixed = TRUE)
+  expect_false(grepl("simulator", msg))
+
+  # the simulator path keeps its own advice
+  expect_error(
+    simulate_for_sbi(function(mu) NA_real_, prior, n = 20),
+    "Check the simulator on a single prior draw")
+})
+
+test_that("log_prob() rejects a non-numeric theta by name", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  th <- sample_prior(prior, 200)
+  fit <- npe(prior, theta = th, x = th + stats::rnorm(200, sd = 0.3),
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  expect_error(log_prob(post, data.frame(mu = 0.1, tag = "a")),
+               "`theta` has non-numeric columns: tag")
+  expect_error(log_prob(post, 0.1, x = data.frame(a = 0.5, b = "q")),
+               "`x` has non-numeric columns: b")
+})
+
 test_that("check_count() takes one whole number at or above the bound", {
   expect_identical(check_count(5, "n_simulations"), 5L)
   expect_identical(check_count(0, "warmup", min = 0L), 0L)

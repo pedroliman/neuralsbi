@@ -258,8 +258,12 @@ bind_sim_draws <- function(draws, d = NULL) {
 #'   to keep aligned.
 #' @param x Simulated data matrix.
 #' @param what Noun for the warning ("simulations", "SBC trials", ...).
+#' @param x_hint What to check when the non-finite values are in `x`. The
+#'   default points at the simulator, which is only useful advice when one was
+#'   run; the pre-computed `(theta, x)` path passes advice about `x` itself.
 #' @keywords internal
-drop_failed_sims <- function(theta, x, what = "simulations") {
+drop_failed_sims <- function(theta, x, what = "simulations",
+                             x_hint = "Check the simulator on a single prior draw.") {
   n <- nrow(x)
   if (n == 0L) return(list(theta = theta, x = x, n_dropped = 0L, ok = logical(0)))
   bad_x <- rowSums(!is.finite(x)) > 0L
@@ -279,11 +283,7 @@ drop_failed_sims <- function(theta, x, what = "simulations") {
       "parameters or output"
     }
     if (!any(ok)) {
-      hint <- if (any(bad_x)) {
-        "Check the simulator on a single prior draw."
-      } else {
-        "Check `theta` for NA, NaN or Inf."
-      }
+      hint <- if (any(bad_x)) x_hint else "Check `theta` for NA, NaN or Inf."
       stop(sprintf("All %d %s returned non-finite %s (NA, NaN or Inf). %s",
                    n, what, cause, hint), call. = FALSE)
     }
