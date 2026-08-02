@@ -88,6 +88,10 @@ stan_code <- function(fit, name = "nsbi_log_lik", model = TRUE) {
 #' @rdname stan_export
 #' @export
 write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
+  # Before the code is generated: transpiling the network only to fail on the
+  # destination is work thrown away, and writeLines() takes a connection as
+  # well as a path, so a wrong value gets some distance before it complains.
+  check_path(file, "file")
   writeLines(stan_code(fit, name = name, model = model), file)
   invisible(file)
 }

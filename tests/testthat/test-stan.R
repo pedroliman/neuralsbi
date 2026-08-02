@@ -94,6 +94,15 @@ test_that("write_stan_model() writes a file", {
   expect_match(paste(readLines(path), collapse = "\n"), "nsbi_log_lik_sum_lpdf")
 })
 
+test_that("write_stan_model() checks `file` before it generates any code", {
+  fit <- stan_lingauss_fit()
+
+  expect_error(write_stan_model(fit, c("a", "b")),
+               "`file` must be a single file path")
+  expect_error(write_stan_model(fit, NULL), "`file` must be a single file path")
+  expect_error(write_stan_model(fit, ""), "an empty string")
+})
+
 test_that("an NSF fit is refused with the alternatives named", {
   skip_if_no_torch()
   fit <- nle(stan_prior(), stan_sim, n_simulations = 400,

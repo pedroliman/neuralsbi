@@ -38,6 +38,25 @@ test_that("load_npe rejects a file it did not write", {
 test_that("save_npe only accepts a fit", {
   expect_error(save_npe(list(), tempfile()), "nsbi_npe")
   expect_error(save_npe(fit_toy(100), c("a", "b")), "single file path")
+  expect_error(save_npe(fit_toy(100), ""), "an empty string")
+})
+
+test_that("load_npe checks its path instead of leaving it to readRDS", {
+  # readRDS() on a path that is not there says "cannot open the connection" and
+  # names the file only in the warning beside it.
+  missing <- tempfile(fileext = ".rds")
+  expect_error(load_npe(missing), "which does not exist")
+  expect_error(load_npe(missing), regexp = basename(missing), fixed = FALSE)
+
+  expect_error(load_npe(c("a", "b")), "`path` must be a single file path")
+  expect_error(load_npe(NULL), "not NULL")
+  expect_error(load_npe(42), "not 42")
+
+  # The happy path is unchanged.
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path), add = TRUE)
+  save_npe(fit_toy(100), path)
+  expect_s3_class(load_npe(path), "nsbi_npe")
 })
 
 test_that("a fit whose network died points at save_npe(), not at a torch error", {

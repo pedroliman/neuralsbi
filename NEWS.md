@@ -3,6 +3,7 @@
 * **`plot_sbc()` now takes a parameter name as well as an index, and checks whichever it is given.** `plot_sbc(res, param = 99)` reached `ranks[, 99]` and reported `subscript out of bounds`, which names neither the argument nor how many parameters there are. The rank matrix carries `colnames` and every other plotting function labels by name, so `param = "sigma"` works too; a name that is not among the columns is refused with the ones that are.
 * **`pairplot()` checks `limits` against the number of parameters.** A list or a matrix with the wrong number of entries indexed past its end and gave the same `subscript out of bounds`. The message now says how many limit pairs it got and how many parameters `samples` has.
 * **`expected_coverage()` requires `levels` strictly between 0 and 1.** `levels = c(-1, 2)` used to be scored anyway: the central interval comes out empty or covers the whole line, so the row reads as coverage 0 or 1 and looks like a verdict on the fit. `plot_coverage()` inherits the check by passing `levels` through.
+* **`load_npe()` and `write_stan_model()` check the path they are given.** `load_npe()` handed anything straight to `readRDS()`, which reports "cannot open the connection" and names the file only in the warning beside it; it now says the file does not exist, and refuses a value that is not one path the way `save_npe()` always has. `write_stan_model()` checks `file` before it transpiles the network, so a wrong destination costs no code generation.
 
 # neuralsbi 0.4.14
 
