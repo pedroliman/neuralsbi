@@ -236,6 +236,62 @@ check_positive <- function(x, arg, allow_inf = FALSE) {
   as.double(x)
 }
 
+#' Validate a callback argument
+#'
+#' A function stored now and called later fails at the call site, which can be
+#' a training run and several frames away from the argument that was wrong.
+#' Checking at the constructor that it is a function, and that it can take the
+#' argument it will be given, keeps the complaint next to the mistake.
+#'
+#' @param f The user's value.
+#' @param arg Name of the argument.
+#' @param what Optional phrase naming the argument the function receives, e.g.
+#'   `"the number of draws"`. Shown in parentheses.
+#' @return `f`, invisibly.
+#' @keywords internal
+check_function <- function(f, arg, what = NULL) {
+  detail <- if (is.null(what)) "" else sprintf(" (%s)", what)
+  if (!is.function(f)) {
+    stop(sprintf("`%s` must be a function of one argument%s, not %s.",
+                 arg, detail, describe_value(f)),
+         call. = FALSE)
+  }
+  fmls <- tryCatch(formals(args(f)), error = function(e) NULL)
+  if (length(fmls) == 0L) {
+    stop(sprintf("`%s` must be a function of one argument%s, but it takes none.",
+                 arg, detail),
+         call. = FALSE)
+  }
+  invisible(f)
+}
+
+#' Validate a support bound
+#'
+#' [within_support()] compares `theta` against `lower`/`upper` with `sweep()`,
+#' which recycles a bound of the wrong length and warns instead of stopping.
+#' The support test that comes back is then wrong, and it decides which
+#' posterior draws are rejected as leakage and what `log_prob()` renormalizes
+#' by. A length-1 bound is recycled here, once, so everything downstream sees
+#' one bound per parameter.
+#'
+#' @param value The user's value, or `NULL` for an unbounded side.
+#' @param arg Name of the argument.
+#' @param d Number of parameters.
+#' @return `NULL`, or a double vector of length `d`.
+#' @keywords internal
+check_bound <- function(value, arg, d) {
+  if (is.null(value)) return(NULL)
+  ok <- is.numeric(value) && (length(value) == 1L || length(value) == d) &&
+    !anyNA(value)
+  if (!ok) {
+    stop(sprintf(paste0("`%s` must be numeric of length %d (one bound per ",
+                        "parameter) or length 1, not %s."),
+                 arg, d, describe_value(value)),
+         call. = FALSE)
+  }
+  rep_len(as.double(value), d)
+}
+
 #' Validate a prior argument, and optionally its dimension
 #'
 #' @param prior The user's value.

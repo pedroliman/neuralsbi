@@ -4,22 +4,61 @@
 \alias{prior_custom}
 \title{Build a prior from arbitrary sampling / density functions}
 \usage{
-prior_custom(sample_fn, log_prob_fn = NULL, dim, lower = NULL, upper = NULL)
+prior_custom(
+  sample_fn,
+  log_prob_fn = NULL,
+  dim,
+  lower = NULL,
+  upper = NULL,
+  param_names = NULL
+)
 }
 \arguments{
-\item{sample_fn}{Function \verb{function(n)} returning an \verb{n x dim} matrix.}
+\item{sample_fn}{Function \verb{function(n)} returning an \verb{n x dim} matrix, one
+row per draw.}
 
 \item{log_prob_fn}{Function \verb{function(theta)} returning a length-\code{n} vector of
-log densities. Optional; required only for methods/diagnostics that need it.}
+log densities, one per row of \code{theta}. Optional; required only for
+methods/diagnostics that need it.}
 
 \item{dim}{Number of parameters.}
 
-\item{lower, upper}{Optional support bounds (numeric vectors) enabling
-out-of-support rejection.}
+\item{lower, upper}{Optional support bounds enabling out-of-support
+rejection. Numeric of length \code{dim}, or length 1 to apply the same bound to
+every parameter.}
+
+\item{param_names}{Optional character vector of parameter names, one per
+parameter. These name the columns of every downstream parameter matrix,
+posterior sample and diagnostic plot, and they decide how the simulator is
+called: a simulator whose formals are exactly these names receives one
+scalar per formal, and any other simulator receives the parameter vector as
+its first argument. See \link{nsbi_simulator}.}
 }
 \value{
 An \code{nsbi_prior} object.
 }
 \description{
-Build a prior from arbitrary sampling / density functions
+This is the one prior a user writes by hand, so it is the one where a
+mistake is most likely, and the mistakes are quiet. A \code{log_prob_fn} that
+returns a single number instead of one per row is legal R that surfaces much
+later as an MCMC initialization failure; a \code{lower} of the wrong length is
+recycled by \code{sweep()} into a support test that rejects the wrong draws.
+Everything is therefore checked at construction, including one probe call of
+\code{sample_fn(2)} and, when it is given, \code{log_prob_fn()} on those two rows.
+}
+\section{Stan export}{
+
+A custom prior is arbitrary R code rather than a named distribution with
+parameters, so \code{\link[=stan_code]{stan_code()}} cannot restate it as a Stan sampling statement.
+Take \code{stan_code(fit, model = FALSE)} and write the model block yourself.
+}
+
+\examples{
+prior <- prior_custom(
+  sample_fn = function(n) cbind(rexp(n, 1), rexp(n, 2)),
+  log_prob_fn = function(theta) {
+    dexp(theta[, 1], 1, log = TRUE) + dexp(theta[, 2], 2, log = TRUE)
+  },
+  dim = 2, lower = 0, param_names = c("beta", "gamma")
+)
 }
