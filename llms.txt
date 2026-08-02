@@ -334,6 +334,7 @@ Condition on data, then sample, evaluate, and summarize.
   [`summary(`*`<nsbi_samples>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
   [`summary(`*`<nsbi_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
   [`summary(`*`<nsbi_npe>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
+  [`summary(`*`<nsbi_nle>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
   : Summaries and tidy accessors
 
 ## Diagnostics

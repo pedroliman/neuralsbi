@@ -1,5 +1,18 @@
 # Changelog
 
+## neuralsbi 0.4.16
+
+- **[`summary()`](https://rdrr.io/r/base/summary.html) now works on an
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) fit.**
+  Only `summary.nsbi_npe` was registered, so an NLE fit fell through to
+  `summary.default` and printed a Length/Class/Mode table of the raw fit
+  list, the `de` element holding the torch module included. Every other
+  user-facing verb was extended to NLE in 0.4.3. `summary.nsbi_nle`
+  calls the NPE method, which reads only fields both classes carry and
+  dispatches [`print()`](https://rdrr.io/r/base/print.html) on the
+  object, so the NLE fit reports its data dimension per observation the
+  way [`print()`](https://rdrr.io/r/base/print.html) already does.
+
 ## neuralsbi 0.4.15
 
 - **[`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md)
@@ -508,7 +521,7 @@
   batch sizes that crossing costs more than the arithmetic behind it:
   roughly 0.2 ms each and thirty per evaluation, against a few hundred
   microseconds of real work.
-  [`torch::jit_trace()`](https://rdrr.io/pkg/torch/man/jit_trace.html)
+  [`torch::jit_trace()`](https://torch.mlverse.org/docs/reference/jit_trace.html)
   records the same code and replays it in one crossing. It is a
   shortcut, not a path. Nothing is recorded until an evaluator has been
   called a few times, so a single
@@ -752,7 +765,7 @@
   the network fails with `external pointer is not valid`.
   [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   writes the weights with
-  [`torch::torch_save()`](https://rdrr.io/pkg/torch/man/torch_save.html)
+  [`torch::torch_save()`](https://torch.mlverse.org/docs/reference/torch_save.html)
   and everything else as ordinary R objects, into one `.rds`;
   [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   rebuilds the network from the recorded architecture and restores them.

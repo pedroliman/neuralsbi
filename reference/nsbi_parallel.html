@@ -55,7 +55,7 @@ plan:"><meta property="og:image" content="https://neuralsbi.pedrodelima.com/refe
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -148,7 +148,7 @@ instead of capturing it.</p>
 
 <p>Training runs in the calling process. Torch tensors and modules are external
 pointers that cannot be shipped to a worker, and libtorch already uses
-multiple threads internally (<code><a href="https://rdrr.io/pkg/torch/man/threads.html" class="external-link">torch::torch_set_num_threads()</a></code>). The same
+multiple threads internally (<code><a href="https://torch.mlverse.org/docs/reference/threads.html" class="external-link">torch::torch_set_num_threads()</a></code>). The same
 goes for the posterior-sampling loops in <code><a href="sbc.html">sbc()</a></code> and <code><a href="tarp.html">tarp()</a></code> – those call
 the trained network, not the simulator, and are reported with their own
 progress bar.</p>

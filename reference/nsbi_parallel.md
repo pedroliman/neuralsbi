@@ -53,7 +53,7 @@ that object once per batch, which is a reason to pass it through
 Training runs in the calling process. Torch tensors and modules are
 external pointers that cannot be shipped to a worker, and libtorch
 already uses multiple threads internally
-([`torch::torch_set_num_threads()`](https://rdrr.io/pkg/torch/man/threads.html)).
+([`torch::torch_set_num_threads()`](https://torch.mlverse.org/docs/reference/threads.html)).
 The same goes for the posterior-sampling loops in
 [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
 [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) – those

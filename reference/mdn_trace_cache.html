@@ -57,7 +57,7 @@ crossing rather than thirty."><meta property="og:image" content="https://neurals
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,7 +97,7 @@ crossing rather than thirty."><meta property="og:image" content="https://neurals
     <p>Every operation in <code><a href="mdn_iid_blocks.html">mdn_iid_blocks()</a></code> crosses from R into libtorch, and at
 MCMC batch sizes that crossing costs far more than the arithmetic behind it:
 about 0.2 ms each, thirty of them per evaluation, against a few hundred
-microseconds of actual work. <code><a href="https://rdrr.io/pkg/torch/man/jit_trace.html" class="external-link">torch::jit_trace()</a></code> records the same
+microseconds of actual work. <code><a href="https://torch.mlverse.org/docs/reference/jit_trace.html" class="external-link">torch::jit_trace()</a></code> records the same
 computation once and replays it inside libtorch, so an evaluation costs one
 crossing rather than thirty.</p>
     </div>

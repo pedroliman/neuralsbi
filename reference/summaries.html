@@ -51,7 +51,7 @@ data-frame workflows (dplyr, ggplot2, ...)."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,6 +105,9 @@ data-frame workflows (dplyr, ggplot2, ...).</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">object</span>, n <span class="op">=</span> <span class="fl">1000L</span>, x <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'nsbi_npe'</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'nsbi_nle'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -127,7 +130,7 @@ for <code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-li
 
 <dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
 <dd><p>An <code>nsbi_samples</code> matrix from <code><a href="sample.html">sample()</a></code>, an <code>nsbi_posterior</code>,
-or an <code>nsbi_npe</code> fit.</p></dd>
+or an <code>nsbi_npe</code> or <code>nsbi_nle</code> fit.</p></dd>
 
 
 <dt id="arg-probs">probs<a class="anchor" aria-label="anchor" href="#arg-probs"></a></dt>
@@ -142,7 +145,9 @@ or an <code>nsbi_npe</code> fit.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>For samples and posteriors, a data frame with one row per parameter
 (mean, sd, and quantiles). For fits, an invisible list of training
-metadata.</p>
+metadata. In that list <code>dim_x</code> counts the data dimension the estimator was
+trained on, which for an <code>nsbi_nle</code> fit is one observation rather than the
+whole data set.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
