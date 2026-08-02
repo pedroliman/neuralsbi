@@ -113,6 +113,22 @@ test_that("an NSF fit is refused with the alternatives named", {
   expect_error(stan_code(fit), "refit with \"maf\"")
 })
 
+test_that("stan_data() points a dead fit at save_npe(), as stan_code() does", {
+  # readRDS() on a torch-backed fit returns a module whose external pointer is
+  # nil. stan_code() has said so since it was written; stan_data() reached
+  # net_param() and failed on the pointer instead.
+  fit <- stan_lingauss_fit(400)
+  dead <- structure(list(), class = "nsbi_dead_stan_net")
+  registerS3method("$", "nsbi_dead_stan_net",
+                   function(x, name) stop("external pointer is not valid"))
+  fit$de$net <- dead
+
+  expect_error(stan_data(fit), "save_npe")
+  expect_error(stan_code(fit), "save_npe")
+  # A live fit is untouched by the check.
+  expect_type(stan_data(stan_lingauss_fit(400))$nsbi_w, "double")
+})
+
 test_that("stan_code() refuses an NPE fit", {
   fit <- npe(stan_prior(), stan_sim, n_simulations = 400,
              density_estimator = "linear_gaussian", seed = 5)

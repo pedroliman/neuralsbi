@@ -100,6 +100,11 @@ write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
 #' @export
 stan_data <- function(fit, x_obs = NULL) {
   stopifnot(inherits(fit, "nsbi_nle"))
+  # Both halves of the export read the weights, so both need a live network.
+  # Without this, a fit restored by readRDS() gets the "save with save_npe()"
+  # message from stan_code() and a dangling-pointer error from net_param()
+  # here, for the same fit and the same cause.
+  check_fit_alive(fit)
   packed <- stan_pack(fit)
   out <- list(nsbi_nw = length(packed$w), nsbi_w = packed$w)
   if (!is.null(x_obs)) {
