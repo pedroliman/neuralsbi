@@ -75,7 +75,7 @@ resolve_x <- function(post, x) {
     stop("No observation supplied. Pass `x = ...` or set `x_obs` in posterior().",
          call. = FALSE)
   }
-  x <- as_theta_matrix(x, post$fit$dim_x)
+  x <- as_theta_matrix(check_numeric(x, "x"), post$fit$dim_x)
   if (nrow(x) > 1L) {
     warning(sprintf(
       "Observation has %d rows; an NPE posterior conditions on one, so only row 1 is used. ",
@@ -166,7 +166,7 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
                                     n_normalization = 10000L, ...) {
   n_normalization <- check_count(n_normalization, "n_normalization")
   fit <- post$fit
-  theta <- as_theta_matrix(theta, fit$dim_theta)
+  theta <- as_theta_matrix(check_numeric(theta, "theta"), fit$dim_theta)
   xo_std <- standardized_obs(post, x)
   theta_z <- apply_standardizer(fit$std_theta, theta)
   lp <- de_log_prob(fit$de, theta_z, xo_std) + standardizer_log_jac(fit$std_theta)

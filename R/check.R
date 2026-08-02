@@ -41,6 +41,44 @@ n_things <- function(n, word) {
   sprintf("%d %s%s", n, word, if (n == 1L) "" else "s")
 }
 
+#' Require numeric data, naming any column that is not
+#'
+#' The type half of [check_matrix()], split out because the shape rules differ
+#' between entry points but this rule does not. On the pre-computed
+#' `(theta, x)` path a row is one simulation, so a bare vector is a column of
+#' values rather than [check_matrix()]'s single row; a character or factor
+#' column is the same mistake in either place. Left to
+#' `storage.mode(x) <- "double"` such a column becomes all `NA`, every row is
+#' then dropped as non-finite, and the error blames a simulator that was never
+#' called.
+#'
+#' @param value The user's value: a numeric vector, matrix or data frame.
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @return `value`, with a data frame converted to a matrix.
+#' @keywords internal
+check_numeric <- function(value, arg) {
+  bad <- function(fmt, ...) {
+    stop(sprintf("`%s` %s", arg, sprintf(fmt, ...)), call. = FALSE)
+  }
+  if (is.data.frame(value)) {
+    num <- vapply(value, function(col) is.numeric(col) || is.logical(col),
+                  logical(1))
+    if (!all(num)) {
+      bad(paste0("has non-numeric columns: %s. Every column must be numeric; ",
+                 "reduce them to numeric summaries first."),
+          paste(names(value)[!num], collapse = ", "))
+    }
+    return(as.matrix(value))
+  }
+  if (is.list(value)) {
+    bad("must be a numeric vector, matrix or data frame, not a list.")
+  }
+  if (!is.numeric(value) && !is.logical(value)) {
+    bad("must be numeric, but it is of type %s.", typeof(value))
+  }
+  value
+}
+
 #' Validate a matrix argument at a public boundary
 #'
 #' Unlike [as_theta_matrix()], which reshapes whatever it is given, this errors
@@ -71,21 +109,7 @@ check_matrix <- function(value, d = NULL, arg, what = NULL) {
       sprintf("must be a numeric vector or matrix with %s%s",
               n_things(d, "column"), detail))
   }
-  if (is.data.frame(value)) {
-    num <- vapply(value, function(col) is.numeric(col) || is.logical(col),
-                  logical(1))
-    if (!all(num)) {
-      bad("has non-numeric columns: %s. Every column must be numeric.",
-          paste(names(value)[!num], collapse = ", "))
-    }
-    value <- as.matrix(value)
-  }
-  if (is.list(value)) {
-    bad("must be a numeric vector, matrix or data frame, not a list.")
-  }
-  if (!is.numeric(value) && !is.logical(value)) {
-    bad("must be numeric, but it is of type %s.", typeof(value))
-  }
+  value <- check_numeric(value, arg)
   if (length(dim(value)) > 2L) {
     bad("must be a vector or a matrix, but it is a %d-dimensional array.",
         length(dim(value)))

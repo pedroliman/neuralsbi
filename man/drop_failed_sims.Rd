@@ -4,7 +4,12 @@
 \alias{drop_failed_sims}
 \title{Drop simulations whose parameters or output are not finite}
 \usage{
-drop_failed_sims(theta, x, what = "simulations")
+drop_failed_sims(
+  theta,
+  x,
+  what = "simulations",
+  x_hint = "Check the simulator on a single prior draw."
+)
 }
 \arguments{
 \item{theta}{Parameter matrix, or \code{NULL} when the caller has no parameters
@@ -13,6 +18,10 @@ to keep aligned.}
 \item{x}{Simulated data matrix.}
 
 \item{what}{Noun for the warning ("simulations", "SBC trials", ...).}
+
+\item{x_hint}{What to check when the non-finite values are in \code{x}. The
+default points at the simulator, which is only useful advice when one was
+run; the pre-computed \code{(theta, x)} path passes advice about \code{x} itself.}
 }
 \description{
 A row survives only when every value in both \code{theta} and \code{x} is finite, and
