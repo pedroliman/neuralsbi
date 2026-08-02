@@ -1,5 +1,57 @@
 # Changelog
 
+## neuralsbi 0.4.5
+
+- **The counts and training controls on the public surface are now
+  checked, before any simulation runs.** None of these numbers were
+  validated, so a bad one was reported by whichever base function
+  reached it first, usually after the simulation budget had already been
+  spent: `n_simulations = -5` failed inside
+  [`stats::runif()`](https://rdrr.io/r/stats/Uniform.html) as “invalid
+  arguments”, `validation_fraction = 1` inside
+  [`seq()`](https://rdrr.io/r/base/seq.html) as “wrong sign in ‘by’
+  argument”, `batch_size = 0` as “invalid ‘(to - from)/by’”, and
+  `n_restarts = 0` skipped the restart loop and came back as “Training
+  failed: no restart produced a finite validation loss”, which blames
+  training for an argument. `n_simulations = 0` reached
+  [`cbind()`](https://rdrr.io/r/base/cbind.html) and warned about
+  recycling; `n_simulations = 1` trained on one draw and said nothing.
+  The counts (`n_simulations`, `n`, `n_sbc`, `n_tarp`,
+  `n_posterior_samples`, `n_folds`, `n_rounds`, `n_init`,
+  `n_normalization`, `n_truncation_samples`, `max_sampling_batches`,
+  `max_proposal_batches`), the training controls (`max_epochs`,
+  `batch_size`, `lr`, `validation_fraction`, `patience`, `n_restarts`,
+  `clip_grad_norm`) and the architecture arguments (`n_components`,
+  `n_transforms`, `hidden`, `n_bins`, `tail_bound`) are now checked at
+  the top of the entry point that takes them, in
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md),
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) and
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md). Each
+  message names the argument and the value it rejected.
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) resolve
+  `density_estimator` there too, so a misspelled estimator is an error
+  before the simulator runs rather than after.
+- `validation_fraction` is also checked against the number of
+  simulations, inside
+  [`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md),
+  which is the first point where that number is known. A fraction that
+  leaves no training rows now says how many rows the split would need
+  instead of failing in [`seq()`](https://rdrr.io/r/base/seq.html).
+- Internally,
+  [`check_counts()`](https://neuralsbi.pedrodelima.com/reference/check_counts.md)
+  validates a vector of counts (`hidden`), and
+  [`check_positive()`](https://neuralsbi.pedrodelima.com/reference/check_positive.md)
+  gains `allow_inf` for `clip_grad_norm`, where `Inf` is the documented
+  way to disable clipping.
+
 ## neuralsbi 0.4.4
 
 - Internally, argument checking moves to a shared set of validators in

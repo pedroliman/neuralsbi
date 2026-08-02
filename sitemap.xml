@@ -21,7 +21,9 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/builtin_bar.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/c2st.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_architecture.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_count.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_counts.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_finite.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_fit_alive.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_inference_fit.html</loc></url>
@@ -30,6 +32,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_positive.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_prior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_prob.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_train_controls.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_x_obs.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/cross_iid.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_drop_net.html</loc></url>

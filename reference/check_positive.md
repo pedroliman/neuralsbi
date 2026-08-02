@@ -5,7 +5,7 @@ Validate a strictly positive scalar
 ## Usage
 
 ``` r
-check_positive(x, arg)
+check_positive(x, arg, allow_inf = FALSE)
 ```
 
 ## Arguments
@@ -17,6 +17,11 @@ check_positive(x, arg)
 - arg:
 
   Name of the argument.
+
+- allow_inf:
+
+  Accept `Inf`, for a bound that is disabled by setting it to infinity
+  (`clip_grad_norm`).
 
 ## Value
 
