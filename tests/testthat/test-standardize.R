@@ -1,3 +1,61 @@
+# Every estimator trains in standardized space, so the round trip is the one
+# property the whole design rests on: whatever goes through apply_standardizer()
+# has to come back through invert_standardizer() unchanged.
+
+test_that("a round trip through the standardizer returns the input", {
+  set.seed(101)
+  x <- cbind(big = stats::rnorm(50, mean = 500, sd = 40),
+             small = stats::rnorm(50, mean = -0.02, sd = 0.005),
+             plain = stats::runif(50))
+  std <- fit_standardizer(x)
+  z <- apply_standardizer(std, x)
+
+  # Absolute error, not relative: the centered values pass through zero, where
+  # a relative comparison says nothing useful.
+  expect_lt(max(abs(invert_standardizer(std, z) - x)), 1e-10)
+  expect_lt(max(abs(colMeans(z))), 1e-10)
+  expect_lt(max(abs(apply(z, 2, stats::sd) - 1)), 1e-10)
+})
+
+test_that("invert_standardizer() holds for a z the standardizer never produced", {
+  # Draws arrive from the estimator in standardized space rather than from
+  # apply_standardizer(), so the inverse has to hold for an arbitrary z.
+  std <- fit_standardizer(cbind(a = c(1, 3, 5, 7), b = c(-2, 0, 2, 4)))
+  z <- cbind(c(-1.5, 0, 2.25), c(0.5, -3, 1))
+
+  expect_lt(max(abs(apply_standardizer(std, invert_standardizer(std, z)) - z)),
+            1e-10)
+})
+
+test_that("standardizer_log_jac() is minus the summed log scale", {
+  x <- cbind(a = c(1, 2, 3, 4, 10), b = c(0, 5, -5, 2, 1))
+  std <- fit_standardizer(x)
+
+  expect_equal(standardizer_log_jac(std), -sum(log(apply(x, 2, stats::sd))))
+  # A standardizer that scales nothing contributes nothing to the density.
+  expect_equal(standardizer_log_jac(fit_standardizer(matrix(0, 1, 3))), 0)
+})
+
+test_that("the no-spread guard leaves scale at 1 in both branches", {
+  # sd() is 0 for a constant column and NA for a single row. Dividing by either
+  # gives Inf or NaN, so both fall back to scale 1.
+  flat <- fit_standardizer(cbind(a = stats::rnorm(20), b = rep(3, 20)))
+  expect_equal(unname(flat$scale[2]), 1)
+  expect_true(all(is.finite(flat$scale)))
+
+  one_row <- fit_standardizer(matrix(c(4, -7), nrow = 1))
+  expect_equal(unname(one_row$scale), c(1, 1))
+  expect_equal(unname(one_row$center), c(4, -7))
+  expect_equal(unname(apply_standardizer(one_row, matrix(c(4, -7), nrow = 1))),
+               matrix(0, 1, 2))
+})
+
+test_that("eps decides how little spread counts as none", {
+  tiny <- cbind(a = rep(c(0, 1e-12), 10))
+  expect_equal(unname(fit_standardizer(tiny)$scale), 1)
+  expect_lt(unname(fit_standardizer(tiny, eps = 1e-20)$scale), 1e-10)
+})
+
 # A constant column is left at scale 1, which is the only safe thing to do and
 # also the reason it goes unnoticed: nothing downstream fails.
 
