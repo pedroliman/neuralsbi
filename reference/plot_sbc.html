@@ -49,7 +49,7 @@ narrow (overconfident); an inverted-U means it is too wide."><meta property="og:
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,10 +104,11 @@ narrow (overconfident); an inverted-U means it is too wide.</p>
 
 
 <dt id="arg-param">param<a class="anchor" aria-label="anchor" href="#arg-param"></a></dt>
-<dd><p>Which parameter index to plot (default 1). The title uses
-that parameter's name (from a named prior, see <code><a href="prior_uniform.html">prior_uniform()</a></code>/
-<code><a href="prior_normal.html">prior_normal()</a></code>) when <code><a href="sbc.html">sbc()</a></code> was run against a fit that has one,
-rendered as a plotmath symbol if the name parses as R syntax.</p></dd>
+<dd><p>Which parameter to plot: an index (default 1), or a parameter
+name when <code><a href="sbc.html">sbc()</a></code> was run against a fit with named parameters (see
+<code><a href="prior_uniform.html">prior_uniform()</a></code>/<code><a href="prior_normal.html">prior_normal()</a></code>). The title uses that parameter's name
+when there is one, rendered as a plotmath symbol if the name parses as R
+syntax.</p></dd>
 
 
 <dt id="arg-bins">bins<a class="anchor" aria-label="anchor" href="#arg-bins"></a></dt>

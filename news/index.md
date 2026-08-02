@@ -1,5 +1,59 @@
 # Changelog
 
+## neuralsbi 0.4.15
+
+- **[`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md)
+  now takes a parameter name as well as an index, and checks whichever
+  it is given.** `plot_sbc(res, param = 99)` reached `ranks[, 99]` and
+  reported `subscript out of bounds`, which names neither the argument
+  nor how many parameters there are. The rank matrix carries `colnames`
+  and every other plotting function labels by name, so `param = "sigma"`
+  works too; a name that is not among the columns is refused with the
+  ones that are.
+- **[`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md)
+  checks `limits` against the number of parameters.** A list or a matrix
+  with the wrong number of entries indexed past its end and gave the
+  same `subscript out of bounds`. The message now says how many limit
+  pairs it got and how many parameters `samples` has.
+- **[`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  requires `levels` strictly between 0 and 1.** `levels = c(-1, 2)` used
+  to be scored anyway: the central interval comes out empty or covers
+  the whole line, so the row reads as coverage 0 or 1 and looks like a
+  verdict on the fit.
+  [`plot_coverage()`](https://neuralsbi.pedrodelima.com/reference/plot_coverage.md)
+  inherits the check by passing `levels` through.
+- **[`print()`](https://rdrr.io/r/base/print.html) on an NLE posterior
+  reports unusable MCMC diagnostics as unavailable.** `split_rhat()` and
+  `bulk_ess()` return `NA` for a run with too few iterations, one chain,
+  or a coordinate that never moved, and `max(na.rm = TRUE)` over
+  all-`NA` is `-Inf` with a warning, so the line read
+  `max Rhat -Inf, min bulk ESS Inf`. A partially scored run reports the
+  parameters that did get a number and counts the ones that did not.
+- **[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  checks that the fit still has a live network**, which
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  has done since it was written. A fit restored with plain
+  [`readRDS()`](https://rdrr.io/r/base/readRDS.html) used to get the
+  “save it with
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)”
+  message from one and a dangling external pointer from the other, for
+  the same fit and the same cause.
+- **[`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  and
+  [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  check the path they are given.**
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  handed anything straight to
+  [`readRDS()`](https://rdrr.io/r/base/readRDS.html), which reports
+  “cannot open the connection” and names the file only in the warning
+  beside it; it now says the file does not exist, and refuses a value
+  that is not one path the way
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  always has.
+  [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  checks `file` before it transpiles the network, so a wrong destination
+  costs no code generation.
+
 ## neuralsbi 0.4.14
 
 - **[`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)
@@ -454,7 +508,7 @@
   batch sizes that crossing costs more than the arithmetic behind it:
   roughly 0.2 ms each and thirty per evaluation, against a few hundred
   microseconds of real work.
-  [`torch::jit_trace()`](https://torch.mlverse.org/docs/reference/jit_trace.html)
+  [`torch::jit_trace()`](https://rdrr.io/pkg/torch/man/jit_trace.html)
   records the same code and replays it in one crossing. It is a
   shortcut, not a path. Nothing is recorded until an evaluator has been
   called a few times, so a single
@@ -698,7 +752,7 @@
   the network fails with `external pointer is not valid`.
   [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   writes the weights with
-  [`torch::torch_save()`](https://torch.mlverse.org/docs/reference/torch_save.html)
+  [`torch::torch_save()`](https://rdrr.io/pkg/torch/man/torch_save.html)
   and everything else as ordinary R objects, into one `.rds`;
   [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   rebuilds the network from the recorded architecture and restores them.

@@ -20,7 +20,10 @@ plot_coverage(sbc_result, levels = seq(0.05, 0.95, by = 0.05))
 
 - levels:
 
-  Nominal credibility levels to evaluate.
+  Nominal credibility levels to evaluate, each strictly between 0 and 1.
+  Passed to
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md),
+  which checks them.
 
 ## Value
 

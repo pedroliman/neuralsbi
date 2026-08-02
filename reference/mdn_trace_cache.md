@@ -6,7 +6,7 @@ crosses from R into libtorch, and at MCMC batch sizes that crossing
 costs far more than the arithmetic behind it: about 0.2 ms each, thirty
 of them per evaluation, against a few hundred microseconds of actual
 work.
-[`torch::jit_trace()`](https://torch.mlverse.org/docs/reference/jit_trace.html)
+[`torch::jit_trace()`](https://rdrr.io/pkg/torch/man/jit_trace.html)
 records the same computation once and replays it inside libtorch, so an
 evaluation costs one crossing rather than thirty.
 

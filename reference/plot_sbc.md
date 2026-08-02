@@ -18,13 +18,12 @@ plot_sbc(sbc_result, param = 1L, bins = 20L)
 
 - param:
 
-  Which parameter index to plot (default 1). The title uses that
-  parameter's name (from a named prior, see
-  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)/
-  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md))
+  Which parameter to plot: an index (default 1), or a parameter name
   when [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) was
-  run against a fit that has one, rendered as a plotmath symbol if the
-  name parses as R syntax.
+  run against a fit with named parameters (see
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)/[`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)).
+  The title uses that parameter's name when there is one, rendered as a
+  plotmath symbol if the name parses as R syntax.
 
 - bins:
 

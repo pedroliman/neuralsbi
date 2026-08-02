@@ -57,7 +57,7 @@ round trip that works.'><meta property="og:image" content="https://neuralsbi.ped
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -123,7 +123,8 @@ round trip that works.</p>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
-<dd><p>File to write to (or read from). The convention is <code>.rds</code>.</p></dd>
+<dd><p>File to write to (or read from). The convention is <code>.rds</code>.
+<code>load_npe()</code> says so when there is no such file.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -133,7 +134,7 @@ round trip that works.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>save_npe()</code> writes one <code>.rds</code> file holding the network's weights (via
-<code><a href="https://torch.mlverse.org/docs/reference/torch_save.html" class="external-link">torch::torch_save()</a></code> on its <code>state_dict</code>) alongside everything else the fit
+<code><a href="https://rdrr.io/pkg/torch/man/torch_save.html" class="external-link">torch::torch_save()</a></code> on its <code>state_dict</code>) alongside everything else the fit
 carries as ordinary R objects: the prior, the standardization centers and
 scales, parameter and outcome names, the simulation count, and the training
 history. <code>load_npe()</code> rebuilds the network from the recorded architecture

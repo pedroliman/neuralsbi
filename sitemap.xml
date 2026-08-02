@@ -29,13 +29,16 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_finite.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_fit_alive.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_function.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_index.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_inference_fit.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_matrix.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_mcmc_count.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_numeric.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_path.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_positive.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_prior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_prob.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_probs.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_train_controls.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_x_obs.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/cross_iid.html</loc></url>
@@ -59,6 +62,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_mdn.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_nsf.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_standardizer.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/format_mcmc_diagnostics.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/hint_parallel.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/index.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/likelihood_fn.html</loc></url>
