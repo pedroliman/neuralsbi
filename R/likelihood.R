@@ -44,9 +44,9 @@ log_lik.nsbi_nle <- function(fit, theta, x, sum_iid = TRUE,
   check_fit_alive(fit)
   # Both arguments are matrices with a required width, so a bare "expected 2
   # columns" would leave the user guessing which one is wrong.
-  theta <- as_lik_matrix(theta, fit$dim_theta, "theta", "one parameter per column")
-  x <- as_lik_matrix(x, fit$dim_x, "x",
-                     "one row per independent observation")
+  theta <- check_matrix(theta, fit$dim_theta, "theta",
+                        "one parameter per column")
+  x <- check_matrix(x, fit$dim_x, "x", "one row per independent observation")
 
   theta_z <- apply_standardizer(fit$std_theta, theta)
   x_z <- apply_standardizer(fit$std_x, x)
@@ -375,18 +375,6 @@ mdn_chunk_lp <- function(mix, xs, p) {
 mdn_chunk_size <- function(n_theta, max_batch, per_pair) {
   max(1L, min(floor(max_batch / max(n_theta, 1L)),
               floor(4e6 / max(n_theta * per_pair, 1L))))
-}
-
-#' Coerce one of `log_lik()`'s two matrix arguments, naming it if it is wrong
-#' @keywords internal
-as_lik_matrix <- function(value, d, arg, what) {
-  tryCatch(
-    as_theta_matrix(value, d),
-    error = function(e) {
-      stop(sprintf("`%s` must have %d columns (%s).", arg, d, what),
-           call. = FALSE)
-    }
-  )
 }
 
 #' A surrogate likelihood as a plain R function

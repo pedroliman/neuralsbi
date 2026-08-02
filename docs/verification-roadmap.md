@@ -260,6 +260,20 @@ absent, no network clock, badge 403 through the proxy). Version dropped its
 fields now derive from `Authors@R`. The prior pass added MLP embedding networks
 (`embedding_mlp()` + `embedding_net`), trained jointly inside MDN/MAF/NSF.*
 
+### shared validation layer (0.4.4)
+
+`R/check.R` holds the argument checks that public entry points repeat:
+`check_matrix()`, `check_count()`, `check_prob()`, `check_positive()`,
+`check_prior()` and `check_finite()`. They are internal and their messages
+name the argument, say what was wrong, and point at a help topic where there
+is one, following `as_sim_draw()` in `R/simulator.R`. Only `log_lik()` uses
+them so far; the remaining entry points adopt them issue by issue, so when you
+add a check to a function, call one of these rather than write a new `stop()`.
+`check_matrix()` is the strict counterpart of `as_theta_matrix()`: at a public
+boundary a bare vector is one row or an error, while `as_theta_matrix()` keeps
+reshaping for internal callers such as `bind_sim_draws()` and the
+standardizers.
+
 ### sbi default parity (0.3.0)
 
 `npe()` and the `fit_*` estimators now default to the same hyperparameters as

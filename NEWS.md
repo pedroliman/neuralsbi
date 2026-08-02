@@ -1,3 +1,8 @@
+# neuralsbi 0.4.4
+
+* Internally, argument checking moves to a shared set of validators in `R/check.R`: `check_matrix()`, `check_count()`, `check_prob()`, `check_positive()`, `check_prior()` and `check_finite()`. Each names the argument it rejects and says what was actually wrong, following the voice of the simulator-output checks. They are internal, and the entry points adopt them one at a time.
+* **Behaviour change: `log_lik()` now rejects a wrong-length `theta` or `x` instead of reshaping it.** A vector shorter or longer than the fit's width was recycled into a matrix of the right number of columns, so `log_lik(fit, c(0.1, 0.2, 0.3), x)` on a two-parameter fit returned two log-densities computed from recycled values, and a length-4 vector became two parameter sets with no message at all. At a public boundary a bare vector now means a single row, or it is an error. A matrix whose row count matches the expected width is told to transpose. `as_theta_matrix()` keeps its permissive reshaping for internal callers that rely on it.
+
 # neuralsbi 0.4.3
 
 * **New: Neural Likelihood Estimation, via `nle()`.** Where `npe()` learns the posterior directly, `nle()` learns a surrogate likelihood \eqn{q(x \mid \theta)}. The reason to want that is repeated observations. An NPE fit is trained for one fixed data dimension, so conditioning on \eqn{n} independent trials means retraining for every \eqn{n} or compressing to summary statistics; NLE learns the density of a single trial, so the log-likelihood of \eqn{n} of them is a sum and \eqn{n} is free at inference time. The cost is that the posterior is no longer a forward pass. For one fixed observation with high-dimensional data, `npe()` is still the better choice, and `?nle` says so.
