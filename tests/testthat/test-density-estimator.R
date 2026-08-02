@@ -22,6 +22,63 @@ test_that("fit_linear_gaussian() recovers the analytic conditional", {
                tolerance = 0.05)
 })
 
+test_that("fit_linear_gaussian() recovers the coefficients of a noiseless model", {
+  # With theta an exact linear function of x there is one right answer for B,
+  # and the fit has to land on it rather than near it.
+  set.seed(20)
+  x <- matrix(stats::rnorm(600), ncol = 3)
+  B_true <- rbind(c(0.5, -1), c(1, 0), c(-0.25, 2), c(3, 0.1))
+  theta <- cbind(1, x) %*% B_true
+
+  de <- fit_linear_gaussian(theta, x, ridge = 1e-10)
+
+  expect_lt(max(abs(unname(de$B) - B_true)), 1e-6)
+  # Nothing is left over, so the ridge is all that keeps Sigma positive definite.
+  expect_equal(diag(de$Sigma), rep(1e-10, 2), tolerance = 1e-4)
+  expect_true(all(is.finite(de$chol)))
+})
+
+test_that("the ridge keeps a rank-deficient design solvable", {
+  set.seed(21)
+  x <- matrix(stats::rnorm(300), ncol = 3)
+  x[, 3] <- x[, 1]                     # exactly collinear, so X'X is singular
+  theta <- x[, 1, drop = FALSE] + stats::rnorm(100, sd = 0.1)
+
+  de <- fit_linear_gaussian(theta, x)
+  expect_s3_class(de, "nsbi_de_lingauss")
+  expect_true(all(is.finite(de$B)))
+  # The default ridge is what saves it: without one, solve() gives up.
+  expect_error(fit_linear_gaussian(theta, x, ridge = 0), "singular")
+})
+
+test_that("the residual covariance divides by the residual degrees of freedom", {
+  set.seed(22)
+  n <- 30
+  x <- matrix(stats::rnorm(n * 2), ncol = 2)
+  theta <- cbind(x[, 1] - 0.5 * x[, 2] + stats::rnorm(n, sd = 0.4))
+  ridge <- 1e-6
+
+  de <- fit_linear_gaussian(theta, x, ridge = ridge)
+
+  X <- cbind(1, x)
+  resid <- theta - X %*% de$B
+  expect_equal(de$Sigma, crossprod(resid) / (n - ncol(X)) + ridge)
+  # n is the maximum-likelihood denominator, and at n = 30 the two differ.
+  expect_false(isTRUE(all.equal(de$Sigma, crossprod(resid) / n + ridge)))
+})
+
+test_that("the denominator floors at 1 when the design is wider than it is tall", {
+  # n - ncol(X) is negative here. A negative denominator would flip the sign of
+  # Sigma and take chol() down with it.
+  set.seed(23)
+  de <- fit_linear_gaussian(matrix(stats::rnorm(4), ncol = 2),
+                            matrix(stats::rnorm(8), ncol = 4), ridge = 0.1)
+
+  expect_true(all(is.finite(de$Sigma)))
+  expect_true(all(diag(de$Sigma) > 0))
+  expect_true(all(is.finite(de$chol)))
+})
+
 test_that("fit_linear_gaussian() records both dimensions", {
   de <- fit_linear_gaussian(matrix(rnorm(300), ncol = 3),
                             matrix(rnorm(500), ncol = 5))
@@ -56,6 +113,36 @@ test_that("a bare x of length dim_x is one observation, not a column", {
 
   expect_length(de_log_prob(de, c(0, 0), c(0.1, 0.2, 0.3)), 1L)
   expect_equal(dim(de_sample(de, c(0.1, 0.2, 0.3), 4)), c(4L, 2L))
+})
+
+test_that("de_log_prob() is dmvnorm_chol() around the fitted conditional mean", {
+  set.seed(24)
+  theta <- matrix(stats::rnorm(600), ncol = 2)
+  x <- theta + matrix(stats::rnorm(600, sd = 0.5), ncol = 2)
+  de <- fit_linear_gaussian(theta, x)
+
+  x_obs <- matrix(c(0.7, -1.1), nrow = 1)
+  mu <- as.numeric(lingauss_mean(de, x_obs))
+  query <- rbind(mu, mu + c(0.3, -0.2), mu - c(1, 1))
+
+  lp <- de_log_prob(de, query, x_obs)
+  expect_equal(lp, dmvnorm_chol(query, mu, de$chol, log = TRUE))
+  # The conditional mean is the mode, so the first row scores highest.
+  expect_equal(which.max(lp), 1L)
+})
+
+test_that("a single x is broadcast across many theta rows", {
+  set.seed(25)
+  theta <- matrix(stats::rnorm(400), ncol = 2)
+  x <- theta + matrix(stats::rnorm(400, sd = 0.5), ncol = 2)
+  de <- fit_linear_gaussian(theta, x)
+
+  query <- matrix(stats::rnorm(20), ncol = 2)
+  x_obs <- matrix(c(0.4, -0.9), nrow = 1)
+  repeated <- matrix(c(0.4, -0.9), nrow = nrow(query), ncol = 2, byrow = TRUE)
+
+  expect_length(de_log_prob(de, query, x_obs), 10L)
+  expect_equal(de_log_prob(de, query, x_obs), de_log_prob(de, query, repeated))
 })
 
 test_that("de_sample.nsbi_de_lingauss() draws from the fitted conditional", {
