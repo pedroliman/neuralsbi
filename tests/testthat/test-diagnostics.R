@@ -163,3 +163,49 @@ test_that("c2st() refuses more folds than it has draws to fill them", {
   plenty <- matrix(stats::rnorm(400), ncol = 2)
   expect_false(is.nan(c2st(plenty, few, n_folds = 3, seed = 1)$accuracy))
 })
+
+test_that("sbc() and tarp() refuse a prior that is not the width of the fit", {
+  # `prior` exists to be overridden, so the width it comes with has to be
+  # checked. A narrower one used to reach sweep() in sbc() and the z-scoring in
+  # tarp(), where it recycles against the fit's width and the diagnostic scores
+  # a comparison nobody asked for.
+  set.seed(13)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 400,
+             density_estimator = "linear_gaussian")
+
+  wrong <- prior_normal(mean = c(0, 0, 0), sd = 1)
+  expect_error(sbc(fit, simulator, prior = wrong, n_sbc = 2L),
+               regexp = "`prior` covers 3 parameters but 2 are expected here")
+  expect_error(tarp(fit, simulator, prior = wrong, n_tarp = 2L),
+               regexp = "`prior` covers 3 parameters but 2 are expected here")
+
+  expect_error(sbc(fit, simulator, prior = prior_normal(mean = 0, sd = 1),
+                   n_sbc = 2L),
+               regexp = "covers 1 parameter but 2 are expected")
+  expect_error(sbc(fit, simulator, prior = list(dim = 2L), n_sbc = 2L),
+               regexp = "`prior` must be an nsbi_prior object, not list")
+
+  # The check runs before the simulator does, since that is the expensive part.
+  calls <- 0L
+  counting <- function(theta) {
+    calls <<- calls + 1L
+    theta + stats::rnorm(length(theta), sd = 0.5)
+  }
+  expect_error(sbc(fit, counting, prior = wrong, n_sbc = 50L))
+  expect_error(tarp(fit, counting, prior = wrong, n_tarp = 50L))
+  expect_identical(calls, 0L)
+
+  # A prior supplied explicitly at the right width still works, so the check
+  # does not simply reject every override.
+  narrower <- prior_normal(mean = c(0, 0), sd = 0.5)
+  # 100 trials over the 20 rank bins keeps chisq.test() off its
+  # small-expected-count warning; the point here is the shape, not the p-value.
+  res <- sbc(fit, simulator, prior = narrower, n_sbc = 100L,
+             n_posterior_samples = 50L, seed = 2)
+  expect_equal(dim(res$ranks), c(100L, 2L))
+  tp <- tarp(fit, simulator, prior = narrower, n_tarp = 20L,
+             n_posterior_samples = 50L, seed = 2)
+  expect_s3_class(tp, "nsbi_tarp")
+})

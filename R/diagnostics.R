@@ -63,7 +63,12 @@ diagnostic_draws <- function(post, n, trial) {
 #'   with a small `n_sbc` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
-#' @param prior The prior used for inference (defaults to `fit$prior`).
+#' @param prior The prior to draw the true parameters from (defaults to
+#'   `fit$prior`). SBC is a test of the posterior against the prior it was
+#'   trained on, so the default is the only choice that answers "is this fit
+#'   calibrated". Overriding it changes the question to how the fit behaves on
+#'   parameters drawn from somewhere else, which is a reasonable local check
+#'   but is no longer SBC. It must cover the same parameters as the fit.
 #' @param n_sbc Number of SBC trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial (rank resolution).
 #' @param sim_args Named list of extra arguments passed to every simulator
@@ -81,6 +86,12 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
                 n_posterior_samples = 1000L, sim_args = list(),
                 seed = NULL, ...) {
   check_inference_fit(fit)
+  # The ranks are sized from the fit but the truths come from `prior`, so a
+  # prior of the wrong width makes sweep() recycle one against the other and
+  # the ranks come out of a comparison nobody asked for. Check it here, above
+  # the simulation loop: n_sbc simulator calls is a long way to travel before
+  # failing on an argument.
+  check_prior(prior, dim = fit$dim_theta)
   n_sbc <- check_count(n_sbc, "n_sbc")
   n_posterior_samples <- check_count(n_posterior_samples,
                                      "n_posterior_samples")
@@ -194,7 +205,12 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #'   with a small `n_tarp` and raise it once the cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
-#' @param prior The prior used for inference (defaults to `fit$prior`).
+#' @param prior The prior to draw the true parameters from, and the reference
+#'   points when `references = "prior"` (defaults to `fit$prior`). As in
+#'   [sbc()], the coverage claim is about the prior the fit was trained on, so
+#'   the default is what tests this fit; another prior tests how the fit does on
+#'   parameters it was not calibrated against. It must cover the same
+#'   parameters as the fit.
 #' @param ... Passed to [posterior()], which is how the MCMC controls
 #'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
 #' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
@@ -216,6 +232,10 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  references = c("uniform", "prior"), sim_args = list(),
                  seed = NULL, ...) {
   check_inference_fit(fit)
+  # Same reason as sbc(): the truths come from `prior` and everything they are
+  # measured against is sized from the fit, here the z-scoring and the
+  # distances. Above the simulation loop, so a wrong prior costs nothing.
+  check_prior(prior, dim = fit$dim_theta)
   references <- match.arg(references)
   n_tarp <- check_count(n_tarp, "n_tarp")
   n_posterior_samples <- check_count(n_posterior_samples,

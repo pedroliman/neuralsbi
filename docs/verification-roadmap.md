@@ -303,6 +303,18 @@ weaker answer but no answer: the draws come back all-`NaN` on the NPE side and
 every MCMC start is non-finite on the NLE side. `resolve_x_iid()` takes the
 caller's argument name so the message says `obs` or `x` to match the call.
 
+### diagnostic priors (0.4.13)
+
+`sbc()` and `tarp()` check `prior` against `fit$dim_theta` before they simulate
+anything. The override is worth keeping: a sequential fit's prior is the last
+truncated proposal rather than the one the user thinks in, and SBC against a
+narrower prior is a fair local check. Only the width was unguarded, and it fed
+`sweep()` in `sbc()` and the z-scoring in `tarp()`, both of which recycle
+rather than complain. The check sits above the simulation loop in both, because
+these functions spend `n_sbc` simulator calls before they touch the prior
+again. Issue #61 folds the shared preamble of the two into one helper; the
+check moves there with it.
+
 ### c2st inputs (0.4.12)
 
 `c2st()` checks that `x` and `y` are the same width before `rbind()` does, and
