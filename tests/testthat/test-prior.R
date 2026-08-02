@@ -32,6 +32,32 @@ test_that("unbounded prior treats everything as in-support", {
   expect_true(all(within_support(prior, matrix(rnorm(20), ncol = 2))))
 })
 
+test_that("prior_uniform rejects bounds that do not describe an interval", {
+  expect_error(prior_uniform(low = 2, high = 1),
+               "Every `high` must be strictly greater than the matching `low`")
+  expect_error(prior_uniform(low = c(0, 0), high = c(1, 0)),
+               "Every `high` must be strictly greater")
+  # An interval of zero width divides by zero in the log-density constant.
+  expect_error(prior_uniform(low = 0, high = 0),
+               "Every `high` must be strictly greater")
+  expect_error(prior_uniform(low = c(0, 0), high = 1),
+               "`low` and `high` must have the same length")
+  # The same numbers the other way round are a valid prior.
+  expect_s3_class(prior_uniform(low = 1, high = 2), "nsbi_prior")
+})
+
+test_that("prior_normal rejects an sd that is not positive or not one per mean", {
+  expect_error(prior_normal(mean = 0, sd = -1), "`sd` must be positive")
+  expect_error(prior_normal(mean = 0, sd = 0), "`sd` must be positive")
+  expect_error(prior_normal(mean = c(0, 0), sd = c(1, -2)),
+               "`sd` must be positive")
+  expect_error(prior_normal(mean = c(0, 0, 0), sd = c(1, 2)),
+               "`sd` must be length 1 or the same length as `mean`")
+  # A length-1 sd is recycled across every parameter, which is the case the
+  # length check has to let through.
+  expect_equal(prior_normal(mean = c(0, 0, 0), sd = 2)$params$sd, rep(2, 3))
+})
+
 test_that("prior_custom builds a working prior and keeps the names", {
   prior <- prior_custom(
     sample_fn = function(n) cbind(stats::runif(n), stats::runif(n, 0, 2)),
