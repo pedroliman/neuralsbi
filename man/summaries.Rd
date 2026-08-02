@@ -6,6 +6,7 @@
 \alias{summary.nsbi_samples}
 \alias{summary.nsbi_posterior}
 \alias{summary.nsbi_npe}
+\alias{summary.nsbi_nle}
 \title{Summaries and tidy accessors}
 \usage{
 \method{as.data.frame}{nsbi_samples}(x, row.names = NULL, optional = FALSE, ...)
@@ -15,6 +16,8 @@
 \method{summary}{nsbi_posterior}(object, n = 1000L, x = NULL, ...)
 
 \method{summary}{nsbi_npe}(object, ...)
+
+\method{summary}{nsbi_nle}(object, ...)
 }
 \arguments{
 \item{x}{Observation to condition on (defaults to the posterior's \code{x_obs});
@@ -25,7 +28,7 @@ for \code{as.data.frame()}, the samples object.}
 \item{...}{Additional arguments passed to methods.}
 
 \item{object}{An \code{nsbi_samples} matrix from \code{\link[=sample]{sample()}}, an \code{nsbi_posterior},
-or an \code{nsbi_npe} fit.}
+or an \code{nsbi_npe} or \code{nsbi_nle} fit.}
 
 \item{probs}{Quantiles to report.}
 
@@ -34,7 +37,9 @@ or an \code{nsbi_npe} fit.}
 \value{
 For samples and posteriors, a data frame with one row per parameter
 (mean, sd, and quantiles). For fits, an invisible list of training
-metadata.
+metadata. In that list \code{dim_x} counts the data dimension the estimator was
+trained on, which for an \code{nsbi_nle} fit is one observation rather than the
+whole data set.
 }
 \description{
 \code{summary()} methods for fits, posteriors, and samples, plus

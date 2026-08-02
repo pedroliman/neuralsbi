@@ -1,3 +1,7 @@
+# neuralsbi 0.4.16
+
+* **`summary()` now works on an `nle()` fit.** Only `summary.nsbi_npe` was registered, so an NLE fit fell through to `summary.default` and printed a Length/Class/Mode table of the raw fit list, the `de` element holding the torch module included. Every other user-facing verb was extended to NLE in 0.4.3. `summary.nsbi_nle` calls the NPE method, which reads only fields both classes carry and dispatches `print()` on the object, so the NLE fit reports its data dimension per observation the way `print()` already does.
+
 # neuralsbi 0.4.15
 
 * **`plot_sbc()` now takes a parameter name as well as an index, and checks whichever it is given.** `plot_sbc(res, param = 99)` reached `ranks[, 99]` and reported `subscript out of bounds`, which names neither the argument nor how many parameters there are. The rank matrix carries `colnames` and every other plotting function labels by name, so `param = "sigma"` works too; a name that is not among the columns is refused with the ones that are.

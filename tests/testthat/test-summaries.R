@@ -37,6 +37,23 @@ test_that("summary of a fit returns training info invisibly", {
   expect_equal(info$value$n_simulations, 1500L)
 })
 
+test_that("summary of an nle fit returns training info invisibly", {
+  set.seed(11)
+  prior <- prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+  simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.4), b = nu + rnorm(1, sd = 0.3))
+  fit <- nle(prior, simulator, n_simulations = 1200,
+             density_estimator = "linear_gaussian", seed = 11)
+
+  info <- withVisible(summary(fit))
+  expect_false(info$visible)
+  expect_equal(info$value$density_estimator, "linear_gaussian")
+  expect_equal(info$value$n_simulations, 1200L)
+  expect_equal(info$value$dim_theta, 2L)
+  expect_equal(info$value$dim_x, 2L)
+  expect_true(all(c("best_val_loss", "epochs_trained") %in% names(info$value)))
+  expect_output(summary(fit), "Neural Likelihood Estimation")
+})
+
 test_that("plot_coverage runs on an sbc result and returns coverage", {
   skip_if_no_ggplot2()
   fit <- fit_lg()
