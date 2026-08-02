@@ -84,9 +84,9 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE) {
-  # Everything here runs before the simulator does. A mistyped control that is
-  # only noticed by the arithmetic inside training costs the whole budget
-  # first, and the budget is the expensive part of a run.
+  # Everything here runs before the simulator does. An argument that is only
+  # noticed by the arithmetic inside training costs the whole budget first,
+  # and the budget is the expensive part of a run.
   if (!is.function(density_estimator)) {
     density_estimator <- match.arg(density_estimator)
   }
@@ -94,6 +94,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
+  # tested against the matched name, so `density_estimator = "linear"` warns too
   if (!is.null(embedding_net) && identical(density_estimator,
                                            "linear_gaussian")) {
     warning("`embedding_net` is ignored by the linear_gaussian estimator.",
