@@ -303,6 +303,16 @@ weaker answer but no answer: the draws come back all-`NaN` on the NPE side and
 every MCMC start is non-finite on the NLE side. `resolve_x_iid()` takes the
 caller's argument name so the message says `obs` or `x` to match the call.
 
+### c2st inputs (0.4.12)
+
+`c2st()` checks that `x` and `y` are the same width before `rbind()` does, and
+that `n_folds` is smaller than the number of draws in the smaller sample set.
+The fold bound is the one worth remembering: too many folds left the last ones
+empty, `mean()` of an empty test fold is `NaN`, and the score came back `NaN`
+with no error at all. Fold assignment now calls `base::sample()`, like the
+subsampling above it, because `sample()` is an S3 generic in this package and
+this file cannot assume it means base's.
+
 ### sbi default parity (0.3.0)
 
 `npe()` and the `fit_*` estimators now default to the same hyperparameters as

@@ -307,9 +307,11 @@ print.nsbi_tarp <- function(x, ...) {
 #' against 2000 identical ones scores 0.8 for a classifier that has learned
 #' nothing except to always answer with the bigger class.
 #'
-#' @param x,y Matrices of samples (rows = draws, cols = dimensions). Sizes need
-#'   not match; the larger is subsampled down to the smaller.
-#' @param n_folds Number of cross-validation folds.
+#' @param x,y Matrices of samples (rows = draws, cols = dimensions). The two
+#'   must be the same width, since they are draws of the same quantity. Row
+#'   counts need not match; the larger set is subsampled down to the smaller.
+#' @param n_folds Number of cross-validation folds. At least 2, and fewer than
+#'   the number of draws in the smaller sample set.
 #' @param seed Optional seed.
 #' @return A list with mean CV accuracy and per-fold accuracies.
 #' @export
@@ -317,9 +319,32 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
   n_folds <- check_count(n_folds, "n_folds", min = 2L,
                          why = "since each fold is scored by a fit on the rest")
   if (!is.null(seed)) set.seed(seed)
-  x <- as_theta_matrix(x)
-  y <- as_theta_matrix(y)
+  # A row is one draw here, so a bare vector is a column of 1-D draws rather
+  # than check_matrix()'s single row. That is the pre-computed (theta, x) rule
+  # in npe(), and it is why the type check and the reshape are separate calls.
+  x <- as_theta_matrix(check_numeric(x, "x"))
+  y <- as_theta_matrix(check_numeric(y, "y"))
+  if (ncol(x) != ncol(y)) {
+    # rbind() is where this lands otherwise, and it complains about the number
+    # of columns of a matrix it was handed rather than about x or y.
+    stop(sprintf(paste0("`x` has %s and `y` has %s. c2st() compares two sets ",
+                        "of draws of the same quantity, so both must be the ",
+                        "same width (rows = draws, columns = dimensions)."),
+                 n_things(ncol(x), "column"), n_things(ncol(y), "column")),
+         call. = FALSE)
+  }
   n_each <- min(nrow(x), nrow(y))
+  if (n_folds >= n_each) {
+    # Folds are cut over both sample sets together, so n_folds up to n_each
+    # still leaves each training fit some draws from each class. Past that the
+    # test folds thin out and empty ones score NaN, which propagates to the
+    # accuracy with nothing said about why.
+    stop(sprintf(paste0("`n_folds` is %d, but the smaller sample set has only ",
+                        "%s. It must be fewer, so that every fold has draws to ",
+                        "test on."),
+                 n_folds, n_things(n_each, "draw")),
+         call. = FALSE)
+  }
   # base::sample.int, not the package's sample() generic, which dispatches on
   # its first argument.
   if (nrow(x) > n_each) x <- x[base::sample.int(nrow(x), n_each), , drop = FALSE]
@@ -330,7 +355,8 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL) {
   data <- apply_standardizer(std, data)
   label <- c(rep(1, nrow(x)), rep(0, nrow(y)))
   n <- nrow(data)
-  fold <- sample(rep_len(seq_len(n_folds), n))
+  # base::sample again: sample() is an S3 generic in this package.
+  fold <- base::sample(rep_len(seq_len(n_folds), n))
   df <- data.frame(y = label, data)
   accs <- numeric(n_folds)
   for (k in seq_len(n_folds)) {
