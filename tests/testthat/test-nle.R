@@ -202,6 +202,20 @@ test_that("nle() needs either a simulator or pre-computed simulations", {
   expect_error(nle(gauss_prior()), "Provide either")
 })
 
+test_that("a bad density_estimator errors before the simulator runs", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nle(gauss_prior(), counting_simulator, n_simulations = 100,
+        density_estimator = "mfa"),
+    "should be one of"
+  )
+  expect_identical(calls, 0L)
+})
+
 test_that("pre-computed simulations give the same fit as running the simulator", {
   sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 800, seed = 9)
   from_sims <- nle(gauss_prior(), theta = sims$theta, x = sims$x,

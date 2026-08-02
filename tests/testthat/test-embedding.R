@@ -27,6 +27,17 @@ test_that("npe warns and ignores an embedding for linear_gaussian", {
     "linear_gaussian"
   )
   expect_null(fit$de$embedding)
+
+  # match.arg() accepts partial names, so the warning has to test the matched
+  # one or an abbreviated estimator drops the embedding silently
+  expect_warning(
+    fit_abbrev <- npe(prior, simulator, n_simulations = 200,
+                      density_estimator = "linear",
+                      embedding_net = embedding_mlp(output_dim = 2)),
+    "linear_gaussian"
+  )
+  expect_null(fit_abbrev$de$embedding)
+  expect_identical(fit_abbrev$density_estimator, "linear_gaussian")
 })
 
 test_that("npe rejects a non-spec embedding_net", {
