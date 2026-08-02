@@ -101,6 +101,9 @@ resolve_x <- function(post, x) {
 sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
                                   max_sampling_batches = 100L, ...) {
   post <- x
+  max_sampling_batches <- check_count(
+    max_sampling_batches, "max_sampling_batches",
+    why = "since one batch is one round of rejection sampling")
   xo_std <- standardized_obs(post, obs)
   fit <- post$fit
   prior <- fit$prior
@@ -161,6 +164,7 @@ log_prob <- function(post, theta, x = NULL, ...) UseMethod("log_prob")
 #' @export
 log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
                                     n_normalization = 10000L, ...) {
+  n_normalization <- check_count(n_normalization, "n_normalization")
   fit <- post$fit
   theta <- as_theta_matrix(theta, fit$dim_theta)
   xo_std <- standardized_obs(post, x)
@@ -196,6 +200,8 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
 #' @export
 map_estimate <- function(post, x = NULL, n_init = 1000L) {
   stopifnot(inherits(post, "nsbi_posterior"))
+  n_init <- check_count(n_init, "n_init",
+                        why = "since the search starts from the best of them")
   fit <- post$fit
   # Through the generic, not sample.nsbi_posterior() directly: an nle() fit's
   # estimator has the roles swapped, so the NPE sampler asked to draw from it

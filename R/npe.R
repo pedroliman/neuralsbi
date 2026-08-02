@@ -84,22 +84,25 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE) {
-  stopifnot(inherits(prior, "nsbi_prior"))
-  # Match the estimator name here rather than leaving it to
-  # fit_density_estimator(), which does not run until the simulation budget has
-  # been spent. A typo should cost nothing.
+  # Everything here runs before the simulator does. An argument that is only
+  # noticed by the arithmetic inside training costs the whole budget first,
+  # and the budget is the expensive part of a run.
   if (!is.function(density_estimator)) {
     density_estimator <- match.arg(density_estimator)
   }
+  check_prior(prior)
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
   # tested against the matched name, so `density_estimator = "linear"` warns too
-  if (!is.null(embedding_net) && is.character(density_estimator) &&
-      density_estimator == "linear_gaussian") {
+  if (!is.null(embedding_net) && identical(density_estimator,
+                                           "linear_gaussian")) {
     warning("`embedding_net` is ignored by the linear_gaussian estimator.",
             call. = FALSE)
   }
+  check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
+  check_train_controls(max_epochs, batch_size, lr, validation_fraction,
+                       patience, n_restarts, clip_grad_norm)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
@@ -158,6 +161,10 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
     if (is.null(simulator)) {
       stop("Provide either `simulator` or both `theta` and `x`.", call. = FALSE)
     }
+    n_simulations <- check_count(
+      n_simulations, "n_simulations", min = 2L,
+      why = paste("since the estimator is standardized and split into a",
+                  "training and a validation set"))
     sims <- simulate_for_sbi(simulator, prior, n_simulations,
                              sim_args = sim_args, seed = seed,
                              verbose = verbose)
@@ -199,6 +206,25 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
     x_names = colnames(x),
     n_dropped = n_dropped
   )
+}
+
+#' Validate the architecture arguments shared by [npe()] and [nle()]
+#'
+#' All of them are checked whichever estimator was asked for, so `n_bins = 0`
+#' is an error even under `"linear_gaussian"`, which ignores it. A value that
+#' cannot build a network is a mistake in the call whether or not this run
+#' would have read it.
+#'
+#' @inheritParams npe
+#' @keywords internal
+check_architecture <- function(n_components, n_transforms, hidden, n_bins,
+                               tail_bound) {
+  check_count(n_components, "n_components")
+  check_count(n_transforms, "n_transforms")
+  check_counts(hidden, "hidden", what = "one hidden-layer width per entry")
+  check_count(n_bins, "n_bins")
+  check_positive(tail_bound, "tail_bound")
+  invisible(TRUE)
 }
 
 #' @keywords internal
@@ -277,6 +303,8 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
 #' @export
 simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
                              seed = NULL, verbose = FALSE) {
+  check_prior(prior)
+  n <- check_count(n, "n")
   if (!is.null(seed)) set.seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))

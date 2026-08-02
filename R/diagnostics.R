@@ -81,6 +81,9 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
                 n_posterior_samples = 1000L, sim_args = list(),
                 seed = NULL, ...) {
   check_inference_fit(fit)
+  n_sbc <- check_count(n_sbc, "n_sbc")
+  n_posterior_samples <- check_count(n_posterior_samples,
+                                     "n_posterior_samples")
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
   theta_true <- sample_prior(prior, n_sbc)
@@ -214,6 +217,9 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  seed = NULL, ...) {
   check_inference_fit(fit)
   references <- match.arg(references)
+  n_tarp <- check_count(n_tarp, "n_tarp")
+  n_posterior_samples <- check_count(n_posterior_samples,
+                                     "n_posterior_samples")
   if (!is.null(seed)) set.seed(seed)
   d <- fit$dim_theta
 
@@ -308,6 +314,8 @@ print.nsbi_tarp <- function(x, ...) {
 #' @return A list with mean CV accuracy and per-fold accuracies.
 #' @export
 c2st <- function(x, y, n_folds = 5L, seed = NULL) {
+  n_folds <- check_count(n_folds, "n_folds", min = 2L,
+                         why = "since each fold is scored by a fit on the rest")
   if (!is.null(seed)) set.seed(seed)
   x <- as_theta_matrix(x)
   y <- as_theta_matrix(y)

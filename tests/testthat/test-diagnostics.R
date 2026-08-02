@@ -114,3 +114,23 @@ test_that("plot_posterior_predictive runs and locates the observation", {
   expect_true(all(q > 0.01 & q < 0.99))
   unlink(path)
 })
+
+test_that("sbc(), tarp() and c2st() check their counts", {
+  set.seed(11)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 300,
+             density_estimator = "linear_gaussian")
+
+  expect_error(sbc(fit, simulator, n_sbc = 0), "`n_sbc` must be")
+  expect_error(sbc(fit, simulator, n_sbc = 10, n_posterior_samples = 0),
+               "`n_posterior_samples` must be")
+  expect_error(tarp(fit, simulator, n_tarp = -1), "`n_tarp` must be")
+  expect_error(tarp(fit, simulator, n_tarp = 10, n_posterior_samples = 2.5),
+               "`n_posterior_samples` must be")
+
+  draws <- matrix(stats::rnorm(100), ncol = 2)
+  expect_error(c2st(draws, draws, n_folds = 1),
+               "`n_folds` must be a single whole number of at least 2 since")
+  expect_error(c2st(draws, draws, n_folds = NA), "`n_folds` must be")
+})

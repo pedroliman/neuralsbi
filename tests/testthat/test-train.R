@@ -26,3 +26,33 @@ test_that("clip_grad_norm = Inf disables clipping without breaking training", {
              clip_grad_norm = Inf, seed = 4)
   expect_true(is.finite(fit$de$best_val_loss))
 })
+
+test_that("train_conditional_de() checks its controls without torch", {
+  theta <- matrix(stats::rnorm(50), ncol = 1)
+  x <- matrix(stats::rnorm(50), ncol = 1)
+  # build_net and log_prob_fn are never reached: the controls are checked
+  # before the loop, which is the point of checking them there.
+  train <- function(...) {
+    train_conditional_de(build_net = function() stop("not reached"),
+                         log_prob_fn = function(...) stop("not reached"),
+                         theta = theta, x = x, ...)
+  }
+  expect_error(train(batch_size = 0), "`batch_size` must be")
+  expect_error(train(max_epochs = 0), "`max_epochs` must be")
+  expect_error(train(patience = -1), "`patience` must be")
+  expect_error(train(n_restarts = 0), "`n_restarts` must be")
+  expect_error(train(lr = -1e-3), "`lr` must be a single positive number")
+  expect_error(train(clip_grad_norm = 0),
+               "`clip_grad_norm` must be a single positive number or Inf")
+  expect_error(train(validation_fraction = 1), "strictly between 0 and 1")
+  expect_error(train(validation_fraction = 0), "strictly between 0 and 1")
+})
+
+test_that("train_conditional_de() says how many rows the split would need", {
+  one <- matrix(0, nrow = 1, ncol = 1)
+  expect_error(
+    train_conditional_de(build_net = function() stop("not reached"),
+                         log_prob_fn = function(...) stop("not reached"),
+                         theta = one, x = one, validation_fraction = 0.5),
+    "holds out 1 row of 1, leaving nothing to train on\\. At this fraction the estimator needs at least 2 rows")
+})

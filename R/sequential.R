@@ -80,13 +80,20 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
          call. = FALSE)
   }
   check_x_obs(x_obs)
+  # Every round simulates, so the counts are checked once, up front, rather
+  # than when round r first reads one.
+  n_rounds <- check_count(n_rounds, "n_rounds",
+                          why = "since round 1 is the initial NPE fit")
+  n_simulations <- check_counts(
+    n_simulations, "n_simulations", min = 2L,
+    what = "a scalar, or one budget per round")
+  n_truncation_samples <- check_count(n_truncation_samples,
+                                      "n_truncation_samples")
+  max_proposal_batches <- check_count(
+    max_proposal_batches, "max_proposal_batches",
+    why = "since one batch is one round of rejection sampling")
   if (!is.null(seed)) set.seed(seed)
-  n_rounds <- suppressWarnings(as.integer(n_rounds))
-  if (length(n_rounds) != 1L || is.na(n_rounds) || n_rounds < 1L) {
-    stop("`n_rounds` must be a single integer >= 1; round 1 is the initial ",
-         "NPE fit.", call. = FALSE)
-  }
-  budgets <- rep_len(as.integer(n_simulations), n_rounds)
+  budgets <- rep_len(n_simulations, n_rounds)
 
   theta_all <- NULL
   x_all <- NULL

@@ -4,12 +4,15 @@
 \alias{check_positive}
 \title{Validate a strictly positive scalar}
 \usage{
-check_positive(x, arg)
+check_positive(x, arg, allow_inf = FALSE)
 }
 \arguments{
 \item{x}{The user's value.}
 
 \item{arg}{Name of the argument.}
+
+\item{allow_inf}{Accept \code{Inf}, for a bound that is disabled by setting it
+to infinity (\code{clip_grad_norm}).}
 }
 \value{
 \code{x} as a double.
