@@ -117,3 +117,23 @@ test_that("truncation works with a bounded prior", {
   expect_equal(colMeans(draws), x_obs, tolerance = 0.1)
   expect_true(all(within_support(prior, draws)))
 })
+
+test_that("npe_sequential checks its counts before the first round", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  seq_call <- function(n_rounds = 2, n_simulations = 100, ...) {
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = n_rounds,
+                   n_simulations = n_simulations,
+                   density_estimator = "linear_gaussian", ...)
+  }
+  expect_error(seq_call(n_rounds = 2.5),
+               "`n_rounds` must be a single whole number of at least 1 since")
+  expect_error(seq_call(n_simulations = 1),
+               "`n_simulations` must be whole numbers of at least 2")
+  expect_error(seq_call(n_simulations = c(500, 0)),
+               "not 500, 0")
+  expect_error(seq_call(n_truncation_samples = 0),
+               "`n_truncation_samples` must be")
+  expect_error(seq_call(max_proposal_batches = 0),
+               "`max_proposal_batches` must be a single whole number of at least 1 since")
+})

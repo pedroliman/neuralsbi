@@ -266,11 +266,9 @@ fields now derive from `Authors@R`. The prior pass added MLP embedding networks
 `check_matrix()`, `check_count()`, `check_prob()`, `check_positive()`,
 `check_prior()` and `check_finite()`. They are internal and their messages
 name the argument, say what was wrong, and point at a help topic where there
-is one, following `as_sim_draw()` in `R/simulator.R`. `log_lik()`, `npe()`,
-`nle()`, `simulate_for_sbi()`, `sbc()`, `tarp()`, `c2st()` and
-`train_conditional_de()` use them; the remaining entry points adopt them issue
-by issue, so when you add a check to a function, call one of these rather than
-write a new `stop()`.
+is one, following `as_sim_draw()` in `R/simulator.R`. The entry points that take
+a count, a matrix or a training control use them, so when you add a check to a
+function, call one of these rather than write a new `stop()`.
 `check_matrix()` is the strict counterpart of `as_theta_matrix()`: at a public
 boundary a bare vector is one row or an error, while `as_theta_matrix()` keeps
 reshaping for internal callers such as `bind_sim_draws()` and the
@@ -289,10 +287,11 @@ rather than writing a check in the entry point. `check_train_controls()` runs
 again inside `train_conditional_de()`, which is reachable on its own through
 `fit_mdn()`/`fit_maf()`/`fit_nsf()`, and there it is given `n` as well: the
 `validation_fraction` requirement is that both sides of the split come out
-non-empty, so it cannot be settled until the rows exist. The remaining
-unchecked counts are the ones in `R/posterior.R` and `R/sequential.R`
-(`n_init`, `n_normalization`, `max_sampling_batches`, `n_truncation_samples`,
-`max_proposal_batches`), left for the pass that touches those files.
+non-empty, so it cannot be settled until the rows exist. The counts in
+`R/posterior.R` (`max_sampling_batches`, `n_normalization`, `n_init`) and
+`R/sequential.R` (`n_rounds`, `n_simulations`, `n_truncation_samples`,
+`max_proposal_batches`) go through the same validators, so `npe_sequential()`
+no longer carries its own `n_rounds` check.
 
 ### sbi default parity (0.3.0)
 

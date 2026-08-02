@@ -57,3 +57,32 @@ test_that("unbounded priors are unaffected by normalize", {
   expect_equal(log_prob(post, theta, normalize = TRUE),
                log_prob(post, theta, normalize = FALSE))
 })
+
+test_that("the posterior counts are checked before they reach de_sample()", {
+  set.seed(12)
+  prior <- prior_uniform(-1, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 300,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.2)
+
+  expect_error(sample(post, n = 100, max_sampling_batches = 0),
+               "`max_sampling_batches` must be a single whole number of at least 1 since")
+  expect_error(sample(post, n = 100, max_sampling_batches = 2.5),
+               "not 2.5")
+  expect_error(log_prob(post, 0.2, n_normalization = 0),
+               "`n_normalization` must be")
+  expect_error(log_prob(post, 0.2, n_normalization = NA),
+               "`n_normalization` must be")
+  expect_error(map_estimate(post, n_init = 0),
+               "`n_init` must be a single whole number of at least 1 since")
+
+  # An unbounded prior never reads n_normalization, but the argument is
+  # checked either way: a wrong value is a mistake in the call whichever
+  # branch this run takes.
+  unbounded <- npe(prior_normal(mean = 0, sd = 1), simulator,
+                   n_simulations = 300, density_estimator = "linear_gaussian")
+  expect_error(log_prob(posterior(unbounded, x_obs = 0.2), 0.2,
+                        n_normalization = -1),
+               "`n_normalization` must be")
+})
