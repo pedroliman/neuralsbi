@@ -113,8 +113,10 @@ test_that("npe() leaves a valid call alone", {
 test_that("npe() rejects simulations too few to split", {
   theta <- matrix(0.5, ncol = 1)
   x <- matrix(0.4, ncol = 1)
-  expect_error(npe(toy_prior(), theta = theta, x = x,
-                   density_estimator = "mdn"),
+  # One row also has no standard deviation, so standardization warns on the
+  # way past. That is test-standardize.R's business, not this test's.
+  expect_error(suppressWarnings(npe(toy_prior(), theta = theta, x = x,
+                                    density_estimator = "mdn")),
                "holds out 1 row of 1, leaving nothing to train on")
 })
 
