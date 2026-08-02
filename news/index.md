@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.4.10
+
+- **An error raised inside the simulator now names the simulation and
+  the parameters that produced it.**
+  [`as_sim_draw()`](https://neuralsbi.pedrodelima.com/reference/as_sim_draw.md)
+  has always reported everything wrong with a simulator’s return value,
+  down to which column was not numeric, but a failure that happens
+  before there is a return value got none of that.
+  `npe(prior, function(mu, ls) rnorm(1, mu, exp(ls)))` on an unnamed
+  prior answered `argument "ls" is missing, with no default`, which is
+  R’s description of the symptom and says nothing about the cause: an
+  unnamed prior sends the whole parameter vector to the first formal, so
+  the second one never gets a value. Under a `future` plan the same
+  error crossed a worker boundary before anyone saw it. The message is
+  now `Simulation 3 failed: <the original message>`, followed by the
+  parameter values that produced it and a pointer to
+  [`?nsbi_simulator`](https://neuralsbi.pedrodelima.com/reference/nsbi_simulator.md).
+  At most six values are shown, so a 40-parameter model does not fill
+  the console. The original condition is kept as the parent and its
+  class is carried onto the re-raised error, so a simulator that signals
+  a custom condition can still be caught by class.
+- Internally,
+  [`call_sim_once()`](https://neuralsbi.pedrodelima.com/reference/call_sim_once.md)
+  in `R/simulator.R` wraps the per-draw call, and
+  [`describe_params()`](https://neuralsbi.pedrodelima.com/reference/describe_params.md)
+  joins
+  [`describe_value()`](https://neuralsbi.pedrodelima.com/reference/describe_value.md)
+  in `R/check.R`.
+
 ## neuralsbi 0.4.9
 
 - **The `linear_gaussian` estimator now checks the width of `x` like
