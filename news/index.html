@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,12 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.9" id="neuralsbi-049">neuralsbi 0.4.9<a class="anchor" aria-label="anchor" href="#neuralsbi-049"></a></h2>
+<ul><li>
+<strong>The <code>linear_gaussian</code> estimator now checks the width of <code>x</code> like every other estimator.</strong> <code>fit_linear_gaussian()</code> recorded <code>dim_theta</code> and not <code>dim_x</code>, so its two methods had nothing to compare an incoming <code>x</code> against and passed it straight to the matrix product. An <code>x</code> of the wrong width came back as R’s “non-conformable arguments”, which names neither the argument nor the width expected of it, while the MDN, MAF and NSF all answer “Expected 3 columns but got 4”. That gap mattered more here than it would anywhere else: <code>linear_gaussian</code> is the default in the examples, the torch-free path, and the oracle the test suite is built on. A bare vector of length <code>dim_x</code> is now also read as one observation rather than a column of values, again matching the neural estimators. Fits serialized before <code>dim_x</code> existed keep working.</li>
+<li>Internally, <code>R/density_estimator.R</code> gains a test file. <code>fit_linear_gaussian()</code>, <code><a href="../reference/lingauss_mean.html">lingauss_mean()</a></code> and the two <code>nsbi_de_lingauss</code> methods were named nowhere in the suite despite being what everything else is checked against.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.8" id="neuralsbi-048">neuralsbi 0.4.8<a class="anchor" aria-label="anchor" href="#neuralsbi-048"></a></h2>
 <ul><li>

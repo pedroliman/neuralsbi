@@ -1,5 +1,26 @@
 # Changelog
 
+## neuralsbi 0.4.9
+
+- **The `linear_gaussian` estimator now checks the width of `x` like
+  every other estimator.** `fit_linear_gaussian()` recorded `dim_theta`
+  and not `dim_x`, so its two methods had nothing to compare an incoming
+  `x` against and passed it straight to the matrix product. An `x` of
+  the wrong width came back as R’s “non-conformable arguments”, which
+  names neither the argument nor the width expected of it, while the
+  MDN, MAF and NSF all answer “Expected 3 columns but got 4”. That gap
+  mattered more here than it would anywhere else: `linear_gaussian` is
+  the default in the examples, the torch-free path, and the oracle the
+  test suite is built on. A bare vector of length `dim_x` is now also
+  read as one observation rather than a column of values, again matching
+  the neural estimators. Fits serialized before `dim_x` existed keep
+  working.
+- Internally, `R/density_estimator.R` gains a test file.
+  `fit_linear_gaussian()`,
+  [`lingauss_mean()`](https://neuralsbi.pedrodelima.com/reference/lingauss_mean.md)
+  and the two `nsbi_de_lingauss` methods were named nowhere in the suite
+  despite being what everything else is checked against.
+
 ## neuralsbi 0.4.8
 
 - **[`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
