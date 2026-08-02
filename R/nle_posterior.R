@@ -254,9 +254,8 @@ print.nsbi_nle_posterior <- function(x, ...) {
   cat(sprintf("  sampler         : %s (%d chains, warmup %d, thin %d, init %s)\n",
               x$sampler, ctl$n_chains, ctl$warmup, ctl$thin, ctl$init_strategy))
   if (!is.null(x$cache$diagnostics)) {
-    d <- x$cache$diagnostics
-    cat(sprintf("  last run        : max Rhat %.3f, min bulk ESS %.0f\n",
-                max(d$rhat, na.rm = TRUE), min(d$ess_bulk, na.rm = TRUE)))
+    cat(sprintf("  last run        : %s\n",
+                format_mcmc_diagnostics(x$cache$diagnostics)))
   }
   cat("  log_prob() is unnormalized: the evidence p(x) is not available.\n")
   cat("  sample(post, n), map_estimate(post), stan_code(post$fit)\n")

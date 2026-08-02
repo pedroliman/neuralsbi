@@ -117,6 +117,24 @@ test_that("posterior draws carry names and convergence diagnostics", {
   expect_output(print(post), "unnormalized")
 })
 
+test_that("print() says when the last run has no usable diagnostics", {
+  set.seed(6)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 800, density_estimator = "linear_gaussian",
+             seed = 11)
+  post <- posterior(fit, matrix(0.5, nrow = 1), n_chains = 2, warmup = 20,
+                    seed = 12)
+  sample(post, 100)
+
+  # What mcmc_diagnostics() returns for a run too short or too degenerate to
+  # score. max(na.rm = TRUE) over it is -Inf, which is what used to print.
+  post$cache$diagnostics <- data.frame(rhat = NA_real_, ess_bulk = NA_real_)
+  out <- utils::capture.output(print(post))
+  expect_true(any(grepl("diagnostics unavailable", out)))
+  expect_false(any(grepl("Inf", out, fixed = TRUE)))
+})
+
 test_that("summary() works through the sample generic", {
   set.seed(20)
   prior <- prior_uniform(c(mu = -3), c(mu = 3))
