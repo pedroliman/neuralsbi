@@ -189,8 +189,8 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
   x <- as_theta_matrix(x)
 
   if (standardize) {
-    std_theta <- fit_standardizer(theta)
-    std_x <- fit_standardizer(x)
+    std_theta <- fit_standardizer(theta, what = "theta")
+    std_x <- fit_standardizer(x, what = "x")
   } else {
     std_theta <- fit_standardizer(matrix(0, 1, ncol(theta)))
     std_theta$scale[] <- 1; std_theta$center[] <- 0

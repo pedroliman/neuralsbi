@@ -1,3 +1,8 @@
+# neuralsbi 0.4.7
+
+* **`npe()` and `nle()` now warn when a column of `theta` or `x` has no spread.** Standardization has always guarded against dividing by zero by leaving such a column at scale 1, and it did so without saying anything. A constant summary statistic does not respond to the parameters, so it tells the estimator nothing and the mistake is invisible from the outside: training converges and the posterior looks plausible while the coordinate does nothing. The warning names the columns, by name where the matrix has column names and by index otherwise, and says which side of the fit they are on. A single row gets its own wording, since `sd()` of one value is `NA` rather than zero. The `standardize = FALSE` path stays silent: its degenerate standardizer is built from a one-row zero matrix on purpose.
+* Internally, `fit_standardizer()` takes a `what` argument naming the side it is standardizing, the way `drop_failed_sims()` already did. Callers that leave it `NULL` warn about nothing.
+
 # neuralsbi 0.4.6
 
 * **Fixed: a non-numeric column in a pre-computed `theta` or `x` is now an error that names the column.** The pre-computed path coerced its input with `storage.mode(x) <- "double"`, so a character or factor column turned into a column of `NA` with R's generic "NAs introduced by coercion" warning. Every row was then dropped as non-finite and the run stopped with "All 50 simulations returned non-finite output (NA, NaN or Inf). Check the simulator on a single prior draw", which is wrong twice over: no simulator ran, and the data was fine apart from one text column. `npe(prior, theta =, x =)`, `nle()` and `log_prob()` now say `` `x` has non-numeric columns: b``, the way `as_sim_draw()` has always reported the same mistake in simulator output.
