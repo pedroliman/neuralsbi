@@ -41,6 +41,33 @@ n_things <- function(n, word) {
   sprintf("%d %s%s", n, word, if (n == 1L) "" else "s")
 }
 
+#' Describe one parameter set in an error message
+#'
+#' The values that produced a failure, as `mu = 1.83, sigma = 0.42`, or bare
+#' numbers when the prior does not name its parameters. Rounded, because four
+#' significant digits are enough to recognise a draw and a full-precision
+#' double is not. Only the first `max_show` are printed so a 40-parameter model
+#' does not fill the console.
+#'
+#' @param theta_i One parameter set, named or not.
+#' @param max_show How many values to print before truncating.
+#' @keywords internal
+describe_params <- function(theta_i, max_show = 6L) {
+  n <- length(theta_i)
+  if (n == 0L) return("none")
+  keep <- seq_len(min(n, max_show))
+  shown <- vapply(theta_i[keep], function(z) {
+    describe_value(if (is.numeric(z)) signif(z, 4L) else z)
+  }, character(1))
+  nm <- names(theta_i)
+  if (!is.null(nm) && all(nzchar(nm[keep]))) {
+    shown <- paste(nm[keep], shown, sep = " = ")
+  }
+  sprintf("%s%s", paste(unname(shown), collapse = ", "),
+          if (n > max_show) sprintf(", ... (%s in all)",
+                                    n_things(n, "parameter")) else "")
+}
+
 #' Require numeric data, naming any column that is not
 #'
 #' The type half of [check_matrix()], split out because the shape rules differ
