@@ -94,6 +94,15 @@ test_that("write_stan_model() writes a file", {
   expect_match(paste(readLines(path), collapse = "\n"), "nsbi_log_lik_sum_lpdf")
 })
 
+test_that("write_stan_model() checks `file` before it generates any code", {
+  fit <- stan_lingauss_fit()
+
+  expect_error(write_stan_model(fit, c("a", "b")),
+               "`file` must be a single file path")
+  expect_error(write_stan_model(fit, NULL), "`file` must be a single file path")
+  expect_error(write_stan_model(fit, ""), "an empty string")
+})
+
 test_that("an NSF fit is refused with the alternatives named", {
   skip_if_no_torch()
   fit <- nle(stan_prior(), stan_sim, n_simulations = 400,
@@ -102,6 +111,22 @@ test_that("an NSF fit is refused with the alternatives named", {
 
   expect_error(stan_code(fit), "Cannot export a 'nsf' estimator")
   expect_error(stan_code(fit), "refit with \"maf\"")
+})
+
+test_that("stan_data() points a dead fit at save_npe(), as stan_code() does", {
+  # readRDS() on a torch-backed fit returns a module whose external pointer is
+  # nil. stan_code() has said so since it was written; stan_data() reached
+  # net_param() and failed on the pointer instead.
+  fit <- stan_lingauss_fit(400)
+  dead <- structure(list(), class = "nsbi_dead_stan_net")
+  registerS3method("$", "nsbi_dead_stan_net",
+                   function(x, name) stop("external pointer is not valid"))
+  fit$de$net <- dead
+
+  expect_error(stan_data(fit), "save_npe")
+  expect_error(stan_code(fit), "save_npe")
+  # A live fit is untouched by the check.
+  expect_type(stan_data(stan_lingauss_fit(400))$nsbi_w, "double")
 })
 
 test_that("stan_code() refuses an NPE fit", {

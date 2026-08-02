@@ -8,7 +8,8 @@ plot_coverage(sbc_result, levels = seq(0.05, 0.95, by = 0.05))
 \arguments{
 \item{sbc_result}{An \code{nsbi_sbc} object from \code{\link{sbc}()}.}
 
-\item{levels}{Nominal credibility levels to evaluate.}
+\item{levels}{Nominal credibility levels to evaluate, each strictly between
+0 and 1. Passed to \code{\link{expected_coverage}()}, which checks them.}
 }
 \value{
 A \code{ggplot} object (also drawn as a side effect), invisibly.

@@ -30,6 +30,7 @@
 #' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
 #'   `nsbi_nle` object from [nle()].
 #' @param path File to write to (or read from). The convention is `.rds`.
+#'   `load_npe()` says so when there is no such file.
 #' @return `save_npe()` returns `path` invisibly. `load_npe()` returns the fit.
 #'
 #' @examples
@@ -51,9 +52,7 @@ NULL
 #' @export
 save_npe <- function(fit, path) {
   stopifnot(inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle"))
-  if (!is.character(path) || length(path) != 1L) {
-    stop("`path` must be a single file path.", call. = FALSE)
-  }
+  check_path(path)
   net <- fit$de$net
   weights <- NULL
   if (!is.null(net)) {
@@ -82,6 +81,11 @@ save_npe <- function(fit, path) {
 #' @rdname save_npe
 #' @export
 load_npe <- function(path) {
+  # readRDS() on a path that is not a file says "cannot open the connection",
+  # and the file it could not open is named only in the warning that comes with
+  # it. save_npe() has checked its path since it was written; this is the same
+  # check, plus the file has to be there.
+  check_path(path, must_exist = TRUE)
   bundle <- readRDS(path)
   if (!is.list(bundle) || !identical(bundle$nsbi_save_format, 1L)) {
     stop(sprintf("'%s' was not written by save_npe().", path), call. = FALSE)

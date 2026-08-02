@@ -185,3 +185,29 @@ test_that("bulk ESS agrees with the posterior package", {
   expect_equal(ours$ess_bulk, posterior::ess_bulk(chains[, , 1]),
                tolerance = 0.05)
 })
+
+test_that("format_mcmc_diagnostics() reports a run it could not score", {
+  # split_rhat() and bulk_ess() return NA for a run with too few iterations or
+  # one chain, and max(na.rm = TRUE) over all-NA is -Inf with a warning. That
+  # -Inf used to be printed as a diagnostic value.
+  degenerate <- mcmc_diagnostics(array(stats::rnorm(6), dim = c(3L, 1L, 2L)))
+  expect_true(all(is.na(degenerate$rhat)))
+  expect_match(format_mcmc_diagnostics(degenerate), "diagnostics unavailable")
+  expect_false(grepl("Inf", format_mcmc_diagnostics(degenerate), fixed = TRUE))
+
+  # Some parameters scored and some not: report the ones that were, and count
+  # the ones that were not.
+  partial <- data.frame(rhat = c(1.01, NA_real_), ess_bulk = c(420, NA_real_))
+  expect_match(format_mcmc_diagnostics(partial), "max Rhat 1.010")
+  expect_match(format_mcmc_diagnostics(partial), "min bulk ESS 420")
+  expect_match(format_mcmc_diagnostics(partial), "1 parameter not scored")
+
+  # One statistic available and the other not.
+  no_ess <- data.frame(rhat = c(1.2, 1.0), ess_bulk = c(NA_real_, NA_real_))
+  expect_match(format_mcmc_diagnostics(no_ess), "max Rhat 1.200")
+  expect_match(format_mcmc_diagnostics(no_ess), "bulk ESS unavailable")
+
+  fine <- data.frame(rhat = c(1.0, 1.02), ess_bulk = c(900, 750))
+  expect_identical(format_mcmc_diagnostics(fine),
+                   "max Rhat 1.020, min bulk ESS 750")
+})

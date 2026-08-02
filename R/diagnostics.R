@@ -161,11 +161,16 @@ print.nsbi_sbc <- function(x, ...) {
 #' central interval. Well-calibrated posteriors lie on the diagonal.
 #'
 #' @param sbc_result An `nsbi_sbc` object from [sbc()].
-#' @param levels Nominal credibility levels to evaluate.
+#' @param levels Nominal credibility levels to evaluate, each strictly between
+#'   0 and 1.
 #' @return A data frame with `nominal` and per-parameter empirical coverage.
 #' @export
 expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
   stopifnot(inherits(sbc_result, "nsbi_sbc"))
+  # A level outside (0, 1) is not a credible interval. It used to be scored
+  # anyway: the interval comes out empty or covers the line, so the row reads
+  # as coverage 0 or 1 and looks like a badly calibrated posterior.
+  levels <- check_probs(levels, "levels")
   L <- sbc_result$n_posterior_samples
   u <- sbc_result$ranks / L  # approx posterior CDF at truth ~ Uniform(0,1)
   emp <- sapply(levels, function(a) {

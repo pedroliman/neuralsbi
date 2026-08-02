@@ -88,6 +88,10 @@ stan_code <- function(fit, name = "nsbi_log_lik", model = TRUE) {
 #' @rdname stan_export
 #' @export
 write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
+  # Before the code is generated: transpiling the network only to fail on the
+  # destination is work thrown away, and writeLines() takes a connection as
+  # well as a path, so a wrong value gets some distance before it complains.
+  check_path(file, "file")
   writeLines(stan_code(fit, name = name, model = model), file)
   invisible(file)
 }
@@ -96,6 +100,11 @@ write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
 #' @export
 stan_data <- function(fit, x_obs = NULL) {
   stopifnot(inherits(fit, "nsbi_nle"))
+  # Both halves of the export read the weights, so both need a live network.
+  # Without this, a fit restored by readRDS() gets the "save with save_npe()"
+  # message from stan_code() and a dangling-pointer error from net_param()
+  # here, for the same fit and the same cause.
+  check_fit_alive(fit)
   packed <- stan_pack(fit)
   out <- list(nsbi_nw = length(packed$w), nsbi_w = packed$w)
   if (!is.null(x_obs)) {

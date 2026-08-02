@@ -303,6 +303,26 @@ weaker answer but no answer: the draws come back all-`NaN` on the NPE side and
 every MCMC start is non-finite on the NLE side. `resolve_x_iid()` takes the
 caller's argument name so the message says `obs` or `x` to match the call.
 
+### small unguarded arguments (0.4.15)
+
+A sweep of the arguments that reached an internal failure rather than a message
+about the call. `plot_sbc(param =)` and `pairplot(limits =)` indexed past the
+end of a matrix and reported "subscript out of bounds"; `param` now also takes
+a parameter name, resolved by `check_index()` against the rank columns.
+`expected_coverage(levels =)` scored levels outside `(0, 1)` and returned
+coverage of 0 or 1, which reads as a verdict on the fit rather than a bad
+argument, so `check_probs()` refuses them. `load_npe()` and
+`write_stan_model()` check their paths through `check_path()`, which
+`save_npe()` has effectively done since it was written. `stan_data()` gained
+the `check_fit_alive()` that `stan_code()` performs, so the two halves of the
+Stan export agree about a fit restored with plain `readRDS()`.
+
+`format_mcmc_diagnostics()` is the same idea one layer down: `split_rhat()` and
+`bulk_ess()` return `NA` for a run they cannot score, and the NLE posterior's
+print method took `max(na.rm = TRUE)` over the result, so an all-`NA` run
+printed `-Inf` and warned. The helper says the diagnostics are unavailable, and
+for a partly scored run reports what it has and counts the rest.
+
 ### swapped simulator and prior (0.4.14)
 
 `simulate_for_sbi(simulator, prior, n)` reverses the order of `npe(prior,

@@ -19,7 +19,8 @@ load_nle(path)
 \item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}, or an
 \code{nsbi_nle} object from \code{\link[=nle]{nle()}}.}
 
-\item{path}{File to write to (or read from). The convention is \code{.rds}.}
+\item{path}{File to write to (or read from). The convention is \code{.rds}.
+\code{load_npe()} says so when there is no such file.}
 }
 \value{
 \code{save_npe()} returns \code{path} invisibly. \code{load_npe()} returns the fit.

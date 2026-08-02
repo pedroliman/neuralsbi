@@ -290,6 +290,36 @@ mcmc_diagnostics <- function(chains) {
   out
 }
 
+#' Summarize MCMC diagnostics for printing
+#'
+#' `split_rhat()` and `bulk_ess()` return `NA` for a run they cannot score: too
+#' few iterations, one chain, or a coordinate that never moved. Every parameter
+#' can come back `NA` at once, and `max(na.rm = TRUE)` over all-`NA` is `-Inf`
+#' with a warning, which the print method used to show as if it were a value.
+#' A partially scored run is reported from the parameters that did get a
+#' number, with a count of the ones that did not.
+#'
+#' @param d The data frame from [mcmc_diagnostics()].
+#' @return One line of text, without a trailing newline.
+#' @keywords internal
+format_mcmc_diagnostics <- function(d) {
+  rhat <- d$rhat[is.finite(d$rhat)]
+  ess <- d$ess_bulk[is.finite(d$ess_bulk)]
+  if (length(rhat) == 0L && length(ess) == 0L) {
+    return("diagnostics unavailable (too few draws or chains to score)")
+  }
+  parts <- c(
+    if (length(rhat) > 0L) sprintf("max Rhat %.3f", max(rhat)) else
+      "Rhat unavailable",
+    if (length(ess) > 0L) sprintf("min bulk ESS %.0f", min(ess)) else
+      "bulk ESS unavailable"
+  )
+  unscored <- sum(!is.finite(d$rhat) | !is.finite(d$ess_bulk))
+  sprintf("%s%s", paste(parts, collapse = ", "),
+          if (unscored > 0L)
+            sprintf(" (%s not scored)", n_things(unscored, "parameter")) else "")
+}
+
 #' @keywords internal
 split_rhat <- function(m) {
   n <- nrow(m)
