@@ -55,7 +55,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::testthat, any::torch
+          # xml2 backs testthat's JunitReporter, which writes the file Codecov
+          # test analytics reads.
+          extra-packages: any::testthat, any::torch, any::xml2
 
       - name: Cache libtorch
         uses: actions/cache@v4
@@ -71,6 +73,19 @@ jobs:
           Rscript -e 'if (!torch::torch_is_installed()) torch::install_torch()'
 
       - name: Install package and run full test suite
+        # NEURALSBI_JUNIT makes tests/testthat.R add a JunitReporter alongside
+        # the check reporter. This is the fullest run in CI, with libtorch
+        # present, so it is the one worth reporting on.
+        env:
+          NEURALSBI_JUNIT: ${{ github.workspace }}/junit.xml
         run: |
           R CMD INSTALL --no-docs .
           cd tests && Rscript testthat.R
+
+      - name: Upload test results to Codecov
+        # Runs on failure too. A red suite is exactly when the per-test view is
+        # worth having, and the reporter writes the file either way.
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
