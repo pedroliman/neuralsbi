@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.4.7
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) now warn
+  when a column of `theta` or `x` has no spread.** Standardization has
+  always guarded against dividing by zero by leaving such a column at
+  scale 1, and it did so without saying anything. A constant summary
+  statistic does not respond to the parameters, so it tells the
+  estimator nothing and the mistake is invisible from the outside:
+  training converges and the posterior looks plausible while the
+  coordinate does nothing. The warning names the columns, by name where
+  the matrix has column names and by index otherwise, and says which
+  side of the fit they are on. A single row gets its own wording, since
+  [`sd()`](https://rdrr.io/r/stats/sd.html) of one value is `NA` rather
+  than zero. The `standardize = FALSE` path stays silent: its degenerate
+  standardizer is built from a one-row zero matrix on purpose.
+- Internally,
+  [`fit_standardizer()`](https://neuralsbi.pedrodelima.com/reference/fit_standardizer.md)
+  takes a `what` argument naming the side it is standardizing, the way
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  already did. Callers that leave it `NULL` warn about nothing.
+
 ## neuralsbi 0.4.6
 
 - **Fixed: a non-numeric column in a pre-computed `theta` or `x` is now

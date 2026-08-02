@@ -54,6 +54,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_maf.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_mdn.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_nsf.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/fit_standardizer.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/hint_parallel.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/index.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/likelihood_fn.html</loc></url>
@@ -160,6 +161,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/train_conditional_de.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/train_progress_total.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/train_restarts.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/warn_constant_columns.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/with_nsbi_progress.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/with_rng_stream.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/within_support.html</loc></url>

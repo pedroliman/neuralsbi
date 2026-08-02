@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,12 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.7" id="neuralsbi-047">neuralsbi 0.4.7<a class="anchor" aria-label="anchor" href="#neuralsbi-047"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe.html">npe()</a></code> and <code><a href="../reference/nle.html">nle()</a></code> now warn when a column of <code>theta</code> or <code>x</code> has no spread.</strong> Standardization has always guarded against dividing by zero by leaving such a column at scale 1, and it did so without saying anything. A constant summary statistic does not respond to the parameters, so it tells the estimator nothing and the mistake is invisible from the outside: training converges and the posterior looks plausible while the coordinate does nothing. The warning names the columns, by name where the matrix has column names and by index otherwise, and says which side of the fit they are on. A single row gets its own wording, since <code><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd()</a></code> of one value is <code>NA</code> rather than zero. The <code>standardize = FALSE</code> path stays silent: its degenerate standardizer is built from a one-row zero matrix on purpose.</li>
+<li>Internally, <code><a href="../reference/fit_standardizer.html">fit_standardizer()</a></code> takes a <code>what</code> argument naming the side it is standardizing, the way <code><a href="../reference/drop_failed_sims.html">drop_failed_sims()</a></code> already did. Callers that leave it <code>NULL</code> warn about nothing.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.6" id="neuralsbi-046">neuralsbi 0.4.6<a class="anchor" aria-label="anchor" href="#neuralsbi-046"></a></h2>
 <ul><li>
