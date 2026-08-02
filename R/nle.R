@@ -72,7 +72,14 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
                 standardize = TRUE, seed = NULL, verbose = FALSE) {
-  stopifnot(inherits(prior, "nsbi_prior"))
+  # Checked before the simulator runs, for the reason given in npe().
+  if (!is.function(density_estimator)) {
+    density_estimator <- match.arg(density_estimator)
+  }
+  check_prior(prior)
+  check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
+  check_train_controls(max_epochs, batch_size, lr, validation_fraction,
+                       patience, n_restarts, clip_grad_norm)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)

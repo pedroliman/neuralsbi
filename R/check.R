@@ -161,17 +161,52 @@ check_prob <- function(p, arg, open = TRUE) {
   as.double(p)
 }
 
+#' Validate a vector of counts
+#'
+#' [check_count()] for an argument that is a vector of counts rather than one,
+#' such as `hidden`, where each entry is a layer width and a single bad entry
+#' breaks the network the same way a bad scalar would. The message lists the
+#' values rather than describing the vector, since which entry is wrong is the
+#' thing worth reading.
+#'
+#' @param n The user's value.
+#' @param arg Name of the argument.
+#' @param min Smallest allowed value.
+#' @param what Optional phrase describing what one entry means, e.g.
+#'   `"one hidden-layer width per entry"`. Shown in parentheses.
+#' @return `n` as an integer vector.
+#' @keywords internal
+check_counts <- function(n, arg, min = 1L, what = NULL) {
+  ok <- is.numeric(n) && length(n) >= 1L && !anyNA(n) && all(is.finite(n)) &&
+    all(n == trunc(n)) && all(n >= min)
+  if (!ok) {
+    shown <- if (is.numeric(n) && length(n) > 1L) {
+      paste(vapply(n, describe_value, character(1)), collapse = ", ")
+    } else {
+      describe_value(n)
+    }
+    stop(sprintf("`%s` must be whole numbers of at least %d%s, not %s.",
+                 arg, min, if (is.null(what)) "" else sprintf(" (%s)", what),
+                 shown),
+         call. = FALSE)
+  }
+  as.integer(n)
+}
+
 #' Validate a strictly positive scalar
 #'
 #' @param x The user's value.
 #' @param arg Name of the argument.
+#' @param allow_inf Accept `Inf`, for a bound that is disabled by setting it
+#'   to infinity (`clip_grad_norm`).
 #' @return `x` as a double.
 #' @keywords internal
-check_positive <- function(x, arg) {
-  ok <- is.numeric(x) && length(x) == 1L && !is.na(x) && is.finite(x) && x > 0
+check_positive <- function(x, arg, allow_inf = FALSE) {
+  ok <- is.numeric(x) && length(x) == 1L && !is.na(x) && x > 0 &&
+    (isTRUE(allow_inf) || is.finite(x))
   if (!ok) {
-    stop(sprintf("`%s` must be a single positive number, not %s.", arg,
-                 describe_value(x)),
+    stop(sprintf("`%s` must be a single positive number%s, not %s.", arg,
+                 if (isTRUE(allow_inf)) " or Inf" else "", describe_value(x)),
          call. = FALSE)
   }
   as.double(x)

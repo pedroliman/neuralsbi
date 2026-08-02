@@ -29,6 +29,9 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
                                  lr_patience = 10L, lr_factor = 0.5,
                                  min_lr = 1e-6,
                                  seed = NULL, verbose = FALSE) {
+  check_train_controls(max_epochs, batch_size, lr, validation_fraction,
+                       patience, n_restarts, clip_grad_norm,
+                       n = nrow(as_theta_matrix(theta)))
   # The bar spans every restart, so progress reporting is set up out here and
   # the loop itself lives in train_restarts().
   with_nsbi_progress(train_restarts(
@@ -36,6 +39,50 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
     validation_fraction, patience, n_restarts, clip_grad_norm, lr_patience,
     lr_factor, min_lr, seed, verbose
   ))
+}
+
+#' Validate the training controls
+#'
+#' Every one of these decides how the split, the batches or the restart loop
+#' is built, and an unchecked value is reported by whichever base function
+#' hits it first: `batch_size = 0` comes back as "invalid '(to - from)/by'",
+#' `validation_fraction = 1` as "wrong sign in 'by' argument", and
+#' `n_restarts = 0` as "Training failed: no restart produced a finite
+#' validation loss", which blames training for an argument. [npe()] and [nle()]
+#' call this before they simulate, so a typo does not cost the budget first.
+#'
+#' `n` is optional because that call happens before there are any rows. When it
+#' is known, `validation_fraction` is checked against it: the requirement is
+#' that both sides of the split come out non-empty, which the fraction alone
+#' cannot decide.
+#'
+#' @inheritParams npe
+#' @param n Number of training rows, or `NULL` when they do not exist yet.
+#' @keywords internal
+check_train_controls <- function(max_epochs, batch_size, lr,
+                                 validation_fraction, patience, n_restarts,
+                                 clip_grad_norm, n = NULL) {
+  check_count(max_epochs, "max_epochs")
+  check_count(batch_size, "batch_size")
+  check_positive(lr, "lr")
+  validation_fraction <- check_prob(validation_fraction, "validation_fraction")
+  check_count(patience, "patience")
+  check_count(n_restarts, "n_restarts", why = "since the best of them is kept")
+  check_positive(clip_grad_norm, "clip_grad_norm", allow_inf = TRUE)
+
+  if (!is.null(n)) {
+    n_val <- max(1L, floor(validation_fraction * n))
+    if (n - n_val < 1L) {
+      need <- max(2L, ceiling(1 / (1 - validation_fraction)))
+      stop(sprintf(paste0("`validation_fraction` of %s holds out %s of %d, ",
+                          "leaving nothing to train on. At this fraction the ",
+                          "estimator needs at least %s."),
+                   format(validation_fraction), n_things(n_val, "row"), n,
+                   n_things(as.integer(need), "row")),
+           call. = FALSE)
+    }
+  }
+  invisible(TRUE)
 }
 
 #' Restart loop behind `train_conditional_de()`
