@@ -24,7 +24,12 @@ with a small \code{n_tarp} and raise it once the cost is known.}
 \item{simulator}{The simulator used for inference; called once per trial
 (see \link{nsbi_simulator}).}
 
-\item{prior}{The prior used for inference (defaults to \code{fit$prior}).}
+\item{prior}{The prior to draw the true parameters from, and the reference
+points when \code{references = "prior"} (defaults to \code{fit$prior}). As in
+\code{\link[=sbc]{sbc()}}, the coverage claim is about the prior the fit was trained on, so
+the default is what tests this fit; another prior tests how the fit does on
+parameters it was not calibrated against. It must cover the same
+parameters as the fit.}
 
 \item{n_tarp}{Number of TARP trials (fresh (theta, x) pairs).}
 
