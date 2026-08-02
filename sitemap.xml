@@ -13,7 +13,6 @@
 <url><loc>https://neuralsbi.pedrodelima.com/authors.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/index.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/news/index.html</loc></url>
-<url><loc>https://neuralsbi.pedrodelima.com/reference/as_lik_matrix.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/as_sim_draw.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/autocov.html</loc></url>
@@ -21,9 +20,16 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/build_embedding_module.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/builtin_bar.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/c2st.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_count.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_finite.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_fit_alive.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_inference_fit.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_matrix.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_mcmc_count.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_positive.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_prior.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_prob.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_x_obs.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/cross_iid.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_drop_net.html</loc></url>
@@ -32,6 +38,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_rebuild_net.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/default_progressr_handler.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/density_estimator.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/describe_value.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/diagnostic_draws.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/diagnostics.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/dmvnorm_chol.html</loc></url>
@@ -72,6 +79,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/mdn_module.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/mdn_trace.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/mdn_trace_cache.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/n_things.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/net_param.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/neuralsbi-package.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/nle.html</loc></url>

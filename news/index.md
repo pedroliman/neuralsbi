@@ -2,6 +2,30 @@
 
 ## neuralsbi 0.4.4
 
+- Internally, argument checking moves to a shared set of validators in
+  `R/check.R`:
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md),
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md),
+  [`check_prob()`](https://neuralsbi.pedrodelima.com/reference/check_prob.md),
+  [`check_positive()`](https://neuralsbi.pedrodelima.com/reference/check_positive.md),
+  [`check_prior()`](https://neuralsbi.pedrodelima.com/reference/check_prior.md)
+  and
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md).
+  Each names the argument it rejects and says what was actually wrong,
+  following the voice of the simulator-output checks. They are internal,
+  and the entry points adopt them one at a time.
+- **Behaviour change:
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  now rejects a wrong-length `theta` or `x` instead of reshaping it.** A
+  vector shorter or longer than the fit’s width was recycled into a
+  matrix of the right number of columns, so
+  `log_lik(fit, c(0.1, 0.2, 0.3), x)` on a two-parameter fit returned
+  two log-densities computed from recycled values, and a length-4 vector
+  became two parameter sets with no message at all. At a public boundary
+  a bare vector now means a single row, or it is an error. A matrix
+  whose row count matches the expected width is told to transpose.
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
+  keeps its permissive reshaping for internal callers that rely on it.
 - Fixed: an NPE posterior given a multi-row observation now warns.
   [`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md)
   kept row 1 and said nothing about the rest, which is right for NPE and
