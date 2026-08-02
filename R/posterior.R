@@ -53,6 +53,21 @@ posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
   )
 }
 
+#' The single observation an NPE posterior conditions on
+#'
+#' An NPE fit maps one observation to one posterior, so only the first row of
+#' `x` can be used. `resolve_x_iid()`, the NLE counterpart, keeps every row,
+#' because there the rows are independent observations and the log-likelihood
+#' sums over them. The same `x_obs` therefore means "200 observations" to
+#' [nle()] and "the first observation" to [npe()], and a user moving a working
+#' call from one to the other would otherwise get a posterior conditioned on a
+#' single data point with nothing said about it. Warn rather than fail: taking
+#' row 1 of a simulation matrix is a reasonable thing to ask for.
+#'
+#' @param post An `nsbi_posterior` object.
+#' @param x Observation to condition on, or `NULL` to use the posterior's
+#'   `x_obs`.
+#' @return A one-row matrix with `dim_x` columns.
 #' @keywords internal
 resolve_x <- function(post, x) {
   x <- x %||% post$x_obs
@@ -60,7 +75,15 @@ resolve_x <- function(post, x) {
     stop("No observation supplied. Pass `x = ...` or set `x_obs` in posterior().",
          call. = FALSE)
   }
-  as_theta_matrix(x, post$fit$dim_x)[1, , drop = FALSE]
+  x <- as_theta_matrix(x, post$fit$dim_x)
+  if (nrow(x) > 1L) {
+    warning(sprintf(
+      "Observation has %d rows; an NPE posterior conditions on one, so only row 1 is used. ",
+      nrow(x)),
+      "Use nle() if the rows are repeated observations of the same parameter.",
+      call. = FALSE)
+  }
+  x[1, , drop = FALSE]
 }
 
 #' Sample from a posterior

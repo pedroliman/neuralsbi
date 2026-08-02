@@ -19,9 +19,9 @@ unchanged, invisibly.
 TSNPE spends its whole budget near one observation, so a mis-sized \code{x_obs}
 is not a detail. Without this check \code{as_theta_matrix()} folds a length-3
 vector into a 3 x 1 matrix and \code{resolve_x()} keeps row 1, so the run
-truncates its proposals around a value the user never asked for and nothing
-says so. Called twice: once at the top of \code{\link[=npe_sequential]{npe_sequential()}} for shape, and
-once after round 1 with \code{dim_x}, which is the first moment the simulator's
-output width is known.
+truncates its proposals around a value the user never asked for, with only a
+warning to go on. Called twice: once at the top of \code{\link[=npe_sequential]{npe_sequential()}} for
+shape, and once after round 1 with \code{dim_x}, which is the first moment the
+simulator's output width is known.
 }
 \keyword{internal}
