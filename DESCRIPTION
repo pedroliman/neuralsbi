@@ -31,9 +31,11 @@ Suggests:
     withr,
     knitr,
     rmarkdown,
-    svglite
+    svglite,
+    covr
 Additional_repositories: https://mc-stan.org/r-packages/
 Config/testthat/edition: 3
+Config/Needs/coverage: covr
 VignetteBuilder: knitr
 URL: https://neuralsbi.pedrodelima.com/, https://github.com/pedroliman/neuralsbi
 BugReports: https://github.com/pedroliman/neuralsbi/issues
