@@ -1,5 +1,31 @@
 # Changelog
 
+## neuralsbi 0.4.12
+
+- **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
+  checks that its two sample sets are the same width, and that it has
+  draws enough for the folds it was asked for.** Two sets of different
+  widths met each other at
+  [`rbind()`](https://rdrr.io/r/base/cbind.html), which reports “numbers
+  of columns of arguments do not match” and names neither `x` nor `y`;
+  the message now gives both widths. More folds than draws was worse,
+  because it was silent: [`rep_len()`](https://rdrr.io/r/base/rep.html)
+  left the last folds empty,
+  [`mean()`](https://rdrr.io/r/base/mean.html) of an empty test fold is
+  `NaN`, and the accuracy came back `NaN` with no error. `n_folds` must
+  now be fewer than the number of draws in the smaller set, and the
+  message says how many draws that is. `x` and `y` also go through
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md),
+  so a character column is named rather than coerced to `NA`.
+- Fixed: [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  assigned its cross-validation folds with the package’s own
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  generic, which happened to work only because
+  [`sample.default()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  forwards to [`base::sample()`](https://rdrr.io/r/base/sample.html). It
+  calls [`base::sample()`](https://rdrr.io/r/base/sample.html) now, as
+  the subsampling ten lines above already did.
+
 ## neuralsbi 0.4.11
 
 - **A non-finite observation is now rejected where it is supplied.**

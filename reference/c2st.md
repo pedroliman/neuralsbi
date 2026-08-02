@@ -17,12 +17,14 @@ c2st(x, y, n_folds = 5L, seed = NULL)
 
 - x, y:
 
-  Matrices of samples (rows = draws, cols = dimensions). Sizes need not
-  match; the larger is subsampled down to the smaller.
+  Matrices of samples (rows = draws, cols = dimensions). The two must be
+  the same width, since they are draws of the same quantity. Row counts
+  need not match; the larger set is subsampled down to the smaller.
 
 - n_folds:
 
-  Number of cross-validation folds.
+  Number of cross-validation folds. At least 2, and fewer than the
+  number of draws in the smaller sample set.
 
 - seed:
 
