@@ -195,6 +195,21 @@
   miscalibrated posterior. Rescaling the short trial on its own is no
   better, since it is then scored on a different resolution from the
   rest, so both functions stop and name the trial and the shortfall.
+- Fixed: [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+  and [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) now
+  match `density_estimator` against the allowed names before the
+  simulator runs. The check lived in `fit_density_estimator()`, which is
+  reached only after the simulations are in hand, so
+  `density_estimator = "mfa"` spent the whole budget and then failed on
+  the typo. For the expensive simulators this package is for, that is
+  minutes to hours. The same hoist fixes the embedding warning, which
+  compared the unmatched value:
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) accepts
+  abbreviations, so `density_estimator = "linear"` selected
+  `linear_gaussian` and dropped `embedding_net` without saying so.
+  `fit_density_estimator()` keeps its own
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) because it is
+  also reachable directly.
 - Fixed: a simulator whose formals match some parameter names but not
   all now warns. The choice between the two simulator signatures was all
   or nothing and the fallback was silent, so
