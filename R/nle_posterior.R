@@ -60,7 +60,11 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
   check_fit_alive(fit)
   sampler <- match.arg(sampler)
   init_strategy <- match.arg(init_strategy)
-  if (!is.null(x_obs)) x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  if (!is.null(x_obs)) {
+    x_obs <- check_numeric(x_obs, "x_obs")
+    check_finite(x_obs, "x_obs")
+    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  }
   n_chains <- n_chains %||% if (sampler == "stan") 4L else 20L
   n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
                                "so convergence can be diagnosed")
@@ -110,13 +114,27 @@ check_mcmc_count <- function(value, name, min, why = NULL) {
 }
 
 #' All rows of the observation, unlike `resolve_x()` which keeps only the first
+#'
+#' A non-finite entry is rejected here for the same reason it is in
+#' [resolve_x()]: the log-likelihood sums over rows, so one `NA` makes every
+#' starting point non-finite and the run fails in [mcmc_init()] complaining
+#' about initialization instead of about the observation.
+#'
+#' @param post An `nsbi_nle_posterior` object.
+#' @param x Observation to condition on, or `NULL` to use the posterior's
+#'   `x_obs`.
+#' @param arg Name the caller's argument goes by, for the error message.
+#'   [sample()] calls it `obs` and [log_prob()] calls it `x`.
 #' @keywords internal
-resolve_x_iid <- function(post, x) {
+resolve_x_iid <- function(post, x, arg = "obs") {
+  if (is.null(x)) arg <- "x_obs"
   x <- x %||% post$x_obs
   if (is.null(x)) {
     stop("No observation supplied. Pass `obs = ...` or set `x_obs` in posterior().",
          call. = FALSE)
   }
+  x <- check_numeric(x, arg)
+  check_finite(x, arg)
   as_theta_matrix(x, post$fit$dim_x)
 }
 
@@ -218,7 +236,7 @@ log_prob.nsbi_nle_posterior <- function(post, theta, x = NULL,
     warning("An NLE posterior has no normalizing constant; `normalize` is ",
             "ignored and the value returned is unnormalized.", call. = FALSE)
   }
-  potential <- nle_potential(post$fit, resolve_x_iid(post, x))
+  potential <- nle_potential(post$fit, resolve_x_iid(post, x, "x"))
   potential(theta)
 }
 

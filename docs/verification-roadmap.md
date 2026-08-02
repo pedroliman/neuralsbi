@@ -293,6 +293,16 @@ non-empty, so it cannot be settled until the rows exist. The counts in
 `max_proposal_batches`) go through the same validators, so `npe_sequential()`
 no longer carries its own `n_rounds` check.
 
+### the observation (0.4.11)
+
+`posterior()` checks `x_obs` with `check_numeric()` and `check_finite()` before
+storing it, and `resolve_x()`/`resolve_x_iid()` check an observation passed
+straight to `sample()`, `log_prob()` or `map_estimate()`. A non-finite entry is
+an error, not a warning, because a posterior conditioned on an `NA` is not a
+weaker answer but no answer: the draws come back all-`NaN` on the NPE side and
+every MCMC start is non-finite on the NLE side. `resolve_x_iid()` takes the
+caller's argument name so the message says `obs` or `x` to match the call.
+
 ### sbi default parity (0.3.0)
 
 `npe()` and the `fit_*` estimators now default to the same hyperparameters as

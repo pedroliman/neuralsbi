@@ -25,4 +25,11 @@ call from one to the other would otherwise get a posterior conditioned on a
 single data point with nothing said about it. Warn rather than fail: taking
 row 1 of a simulation matrix is a reasonable thing to ask for.
 }
+\details{
+A non-finite entry is a different matter and stops here. An \code{NA} passes
+through \code{apply_standardizer()} into \code{de_sample()} and comes back as all-\code{NaN}
+draws, so the complaint lands in \code{stats::quantile()} inside \code{summary()} with
+nothing to say about the observation. There is nothing sensible to condition
+on, so this errors rather than warns.
+}
 \keyword{internal}
