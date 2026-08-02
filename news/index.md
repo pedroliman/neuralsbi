@@ -1,5 +1,60 @@
 # Changelog
 
+## neuralsbi 0.4.8
+
+- **[`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  now checks its arguments, and probes `sample_fn` and `log_prob_fn`
+  once at construction.** It is the one prior a user writes by hand and
+  it took everything on trust, so the mistakes surfaced far from their
+  cause. A `log_prob_fn` returning a single number instead of one
+  density per row of `theta` passed the probe in
+  [`nle_potential()`](https://neuralsbi.pedrodelima.com/reference/nle_potential.md)
+  and came back from the sampler as “Some MCMC starting points have zero
+  posterior density. This is an initialization failure, not a sampling
+  one”, which is accurate about where it noticed and wrong about the
+  cause. A `lower` or `upper` of the wrong length was recycled by
+  [`sweep()`](https://rdrr.io/r/base/sweep.html) inside
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  with nothing but R’s “STATS is longer than the extent of
+  ‘dim(x)\[MARGIN\]’” warning, and the wrong support test then decided
+  which posterior draws were rejected as leakage and what
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  renormalized by. A `sample_fn` whose width disagreed with `dim` was
+  caught, but anonymously, as “Expected 2 columns but got 1”. `dim` must
+  now be a positive whole number, `sample_fn` and `log_prob_fn`
+  functions of one argument, and `lower`/`upper` numeric of length `dim`
+  with `upper` above `lower`. `sample_fn(2)` is called once at
+  construction and has to return a 2 x `dim` numeric matrix, and
+  `log_prob_fn` is evaluated on those two rows and has to return two
+  numbers. Every message names the argument it rejected.
+- **`lower` and `upper` accept a single number**, recycled to every
+  parameter, so a positive-support prior is `lower = 0` rather than
+  `lower = rep(0, dim)`. The recycling is deliberate and documented; it
+  is only the silent recycling of a wrong-length bound that is gone.
+- **[`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  gains `param_names`.** `new_prior()` has always carried parameter
+  names, and
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)/[`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  take them from the names of `low`/`mean`, but
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  had no way to pass them. That was not cosmetic:
+  [`sim_dispatch()`](https://neuralsbi.pedrodelima.com/reference/sim_dispatch.md)
+  decides from `prior$param_names` whether a simulator is called with
+  one scalar per formal or with the whole parameter vector, so a custom
+  prior could never use the named-simulator signature.
+  [`?prior_custom`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  also now says why a custom prior cannot be written out by
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md).
+- Fixed: [`print()`](https://rdrr.io/r/base/print.html) on a prior
+  bounded on one side only no longer errors. It printed `upper` whenever
+  `lower` was set, and `prior_custom(..., lower = 0)` with no `upper` is
+  a normal thing to build.
+- Internally,
+  [`check_function()`](https://neuralsbi.pedrodelima.com/reference/check_function.md)
+  and
+  [`check_bound()`](https://neuralsbi.pedrodelima.com/reference/check_bound.md)
+  join the validators in `R/check.R`.
+
 ## neuralsbi 0.4.7
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and

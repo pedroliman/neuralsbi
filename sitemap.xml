@@ -22,10 +22,12 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/c2st.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_architecture.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_bound.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_count.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_counts.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_finite.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_fit_alive.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/check_function.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_inference_fit.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_matrix.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/check_mcmc_count.html</loc></url>

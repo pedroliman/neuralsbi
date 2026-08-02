@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,17 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.8" id="neuralsbi-048">neuralsbi 0.4.8<a class="anchor" aria-label="anchor" href="#neuralsbi-048"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/prior_custom.html">prior_custom()</a></code> now checks its arguments, and probes <code>sample_fn</code> and <code>log_prob_fn</code> once at construction.</strong> It is the one prior a user writes by hand and it took everything on trust, so the mistakes surfaced far from their cause. A <code>log_prob_fn</code> returning a single number instead of one density per row of <code>theta</code> passed the probe in <code><a href="../reference/nle_potential.html">nle_potential()</a></code> and came back from the sampler as “Some MCMC starting points have zero posterior density. This is an initialization failure, not a sampling one”, which is accurate about where it noticed and wrong about the cause. A <code>lower</code> or <code>upper</code> of the wrong length was recycled by <code><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep()</a></code> inside <code><a href="../reference/within_support.html">within_support()</a></code> with nothing but R’s “STATS is longer than the extent of ‘dim(x)[MARGIN]’” warning, and the wrong support test then decided which posterior draws were rejected as leakage and what <code><a href="../reference/log_prob.html">log_prob()</a></code> renormalized by. A <code>sample_fn</code> whose width disagreed with <code>dim</code> was caught, but anonymously, as “Expected 2 columns but got 1”. <code>dim</code> must now be a positive whole number, <code>sample_fn</code> and <code>log_prob_fn</code> functions of one argument, and <code>lower</code>/<code>upper</code> numeric of length <code>dim</code> with <code>upper</code> above <code>lower</code>. <code>sample_fn(2)</code> is called once at construction and has to return a 2 x <code>dim</code> numeric matrix, and <code>log_prob_fn</code> is evaluated on those two rows and has to return two numbers. Every message names the argument it rejected.</li>
+<li>
+<strong><code>lower</code> and <code>upper</code> accept a single number</strong>, recycled to every parameter, so a positive-support prior is <code>lower = 0</code> rather than <code>lower = rep(0, dim)</code>. The recycling is deliberate and documented; it is only the silent recycling of a wrong-length bound that is gone.</li>
+<li>
+<strong><code><a href="../reference/prior_custom.html">prior_custom()</a></code> gains <code>param_names</code>.</strong> <code>new_prior()</code> has always carried parameter names, and <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code>/<code><a href="../reference/prior_normal.html">prior_normal()</a></code> take them from the names of <code>low</code>/<code>mean</code>, but <code><a href="../reference/prior_custom.html">prior_custom()</a></code> had no way to pass them. That was not cosmetic: <code><a href="../reference/sim_dispatch.html">sim_dispatch()</a></code> decides from <code>prior$param_names</code> whether a simulator is called with one scalar per formal or with the whole parameter vector, so a custom prior could never use the named-simulator signature. <code><a href="../reference/prior_custom.html">?prior_custom</a></code> also now says why a custom prior cannot be written out by <code><a href="../reference/stan_export.html">stan_code()</a></code>.</li>
+<li>Fixed: <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> on a prior bounded on one side only no longer errors. It printed <code>upper</code> whenever <code>lower</code> was set, and <code>prior_custom(..., lower = 0)</code> with no <code>upper</code> is a normal thing to build.</li>
+<li>Internally, <code><a href="../reference/check_function.html">check_function()</a></code> and <code><a href="../reference/check_bound.html">check_bound()</a></code> join the validators in <code>R/check.R</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.7" id="neuralsbi-047">neuralsbi 0.4.7<a class="anchor" aria-label="anchor" href="#neuralsbi-047"></a></h2>
 <ul><li>
