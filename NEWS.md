@@ -1,3 +1,9 @@
+# neuralsbi 0.4.15
+
+* **`plot_sbc()` now takes a parameter name as well as an index, and checks whichever it is given.** `plot_sbc(res, param = 99)` reached `ranks[, 99]` and reported `subscript out of bounds`, which names neither the argument nor how many parameters there are. The rank matrix carries `colnames` and every other plotting function labels by name, so `param = "sigma"` works too; a name that is not among the columns is refused with the ones that are.
+* **`pairplot()` checks `limits` against the number of parameters.** A list or a matrix with the wrong number of entries indexed past its end and gave the same `subscript out of bounds`. The message now says how many limit pairs it got and how many parameters `samples` has.
+* **`expected_coverage()` requires `levels` strictly between 0 and 1.** `levels = c(-1, 2)` used to be scored anyway: the central interval comes out empty or covers the whole line, so the row reads as coverage 0 or 1 and looks like a verdict on the fit. `plot_coverage()` inherits the check by passing `levels` through.
+
 # neuralsbi 0.4.14
 
 * **`simulate_for_sbi()` now recognises a call with `simulator` and `prior` the wrong way round.** It takes the simulator first and `npe()`, `nle()` and `npe_sequential()` take it second, so the two functions a user calls in the same breath disagree. Getting it backwards used to fail inside `sample_prior()`, whose `stopifnot()` reports `inherits(prior, "nsbi_prior") is not TRUE` about a local that holds the simulator. A user reading that concludes the prior object is broken. `inherits(simulator, "nsbi_prior") && is.function(prior)` can only be the swap, since a prior is never a function and a simulator is never an `nsbi_prior`, so that case now says so and shows the right call. `?simulate_for_sbi` says the order is reversed.

@@ -24,6 +24,34 @@ test_that("expected_coverage produces a monotone-ish curve near the diagonal", {
   expect_gt(cov$param1[2], cov$param1[1])
 })
 
+test_that("expected_coverage() refuses levels outside (0, 1)", {
+  # A level outside the unit interval used to be scored anyway: the central
+  # interval comes out empty or covers the line, so the row reads as coverage
+  # 0 or 1 and looks like a verdict on the fit.
+  set.seed(14)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 400,
+             density_estimator = "linear_gaussian")
+  res <- sbc(fit, simulator, n_sbc = 100L, n_posterior_samples = 50L, seed = 2)
+
+  expect_error(expected_coverage(res, levels = c(-1, 2)),
+               regexp = "`levels` must be numbers strictly between 0 and 1")
+  # The values are listed, so which entry is wrong is readable.
+  expect_error(expected_coverage(res, levels = c(0.5, 2)), regexp = "0.5, 2")
+  expect_error(expected_coverage(res, levels = c(0.5, NA)), regexp = "0.5, NA")
+  expect_error(expected_coverage(res, levels = 0), regexp = "not 0")
+  expect_error(expected_coverage(res, levels = 1), regexp = "not 1")
+  expect_error(expected_coverage(res, levels = "0.5"),
+               regexp = "not a character value")
+  expect_error(expected_coverage(res, levels = numeric(0)),
+               regexp = "not a length-0 numeric vector")
+
+  cov <- expected_coverage(res, levels = c(0.5, 0.9))
+  expect_equal(cov$nominal, c(0.5, 0.9))
+  expect_true(all(cov$param1 >= 0 & cov$param1 <= 1))
+})
+
 test_that("sbc errors instead of ranking against draws it never got", {
   # A bounded prior plus an estimator that leaks means sample() comes back
   # short, and sbc() used to bin those ranks against n_posterior_samples: every

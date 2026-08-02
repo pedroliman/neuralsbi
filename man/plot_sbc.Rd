@@ -9,10 +9,11 @@ plot_sbc(sbc_result, param = 1L, bins = 20L)
 \arguments{
 \item{sbc_result}{An \code{nsbi_sbc} object from \code{\link[=sbc]{sbc()}}.}
 
-\item{param}{Which parameter index to plot (default 1). The title uses
-that parameter's name (from a named prior, see \code{\link[=prior_uniform]{prior_uniform()}}/
-\code{\link[=prior_normal]{prior_normal()}}) when \code{\link[=sbc]{sbc()}} was run against a fit that has one,
-rendered as a plotmath symbol if the name parses as R syntax.}
+\item{param}{Which parameter to plot: an index (default 1), or a parameter
+name when \code{\link[=sbc]{sbc()}} was run against a fit with named parameters (see
+\code{\link[=prior_uniform]{prior_uniform()}}/\code{\link[=prior_normal]{prior_normal()}}). The title uses that parameter's name
+when there is one, rendered as a plotmath symbol if the name parses as R
+syntax.}
 
 \item{bins}{Number of histogram bins.}
 }

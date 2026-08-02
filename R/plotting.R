@@ -36,6 +36,26 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
 
   lims <- NULL
   if (!is.null(limits)) {
+    # One c(lo, hi) per parameter, in column order. A list or matrix of the
+    # wrong length used to index past its end and report "subscript out of
+    # bounds", which says nothing about the argument or about how many
+    # parameters there are to give limits for.
+    n_lim <- if (is.list(limits)) length(limits) else
+      if (is.matrix(limits)) nrow(limits) else NA_integer_
+    if (is.na(n_lim)) {
+      stop(sprintf(paste0("`limits` must be a list of %s (one c(lo, hi) per ",
+                          "parameter) or a matrix with %s, not %s."),
+                   n_things(d, "element"), n_things(d, "row"),
+                   describe_value(limits)),
+           call. = FALSE)
+    }
+    if (n_lim != d) {
+      stop(sprintf(paste0("`limits` has %s but `samples` has %s. Give one ",
+                          "c(lo, hi) per parameter, in column order."),
+                   n_things(n_lim, if (is.list(limits)) "element" else "row"),
+                   n_things(d, "parameter")),
+           call. = FALSE)
+    }
     lims <- stats::setNames(
       lapply(seq_len(d), function(j) if (is.list(limits)) limits[[j]] else limits[j, ]),
       labels
@@ -92,15 +112,18 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
 #' narrow (overconfident); an inverted-U means it is too wide.
 #'
 #' @param sbc_result An `nsbi_sbc` object from [sbc()].
-#' @param param Which parameter index to plot (default 1). The title uses
-#'   that parameter's name (from a named prior, see [prior_uniform()]/
-#'   [prior_normal()]) when [sbc()] was run against a fit that has one,
-#'   rendered as a plotmath symbol if the name parses as R syntax.
+#' @param param Which parameter to plot: an index (default 1), or a parameter
+#'   name when [sbc()] was run against a fit with named parameters (see
+#'   [prior_uniform()]/[prior_normal()]). The title uses that parameter's name
+#'   when there is one, rendered as a plotmath symbol if the name parses as R
+#'   syntax.
 #' @param bins Number of histogram bins.
 #' @return A `ggplot` object (also drawn as a side effect), invisibly.
 #' @export
 plot_sbc <- function(sbc_result, param = 1L, bins = 20L) {
   stopifnot(inherits(sbc_result, "nsbi_sbc"))
+  param <- check_index(param, "param", colnames(sbc_result$ranks),
+                       ncol(sbc_result$ranks))
   require_ggplot2()
   r <- sbc_result$ranks[, param]
   L <- sbc_result$n_posterior_samples
@@ -134,7 +157,8 @@ plot_sbc <- function(sbc_result, param = 1L, bins = 20L) {
 #' SBC trials.
 #'
 #' @param sbc_result An `nsbi_sbc` object from [sbc()].
-#' @param levels Nominal credibility levels to evaluate.
+#' @param levels Nominal credibility levels to evaluate, each strictly between
+#'   0 and 1. Passed to [expected_coverage()], which checks them.
 #' @return A `ggplot` object (also drawn as a side effect), invisibly.
 #' @export
 plot_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {

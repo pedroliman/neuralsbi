@@ -212,6 +212,115 @@ check_prob <- function(p, arg, open = TRUE) {
   as.double(p)
 }
 
+#' Validate a vector of probabilities
+#'
+#' [check_prob()] for an argument that is a vector rather than one number, such
+#' as the credibility `levels` of [expected_coverage()]. A level outside `(0,
+#' 1)` produces one meaningless number in a table of plausible ones:
+#' `levels = c(-1, 2)` scores the empty interval and the whole line, and comes
+#' back as coverage 0 and 1 with nothing said. The message lists the values, as
+#' [check_counts()] does, since which entry is wrong is the thing worth reading.
+#'
+#' @param p The user's value.
+#' @param arg Name of the argument.
+#' @param open Require `0 < p < 1` (the default). `FALSE` allows the endpoints.
+#' @return `p` as a double vector.
+#' @keywords internal
+check_probs <- function(p, arg, open = TRUE) {
+  ok <- is.numeric(p) && length(p) >= 1L && !anyNA(p) && all(is.finite(p)) &&
+    (if (isTRUE(open)) all(p > 0 & p < 1) else all(p >= 0 & p <= 1))
+  if (!ok) {
+    shown <- if (is.numeric(p) && length(p) > 1L) {
+      paste(vapply(p, describe_value, character(1)), collapse = ", ")
+    } else {
+      describe_value(p)
+    }
+    stop(sprintf("`%s` must be numbers %s, not %s.", arg,
+                 if (isTRUE(open)) "strictly between 0 and 1" else
+                   "between 0 and 1 inclusive",
+                 shown),
+         call. = FALSE)
+  }
+  as.double(p)
+}
+
+#' Validate a column index, which may be given as a name
+#'
+#' `plot_sbc(sbc_result, param = 99)` used to reach `ranks[, 99]` and report
+#' "subscript out of bounds", which names neither the argument nor how many
+#' parameters there are. The rank matrix carries `colnames` and every other
+#' plotting function labels by name, so a name is accepted here too and
+#' resolved against `nms`.
+#'
+#' @param value The user's value: one index, or one name to match against `nms`.
+#' @param arg Name of the argument.
+#' @param nms Names to match a character value against, or `NULL` when the
+#'   columns are unnamed.
+#' @param n Number of columns.
+#' @param what Noun for one column, e.g. `"parameter"`.
+#' @return An integer index between 1 and `n`.
+#' @keywords internal
+check_index <- function(value, arg, nms = NULL, n, what = "parameter") {
+  bad <- function(fmt, ...) {
+    stop(sprintf("`%s` %s", arg, sprintf(fmt, ...)), call. = FALSE)
+  }
+  if (is.factor(value)) value <- as.character(value)
+  if (is.character(value)) {
+    if (length(value) != 1L || is.na(value)) {
+      bad("must be one %s name or index, not %s.", what, describe_value(value))
+    }
+    if (is.null(nms)) {
+      bad(paste0("is \"%s\", but the %ss are unnamed. Give an index between 1 ",
+                 "and %d instead."),
+          value, what, n)
+    }
+    i <- match(value, nms)
+    if (is.na(i)) {
+      bad("is \"%s\", which is not one of the %s names: %s.",
+          value, what, paste(nms, collapse = ", "))
+    }
+    return(as.integer(i))
+  }
+  ok <- is.numeric(value) && length(value) == 1L && !is.na(value) &&
+    is.finite(value) && value == trunc(value) && value >= 1 && value <= n
+  if (!ok) {
+    bad("must be one %s index between 1 and %d%s, not %s.", what, n,
+        if (is.null(nms)) "" else
+          sprintf(", or one of %s", paste(nms, collapse = ", ")),
+        describe_value(value))
+  }
+  as.integer(value)
+}
+
+#' Validate a file path argument
+#'
+#' `saveRDS()` and `writeLines()` take a connection as well as a path, so a
+#' value that is neither gets as far as the file system before anything
+#' complains. On the reading side `readRDS()` on a path that does not exist
+#' raises "cannot open the connection", and the file it could not open is named
+#' only in the accompanying warning.
+#'
+#' @param path The user's value.
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @param must_exist Require the file to exist, for a path that is read.
+#' @return `path`, unchanged.
+#' @keywords internal
+check_path <- function(path, arg = "path", must_exist = FALSE) {
+  ok <- is.character(path) && length(path) == 1L && !is.na(path) &&
+    nzchar(path)
+  if (!ok) {
+    empty <- is.character(path) && length(path) == 1L && !is.na(path)
+    stop(sprintf("`%s` must be a single file path, not %s.", arg,
+                 if (empty) "an empty string" else describe_value(path)),
+         call. = FALSE)
+  }
+  if (isTRUE(must_exist) && !file.exists(path)) {
+    stop(sprintf("`%s` is \"%s\", which does not exist.", arg, path),
+         call. = FALSE)
+  }
+  path
+}
+
 #' Validate a vector of counts
 #'
 #' [check_count()] for an argument that is a vector of counts rather than one,
