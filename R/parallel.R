@@ -247,7 +247,10 @@ run_simulator <- function(simulator, theta, sim_args = list(),
       out <- vector("list", k)
       for (j in seq_len(k)) {
         out[[j]] <- as_sim_draw(
-          with_rng_stream(batch$streams[[j]], call_one(batch$theta[j, ])),
+          with_rng_stream(
+            batch$streams[[j]],
+            call_sim_once(call_one, batch$theta[j, ], batch$index[j])
+          ),
           batch$index[j]
         )
         tick()

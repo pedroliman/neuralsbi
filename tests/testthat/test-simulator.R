@@ -103,6 +103,56 @@ test_that("a single named parameter keeps its name -- the documented sharp edge"
   expect_null(colnames(sims$x))
 })
 
+test_that("a failure inside the simulator names the simulation", {
+  prior <- prior_uniform(low = c(mu = -3, sigma = 0.1),
+                         high = c(mu = 3, sigma = 3))
+  calls <- 0L
+  sim <- function(mu, sigma) {
+    calls <<- calls + 1L
+    if (calls == 3L) stop("the solver did not converge")
+    c(y = mu)
+  }
+  err <- expect_error(simulate_for_sbi(sim, prior, 5, seed = 1))
+  expect_match(conditionMessage(err),
+               "Simulation 3 failed: the solver did not converge", fixed = TRUE)
+  # the parameters that produced it, by name, rounded
+  expect_match(conditionMessage(err), "parameters: mu = ", fixed = TRUE)
+  expect_match(conditionMessage(err), "sigma = ", fixed = TRUE)
+  expect_match(conditionMessage(err), "?nsbi_simulator", fixed = TRUE)
+})
+
+test_that("a dispatch mismatch is reported as one, not as a missing default", {
+  # unnamed prior, so the whole vector goes to `mu` and `ls` has no default.
+  # The bare R error names neither the simulation nor the contract.
+  prior <- prior_uniform(c(-3, -1), c(3, 1))
+  err <- expect_error(
+    simulate_for_sbi(function(mu, ls) rnorm(1, mu, exp(ls)), prior, 5, seed = 1))
+  expect_match(conditionMessage(err), "Simulation 1 failed", fixed = TRUE)
+  expect_match(conditionMessage(err), "?nsbi_simulator", fixed = TRUE)
+  # no parameter names to print, so the values stand on their own
+  expect_match(conditionMessage(err), "parameters: -?[0-9]")
+})
+
+test_that("the simulator's own condition survives the re-raise", {
+  cnd <- errorCondition("diverged", class = "my_solver_error")
+  call_one <- function(theta_i) stop(cnd)
+  err <- expect_error(call_sim_once(call_one, c(mu = 1), 2L),
+                      class = "my_solver_error")
+  expect_s3_class(err, "nsbi_sim_error")
+  expect_identical(conditionMessage(err$parent), "diverged")
+  # a call that works is passed through untouched
+  expect_equal(call_sim_once(function(theta_i) theta_i * 2, c(mu = 1.5), 1L),
+               c(mu = 3))
+})
+
+test_that("a wide parameter set is truncated in the message", {
+  wide <- stats::setNames(seq_len(20) / 7, paste0("p", 1:20))
+  err <- expect_error(call_sim_once(function(theta_i) stop("nope"), wide, 4L))
+  expect_match(conditionMessage(err), "p1 = 0.1429", fixed = TRUE)
+  expect_match(conditionMessage(err), "(20 parameters in all)", fixed = TRUE)
+  expect_false(grepl("p20", conditionMessage(err), fixed = TRUE))
+})
+
 test_that("npe() runs end to end on a per-parameter-set simulator", {
   set.seed(11)
   prior <- prior_normal(mean = c(alpha = 0, beta = 0), sd = 1)

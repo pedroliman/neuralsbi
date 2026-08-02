@@ -159,6 +159,39 @@ simulator_caller <- function(simulator, param_names, sim_args = list()) {
   }
 }
 
+#' Call the simulator for one parameter set, naming it if it fails
+#'
+#' [as_sim_draw()] reports everything wrong with a simulator's *return value*
+#' and names the simulation it came from. A failure inside the simulator
+#' happens before there is a return value, so on its own it arrives as bare as
+#' R left it: `argument "ls" is missing, with no default`, with no index, no
+#' parameters, and nothing to suggest that the real problem is a dispatch
+#' mismatch rather than a missing default. Under a \pkg{future} plan the call
+#' crosses a worker boundary first, which is where a useful traceback goes.
+#'
+#' The original condition is kept as the parent, and its class is carried onto
+#' the re-raised error, so a caller catching a condition the simulator signals
+#' still catches it.
+#'
+#' @param call_one The closure from [simulator_caller()].
+#' @param theta_i One parameter set.
+#' @param i Index of the simulation, for the error message.
+#' @return Whatever the simulator returned.
+#' @keywords internal
+call_sim_once <- function(call_one, theta_i, i = 1L) {
+  tryCatch(call_one(theta_i), error = function(e) {
+    stop(errorCondition(
+      sprintf(paste0("Simulation %d failed: %s\n  parameters: %s\n",
+                     "  See ?nsbi_simulator for the two accepted simulator ",
+                     "signatures."),
+              i, sub("[[:space:]]+$", "", conditionMessage(e)),
+              describe_params(theta_i)),
+      parent = e,
+      class = unique(c("nsbi_sim_error",
+                       setdiff(class(e), c("error", "condition"))))))
+  })
+}
+
 #' Coerce one simulator return value to a named numeric vector
 #'
 #' Every rejection names the actual problem, because the alternative is a
