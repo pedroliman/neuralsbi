@@ -303,6 +303,18 @@ weaker answer but no answer: the draws come back all-`NaN` on the NPE side and
 every MCMC start is non-finite on the NLE side. `resolve_x_iid()` takes the
 caller's argument name so the message says `obs` or `x` to match the call.
 
+### swapped simulator and prior (0.4.14)
+
+`simulate_for_sbi(simulator, prior, n)` reverses the order of `npe(prior,
+simulator, ...)`, and the order stays as it is: changing it breaks every
+existing call and the `.Rd` `\usage` is codoc-checked. The swap is detectable
+instead. A prior object is never a function and a simulator is never an
+`nsbi_prior`, so `inherits(simulator, "nsbi_prior") && is.function(prior)`
+identifies the mistake with no ambiguity, and the message shows the call in the
+order the function wants. It runs before `check_function()` and `check_prior()`
+so the swapped call gets the specific answer rather than a complaint about one
+argument in isolation.
+
 ### diagnostic priors (0.4.13)
 
 `sbc()` and `tarp()` check `prior` against `fit$dim_theta` before they simulate

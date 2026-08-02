@@ -16,7 +16,8 @@ simulate_for_sbi(
 \arguments{
 \item{simulator}{A function called once per parameter set, returning one
 simulated observation: a numeric vector, a scalar, or a one-row matrix or
-data frame. See \link{nsbi_simulator}.}
+data frame. See \link{nsbi_simulator}. Note the order: the simulator is the
+first argument here and the second in \code{npe(prior, simulator, ...)}.}
 
 \item{prior}{An \code{nsbi_prior} (see \code{\link[=prior_uniform]{prior_uniform()}}, \code{\link[=prior_normal]{prior_normal()}}).}
 
@@ -42,6 +43,11 @@ draw. Under a \pkg{future} plan the draws are spread across workers. See
 \details{
 Simulations whose output is not finite are dropped together with their
 parameters, with a warning.
+
+The simulator comes first here and second in \code{\link[=npe]{npe()}}, \code{\link[=nle]{nle()}} and
+\code{\link[=npe_sequential]{npe_sequential()}}. That is the reverse of the fitting functions and it is
+easy to get backwards, so a call with the two swapped is detected and named
+rather than left to fail inside \code{\link[=sample_prior]{sample_prior()}}.
 }
 \examples{
 prior <- prior_uniform(c(a = -1, b = -1), c(a = 1, b = 1))
