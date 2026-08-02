@@ -46,14 +46,29 @@ fit_linear_gaussian <- function(theta, x, ridge = 1e-6, verbose = FALSE) {
     "[linear_gaussian] fitted on %d sims, %d params, %d data dims\n",
     n, p, ncol(x)))
   structure(
-    list(B = B, Sigma = Sigma, chol = chol(Sigma), dim_theta = p),
+    list(B = B, Sigma = Sigma, chol = chol(Sigma), dim_theta = p,
+         dim_x = ncol(x)),
     class = c("nsbi_de_lingauss", "nsbi_de")
   )
 }
 
+#' Conditional mean of the linear-Gaussian estimator
+#'
+#' `lingauss_mean()` is the only place `x` meets `de$B`, so it is also the
+#' place the width of `x` is checked. It passes `de$dim_x` to
+#' [as_theta_matrix()] for the reason every neural estimator passes its own: a
+#' wrong-width `x` otherwise gets as far as the matrix product and is reported
+#' as "non-conformable arguments", which names neither the argument nor the
+#' width expected of it. An estimator fitted before `dim_x` was recorded has
+#' `NULL` here and keeps the old unchecked behaviour.
+#'
+#' @param de A fitted `nsbi_de_lingauss` object.
+#' @param x The conditioning variable: a numeric vector, matrix or data frame
+#'   with `de$dim_x` columns.
+#' @return An `nrow(x) x de$dim_theta` matrix of conditional means.
 #' @keywords internal
 lingauss_mean <- function(de, x) {
-  x <- as_theta_matrix(x)
+  x <- as_theta_matrix(x, de$dim_x)
   cbind(1, x) %*% de$B
 }
 
@@ -69,7 +84,6 @@ de_log_prob.nsbi_de_lingauss <- function(de, theta, x) {
 
 #' @export
 de_sample.nsbi_de_lingauss <- function(de, x, n) {
-  x <- as_theta_matrix(x)
   mu <- lingauss_mean(de, x)[1, ]
   z <- matrix(stats::rnorm(n * de$dim_theta), nrow = n)
   sweep(z %*% de$chol, 2, mu, `+`)
