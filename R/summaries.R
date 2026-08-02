@@ -5,7 +5,7 @@
 #' data-frame workflows (dplyr, ggplot2, ...).
 #'
 #' @param object An `nsbi_samples` matrix from [sample()], an `nsbi_posterior`,
-#'   or an `nsbi_npe` fit.
+#'   or an `nsbi_npe` or `nsbi_nle` fit.
 #' @param probs Quantiles to report.
 #' @param n Number of draws used to summarize a posterior.
 #' @param x Observation to condition on (defaults to the posterior's `x_obs`);
@@ -14,7 +14,9 @@
 #' @param ... Additional arguments passed to methods.
 #' @return For samples and posteriors, a data frame with one row per parameter
 #'   (mean, sd, and quantiles). For fits, an invisible list of training
-#'   metadata.
+#'   metadata. In that list `dim_x` counts the data dimension the estimator was
+#'   trained on, which for an `nsbi_nle` fit is one observation rather than the
+#'   whole data set.
 #' @name summaries
 NULL
 
@@ -69,3 +71,10 @@ summary.nsbi_npe <- function(object, ...) {
   }
   invisible(info)
 }
+
+#' @rdname summaries
+#' @export
+# An NLE fit carries the same training metadata under the same names, and the
+# print() call inside dispatches on the class, so there is nothing to
+# specialize here.
+summary.nsbi_nle <- function(object, ...) summary.nsbi_npe(object, ...)

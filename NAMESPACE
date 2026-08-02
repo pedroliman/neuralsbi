@@ -74,6 +74,7 @@ S3method(de_iid_evaluator, nsbi_de_mdn)
 S3method(summary, nsbi_samples)
 S3method(summary, nsbi_posterior)
 S3method(summary, nsbi_npe)
+S3method(summary, nsbi_nle)
 S3method(as.data.frame, nsbi_samples)
 
 S3method(de_log_prob, nsbi_de_lingauss)
