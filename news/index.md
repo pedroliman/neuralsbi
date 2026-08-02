@@ -1,5 +1,25 @@
 # Changelog
 
+## neuralsbi 0.4.4
+
+- Fixed: an NPE posterior given a multi-row observation now warns.
+  [`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md)
+  kept row 1 and said nothing about the rest, which is right for NPE and
+  invisible to the user. The trap is the asymmetry with
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md), where
+  the rows of `x_obs` are independent observations that the
+  log-likelihood sums over: the same matrix means “200 observations” to
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and “the
+  first observation” to
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md), so
+  moving a working call from one to the other silently dropped all but
+  one data point. The warning names the row count and points at
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md). It
+  stays a warning because taking row 1 of a simulation matrix is a
+  reasonable thing to ask for, and
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)/[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)
+  pass single rows anyway.
+
 ## neuralsbi 0.4.3
 
 - **New: Neural Likelihood Estimation, via

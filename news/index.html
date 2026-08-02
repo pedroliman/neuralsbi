@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.4" id="neuralsbi-044">neuralsbi 0.4.4<a class="anchor" aria-label="anchor" href="#neuralsbi-044"></a></h2>
+<ul><li>Fixed: an NPE posterior given a multi-row observation now warns. <code><a href="../reference/resolve_x.html">resolve_x()</a></code> kept row 1 and said nothing about the rest, which is right for NPE and invisible to the user. The trap is the asymmetry with <code><a href="../reference/nle.html">nle()</a></code>, where the rows of <code>x_obs</code> are independent observations that the log-likelihood sums over: the same matrix means “200 observations” to <code><a href="../reference/nle.html">nle()</a></code> and “the first observation” to <code><a href="../reference/npe.html">npe()</a></code>, so moving a working call from one to the other silently dropped all but one data point. The warning names the row count and points at <code><a href="../reference/nle.html">nle()</a></code>. It stays a warning because taking row 1 of a simulation matrix is a reasonable thing to ask for, and <code><a href="../reference/sbc.html">sbc()</a></code>/<code><a href="../reference/tarp.html">tarp()</a></code> pass single rows anyway.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.3" id="neuralsbi-043">neuralsbi 0.4.3<a class="anchor" aria-label="anchor" href="#neuralsbi-043"></a></h2>
 <ul><li>

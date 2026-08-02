@@ -3,9 +3,11 @@
 TSNPE spends its whole budget near one observation, so a mis-sized
 `x_obs` is not a detail. Without this check
 [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
-folds a length-3 vector into a 3 x 1 matrix and `resolve_x()` keeps row
-1, so the run truncates its proposals around a value the user never
-asked for and nothing says so. Called twice: once at the top of
+folds a length-3 vector into a 3 x 1 matrix and
+[`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md)
+keeps row 1, so the run truncates its proposals around a value the user
+never asked for, with only a warning to go on. Called twice: once at the
+top of
 [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
 for shape, and once after round 1 with `dim_x`, which is the first
 moment the simulator's output width is known.
