@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,13 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.6" id="neuralsbi-046">neuralsbi 0.4.6<a class="anchor" aria-label="anchor" href="#neuralsbi-046"></a></h2>
+<ul><li>
+<strong>Fixed: a non-numeric column in a pre-computed <code>theta</code> or <code>x</code> is now an error that names the column.</strong> The pre-computed path coerced its input with <code>storage.mode(x) &lt;- "double"</code>, so a character or factor column turned into a column of <code>NA</code> with R’s generic “NAs introduced by coercion” warning. Every row was then dropped as non-finite and the run stopped with “All 50 simulations returned non-finite output (NA, NaN or Inf). Check the simulator on a single prior draw”, which is wrong twice over: no simulator ran, and the data was fine apart from one text column. <code>npe(prior, theta =, x =)</code>, <code><a href="../reference/nle.html">nle()</a></code> and <code><a href="../reference/log_prob.html">log_prob()</a></code> now say <code>`x` has non-numeric columns: b</code>, the way <code><a href="../reference/as_sim_draw.html">as_sim_draw()</a></code> has always reported the same mistake in simulator output.</li>
+<li>Relatedly, <code><a href="../reference/drop_failed_sims.html">drop_failed_sims()</a></code> no longer tells you to check the simulator when you did not call one. On the pre-computed path it points at <code>theta</code> or <code>x</code> instead.</li>
+<li>Internally, <code><a href="../reference/check_numeric.html">check_numeric()</a></code> carries the type half of <code><a href="../reference/check_matrix.html">check_matrix()</a></code>, so entry points that disagree about shape (a bare vector is one parameter set to <code><a href="../reference/log_lik.html">log_lik()</a></code> and a column of values to <code>npe(theta =, x =)</code>) still share one message about types.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.5" id="neuralsbi-045">neuralsbi 0.4.5<a class="anchor" aria-label="anchor" href="#neuralsbi-045"></a></h2>
 <ul><li>

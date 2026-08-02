@@ -1,5 +1,35 @@
 # Changelog
 
+## neuralsbi 0.4.6
+
+- **Fixed: a non-numeric column in a pre-computed `theta` or `x` is now
+  an error that names the column.** The pre-computed path coerced its
+  input with `storage.mode(x) <- "double"`, so a character or factor
+  column turned into a column of `NA` with R’s generic “NAs introduced
+  by coercion” warning. Every row was then dropped as non-finite and the
+  run stopped with “All 50 simulations returned non-finite output (NA,
+  NaN or Inf). Check the simulator on a single prior draw”, which is
+  wrong twice over: no simulator ran, and the data was fine apart from
+  one text column. `npe(prior, theta =, x =)`,
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  now say `` `x` has non-numeric columns: b ``, the way
+  [`as_sim_draw()`](https://neuralsbi.pedrodelima.com/reference/as_sim_draw.md)
+  has always reported the same mistake in simulator output.
+- Relatedly,
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  no longer tells you to check the simulator when you did not call one.
+  On the pre-computed path it points at `theta` or `x` instead.
+- Internally,
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  carries the type half of
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md),
+  so entry points that disagree about shape (a bare vector is one
+  parameter set to
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  and a column of values to `npe(theta =, x =)`) still share one message
+  about types.
+
 ## neuralsbi 0.4.5
 
 - **The counts and training controls on the public surface are now
