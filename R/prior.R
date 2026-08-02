@@ -106,21 +106,103 @@ prior_normal <- function(mean, sd = 1) {
 
 #' Build a prior from arbitrary sampling / density functions
 #'
-#' @param sample_fn Function `function(n)` returning an `n x dim` matrix.
+#' This is the one prior a user writes by hand, so it is the one where a
+#' mistake is most likely, and the mistakes are quiet. A `log_prob_fn` that
+#' returns a single number instead of one per row is legal R that surfaces much
+#' later as an MCMC initialization failure; a `lower` of the wrong length is
+#' recycled by `sweep()` into a support test that rejects the wrong draws.
+#' Everything is therefore checked at construction, including one probe call of
+#' `sample_fn(2)` and, when it is given, `log_prob_fn()` on those two rows.
+#'
+#' @param sample_fn Function `function(n)` returning an `n x dim` matrix, one
+#'   row per draw.
 #' @param log_prob_fn Function `function(theta)` returning a length-`n` vector of
-#'   log densities. Optional; required only for methods/diagnostics that need it.
+#'   log densities, one per row of `theta`. Optional; required only for
+#'   methods/diagnostics that need it.
 #' @param dim Number of parameters.
-#' @param lower,upper Optional support bounds (numeric vectors) enabling
-#'   out-of-support rejection.
+#' @param lower,upper Optional support bounds enabling out-of-support
+#'   rejection. Numeric of length `dim`, or length 1 to apply the same bound to
+#'   every parameter.
+#' @param param_names Optional character vector of parameter names, one per
+#'   parameter. These name the columns of every downstream parameter matrix,
+#'   posterior sample and diagnostic plot, and they decide how the simulator is
+#'   called: a simulator whose formals are exactly these names receives one
+#'   scalar per formal, and any other simulator receives the parameter vector as
+#'   its first argument. See [nsbi_simulator].
 #' @return An `nsbi_prior` object.
+#' @section Stan export:
+#' A custom prior is arbitrary R code rather than a named distribution with
+#' parameters, so [stan_code()] cannot restate it as a Stan sampling statement.
+#' Take `stan_code(fit, model = FALSE)` and write the model block yourself.
+#' @examples
+#' prior <- prior_custom(
+#'   sample_fn = function(n) cbind(rexp(n, 1), rexp(n, 2)),
+#'   log_prob_fn = function(theta) {
+#'     dexp(theta[, 1], 1, log = TRUE) + dexp(theta[, 2], 2, log = TRUE)
+#'   },
+#'   dim = 2, lower = 0, param_names = c("beta", "gamma")
+#' )
 #' @export
 prior_custom <- function(sample_fn, log_prob_fn = NULL, dim, lower = NULL,
-                         upper = NULL) {
-  if (is.null(log_prob_fn)) {
-    log_prob_fn <- function(theta) rep(NA_real_, nrow(as_theta_matrix(theta, dim)))
+                         upper = NULL, param_names = NULL) {
+  d <- check_count(dim, "dim", min = 1L, why = "(the number of parameters)")
+  check_function(sample_fn, "sample_fn", what = "the number of draws")
+  if (!is.null(log_prob_fn)) {
+    check_function(log_prob_fn, "log_prob_fn", what = "a matrix of parameters")
   }
-  new_prior(sample_fn, log_prob_fn, dim, lower = lower, upper = upper,
-            type = "custom")
+  lower <- check_bound(lower, "lower", d)
+  upper <- check_bound(upper, "upper", d)
+  if (!is.null(lower) && !is.null(upper) && any(upper <= lower)) {
+    stop("Every `upper` must be strictly greater than the matching `lower`.",
+         call. = FALSE)
+  }
+  ok_names <- is.null(param_names) ||
+    (is.character(param_names) && length(param_names) == d &&
+       !anyNA(param_names) && all(nzchar(param_names)))
+  if (!ok_names) {
+    stop(sprintf(paste0("`param_names` must be a character vector with one ",
+                        "non-empty name per parameter (%s), not %s."),
+                 n_things(d, "parameter"), describe_value(param_names)),
+         call. = FALSE)
+  }
+
+  # One probe call, at construction rather than per draw. Whatever comes back
+  # has to survive as_theta_matrix() in sample_prior(), so coerce it the same
+  # way and check the shape here, where the error can still name `sample_fn`.
+  probe <- tryCatch(sample_fn(2L), error = function(e) {
+    stop(sprintf("`sample_fn` failed when called as `sample_fn(2)`: %s",
+                 conditionMessage(e)),
+         call. = FALSE)
+  })
+  probe <- as_theta_matrix(check_numeric(probe, "sample_fn(2)"))
+  if (!identical(dim(probe), c(2L, d))) {
+    stop(sprintf(paste0("`sample_fn(2)` must return a 2 x %d matrix (one row ",
+                        "per draw, one parameter per column), but it returned ",
+                        "a %d x %d matrix. See ?prior_custom."),
+                 d, nrow(probe), ncol(probe)),
+         call. = FALSE)
+  }
+
+  if (is.null(log_prob_fn)) {
+    log_prob_fn <- function(theta) rep(NA_real_, nrow(as_theta_matrix(theta, d)))
+  } else {
+    lp <- tryCatch(log_prob_fn(probe), error = function(e) {
+      stop(sprintf(paste0("`log_prob_fn` failed on a 2 x %d matrix of draws ",
+                          "from `sample_fn`: %s"), d, conditionMessage(e)),
+           call. = FALSE)
+    })
+    if (!is.numeric(lp) || length(lp) != 2L) {
+      got <- if (is.null(lp)) "NULL" else
+        sprintf("a length-%d %s vector", length(lp), class(lp)[1L])
+      stop(sprintf(paste0("`log_prob_fn` must return one log-density per row ",
+                          "of `theta`, but on a 2-row matrix it returned %s. ",
+                          "See ?prior_custom."), got),
+           call. = FALSE)
+    }
+  }
+
+  new_prior(sample_fn, log_prob_fn, d, lower = lower, upper = upper,
+            type = "custom", param_names = param_names)
 }
 
 #' Draw samples from a prior
@@ -165,8 +247,12 @@ print.nsbi_prior <- function(x, ...) {
   if (!is.null(x$param_names)) {
     cat("  parameters:", paste(x$param_names, collapse = ", "), "\n")
   }
+  # Printed separately: a custom prior can bound one side and not the other,
+  # and within_support() has always allowed that.
   if (!is.null(x$lower)) {
     cat("  lower:", paste(signif(x$lower, 4), collapse = ", "), "\n")
+  }
+  if (!is.null(x$upper)) {
     cat("  upper:", paste(signif(x$upper, 4), collapse = ", "), "\n")
   }
   invisible(x)
