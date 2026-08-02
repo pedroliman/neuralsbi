@@ -134,3 +134,32 @@ test_that("sbc(), tarp() and c2st() check their counts", {
                "`n_folds` must be a single whole number of at least 2 since")
   expect_error(c2st(draws, draws, n_folds = NA), "`n_folds` must be")
 })
+
+test_that("c2st() refuses two sample sets of different widths", {
+  set.seed(3)
+  a <- matrix(stats::rnorm(200), ncol = 2)
+  b <- matrix(stats::rnorm(300), ncol = 3)
+
+  expect_error(c2st(a, b), regexp = "`x` has 2 columns and `y` has 3 columns")
+  expect_error(c2st(b, a), regexp = "`x` has 3 columns and `y` has 2 columns")
+  expect_error(c2st(a, letters[1:4]), regexp = "`y` must be numeric")
+})
+
+test_that("c2st() refuses more folds than it has draws to fill them", {
+  # Left alone, rep_len() leaves the last folds empty, mean() of an empty test
+  # fold is NaN, and the accuracy comes back NaN with nothing said about why.
+  set.seed(4)
+  few <- matrix(stats::rnorm(8), ncol = 2)
+
+  expect_error(c2st(few, few), regexp = "smaller sample set has only 4 draws")
+  expect_error(c2st(few, few, n_folds = 4),
+               regexp = "`n_folds` is 4, but the smaller sample set")
+  # The lower bound still comes from check_count(), before the draws are seen.
+  expect_error(c2st(few, few, n_folds = 1),
+               regexp = "at least 2 since each fold is scored")
+
+  # Fewer folds than draws is fine, including on the smaller of two sets.
+  expect_type(c2st(few, few, n_folds = 3, seed = 1)$accuracy, "double")
+  plenty <- matrix(stats::rnorm(400), ncol = 2)
+  expect_false(is.nan(c2st(plenty, few, n_folds = 3, seed = 1)$accuracy))
+})
