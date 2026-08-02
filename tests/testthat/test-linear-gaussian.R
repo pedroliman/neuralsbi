@@ -35,6 +35,21 @@ test_that("npe errors clearly when neither simulator nor (theta,x) are given", {
   expect_error(npe(prior), "simulator")
 })
 
+test_that("a bad density_estimator errors before the simulator runs", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  calls <- 0L
+  counting_simulator <- function(theta) {
+    calls <<- calls + 1L
+    theta
+  }
+  expect_error(
+    npe(prior, counting_simulator, n_simulations = 100,
+        density_estimator = "mfa"),
+    "should be one of"
+  )
+  expect_identical(calls, 0L)
+})
+
 test_that("pre-computed simulations can be passed directly", {
   prior <- prior_normal(mean = 0, sd = 1)
   theta <- sample_prior(prior, 500)
