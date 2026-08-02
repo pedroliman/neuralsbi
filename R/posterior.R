@@ -46,7 +46,11 @@ posterior.default <- function(fit, x_obs = NULL, ...) {
 #' @export
 posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
   check_fit_alive(fit)
-  if (!is.null(x_obs)) x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  if (!is.null(x_obs)) {
+    x_obs <- check_numeric(x_obs, "x_obs")
+    check_finite(x_obs, "x_obs")
+    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  }
   structure(
     list(fit = fit, x_obs = x_obs),
     class = "nsbi_posterior"
@@ -64,18 +68,27 @@ posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
 #' single data point with nothing said about it. Warn rather than fail: taking
 #' row 1 of a simulation matrix is a reasonable thing to ask for.
 #'
+#' A non-finite entry is a different matter and stops here. An `NA` passes
+#' through `apply_standardizer()` into `de_sample()` and comes back as all-`NaN`
+#' draws, so the complaint lands in `stats::quantile()` inside `summary()` with
+#' nothing to say about the observation. There is nothing sensible to condition
+#' on, so this errors rather than warns.
+#'
 #' @param post An `nsbi_posterior` object.
 #' @param x Observation to condition on, or `NULL` to use the posterior's
 #'   `x_obs`.
 #' @return A one-row matrix with `dim_x` columns.
 #' @keywords internal
 resolve_x <- function(post, x) {
+  arg <- if (is.null(x)) "x_obs" else "x"
   x <- x %||% post$x_obs
   if (is.null(x)) {
     stop("No observation supplied. Pass `x = ...` or set `x_obs` in posterior().",
          call. = FALSE)
   }
-  x <- as_theta_matrix(check_numeric(x, "x"), post$fit$dim_x)
+  x <- check_numeric(x, arg)
+  check_finite(x, arg)
+  x <- as_theta_matrix(x, post$fit$dim_x)
   if (nrow(x) > 1L) {
     warning(sprintf(
       "Observation has %d rows; an NPE posterior conditions on one, so only row 1 is used. ",

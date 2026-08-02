@@ -4,9 +4,21 @@
 \alias{resolve_x_iid}
 \title{All rows of the observation, unlike \code{resolve_x()} which keeps only the first}
 \usage{
-resolve_x_iid(post, x)
+resolve_x_iid(post, x, arg = "obs")
+}
+\arguments{
+\item{post}{An \code{nsbi_nle_posterior} object.}
+
+\item{x}{Observation to condition on, or \code{NULL} to use the posterior's
+\code{x_obs}.}
+
+\item{arg}{Name the caller's argument goes by, for the error message.
+\code{\link[=sample]{sample()}} calls it \code{obs} and \code{\link[=log_prob]{log_prob()}} calls it \code{x}.}
 }
 \description{
-All rows of the observation, unlike \code{resolve_x()} which keeps only the first
+A non-finite entry is rejected here for the same reason it is in
+\code{\link[=resolve_x]{resolve_x()}}: the log-likelihood sums over rows, so one \code{NA} makes every
+starting point non-finite and the run fails in \code{\link[=mcmc_init]{mcmc_init()}} complaining
+about initialization instead of about the observation.
 }
 \keyword{internal}
