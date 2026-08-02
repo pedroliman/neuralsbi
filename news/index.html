@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,12 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.11" id="neuralsbi-0411">neuralsbi 0.4.11<a class="anchor" aria-label="anchor" href="#neuralsbi-0411"></a></h2>
+<ul><li>
+<strong>A non-finite observation is now rejected where it is supplied.</strong> <code><a href="../reference/posterior.html">posterior()</a></code> took <code>x_obs</code> on trust, and an <code>NA</code> in it travelled through standardization into the density estimator and came back as all-<code>NaN</code> draws. The first complaint was <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">stats::quantile()</a></code>’s “missing values and NaN’s not allowed if ‘na.rm’ is FALSE”, raised from inside <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and saying nothing about the observation. On the NLE side the same <code>NA</code> made every MCMC starting point non-finite, and the run failed reporting an initialization problem. The observation is the one input a user types out rather than simulates, so it is the one most likely to carry an <code>NA</code> from a real data set, and it was the only one the package did not check: <code><a href="../reference/drop_failed_sims.html">drop_failed_sims()</a></code> has always discarded non-finite simulations with a count and a rate, and <code><a href="../reference/slice_sample_run.html">slice_sample_run()</a></code> has always refused a non-finite starting point. <code><a href="../reference/posterior.html">posterior()</a></code> on either fit type, and an observation passed straight to <code><a href="../reference/sample.html">sample()</a></code>, <code><a href="../reference/log_prob.html">log_prob()</a></code> or <code><a href="../reference/map_estimate.html">map_estimate()</a></code>, now go through <code><a href="../reference/check_finite.html">check_finite()</a></code>, which names the argument, counts the bad entries, says whether they are <code>NA</code>, <code>NaN</code> or <code>Inf</code>, and gives the position of the first one. It errors rather than warns: there is nothing sensible to condition on.</li>
+<li>Internally, <code><a href="../reference/resolve_x_iid.html">resolve_x_iid()</a></code> takes an <code>arg</code> argument so the message names the argument the caller used, <code>obs</code> for <code><a href="../reference/sample.html">sample()</a></code> and <code>x</code> for <code><a href="../reference/log_prob.html">log_prob()</a></code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.10" id="neuralsbi-0410">neuralsbi 0.4.10<a class="anchor" aria-label="anchor" href="#neuralsbi-0410"></a></h2>
 <ul><li>

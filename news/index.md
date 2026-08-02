@@ -1,5 +1,45 @@
 # Changelog
 
+## neuralsbi 0.4.11
+
+- **A non-finite observation is now rejected where it is supplied.**
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  took `x_obs` on trust, and an `NA` in it travelled through
+  standardization into the density estimator and came back as all-`NaN`
+  draws. The first complaint was
+  [`stats::quantile()`](https://rdrr.io/r/stats/quantile.html)’s
+  “missing values and NaN’s not allowed if ‘na.rm’ is FALSE”, raised
+  from inside [`summary()`](https://rdrr.io/r/base/summary.html) and
+  saying nothing about the observation. On the NLE side the same `NA`
+  made every MCMC starting point non-finite, and the run failed
+  reporting an initialization problem. The observation is the one input
+  a user types out rather than simulates, so it is the one most likely
+  to carry an `NA` from a real data set, and it was the only one the
+  package did not check:
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  has always discarded non-finite simulations with a count and a rate,
+  and
+  [`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  has always refused a non-finite starting point.
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  on either fit type, and an observation passed straight to
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  or
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md),
+  now go through
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md),
+  which names the argument, counts the bad entries, says whether they
+  are `NA`, `NaN` or `Inf`, and gives the position of the first one. It
+  errors rather than warns: there is nothing sensible to condition on.
+- Internally,
+  [`resolve_x_iid()`](https://neuralsbi.pedrodelima.com/reference/resolve_x_iid.md)
+  takes an `arg` argument so the message names the argument the caller
+  used, `obs` for
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  and `x` for
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md).
+
 ## neuralsbi 0.4.10
 
 - **An error raised inside the simulator now names the simulation and
