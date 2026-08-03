@@ -14,10 +14,24 @@ generics:
 \item \code{de_sample(de, x, n)} -- draw \code{n} parameter vectors given a single \code{x}
 }
 
-Two estimators ship today:
+The contract is really \code{q(target | condition)}: it makes no assumption
+about which of the two arguments is the parameter. \code{\link{npe}} calls it with
+\code{theta} as the target and \code{x} as the condition, learning the posterior.
+\code{\link{nle}} swaps the two, learning the likelihood instead, with the same
+estimators and the same two generics.
+
+Four estimators ship today:
 \itemize{
-\item \code{"mdn"} -- a Mixture Density Network (neural network -> Gaussian mixture),
-the workhorse, requires the \code{torch} back end.
+\item \code{"maf"} -- a Masked Autoregressive Flow (Papamakarios et al., 2017), a
+stack of invertible autoregressive transforms with an exact
+change-of-variables density. This is the default, matching Python
+\code{sbi}, and requires the \code{torch} back end.
+\item \code{"nsf"} -- a Neural Spline Flow (Durkan et al., 2019): the same
+autoregressive structure as the MAF, but with a monotonic
+rational-quadratic spline transform in place of MAF's affine one, which
+handles sharply non-Gaussian posteriors better. Requires \code{torch}.
+\item \code{"mdn"} -- a Mixture Density Network (neural network -> Gaussian
+mixture). Requires \code{torch}.
 \item \code{"linear_gaussian"} -- a closed-form conditional Gaussian baseline
 (least-squares mean, residual covariance). No neural network, no \code{torch}.
 It is exact for linear-Gaussian simulators and doubles as a fast baseline
