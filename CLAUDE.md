@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this package is
 
 `neuralsbi` is a **native R** implementation of neural simulation-based
-inference, focused on Neural Posterior Estimation (NPE). Target
-users are applied researchers, not ML engineers: sensible defaults, built-in
-posterior diagnostics.
+inference: Neural Posterior Estimation (NPE) and Neural Likelihood Estimation
+(NLE). Target users are applied researchers, not ML engineers: sensible
+defaults, built-in posterior diagnostics.
 
 ## Commands
 
@@ -53,7 +53,7 @@ methods:
 - `de_log_prob(de, theta, x)` — length-n vector of log q(theta | x)
 - `de_sample(de, x, n)` — n×dim matrix of draws given a single x
 
-Standardization and its change-of-variables Jacobian live in `R/posterior.R`,
+Standardization and its change-of-variables Jacobian live in `R/standardize.R`,
 *not* in the estimators, so estimators stay simple and interchangeable. Adding a
 new estimator means implementing these two methods and wiring a `fit_*` into the
 `switch()` in `fit_density_estimator()` (`R/npe.R`). The estimators:
@@ -86,13 +86,23 @@ estimated acceptance probability, returning `-Inf` outside support — matching
 analytic-parity checks; `inst/benchmarks/` uses the same tasks for the
 head-to-head comparison against Python `sbi`.
 
+**NLE learns the other factorization.** `nle()` trains the same estimator
+contract on the likelihood q(x | theta) instead of the posterior, so the
+log-likelihood of repeated i.i.d. observations is a sum over one trained
+density rather than a retrained network. `R/mcmc.R` samples the resulting
+unnormalized posterior with a vectorized slice sampler; `R/nle_posterior.R`
+wires that (or Stan/NUTS) into `posterior()` for an `nsbi_nle` fit; `R/stan.R`
+transpiles a fitted estimator into a Stan `functions` block so the learned
+likelihood becomes one term in a larger hand-written model. See
+`docs/verification-roadmap.md` Part E for the file-by-file inventory of both
+halves of the package.
+
 **Verification is layered** (see `docs/verification-roadmap.md`): Level 1 =
 analytic ground truth in CI (linear-Gaussian is exact; flows checked with looser
 tolerance); Level 2 = calibration (SBC, expected coverage) where no closed form
 exists; Level 3 = head-to-head C2ST against Python `sbi` via `inst/benchmarks/`
-(scripted, not run in CI). `docs/implementation-plan.md` covers the method and
-module map; `docs/verification-roadmap.md` Part E is the live handoff/next-steps
-section — **keep it current as you work.**
+(scripted, not run in CI). `docs/verification-roadmap.md` Part E is the live
+handoff/next-steps section — **keep it current as you work.**
 
 ## R package conventions
 
@@ -117,9 +127,10 @@ section — **keep it current as you work.**
   and open a PR — even for small changes. Prefer opening a GitHub **issue**
   first and linking the PR to it.
 - **Increment the patch version often** (`DESCRIPTION` `Version:`) and note the
-  change; the dev version carries a `.9000` suffix (currently `0.2.0.9000`).
-  **Tag released versions** (`vX.Y.Z`) — there are no tags yet, so establish the
-  habit.
+  change; once a version ships it carries no `.9000` dev suffix, so check
+  `DESCRIPTION` itself for the current number rather than a hardcoded one
+  here, which would go stale on the next release. **Tag released versions**
+  (`vX.Y.Z`) — there are no tags yet, so establish the habit.
 - Commit in small, self-contained increments with a clear imperative subject and
   a body explaining the *why*. Run `devtools::check()` (or at least
   `devtools::test()`) before pushing.

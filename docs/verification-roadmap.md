@@ -113,7 +113,7 @@ leakage handling) and documented.
       Lemos et al. 2023) and posterior-predictive plots
       (`plot_posterior_predictive()`). Tested with the linear-Gaussian oracle,
       including a miscalibration-detection case.
-- [x] Vignettes: SIR applied case study (`vignettes/sir-case-study.Rmd`).
+- [x] Vignettes: SIR applied case study (`vignettes/sir-epidemic.Rmd`).
 - [x] CI with cached libtorch: `.github/workflows/R-CMD-check.yaml` now has a
       `test-torch` job (installs libtorch, caches it, runs the full suite via
       `cd tests && Rscript testthat.R` so internals are visible to tests).
@@ -203,8 +203,8 @@ leakage handling) and documented.
 ## Part C — Milestone checklist
 
 - [x] M0 Pilot: linear-Gaussian analytic parity (torch-free) + MDN parity.
-- [~] M1 CI configured with cached libtorch (`test-torch` job) — needs one
-      green run on GitHub to confirm.
+- [x] M1 CI configured with cached libtorch (`test-torch` job) and green on
+      `main`.
 - [~] M2 Two Moons bimodality test added (`test-two-moons.R`, torch-gated);
       SBC + coverage + TARP calibration study run and plotted
       (`inst/benchmarks/two_moons_calibration.R` → `docs/figures/`). Remaining:
@@ -398,10 +398,10 @@ first. When changing a default, update the mirror in `fit_density_estimator()`
 | TorchScript replay | `mdn_trace_cache()` in `R/likelihood.R` | done + tested; an MDN's summed density is traced with `torch::jit_trace()` once an evaluator is called a few times, one trace per parameter-row count, each checked against the eager result before use. Any failure falls back to eager. `options(neuralsbi.jit = FALSE)` disables. Worth extending to the MAF path if someone needs it |
 | Stan export | `stan_code()`, `stan_data()`, `write_stan_model()` in `R/stan.R` | done for `linear_gaussian` (agrees to 7e-13), `mdn` and `maf` (7e-07, which is the float32 R fit vs. double-precision Stan). NSF refused. Only `prior_uniform`/`prior_normal` generate a model block |
 | Embedding net | `embedding_mlp()` in `R/embedding.R` | MLP done + tested; wired into MDN/MAF/NSF via `embedding_net`; CNN/RNN open |
-| CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); needs a green run on GitHub to confirm |
+| CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); green on `main` |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
 | Website | `_pkgdown.yml`, `.github/workflows/pkgdown.yaml` | pkgdown site deployed to gh-pages; builds locally into `site/` (gitignored, `docs/` stays for these design docs); `pkgdown/strip-internal.R` removes CLAUDE.md from the output. GitHub Pages must be set to serve from the `gh-pages` branch once. |
-| Vignettes | `vignettes/*.Rmd` (5) + `*.Rmd.orig` sources | intro-to-sbi → neuralsbi → density-estimators → diagnostics → sir-epidemic. The last is a `neuralsbi`-vs-`pomp` comparison, so regenerating it needs `pomp` installed in addition to torch (baked output ships static, so building/checking the package does not). **Precomputed**: the evaluated source is `vignettes/<name>.Rmd.orig`; `vignettes/precompute.R` bakes it (with a working torch install) into a static `vignettes/<name>.Rmd` (results + figures inlined, figures under `vignettes/figures/`). CI and pkgdown re-render that static Markdown with no torch. Re-run `Rscript vignettes/precompute.R` after editing any `.Rmd.orig`; `.Rbuildignore` keeps the sources and the script out of the tarball. |
+| Vignettes | `vignettes/*.Rmd` (7) + `*.Rmd.orig` sources | intro-to-sbi → neuralsbi → density-estimators → diagnostics → neural-likelihood → sir-epidemic → sir-time-varying-beta. `sir-epidemic` is a `neuralsbi`-vs-`pomp` comparison, so regenerating it needs `pomp` installed in addition to torch (baked output ships static, so building/checking the package does not). `sir-time-varying-beta` fits three competing SIR models to state-level COVID-19 case data and builds on `sir-epidemic`. **Precomputed**: the evaluated source is `vignettes/<name>.Rmd.orig`; `vignettes/precompute.R` bakes it (with a working torch install) into a static `vignettes/<name>.Rmd` (results + figures inlined, figures under `vignettes/figures/`). CI and pkgdown re-render that static Markdown with no torch. Re-run `Rscript vignettes/precompute.R` after editing any `.Rmd.orig`; `.Rbuildignore` keeps the sources and the script out of the tarball. |
 | Two-moons calibration | `inst/benchmarks/two_moons_calibration.R` | SBC + expected coverage + TARP on a two-moons NSF fit; figures in `docs/figures/two_moons_{sbc,coverage,tarp}.png` (M2) |
 
 Key contract: every estimator implements `de_log_prob(de, theta, x)` and
@@ -538,8 +538,8 @@ hook to intercept it -- but the failure now names its cause: `posterior()`
 calls `check_fit_alive()`, which touches a parameter tensor and raises a
 message pointing at `save_npe()`, and `print()` flags the same thing. Adding an
 estimator means adding a branch to `de_rebuild_net()`.
-- DESCRIPTION `Version` is dev (`0.2.0.9000`); cut releases when M1–M3 are
-  green.
+- DESCRIPTION `Version` is bumped per substantive change rather than gated on
+  M1–M3 (see `CLAUDE.md`'s git & release workflow); no git tags exist yet.
 
 ---
 

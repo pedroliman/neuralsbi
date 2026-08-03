@@ -1,10 +1,8 @@
 ## Submission summary
 
-This is a resubmission of neuralsbi, a native R implementation of neural simulation-based inference (Neural Posterior Estimation) built on 'torch'.
+This is a resubmission of neuralsbi, a native R implementation of neural simulation-based inference built on 'torch': Neural Posterior Estimation (NPE) approximates the posterior directly, and Neural Likelihood Estimation (NLE, added in 0.4.3) learns a surrogate likelihood sampled with MCMC and exportable as 'Stan' code.
 
-Version 0.3.1 fixed the problems flagged by the incoming pre-tests on 0.3.0: the duplicated `summary.nsbi_posterior` / `summary.nsbi_samples` aliases (now documented once in the single `summaries` topic via `@rdname`, which also cleared the related duplicate-anchor HTML-manual NOTE), the `made_masks.Rd` "Lost braces" NOTE (`theta_{<d}` is now wrapped in `\eqn{}`), and the "possibly misspelled words: NPE" NOTE (the bare acronym was dropped; the Description still spells out "Neural Posterior Estimation").
-
-This version (0.3.2) makes no code changes. The README is now generated from `README.Rmd` so its usage example runs at render time and cannot drift from the code; the example is a plain linear regression whose posterior recovers the ground-truth coefficients.
+The package was first submitted at 0.3.0; 0.3.1 fixed the problems flagged by the incoming pre-tests (duplicated `summary.nsbi_posterior` / `summary.nsbi_samples` aliases, a `made_masks.Rd` "Lost braces" NOTE, and a "possibly misspelled words: NPE" NOTE). The current version is 0.4.16; see `NEWS.md` for the full changelog of the releases since.
 
 ## Test environments
 
@@ -14,7 +12,7 @@ This version (0.3.2) makes no code changes. The README is now generated from `RE
 
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes
+To be confirmed against 0.4.16 before submission; at the last resubmission (0.3.2) the check ran clean at 0 errors | 0 warnings | 2 notes:
 
 * checking CRAN incoming feasibility ... NOTE. Maintainer: 'Pedro Nascimento de Lima <plima@rand.org>'. New submission. Standard note for a first submission.
 
@@ -22,7 +20,7 @@ This version (0.3.2) makes no code changes. The README is now generated from `RE
 
 ## Notes for the reviewer
 
-* 'torch' is in Suggests, not Imports. The neural density estimators (MDN, MAF, NSF) require it, but the package installs, loads, and runs its closed-form 'linear_gaussian' estimator without it. All torch-dependent examples, tests, and vignettes skip gracefully when 'torch' (or its libtorch back end) is unavailable, so the package checks cleanly on machines where libtorch is not installed.
+* 'torch' is in Suggests, not Imports. The neural density estimators (MDN, MAF, NSF) require it, but the package installs, loads, and runs its closed-form 'linear_gaussian' estimator without it. All torch-dependent examples, tests, and vignettes skip gracefully when 'torch' (or its libtorch back end) is unavailable, so the package checks cleanly on machines where libtorch is not installed. NLE's MCMC sampler has the same fallback; only its 'Stan' export requires 'cmdstanr' or 'rstan', both Suggests.
 
 * The defaults of the main entry point `npe()` deliberately mirror the Python 'sbi' package, so a workflow reads the same in both and results can be cross-checked.
 
