@@ -326,7 +326,7 @@ simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))
   x <- run_simulator(simulator, theta, sim_args = sim_args)
-  drop_failed_sims(theta, x)[c("theta", "x", "n_dropped")]
+  drop_failed_sims(theta, x)
 }
 
 #' @export

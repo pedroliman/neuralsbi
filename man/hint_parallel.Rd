@@ -4,7 +4,7 @@
 \alias{hint_parallel}
 \title{Tell the user once per session how to go parallel}
 \usage{
-hint_parallel(n = Inf)
+hint_parallel(n)
 }
 \description{
 Tell the user once per session how to go parallel

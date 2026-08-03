@@ -93,7 +93,7 @@ de_log_prob.nsbi_de_lingauss <- function(de, theta, x) {
   if (nrow(mu) == 1L && nrow(theta) > 1L) {
     mu <- matrix(mu, nrow = nrow(theta), ncol = ncol(mu), byrow = TRUE)
   }
-  dmvnorm_chol(theta, mu, de$chol, log = TRUE)
+  dmvnorm_chol(theta, mu, de$chol)
 }
 
 #' @export
@@ -107,8 +107,12 @@ de_sample.nsbi_de_lingauss <- function(de, x, n) {
 
 #' Multivariate normal log density using a precomputed upper-Cholesky factor
 #' (`R` such that `Sigma = t(R) %*% R`, i.e. `chol(Sigma)`).
+#'
+#' Always returns the log density: every call site wants `log_prob()`'s
+#' contract, none of `dnorm()`'s `log = FALSE`, so there is no `log` argument
+#' to forget to set.
 #' @keywords internal
-dmvnorm_chol <- function(x, mean, R, log = TRUE) {
+dmvnorm_chol <- function(x, mean, R) {
   x <- as_theta_matrix(x)
   if (is.null(dim(mean))) mean <- matrix(mean, nrow = nrow(x), ncol = ncol(x),
                                          byrow = TRUE)
@@ -118,6 +122,5 @@ dmvnorm_chol <- function(x, mean, R, log = TRUE) {
   z <- backsolve(R, t(dev), transpose = TRUE)
   quad <- colSums(z^2)
   logdet <- 2 * sum(log(diag(R)))
-  out <- -0.5 * (d * log(2 * pi) + logdet + quad)
-  if (log) out else exp(out)
+  -0.5 * (d * log(2 * pi) + logdet + quad)
 }

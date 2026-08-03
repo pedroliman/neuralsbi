@@ -4,7 +4,7 @@
 \alias{prior_scale}
 \title{A per-coordinate scale for the prior, used to size the initial slice width}
 \usage{
-prior_scale(prior, n = 1000L)
+prior_scale(prior)
 }
 \description{
 A per-coordinate scale for the prior, used to size the initial slice width

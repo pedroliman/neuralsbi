@@ -299,14 +299,23 @@ mcmc_diagnostics <- function(chains) {
 #' A partially scored run is reported from the parameters that did get a
 #' number, with a count of the ones that did not.
 #'
+#' When `d` carries an `n_evals` attribute -- `slice_sample_nle()` sets one,
+#' since it is the cost of the run the adapted slice width is trying to keep
+#' down (see [nsbi_mcmc]) -- it is appended to the summary. A `"stan"`
+#' sampler's diagnostics have no such concept and print without it.
+#'
 #' @param d The data frame from [mcmc_diagnostics()].
 #' @return One line of text, without a trailing newline.
 #' @keywords internal
 format_mcmc_diagnostics <- function(d) {
   rhat <- d$rhat[is.finite(d$rhat)]
   ess <- d$ess_bulk[is.finite(d$ess_bulk)]
+  n_evals <- attr(d, "n_evals")
+  evals_part <- if (!is.null(n_evals)) sprintf(", %s evaluations",
+                                               format_count(n_evals)) else ""
   if (length(rhat) == 0L && length(ess) == 0L) {
-    return("diagnostics unavailable (too few draws or chains to score)")
+    return(sprintf("diagnostics unavailable (too few draws or chains to score)%s",
+                   evals_part))
   }
   parts <- c(
     if (length(rhat) > 0L) sprintf("max Rhat %.3f", max(rhat)) else
@@ -315,9 +324,10 @@ format_mcmc_diagnostics <- function(d) {
       "bulk ESS unavailable"
   )
   unscored <- sum(!is.finite(d$rhat) | !is.finite(d$ess_bulk))
-  sprintf("%s%s", paste(parts, collapse = ", "),
+  sprintf("%s%s%s", paste(parts, collapse = ", "),
           if (unscored > 0L)
-            sprintf(" (%s not scored)", n_things(unscored, "parameter")) else "")
+            sprintf(" (%s not scored)", n_things(unscored, "parameter")) else "",
+          evals_part)
 }
 
 #' @keywords internal

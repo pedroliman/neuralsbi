@@ -173,7 +173,8 @@ nsbi_progressor <- function(steps, label = NULL) {
 #' Draws to `stderr()`, redrawing in place. Updates are throttled so a fast
 #' inner loop does not spend its time formatting text.
 #' @keywords internal
-builtin_bar <- function(label = NULL, width = 22L) {
+builtin_bar <- function(label = NULL) {
+  width <- 22L
   start <- Sys.time()
   last_draw <- -Inf
   finished <- FALSE

@@ -50,7 +50,7 @@ test_that("the surrogate likelihood tracks the true one on a Gaussian model", {
   Sigma <- matrix(c(0.4^2, 0, 0, 0.3^2), 2, 2)
   truth <- vapply(seq_len(nrow(theta)), function(i) {
     mu <- c(theta[i, 1], theta[i, 2] + 0.5 * theta[i, 1])
-    dmvnorm_chol(x, mu, chol(Sigma), log = TRUE)
+    dmvnorm_chol(x, mu, chol(Sigma))
   }, numeric(1))
 
   expect_equal(log_lik(fit, theta, x), truth, tolerance = 0.05)
@@ -293,7 +293,7 @@ test_that("a neural fit reproduces a Gaussian likelihood", {
   Sigma <- matrix(c(0.4^2, 0, 0, 0.3^2), 2, 2)
   truth <- vapply(seq_len(nrow(theta)), function(i) {
     mu <- c(theta[i, 1], theta[i, 2] + 0.5 * theta[i, 1])
-    dmvnorm_chol(x, mu, chol(Sigma), log = TRUE)
+    dmvnorm_chol(x, mu, chol(Sigma))
   }, numeric(1))
 
   # A flow is not exact the way the closed-form baseline is; this checks it

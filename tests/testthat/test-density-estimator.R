@@ -126,7 +126,7 @@ test_that("de_log_prob() is dmvnorm_chol() around the fitted conditional mean", 
   query <- rbind(mu, mu + c(0.3, -0.2), mu - c(1, 1))
 
   lp <- de_log_prob(de, query, x_obs)
-  expect_equal(lp, dmvnorm_chol(query, mu, de$chol, log = TRUE))
+  expect_equal(lp, dmvnorm_chol(query, mu, de$chol))
   # The conditional mean is the mode, so the first row scores highest.
   expect_equal(which.max(lp), 1L)
 })

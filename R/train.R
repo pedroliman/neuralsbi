@@ -176,7 +176,7 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
       p(1, total = train_progress_total(epochs_done, best_epoch, patience,
                                         max_epochs, restart, n_restarts))
       if (verbose && (epoch %% 10L == 0L || epoch == 1L)) {
-        verbose_cat(TRUE, sprintf(
+        cat(sprintf(
           "[train] restart %d epoch %d  val_loss=%.4f  best=%.4f\n",
           restart, epoch, val_loss, best_val))
       }
