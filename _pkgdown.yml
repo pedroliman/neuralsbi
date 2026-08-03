@@ -104,7 +104,7 @@ articles:
   - intro-to-sbi
 # Every vignette that ships with the package has to appear somewhere in this
 # index or pkgdown aborts the build. The `internal` title is how pkgdown says
-# "build it, do not list it": these five are still rendered and still reachable
+# "build it, do not list it": these six are still rendered and still reachable
 # by URL, they are just off the articles index and out of the navbar.
 - title: internal
   contents:
