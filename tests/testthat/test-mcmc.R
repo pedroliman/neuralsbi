@@ -170,7 +170,7 @@ test_that("bulk ESS falls as autocorrelation rises", {
 })
 
 test_that("bulk ESS agrees with the posterior package", {
-  skip_if_not_installed("posterior")
+  skip_if_no_posterior()
   set.seed(8)
   n <- 400
   chains <- array(0, c(n, 4, 1))

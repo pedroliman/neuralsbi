@@ -85,7 +85,3 @@ S3method(de_sample, nsbi_de_lingauss)
 S3method(de_sample, nsbi_de_mdn)
 S3method(de_sample, nsbi_de_maf)
 S3method(de_sample, nsbi_de_nsf)
-
-importFrom(stats, rnorm)
-importFrom(stats, runif)
-importFrom(stats, sd)

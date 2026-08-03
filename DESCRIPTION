@@ -19,7 +19,6 @@ Suggests:
     cmdstanr (>= 0.7.0),
     rstan (>= 2.26.0),
     posterior (>= 1.4.0),
-    deSolve,
     ggplot2 (>= 3.4.0),
     GGally (>= 2.2.0),
     ggdensity,
@@ -39,5 +38,5 @@ Config/Needs/coverage: covr
 VignetteBuilder: knitr
 URL: https://neuralsbi.pedrodelima.com/, https://github.com/pedroliman/neuralsbi
 BugReports: https://github.com/pedroliman/neuralsbi/issues
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 7.3.3
 RoxygenNote: 7.3.3

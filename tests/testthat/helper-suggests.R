@@ -12,3 +12,9 @@ skip_if_no_ggally <- function() {
   testthat::skip_if_not_installed("GGally")
   testthat::skip_if_not_installed("ggdensity")
 }
+
+# posterior is a Suggests, used only to cross-check mcmc_diagnostics() against
+# a reference implementation. Same contract as skip_if_no_torch().
+skip_if_no_posterior <- function() {
+  testthat::skip_if_not_installed("posterior")
+}
