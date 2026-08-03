@@ -24,3 +24,6 @@ README.html
 site/
 Rplots.pdf
 vignettes/*.html
+
+# Codecov test analytics (JUnit XML from the CI test run)
+junit.xml
