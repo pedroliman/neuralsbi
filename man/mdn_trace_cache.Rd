@@ -29,8 +29,14 @@ crossing rather than thirty.
 }
 \details{
 It is the same code either way. Tracing runs the eager path and records what
-it did, so there is no second implementation of the density to keep in step
-with this one or with the Stan generator.
+it did, so there is no separate implementation to keep in step with the
+eager one -- that claim holds only for the traced path relative to
+\code{\link[=mdn_log_prob_tensor]{mdn_log_prob_tensor()}}. The MDN density still has three implementations in
+total, one per runtime: \code{\link[=mdn_log_prob_tensor]{mdn_log_prob_tensor()}} (the eager training path),
+\code{\link[=mdn_mixture]{mdn_mixture()}}/\code{\link[=mdn_chunk_lp]{mdn_chunk_lp()}} (the i.i.d. fast path used here), and
+\code{stan_fn_mdn()} (the generated Stan code, \code{R/stan.R}). That is by design,
+not drift: three runtimes need three implementations, and the tests pin
+them to each other numerically.
 
 Three things make this a shortcut rather than the path. Recording a trace
 costs several evaluations' worth of time, so nothing is recorded until the
