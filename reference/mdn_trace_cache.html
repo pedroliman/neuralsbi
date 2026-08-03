@@ -133,8 +133,14 @@ off.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>It is the same code either way. Tracing runs the eager path and records what
-it did, so there is no second implementation of the density to keep in step
-with this one or with the Stan generator.</p>
+it did, so there is no separate implementation to keep in step with the
+eager one – that claim holds only for the traced path relative to
+<code><a href="mdn_log_prob_tensor.html">mdn_log_prob_tensor()</a></code>. The MDN density still has three implementations in
+total, one per runtime: <code><a href="mdn_log_prob_tensor.html">mdn_log_prob_tensor()</a></code> (the eager training path),
+<code><a href="mdn_mixture.html">mdn_mixture()</a></code>/<code><a href="mdn_chunk_lp.html">mdn_chunk_lp()</a></code> (the i.i.d. fast path used here), and
+<code>stan_fn_mdn()</code> (the generated Stan code, <code>R/stan.R</code>). That is by design,
+not drift: three runtimes need three implementations, and the tests pin
+them to each other numerically.</p>
 <p>Three things make this a shortcut rather than the path. Recording a trace
 costs several evaluations' worth of time, so nothing is recorded until the
 evaluator has been called <code>warmup</code> times and it is clear this is a loop

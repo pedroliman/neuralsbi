@@ -41,8 +41,18 @@ off.
 ## Details
 
 It is the same code either way. Tracing runs the eager path and records
-what it did, so there is no second implementation of the density to keep
-in step with this one or with the Stan generator.
+what it did, so there is no separate implementation to keep in step with
+the eager one – that claim holds only for the traced path relative to
+[`mdn_log_prob_tensor()`](https://neuralsbi.pedrodelima.com/reference/mdn_log_prob_tensor.md).
+The MDN density still has three implementations in total, one per
+runtime:
+[`mdn_log_prob_tensor()`](https://neuralsbi.pedrodelima.com/reference/mdn_log_prob_tensor.md)
+(the eager training path),
+[`mdn_mixture()`](https://neuralsbi.pedrodelima.com/reference/mdn_mixture.md)/[`mdn_chunk_lp()`](https://neuralsbi.pedrodelima.com/reference/mdn_chunk_lp.md)
+(the i.i.d. fast path used here), and `stan_fn_mdn()` (the generated
+Stan code, `R/stan.R`). That is by design, not drift: three runtimes
+need three implementations, and the tests pin them to each other
+numerically.
 
 Three things make this a shortcut rather than the path. Recording a
 trace costs several evaluations' worth of time, so nothing is recorded
