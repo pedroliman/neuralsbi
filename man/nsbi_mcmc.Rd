@@ -24,7 +24,7 @@ is the whole running time.
 }
 \references{
 Neal, R. M. (2003). Slice sampling. \emph{The Annals of Statistics}
-31(3), 705-767.
+31(3), 705-767. \doi{10.1214/aos/1056562461}
 }
 \seealso{
 \code{\link[=posterior.nsbi_nle]{posterior.nsbi_nle()}} for the arguments that control it, and
