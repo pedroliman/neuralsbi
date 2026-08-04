@@ -236,49 +236,19 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
   density_estimator <- match.arg(density_estimator,
                                  c("maf", "mdn", "nsf", "linear_gaussian"))
   dots <- list(...)
-  switch(
-    density_estimator,
-    mdn = fit_mdn(theta_z, x_z,
-                  n_components = dots$n_components %||% 10L,
-                  hidden = dots$hidden %||% c(50L, 50L),
-                  max_epochs = dots$max_epochs %||% 2000L,
-                  batch_size = dots$batch_size %||% 200L,
-                  lr = dots$lr %||% 5e-4,
-                  validation_fraction = dots$validation_fraction %||% 0.1,
-                  patience = dots$patience %||% 20L,
-                  n_restarts = dots$n_restarts %||% 1L,
-                  clip_grad_norm = dots$clip_grad_norm %||% 5,
-                  embedding = dots$embedding_net,
-                  seed = dots$seed, verbose = dots$verbose %||% FALSE),
-    maf = fit_maf(theta_z, x_z,
-                  n_transforms = dots$n_transforms %||% 5L,
-                  hidden = dots$hidden %||% c(50L, 50L),
-                  max_epochs = dots$max_epochs %||% 2000L,
-                  batch_size = dots$batch_size %||% 200L,
-                  lr = dots$lr %||% 5e-4,
-                  validation_fraction = dots$validation_fraction %||% 0.1,
-                  patience = dots$patience %||% 20L,
-                  n_restarts = dots$n_restarts %||% 1L,
-                  clip_grad_norm = dots$clip_grad_norm %||% 5,
-                  embedding = dots$embedding_net,
-                  seed = dots$seed, verbose = dots$verbose %||% FALSE),
-    nsf = fit_nsf(theta_z, x_z,
-                  n_transforms = dots$n_transforms %||% 5L,
-                  hidden = dots$hidden %||% c(50L, 50L),
-                  n_bins = dots$n_bins %||% 10L,
-                  tail_bound = dots$tail_bound %||% 3,
-                  max_epochs = dots$max_epochs %||% 2000L,
-                  batch_size = dots$batch_size %||% 200L,
-                  lr = dots$lr %||% 5e-4,
-                  validation_fraction = dots$validation_fraction %||% 0.1,
-                  patience = dots$patience %||% 20L,
-                  n_restarts = dots$n_restarts %||% 1L,
-                  clip_grad_norm = dots$clip_grad_norm %||% 5,
-                  embedding = dots$embedding_net,
-                  seed = dots$seed, verbose = dots$verbose %||% FALSE),
-    linear_gaussian = fit_linear_gaussian(theta_z, x_z,
-                                           verbose = dots$verbose %||% FALSE)
-  )
+  # npe()/nle() call the summary-network argument `embedding_net`, matching
+  # embedding_mlp()'s user-facing vocabulary; the fit_*() functions below
+  # call the same argument `embedding`. Rename it on the way through rather
+  # than asking either side to know the other's name for it.
+  names(dots)[names(dots) == "embedding_net"] <- "embedding"
+  fn <- switch(density_estimator, mdn = fit_mdn, maf = fit_maf,
+              nsf = fit_nsf, linear_gaussian = fit_linear_gaussian)
+  # Forward only what the target function's own signature accepts, so its
+  # defaults apply and an argument the target does not take (n_components
+  # alongside linear_gaussian, say, which only takes theta/x/ridge/verbose)
+  # is silently dropped rather than raising "unused argument".
+  keep <- intersect(names(dots), names(formals(fn)))
+  do.call(fn, c(list(theta_z, x_z), dots[keep]))
 }
 
 #' Run a simulator over prior draws

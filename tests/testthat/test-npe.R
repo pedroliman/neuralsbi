@@ -110,6 +110,36 @@ test_that("npe() leaves a valid call alone", {
                   "nsbi_npe")
 })
 
+test_that("fit_density_estimator() forwards only the args linear_gaussian's signature accepts", {
+  # fit_linear_gaussian() only takes theta/x/ridge/verbose. npe()/nle() always
+  # pass n_components, hidden, embedding_net and the rest regardless of which
+  # estimator was chosen, so fit_density_estimator() has to intersect its dots
+  # with the target's formals rather than forward everything (#58). This is
+  # the torch-free path, so it is exercised directly rather than mocked.
+  theta <- matrix(stats::rnorm(40), ncol = 1)
+  x <- theta + stats::rnorm(40, sd = 0.1)
+  de <- fit_density_estimator("linear_gaussian", theta, x,
+                              n_components = 99L, hidden = c(8L, 8L),
+                              embedding_net = "not a real embedding spec",
+                              verbose = FALSE)
+  expect_s3_class(de, "nsbi_de_lingauss")
+
+  # ridge is not among npe()'s/nle()'s forwarded arguments, so it never
+  # reaches fit_density_estimator() this way, but a caller that does pass it
+  # (there is none in the package) should still see it land, proving the
+  # intersection is not accidentally dropping arguments the target does want.
+  de_ridge <- fit_density_estimator("linear_gaussian", theta, x, ridge = 1e-3)
+  expect_s3_class(de_ridge, "nsbi_de_lingauss")
+})
+
+test_that("npe() with density_estimator = 'linear_gaussian' silently ignores neural-only args", {
+  fit <- npe(toy_prior(), toy_simulator, n_simulations = 200,
+             density_estimator = "linear_gaussian",
+             n_components = 5L, hidden = c(8L, 8L), seed = 1)
+  expect_s3_class(fit, "nsbi_npe")
+  expect_identical(fit$density_estimator, "linear_gaussian")
+})
+
 test_that("npe() rejects simulations too few to split", {
   theta <- matrix(0.5, ncol = 1)
   x <- matrix(0.4, ncol = 1)

@@ -386,9 +386,10 @@ MDN `n_components = 10`, NSF `n_bins = 10`/`tail_bound = 3`, `batch_size = 200`,
 `lr = 5e-4`, `validation_fraction = 0.1`, `patience = 20`, `clip_grad_norm = 5`.
 `max_epochs = 2000` is a guard cap; `sbi`'s epoch budget is effectively
 unbounded and governed by early stopping, which the guard normally reaches
-first. When changing a default, update the mirror in `fit_density_estimator()`
-(the `%||%` fallbacks), the `fit_*` signatures, and the hand-written `.Rd`
-`\usage` (codoc is checked).
+first. `fit_density_estimator()` (issue #58) forwards `npe()`/`nle()`'s
+arguments to the chosen `fit_*()` by intersecting them with its formals, so
+it carries no defaults of its own. When changing a default, update the
+`fit_*` signature and the hand-written `.Rd` `\usage` (codoc is checked).
 
 ### What exists right now
 
