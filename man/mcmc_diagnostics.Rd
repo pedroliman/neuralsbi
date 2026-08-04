@@ -21,6 +21,6 @@ the dependency surface where it is; the test suite cross-checks against
 \references{
 Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and
 Burkner, P.-C. (2021). Rank-normalization, folding, and localization.
-\emph{Bayesian Analysis} 16(2), 667-718.
+\emph{Bayesian Analysis} 16(2), 667-718. \doi{10.1214/20-BA1221}
 }
 \keyword{internal}

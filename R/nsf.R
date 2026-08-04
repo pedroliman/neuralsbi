@@ -14,6 +14,9 @@
 #'
 #' Select with `npe(..., density_estimator = "nsf")`.
 #'
+#' @references Durkan, C., Bekasov, A., Murray, I. and Papamakarios, G.
+#'   (2019). Neural Spline Flows. *NeurIPS*. \doi{10.48550/arXiv.1906.04032}
+#'
 #' @keywords internal
 #' @name nsf
 NULL

@@ -137,7 +137,7 @@ log_lik(fit, theta = c(1, log(0.5)), x = x_obs)
 \references{
 Papamakarios, G., Sterratt, D. and Murray, I. (2019). Sequential
 Neural Likelihood: Fast Likelihood-free Inference with Autoregressive
-Flows. \emph{AISTATS}.
+Flows. \emph{AISTATS}. \doi{10.48550/arXiv.1805.07226}
 }
 \seealso{
 \code{\link[=log_lik]{log_lik()}} and \code{\link[=likelihood_fn]{likelihood_fn()}} to evaluate the surrogate,

@@ -18,7 +18,7 @@
 #' is the whole running time.
 #'
 #' @references Neal, R. M. (2003). Slice sampling. *The Annals of Statistics*
-#'   31(3), 705-767.
+#'   31(3), 705-767. \doi{10.1214/aos/1056562461}
 #'
 #' @name nsbi_mcmc
 #' @seealso [posterior.nsbi_nle()] for the arguments that control it, and
@@ -268,7 +268,7 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
 #' @return A data frame with one row per parameter: `rhat` and `ess_bulk`.
 #' @references Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and
 #'   Burkner, P.-C. (2021). Rank-normalization, folding, and localization.
-#'   *Bayesian Analysis* 16(2), 667-718.
+#'   *Bayesian Analysis* 16(2), 667-718. \doi{10.1214/20-BA1221}
 #' @keywords internal
 mcmc_diagnostics <- function(chains) {
   n_iter <- dim(chains)[1]
