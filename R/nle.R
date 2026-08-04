@@ -49,7 +49,7 @@
 #'
 #' @references Papamakarios, G., Sterratt, D. and Murray, I. (2019). Sequential
 #'   Neural Likelihood: Fast Likelihood-free Inference with Autoregressive
-#'   Flows. *AISTATS*.
+#'   Flows. *AISTATS*. \doi{10.48550/arXiv.1805.07226}
 #'
 #' @examples
 #' # One noisy measurement per simulator call; the observation is 200 of them.
