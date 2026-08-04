@@ -4,7 +4,7 @@
 \alias{builtin_bar}
 \title{Minimal dependency-free progress bar with an ETA}
 \usage{
-builtin_bar(label = NULL, width = 22L)
+builtin_bar(label = NULL)
 }
 \description{
 Draws to \code{stderr()}, redrawing in place. Updates are throttled so a fast

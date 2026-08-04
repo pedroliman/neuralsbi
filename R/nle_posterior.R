@@ -213,17 +213,23 @@ slice_sample_nle <- function(fit, x_obs, ctl, n, verbose = FALSE) {
                       warmup = ctl$warmup, thin = ctl$thin,
                       width = width, max_steps = dots$max_steps %||% 100L,
                       verbose = verbose)
-  list(draws = res$draws, diagnostics = mcmc_diagnostics(res$chains))
+  diagnostics <- mcmc_diagnostics(res$chains)
+  # n_evals is the cost of the run -- it climbs fastest exactly when the slice
+  # width is mismatched to the target, which is what warmup adapts it for (see
+  # ?nsbi_mcmc). Carried as an attribute rather than a column since it is one
+  # number for the whole run, not one per parameter like rhat and ess_bulk.
+  attr(diagnostics, "n_evals") <- res$n_evals
+  list(draws = res$draws, diagnostics = diagnostics)
 }
 
 #' A per-coordinate scale for the prior, used to size the initial slice width
 #' @keywords internal
-prior_scale <- function(prior, n = 1000L) {
+prior_scale <- function(prior) {
   if (!is.null(prior$lower) && !is.null(prior$upper) &&
       all(is.finite(prior$lower)) && all(is.finite(prior$upper))) {
     return(pmax((prior$upper - prior$lower) / 10, .Machine$double.eps))
   }
-  s <- apply(sample_prior(prior, n), 2, stats::sd)
+  s <- apply(sample_prior(prior, 1000L), 2, stats::sd)
   s[!is.finite(s) | s <= 0] <- 1
   s
 }

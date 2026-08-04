@@ -115,6 +115,13 @@ test_that("posterior draws carry names and convergence diagnostics", {
   expect_true(all(diagnostics$rhat < 1.05))
   expect_output(print(post), "sampler         : slice")
   expect_output(print(post), "unnormalized")
+
+  # The slice sampler's evaluation count is the cost of the run, and rides
+  # along on the diagnostics as an attribute rather than a per-parameter
+  # column (see ?nsbi_mcmc on why the adapted slice width matters for it).
+  n_evals <- attr(diagnostics, "n_evals")
+  expect_true(is.numeric(n_evals) && n_evals > 0)
+  expect_output(print(post), "evaluations")
 })
 
 test_that("print() says when the last run has no usable diagnostics", {

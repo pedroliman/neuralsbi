@@ -105,7 +105,7 @@ de_log_lik_iid.nsbi_de_lingauss <- function(de, x, theta, max_batch = 1e5) {
   # it. No loop over observations at all.
   mu <- lingauss_mean(de, theta)
   lp <- vapply(seq_len(nrow(mu)),
-               function(i) dmvnorm_chol(x, mu[i, ], de$chol, log = TRUE),
+               function(i) dmvnorm_chol(x, mu[i, ], de$chol),
                numeric(nrow(x)))
   # vapply returns a vector, not a one-row matrix, when there is a single
   # observation, so the shape is set explicitly rather than by transposing.
@@ -166,7 +166,7 @@ de_iid_evaluator.nsbi_de_lingauss <- function(de, x, max_batch = 1e5) {
   function(theta) {
     mu <- lingauss_mean(de, theta)
     vapply(seq_len(nrow(mu)),
-           function(i) sum(dmvnorm_chol(x, mu[i, ], de$chol, log = TRUE)),
+           function(i) sum(dmvnorm_chol(x, mu[i, ], de$chol)),
            numeric(1))
   }
 }
@@ -230,7 +230,10 @@ de_iid_evaluator.nsbi_de_mdn <- function(de, x, max_batch = 1e5) {
 #' @param de,xt,max_batch As in [mdn_iid_blocks()], with the observations
 #'   already a tensor.
 #' @param eager The evaluator to check each trace against, and to fall back to.
-#' @param warmup Calls to serve eagerly before recording anything.
+#' @param warmup Calls to serve eagerly before recording anything. No caller
+#'   overrides the default today, but it is a real tuning knob -- how many
+#'   evaluations tracing costs before it pays for itself -- that a future
+#'   caller would plausibly want to change, so it stays a parameter.
 #' @return `function(theta)` returning a traced function for that many rows, or
 #'   `NULL` when the eager path should be used. `NULL` if tracing is switched
 #'   off.
@@ -425,6 +428,9 @@ likelihood_fn <- function(fit, x_obs, ...) {
 #' the prior support. This is the potential the MCMC samplers target.
 #' @keywords internal
 nle_potential <- function(fit, x_obs, max_batch = 1e5) {
+  # No caller overrides max_batch today, but it is a real tuning knob -- the
+  # batch size de_iid_evaluator() chunks the MCMC evaluations into -- that a
+  # future caller would plausibly want to change, so it stays a parameter.
   prior <- fit$prior
   # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
   # only way to find out is to ask it. Better here than as a puzzling

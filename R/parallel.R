@@ -71,7 +71,7 @@ nsbi_workers <- function() {
 
 #' Tell the user once per session how to go parallel
 #' @keywords internal
-hint_parallel <- function(n = Inf) {
+hint_parallel <- function(n) {
   if (nsbi_workers() > 1L) return(invisible(FALSE))
   if (!isTRUE(getOption("neuralsbi.parallel_hint", TRUE))) return(invisible(FALSE))
   if (isTRUE(.nsbi_state$parallel_hinted)) return(invisible(FALSE))

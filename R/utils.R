@@ -86,6 +86,7 @@ math_labels <- function(labels) {
 #' Check that torch is available, error otherwise
 #' @keywords internal
 require_torch <- function() {
+  if (torch_available()) return(invisible(TRUE))
   if (!requireNamespace("torch", quietly = TRUE)) {
     stop(
       "This density estimator needs the 'torch' package.\n",
@@ -94,13 +95,10 @@ require_torch <- function() {
       call. = FALSE
     )
   }
-  if (!torch::torch_is_installed()) {
-    stop(
-      "'torch' is installed but libtorch is not. Run torch::install_torch().",
-      call. = FALSE
-    )
-  }
-  invisible(TRUE)
+  stop(
+    "'torch' is installed but libtorch is not. Run torch::install_torch().",
+    call. = FALSE
+  )
 }
 
 #' @keywords internal

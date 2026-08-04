@@ -20,4 +20,10 @@ with a warning, which the print method used to show as if it were a value.
 A partially scored run is reported from the parameters that did get a
 number, with a count of the ones that did not.
 }
+\details{
+When \code{d} carries an \code{n_evals} attribute -- \code{slice_sample_nle()} sets one,
+since it is the cost of the run the adapted slice width is trying to keep
+down (see \link{nsbi_mcmc}) -- it is appended to the summary. A \code{"stan"}
+sampler's diagnostics have no such concept and print without it.
+}
 \keyword{internal}

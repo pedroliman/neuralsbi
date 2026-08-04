@@ -298,7 +298,7 @@ bind_sim_draws <- function(draws, d = NULL) {
 drop_failed_sims <- function(theta, x, what = "simulations",
                              x_hint = "Check the simulator on a single prior draw.") {
   n <- nrow(x)
-  if (n == 0L) return(list(theta = theta, x = x, n_dropped = 0L, ok = logical(0)))
+  if (n == 0L) return(list(theta = theta, x = x, n_dropped = 0L))
   bad_x <- rowSums(!is.finite(x)) > 0L
   bad_theta <- if (is.null(theta)) {
     rep(FALSE, n)
@@ -325,5 +325,5 @@ drop_failed_sims <- function(theta, x, what = "simulations",
             call. = FALSE)
   }
   list(theta = if (is.null(theta)) NULL else theta[ok, , drop = FALSE],
-       x = x[ok, , drop = FALSE], n_dropped = n_dropped, ok = ok)
+       x = x[ok, , drop = FALSE], n_dropped = n_dropped)
 }

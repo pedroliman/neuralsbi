@@ -12,7 +12,10 @@ already a tensor.}
 
 \item{eager}{The evaluator to check each trace against, and to fall back to.}
 
-\item{warmup}{Calls to serve eagerly before recording anything.}
+\item{warmup}{Calls to serve eagerly before recording anything. No caller
+overrides the default today, but it is a real tuning knob -- how many
+evaluations tracing costs before it pays for itself -- that a future
+caller would plausibly want to change, so it stays a parameter.}
 }
 \value{
 \verb{function(theta)} returning a traced function for that many rows, or
