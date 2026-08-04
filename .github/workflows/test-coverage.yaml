@@ -1,11 +1,16 @@
-# Measures test coverage with covr and uploads the report to Codecov.
+# Measures test coverage with covr and uploads the report to Codecov. This is
+# also where the full neural test suite (MDN, MAF, NSF) runs with libtorch
+# installed: covr::package_coverage() installs the package and runs
+# tests/testthat.R the same way R CMD check does (via
+# tools::testInstalledPackage()), erroring the step if any test fails, so a
+# separate torch test job would only install libtorch and rerun the same
+# suite a second time for no extra signal. NEURALSBI_JUNIT rides along on that
+# one run so Codecov test analytics gets a JUnit report from it too.
 #
 # The job installs libtorch and the graphics Suggests on purpose. Both the
 # neural estimators and the plotting functions skip themselves when their
 # back end is missing, so a coverage run without them reports skipped code as
-# untested and the number stops meaning anything. libtorch comes from the same
-# cache key the test-torch job in R-CMD-check.yaml populates, so the two jobs
-# share one download.
+# untested and the number stops meaning anything.
 #
 # Uploading needs a CODECOV_TOKEN repository secret and the repo linked to a
 # Codecov account. Until both exist the upload step fails; on pull requests it
@@ -26,6 +31,9 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       TORCH_HOME: /home/runner/.cache/torch
+      # tests/testthat.R attaches a JunitReporter alongside its check reporter
+      # whenever this is set, whether the tests run plain or under covr.
+      NEURALSBI_JUNIT: ${{ github.workspace }}/junit.xml
     steps:
       - uses: actions/checkout@v4
 
@@ -73,7 +81,7 @@ jobs:
           covr::to_cobertura(cov)
         shell: Rscript {0}
 
-      - name: Upload to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           # Needs a CODECOV_TOKEN secret; without it the upload cannot
@@ -83,6 +91,14 @@ jobs:
           plugin: noop
           disable_search: true
           fail_ci_if_error: ${{ github.event_name != 'pull_request' }}
+
+      - name: Upload test results to Codecov
+        # Runs on failure too. A red suite is exactly when the per-test view is
+        # worth having, and the reporter writes the file either way.
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Show testthat output
         if: always()

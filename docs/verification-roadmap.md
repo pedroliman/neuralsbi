@@ -114,9 +114,12 @@ leakage handling) and documented.
       (`plot_posterior_predictive()`). Tested with the linear-Gaussian oracle,
       including a miscalibration-detection case.
 - [x] Vignettes: SIR applied case study (`vignettes/sir-epidemic.Rmd`).
-- [x] CI with cached libtorch: `.github/workflows/R-CMD-check.yaml` now has a
-      `test-torch` job (installs libtorch, caches it, runs the full suite via
-      `cd tests && Rscript testthat.R` so internals are visible to tests).
+- [x] CI with cached libtorch: `.github/workflows/test-coverage.yaml`'s
+      `test-coverage` job installs libtorch (cached) and runs the full suite
+      via `covr::package_coverage()`, which installs the package and runs
+      `tests/testthat.R` so internals are visible to tests; a separate
+      `test-torch` job in `R-CMD-check.yaml` would only repeat that install
+      and run, so it was folded in here instead.
 - [x] `sbibm`-parity benchmark harness in `inst/benchmarks/`: shared-data
       protocol scripted as `01_generate_data.R` → `02_run_sbi_python.py` →
       `03_run_neuralsbi.R` → `04_compare.R` (C2ST + moment diffs + analytic
@@ -203,8 +206,8 @@ leakage handling) and documented.
 ## Part C — Milestone checklist
 
 - [x] M0 Pilot: linear-Gaussian analytic parity (torch-free) + MDN parity.
-- [x] M1 CI configured with cached libtorch (`test-torch` job) and green on
-      `main`.
+- [x] M1 CI configured with cached libtorch (`test-coverage` job) and green
+      on `main`.
 - [~] M2 Two Moons bimodality test added (`test-two-moons.R`, torch-gated);
       SBC + coverage + TARP calibration study run and plotted
       (`inst/benchmarks/two_moons_calibration.R` → `docs/figures/`). Remaining:
@@ -259,6 +262,23 @@ absent, no network clock, badge 403 through the proxy). Version dropped its
 `.9000` dev suffix to `0.3.0`; the redundant `Author`/`Maintainer` DESCRIPTION
 fields now derive from `Authors@R`. The prior pass added MLP embedding networks
 (`embedding_mlp()` + `embedding_net`), trained jointly inside MDN/MAF/NSF.*
+
+### automated CRAN submission (0.5.0)
+
+Issue #110 asked for CRAN submissions to fire on every minor or major version
+bump, or at least every three weeks, but not on every patch bump.
+`.github/workflows/release-check.yaml` implements the policy: it watches
+`DESCRIPTION` on pushes to `main` and on a Monday schedule, compares the
+current `Version` against the last `vX.Y.Z` git tag, and tags-and-publishes a
+prerelease when the major or minor component changed, or when a patch-only
+change is at least three weeks old. `.github/workflows/cran-submission.yaml`
+listens for that prerelease and runs
+[`coatless-actions/cran-submission`](https://github.com/coatless-actions/cran-submission),
+which checks the package, submits the tarball, and opens a tracking issue; a
+manual `workflow_dispatch` gated behind typing `CONFIRM` is also available for
+a submission outside the automatic cadence. 0.5.0 is the first tag this cut,
+so the `vX.Y.Z` tagging habit `CLAUDE.md`'s release workflow section asks for
+is now established going forward.
 
 ### shared validation layer (0.4.4)
 
@@ -428,9 +448,10 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 
 ### Next actions, in priority order
 
-1. **CI is green on `main`** (M1 done) — the R-CMD-check workflow, including
-   the `test-torch` job, last passed on the `main` merge commit. Longer term,
-   consider generating NAMESPACE/man with roxygen2 so codoc drift can't recur.
+1. **CI is green on `main`** (M1 done) — the R-CMD-check workflow and the
+   `test-coverage` job that runs the full libtorch suite both last passed on
+   the `main` merge commit. Longer term, consider generating NAMESPACE/man
+   with roxygen2 so codoc drift can't recur.
 2. **Run the sbi head-to-head** (finishes M3, headline claim). Needs
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
@@ -539,7 +560,9 @@ calls `check_fit_alive()`, which touches a parameter tensor and raises a
 message pointing at `save_npe()`, and `print()` flags the same thing. Adding an
 estimator means adding a branch to `de_rebuild_net()`.
 - DESCRIPTION `Version` is bumped per substantive change rather than gated on
-  M1–M3 (see `CLAUDE.md`'s git & release workflow); no git tags exist yet.
+  M1–M3 (see `CLAUDE.md`'s git & release workflow). Git tags start at `v0.5.0`
+  (see "automated CRAN submission (0.5.0)" above) and from here on mark every
+  version the `release-check.yaml` workflow submits.
 
 ---
 
