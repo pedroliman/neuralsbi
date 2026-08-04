@@ -260,6 +260,23 @@ absent, no network clock, badge 403 through the proxy). Version dropped its
 fields now derive from `Authors@R`. The prior pass added MLP embedding networks
 (`embedding_mlp()` + `embedding_net`), trained jointly inside MDN/MAF/NSF.*
 
+### automated CRAN submission (0.5.0)
+
+Issue #110 asked for CRAN submissions to fire on every minor or major version
+bump, or at least every three weeks, but not on every patch bump.
+`.github/workflows/release-check.yaml` implements the policy: it watches
+`DESCRIPTION` on pushes to `main` and on a Monday schedule, compares the
+current `Version` against the last `vX.Y.Z` git tag, and tags-and-publishes a
+prerelease when the major or minor component changed, or when a patch-only
+change is at least three weeks old. `.github/workflows/cran-submission.yaml`
+listens for that prerelease and runs
+[`coatless-actions/cran-submission`](https://github.com/coatless-actions/cran-submission),
+which checks the package, submits the tarball, and opens a tracking issue; a
+manual `workflow_dispatch` gated behind typing `CONFIRM` is also available for
+a submission outside the automatic cadence. 0.5.0 is the first tag this cut,
+so the `vX.Y.Z` tagging habit `CLAUDE.md`'s release workflow section asks for
+is now established going forward.
+
 ### shared validation layer (0.4.4)
 
 `R/check.R` holds the argument checks that public entry points repeat:
@@ -539,7 +556,9 @@ calls `check_fit_alive()`, which touches a parameter tensor and raises a
 message pointing at `save_npe()`, and `print()` flags the same thing. Adding an
 estimator means adding a branch to `de_rebuild_net()`.
 - DESCRIPTION `Version` is bumped per substantive change rather than gated on
-  M1–M3 (see `CLAUDE.md`'s git & release workflow); no git tags exist yet.
+  M1–M3 (see `CLAUDE.md`'s git & release workflow). Git tags start at `v0.5.0`
+  (see "automated CRAN submission (0.5.0)" above) and from here on mark every
+  version the `release-check.yaml` workflow submits.
 
 ---
 

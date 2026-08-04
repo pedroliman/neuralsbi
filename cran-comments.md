@@ -2,7 +2,7 @@
 
 This is a resubmission of neuralsbi, a native R implementation of neural simulation-based inference built on 'torch': Neural Posterior Estimation (NPE) approximates the posterior directly, and Neural Likelihood Estimation (NLE, added in 0.4.3) learns a surrogate likelihood sampled with MCMC and exportable as 'Stan' code.
 
-The package was first submitted at 0.3.0; 0.3.1 fixed the problems flagged by the incoming pre-tests (duplicated `summary.nsbi_posterior` / `summary.nsbi_samples` aliases, a `made_masks.Rd` "Lost braces" NOTE, and a "possibly misspelled words: NPE" NOTE). The current version is 0.4.16; see `NEWS.md` for the full changelog of the releases since.
+The package was first submitted at 0.3.0; 0.3.1 fixed the problems flagged by the incoming pre-tests (duplicated `summary.nsbi_posterior` / `summary.nsbi_samples` aliases, a `made_masks.Rd` "Lost braces" NOTE, and a "possibly misspelled words: NPE" NOTE). The current version is 0.5.0; see `NEWS.md` for the full changelog of the releases since. This submission is the first made through the automated `release-check.yaml` / `cran-submission.yaml` workflow pair (`.github/workflows/`), which submits a version once it carries a minor or major bump; no user-facing behavior changed since 0.4.16.
 
 ## Test environments
 
@@ -12,7 +12,7 @@ The package was first submitted at 0.3.0; 0.3.1 fixed the problems flagged by th
 
 ## R CMD check results
 
-To be confirmed against 0.4.16 before submission; at the last resubmission (0.3.2) the check ran clean at 0 errors | 0 warnings | 2 notes:
+To be confirmed against 0.5.0 before submission; at the last resubmission (0.3.2) the check ran clean at 0 errors | 0 warnings | 2 notes:
 
 * checking CRAN incoming feasibility ... NOTE. Maintainer: 'Pedro Nascimento de Lima <plima@rand.org>'. New submission. Standard note for a first submission.
 

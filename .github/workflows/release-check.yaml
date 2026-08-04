@@ -1,0 +1,131 @@
+# Decides whether the current DESCRIPTION Version warrants a CRAN
+# submission, and if so, tags it and publishes a prerelease GitHub Release.
+# That release is what triggers cran-submission.yaml -- this workflow never
+# talks to CRAN itself.
+#
+# Policy (issue #110): submit on every minor or major version bump; a
+# patch-only bump also submits once at least three weeks have passed since
+# the last release tag, so fixes do not sit unsubmitted indefinitely; a
+# patch bump inside that window does not submit on its own.
+name: release-check
+
+on:
+  push:
+    branches: [main]
+    paths: [DESCRIPTION]
+  schedule:
+    # Monday 12:00 UTC. Catches the three-week fallback even on a week with
+    # no push to DESCRIPTION.
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.decide.outputs.should_release }}
+      version: ${{ steps.decide.outputs.version }}
+      reason: ${{ steps.decide.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Find the last release tag
+        id: last_tag
+        run: |
+          last_tag=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          echo "tag=$last_tag" >> "$GITHUB_OUTPUT"
+          if [ -n "$last_tag" ]; then
+            echo "date=$(git log -1 --format=%cI "$last_tag")" >> "$GITHUB_OUTPUT"
+          else
+            echo "date=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Decide whether to release
+        id: decide
+        env:
+          LAST_TAG: ${{ steps.last_tag.outputs.tag }}
+          LAST_TAG_DATE: ${{ steps.last_tag.outputs.date }}
+        run: |
+          Rscript - <<'EOF' >> "$GITHUB_OUTPUT"
+          desc <- read.dcf("DESCRIPTION")
+          current <- desc[1, "Version"]
+          current_v <- unclass(package_version(current))[[1]]
+
+          last_tag <- Sys.getenv("LAST_TAG")
+          last_tag_date <- Sys.getenv("LAST_TAG_DATE")
+
+          should_release <- FALSE
+          reason <- ""
+
+          if (!nzchar(last_tag)) {
+            should_release <- TRUE
+            reason <- "no prior release tag; establishing the baseline"
+          } else {
+            last_v <- unclass(package_version(sub("^v", "", last_tag)))[[1]]
+            if (identical(current_v, last_v)) {
+              reason <- sprintf("DESCRIPTION Version %s matches the last release tag %s; nothing to submit", current, last_tag)
+            } else if (current_v[1] != last_v[1] || current_v[2] != last_v[2]) {
+              should_release <- TRUE
+              reason <- sprintf("minor or major version bump (%s -> %s)", sub("^v", "", last_tag), current)
+            } else {
+              weeks_since <- as.numeric(difftime(Sys.time(), as.POSIXct(last_tag_date, format = "%Y-%m-%dT%H:%M:%S%z"), units = "weeks"))
+              if (weeks_since >= 3) {
+                should_release <- TRUE
+                reason <- sprintf("patch bump %s -> %s, %.1f weeks since the last release", sub("^v", "", last_tag), current, weeks_since)
+              } else {
+                reason <- sprintf("patch bump %s -> %s, only %.1f weeks since the last release (needs 3)", sub("^v", "", last_tag), current, weeks_since)
+              }
+            }
+          }
+
+          cat("should_release=", tolower(should_release), "\n", sep = "")
+          cat("version=", current, "\n", sep = "")
+          cat("reason=", reason, "\n", sep = "")
+          EOF
+
+      - name: Log decision
+        run: echo "should_release=${{ steps.decide.outputs.should_release }} reason=${{ steps.decide.outputs.reason }}"
+
+  release:
+    needs: decide
+    if: needs.decide.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag and publish a prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.decide.outputs.version }}
+          REASON: ${{ needs.decide.outputs.reason }}
+        run: |
+          tag="v${VERSION}"
+          notes_file=$(mktemp)
+          awk '/^# neuralsbi /{if (seen) exit; seen=1; next} seen' NEWS.md > "$notes_file"
+          {
+            echo "Triggered because: ${REASON}."
+            echo
+            cat "$notes_file"
+          } > "$notes_file.final"
+
+          git tag "$tag"
+          git push origin "$tag"
+
+          gh release create "$tag" \
+            --title "neuralsbi ${VERSION}" \
+            --notes-file "$notes_file.final" \
+            --prerelease
