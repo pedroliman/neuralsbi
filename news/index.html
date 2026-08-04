@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.0" id="neuralsbi-050">neuralsbi 0.5.0<a class="anchor" aria-label="anchor" href="#neuralsbi-050"></a></h2>
+<ul><li>
+<strong>CRAN submissions are now automated.</strong> <code>.github/workflows/release-check.yaml</code> watches <code>DESCRIPTION</code> on <code>main</code> (plus a weekly schedule) and tags and publishes a prerelease once the version has had a minor or major bump, or once three weeks have passed since the last release tag on a patch-only bump; a patch bump inside that window publishes nothing (issue <a href="https://github.com/pedroliman/neuralsbi/issues/110" class="external-link">#110</a>). <code>.github/workflows/cran-submission.yaml</code> fires on that prerelease and runs <a href="https://github.com/coatless-actions/cran-submission" class="external-link"><code>coatless-actions/cran-submission</code></a>, which checks the package and submits the tarball. This release is the first tag the new workflow cuts, establishing the <code>vX.Y.Z</code> tagging habit <code>CLAUDE.md</code> has called for since 0.4.1.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.4.16" id="neuralsbi-0416">neuralsbi 0.4.16<a class="anchor" aria-label="anchor" href="#neuralsbi-0416"></a></h2>
 <ul><li>
@@ -249,7 +254,7 @@
 <li>New vignette, <code><a href="../articles/intro-to-sbi.html">vignette("intro-to-sbi")</a></code>: a short beginner tutorial covering the three ingredients (prior, simulator, observation), amortized training, and a first calibration check, using a g-and-k distribution simulator whose likelihood has no closed form.</li>
 </ul></div>
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.2" id="neuralsbi-032">neuralsbi 0.3.2<a class="anchor" aria-label="anchor" href="#neuralsbi-032"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.2" id="neuralsbi-032">neuralsbi 0.3.2<a class="anchor" aria-label="anchor" href="#neuralsbi-032"></a></h2><p class="text-muted">CRAN release: 2026-08-03</p>
 <ul><li>README is now generated from <code>README.Rmd</code>, so the usage example runs at render time and its output cannot drift from the code. The example is a plain linear regression: the posterior recovers the ground-truth coefficients, which the reader can check against ordinary least squares.</li>
 </ul></div>
     <div class="section level2">

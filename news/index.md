@@ -1,5 +1,21 @@
 # Changelog
 
+## neuralsbi 0.5.0
+
+- **CRAN submissions are now automated.**
+  `.github/workflows/release-check.yaml` watches `DESCRIPTION` on `main`
+  (plus a weekly schedule) and tags and publishes a prerelease once the
+  version has had a minor or major bump, or once three weeks have passed
+  since the last release tag on a patch-only bump; a patch bump inside
+  that window publishes nothing (issue
+  [\#110](https://github.com/pedroliman/neuralsbi/issues/110)).
+  `.github/workflows/cran-submission.yaml` fires on that prerelease and
+  runs
+  [`coatless-actions/cran-submission`](https://github.com/coatless-actions/cran-submission),
+  which checks the package and submits the tarball. This release is the
+  first tag the new workflow cuts, establishing the `vX.Y.Z` tagging
+  habit `CLAUDE.md` has called for since 0.4.1.
+
 ## neuralsbi 0.4.16
 
 - **[`summary()`](https://rdrr.io/r/base/summary.html) now works on an
@@ -922,6 +938,8 @@
   closed form.
 
 ## neuralsbi 0.3.2
+
+CRAN release: 2026-08-03
 
 - README is now generated from `README.Rmd`, so the usage example runs
   at render time and its output cannot drift from the code. The example
