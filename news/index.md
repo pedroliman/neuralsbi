@@ -1,5 +1,26 @@
 # Changelog
 
+## neuralsbi 0.5.3
+
+- Internal cleanup, no user-visible behavior change:
+  `fit_density_estimator()` restated every `fit_*()` training default –
+  `n_components`, `hidden`, `max_epochs`, `batch_size`, `lr`,
+  `validation_fraction`, `patience`, `n_restarts`, `clip_grad_norm` – as
+  a `%||%` fallback, once per estimator branch. Both callers,
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md), already
+  pass every argument explicitly, so none of those fallbacks had ever
+  fired; the numbers just had to be kept in sync by hand across
+  `fit_density_estimator()`, each `fit_*()` signature, and the two
+  callers. It now forwards only the arguments the chosen `fit_*()`
+  accepts (`intersect(names(dots), names(formals(fn)))`, then
+  [`do.call()`](https://rdrr.io/r/base/do.call.html)), so each
+  `fit_*()`’s own signature is the only place its defaults live.
+  `linear_gaussian` only takes `ridge` and `verbose`, so an
+  `n_components` or `embedding_net` passed alongside it is still
+  silently dropped, as before
+  ([\#58](https://github.com/pedroliman/neuralsbi/issues/58)).
+
 ## neuralsbi 0.5.2
 
 - Internal cleanup, no user-visible behavior change: the MDN, MAF and
