@@ -1,7 +1,8 @@
 # Decides whether the current DESCRIPTION Version warrants a CRAN
-# submission, and if so, tags it and publishes a prerelease GitHub Release.
-# That release is what triggers cran-submission.yaml -- this workflow never
-# talks to CRAN itself.
+# submission, and if so, tags it, publishes a prerelease GitHub Release, and
+# dispatches cran-submission.yaml directly (the release alone will not
+# trigger it -- see the comment on that step). This workflow never talks to
+# CRAN itself.
 #
 # Policy (issue #110): submit on every minor or major version bump; a
 # patch-only bump also submits once at least three weeks have passed since
@@ -102,6 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -129,3 +131,14 @@ jobs:
             --title "neuralsbi ${VERSION}" \
             --notes-file "$notes_file.final" \
             --prerelease
+
+      - name: Trigger the CRAN submission workflow
+        # A release created with secrets.GITHUB_TOKEN does not itself fire
+        # cran-submission.yaml's `release: types: [prereleased]` trigger --
+        # GitHub does not chain workflow runs from GITHUB_TOKEN-generated
+        # events, to prevent accidental recursion. workflow_dispatch is
+        # explicitly exempt from that restriction, so dispatch it directly
+        # rather than relying on the release event to cascade.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run cran-submission.yaml --ref main -f confirmation=CONFIRM
