@@ -39,6 +39,89 @@ de_log_prob <- function(de, theta, x) UseMethod("de_log_prob")
 #' @keywords internal
 de_sample <- function(de, x, n) UseMethod("de_sample")
 
+# ---- shared tensor plumbing for the torch estimators (MDN, MAF, NSF) ------
+
+#' Shared tensor plumbing behind every neural `de_log_prob.*` method
+#'
+#' Coerces `theta` and `x` to matrices, broadcasts a single-row `x` up to
+#' `theta`'s row count (the same broadcast [lingauss_mean()]'s caller does on
+#' `mu`, just on the other operand), moves both to torch, and evaluates
+#' `log_prob_fn` under `with_no_grad()`. `log_prob_fn` is the per-estimator
+#' tensor function -- `mdn_log_prob_tensor()`, `maf_log_prob_tensor()` or
+#' `nsf_log_prob_tensor()`.
+#' @keywords internal
+de_log_prob_torch <- function(de, theta, x, log_prob_fn) {
+  theta <- as_theta_matrix(theta, de$dim_theta)
+  x <- as_theta_matrix(x, de$dim_x)
+  if (nrow(x) == 1L && nrow(theta) > 1L) {
+    x <- matrix(x, nrow = nrow(theta), ncol = ncol(x), byrow = TRUE)
+  }
+  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
+  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
+  torch::with_no_grad({
+    as.numeric(log_prob_fn(de$net, tt, xt)$to(dtype = torch::torch_float64()))
+  })
+}
+
+#' Shared tensor plumbing behind `de_sample.nsbi_de_maf` and `de_sample.nsbi_de_nsf`
+#'
+#' Takes the single conditioning row, replicates it to `n` rows, draws a
+#' standard-normal base sample, and inverts the flow. `inverse_fn` is the
+#' per-flow inverse -- `maf_inverse()` or `nsf_inverse()`. The MDN has no
+#' inverse to share here; it samples its mixture directly.
+#' @keywords internal
+de_sample_flow <- function(de, x, n, inverse_fn) {
+  x <- as_theta_matrix(x, de$dim_x)[1, , drop = FALSE]
+  xrep <- matrix(x, nrow = n, ncol = de$dim_x, byrow = TRUE)
+  xt <- torch::torch_tensor(xrep, dtype = torch::torch_float())
+  u <- torch::torch_randn(c(n, de$dim_theta))
+  torch::with_no_grad({
+    torch::as_array(inverse_fn(de$net, u, xt)$to(dtype = torch::torch_float64()))
+  })
+}
+
+#' Shared body behind `fit_mdn()`, `fit_maf()` and `fit_nsf()`
+#'
+#' Coerces `theta` and `x`, builds the net from `build_net_fn(dim_x,
+#' dim_theta)` now that both are known, trains it with
+#' [train_conditional_de()], and packages the result into a fitted `nsbi_de`
+#' object.
+#'
+#' `arch` carries the architecture fields specific to the caller --
+#' `n_components`/`hidden` for the MDN, `n_transforms`/`hidden` for the MAF,
+#' `n_transforms`/`hidden`/`n_bins`/`tail_bound` for the NSF -- and is spliced
+#' into the returned list ahead of `embedding`, matching the field order each
+#' estimator returned before this helper existed. This helper never needs to
+#' know what `arch`'s fields are.
+#' @keywords internal
+fit_torch_de <- function(theta, x, build_net_fn, log_prob_fn, class, arch,
+                         max_epochs, batch_size, lr, validation_fraction,
+                         patience, n_restarts, clip_grad_norm, embedding,
+                         seed, verbose) {
+  theta <- as_theta_matrix(theta)
+  x <- as_theta_matrix(x)
+  dim_theta <- ncol(theta)
+  dim_x <- ncol(x)
+
+  trained <- train_conditional_de(
+    build_net = function() build_net_fn(dim_x, dim_theta),
+    log_prob_fn = log_prob_fn,
+    theta = theta, x = x,
+    max_epochs = max_epochs, batch_size = batch_size, lr = lr,
+    validation_fraction = validation_fraction, patience = patience,
+    n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
+    seed = seed, verbose = verbose
+  )
+
+  structure(
+    c(list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x),
+      arch,
+      list(embedding = embedding, best_val_loss = trained$best_val_loss,
+           history = trained$history)),
+    class = c(class, "nsbi_de")
+  )
+}
+
 # ---- linear-Gaussian conditional estimator (pure R) -----------------------
 
 #' @keywords internal

@@ -234,52 +234,28 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {
-  theta <- as_theta_matrix(theta)
-  x <- as_theta_matrix(x)
-  dim_theta <- ncol(theta)
-  dim_x <- ncol(x)
-
-  trained <- train_conditional_de(
-    build_net = function() nsf_module(dim_x, dim_theta, n_transforms, hidden,
-                                      n_bins, tail_bound, embedding)(),
+  fit_torch_de(
+    theta, x,
+    build_net_fn = function(dim_x, dim_theta)
+      nsf_module(dim_x, dim_theta, n_transforms, hidden, n_bins, tail_bound,
+                embedding)(),
     log_prob_fn = nsf_log_prob_tensor,
-    theta = theta, x = x,
+    class = "nsbi_de_nsf",
+    arch = list(n_transforms = n_transforms, hidden = hidden, n_bins = n_bins,
+               tail_bound = tail_bound),
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    seed = seed, verbose = verbose
-  )
-
-  structure(
-    list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x,
-         n_transforms = n_transforms, hidden = hidden, n_bins = n_bins,
-         tail_bound = tail_bound, embedding = embedding,
-         best_val_loss = trained$best_val_loss, history = trained$history),
-    class = c("nsbi_de_nsf", "nsbi_de")
+    embedding = embedding, seed = seed, verbose = verbose
   )
 }
 
 #' @export
 de_log_prob.nsbi_de_nsf <- function(de, theta, x) {
-  theta <- as_theta_matrix(theta, de$dim_theta)
-  x <- as_theta_matrix(x, de$dim_x)
-  if (nrow(x) == 1L && nrow(theta) > 1L) {
-    x <- matrix(x, nrow = nrow(theta), ncol = ncol(x), byrow = TRUE)
-  }
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
-  torch::with_no_grad({
-    as.numeric(nsf_log_prob_tensor(de$net, tt, xt)$to(dtype = torch::torch_float64()))
-  })
+  de_log_prob_torch(de, theta, x, nsf_log_prob_tensor)
 }
 
 #' @export
 de_sample.nsbi_de_nsf <- function(de, x, n) {
-  x <- as_theta_matrix(x, de$dim_x)[1, , drop = FALSE]
-  xrep <- matrix(x, nrow = n, ncol = de$dim_x, byrow = TRUE)
-  xt <- torch::torch_tensor(xrep, dtype = torch::torch_float())
-  u <- torch::torch_randn(c(n, de$dim_theta))
-  torch::with_no_grad({
-    torch::as_array(nsf_inverse(de$net, u, xt)$to(dtype = torch::torch_float64()))
-  })
+  de_sample_flow(de, x, n, nsf_inverse)
 }
