@@ -45,7 +45,9 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_drop_net.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_iid_evaluator.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_log_lik_iid.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/de_log_prob_torch.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/de_rebuild_net.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/de_sample_flow.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/default_progressr_handler.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/density_estimator.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/describe_params.html</loc></url>
@@ -62,6 +64,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_mdn.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_nsf.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_standardizer.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/fit_torch_de.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/format_mcmc_diagnostics.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/hint_parallel.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/index.html</loc></url>

@@ -1,5 +1,30 @@
 # Changelog
 
+## neuralsbi 0.5.2
+
+- Internal cleanup, no user-visible behavior change: the MDN, MAF and
+  NSF density estimators had three byte-identical copies of the tensor
+  plumbing behind `de_log_prob.*` and two behind `de_sample.*`
+  (`de_sample.nsbi_de_mdn` samples its mixture directly and shares
+  nothing here), plus near-identical
+  [`fit_mdn()`](https://neuralsbi.pedrodelima.com/reference/fit_mdn.md)/[`fit_maf()`](https://neuralsbi.pedrodelima.com/reference/fit_maf.md)/[`fit_nsf()`](https://neuralsbi.pedrodelima.com/reference/fit_nsf.md)
+  wrappers around
+  [`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md).
+  `R/density_estimator.R` now carries three internal helpers next to the
+  generics they implement –
+  [`de_log_prob_torch()`](https://neuralsbi.pedrodelima.com/reference/de_log_prob_torch.md),
+  [`de_sample_flow()`](https://neuralsbi.pedrodelima.com/reference/de_sample_flow.md)
+  and
+  [`fit_torch_de()`](https://neuralsbi.pedrodelima.com/reference/fit_torch_de.md)
+  – and each estimator’s file calls them instead of repeating the body.
+  [`fit_mdn()`](https://neuralsbi.pedrodelima.com/reference/fit_mdn.md),
+  [`fit_maf()`](https://neuralsbi.pedrodelima.com/reference/fit_maf.md)
+  and
+  [`fit_nsf()`](https://neuralsbi.pedrodelima.com/reference/fit_nsf.md)
+  keep their exact signatures; only their bodies collapsed, so
+  `man/fit_mdn.Rd`, `man/fit_maf.Rd` and `man/fit_nsf.Rd` needed no edit
+  ([\#57](https://github.com/pedroliman/neuralsbi/issues/57)).
+
 ## neuralsbi 0.5.1
 
 - **A slice-sampled NLE posterior now reports how many likelihood

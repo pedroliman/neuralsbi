@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.2" id="neuralsbi-052">neuralsbi 0.5.2<a class="anchor" aria-label="anchor" href="#neuralsbi-052"></a></h2>
+<ul><li>Internal cleanup, no user-visible behavior change: the MDN, MAF and NSF density estimators had three byte-identical copies of the tensor plumbing behind <code>de_log_prob.*</code> and two behind <code>de_sample.*</code> (<code>de_sample.nsbi_de_mdn</code> samples its mixture directly and shares nothing here), plus near-identical <code><a href="../reference/fit_mdn.html">fit_mdn()</a></code>/<code><a href="../reference/fit_maf.html">fit_maf()</a></code>/<code><a href="../reference/fit_nsf.html">fit_nsf()</a></code> wrappers around <code><a href="../reference/train_conditional_de.html">train_conditional_de()</a></code>. <code>R/density_estimator.R</code> now carries three internal helpers next to the generics they implement – <code><a href="../reference/de_log_prob_torch.html">de_log_prob_torch()</a></code>, <code><a href="../reference/de_sample_flow.html">de_sample_flow()</a></code> and <code><a href="../reference/fit_torch_de.html">fit_torch_de()</a></code> – and each estimator’s file calls them instead of repeating the body. <code><a href="../reference/fit_mdn.html">fit_mdn()</a></code>, <code><a href="../reference/fit_maf.html">fit_maf()</a></code> and <code><a href="../reference/fit_nsf.html">fit_nsf()</a></code> keep their exact signatures; only their bodies collapsed, so <code>man/fit_mdn.Rd</code>, <code>man/fit_maf.Rd</code> and <code>man/fit_nsf.Rd</code> needed no edit (<a href="https://github.com/pedroliman/neuralsbi/issues/57" class="external-link">#57</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.1" id="neuralsbi-051">neuralsbi 0.5.1<a class="anchor" aria-label="anchor" href="#neuralsbi-051"></a></h2>
 <ul><li>
