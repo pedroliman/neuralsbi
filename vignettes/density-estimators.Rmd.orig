@@ -35,8 +35,8 @@ if (requireNamespace("future", quietly = TRUE)) {
 
 - `"linear_gaussian"` is a closed-form conditional Gaussian fit by linear regression. No neural network and no `torch`. It is exact when the posterior is Gaussian in the parameters, which makes it both a fast baseline and a way to check that the neural estimators are behaving.
 - `"mdn"` is a mixture density network: a small neural network that maps $x$ to the weights, means and covariances of a Gaussian mixture. Mixtures can represent several modes and a good deal of skew, and they train quickly.
-- `"maf"` is a masked autoregressive flow (Papamakarios et al., 2017), and the package default. It builds the density from a sequence of invertible transformations of a Gaussian, which handles strong nonlinear dependence between parameters better than a mixture does. Python `sbi` uses the same default.
-- `"nsf"` is a neural spline flow (Durkan et al., 2019), a flow whose transformations are monotonic splines. It is the most flexible of the three and the slowest to train.
+- `"maf"` is a masked autoregressive flow ([Papamakarios et al., 2017](https://doi.org/10.48550/arXiv.1705.07057)), and the package default. It builds the density from a sequence of invertible transformations of a Gaussian, which handles strong nonlinear dependence between parameters better than a mixture does. Python `sbi` uses the same default.
+- `"nsf"` is a neural spline flow ([Durkan et al., 2019](https://doi.org/10.48550/arXiv.1906.04032)), a flow whose transformations are monotonic splines. It is the most flexible of the three and the slowest to train.
 
 The three neural estimators need the `torch` back end (`install.packages("torch"); torch::install_torch()`) and share one training loop, so `max_epochs`, `patience`, `n_restarts` and the rest of the training arguments to `npe()` mean the same thing whichever you pick.
 
