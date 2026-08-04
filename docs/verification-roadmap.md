@@ -114,9 +114,12 @@ leakage handling) and documented.
       (`plot_posterior_predictive()`). Tested with the linear-Gaussian oracle,
       including a miscalibration-detection case.
 - [x] Vignettes: SIR applied case study (`vignettes/sir-epidemic.Rmd`).
-- [x] CI with cached libtorch: `.github/workflows/R-CMD-check.yaml` now has a
-      `test-torch` job (installs libtorch, caches it, runs the full suite via
-      `cd tests && Rscript testthat.R` so internals are visible to tests).
+- [x] CI with cached libtorch: `.github/workflows/test-coverage.yaml`'s
+      `test-coverage` job installs libtorch (cached) and runs the full suite
+      via `covr::package_coverage()`, which installs the package and runs
+      `tests/testthat.R` so internals are visible to tests; a separate
+      `test-torch` job in `R-CMD-check.yaml` would only repeat that install
+      and run, so it was folded in here instead.
 - [x] `sbibm`-parity benchmark harness in `inst/benchmarks/`: shared-data
       protocol scripted as `01_generate_data.R` → `02_run_sbi_python.py` →
       `03_run_neuralsbi.R` → `04_compare.R` (C2ST + moment diffs + analytic
@@ -203,8 +206,8 @@ leakage handling) and documented.
 ## Part C — Milestone checklist
 
 - [x] M0 Pilot: linear-Gaussian analytic parity (torch-free) + MDN parity.
-- [x] M1 CI configured with cached libtorch (`test-torch` job) and green on
-      `main`.
+- [x] M1 CI configured with cached libtorch (`test-coverage` job) and green
+      on `main`.
 - [~] M2 Two Moons bimodality test added (`test-two-moons.R`, torch-gated);
       SBC + coverage + TARP calibration study run and plotted
       (`inst/benchmarks/two_moons_calibration.R` → `docs/figures/`). Remaining:
@@ -445,9 +448,10 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
 
 ### Next actions, in priority order
 
-1. **CI is green on `main`** (M1 done) — the R-CMD-check workflow, including
-   the `test-torch` job, last passed on the `main` merge commit. Longer term,
-   consider generating NAMESPACE/man with roxygen2 so codoc drift can't recur.
+1. **CI is green on `main`** (M1 done) — the R-CMD-check workflow and the
+   `test-coverage` job that runs the full libtorch suite both last passed on
+   the `main` merge commit. Longer term, consider generating NAMESPACE/man
+   with roxygen2 so codoc drift can't recur.
 2. **Run the sbi head-to-head** (finishes M3, headline claim). Needs
    `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
    and two_moons, estimators mdn + maf, 10k sims. Commit the comparison

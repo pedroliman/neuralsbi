@@ -39,7 +39,9 @@ R CMD INSTALL --no-docs . && (cd tests && Rscript testthat.R)
 
 Neural (torch) tests skip themselves automatically when libtorch is absent
 (`tests/testthat/helper-torch.R`), so the suite runs everywhere; only the
-`test-torch` CI job installs libtorch and exercises MDN/MAF/NSF end to end.
+`test-coverage` CI job installs libtorch and exercises MDN/MAF/NSF end to end,
+as a side effect of measuring coverage (`covr::package_coverage()` runs
+`tests/testthat.R` the same way `R CMD check` does).
 
 ## Architecture
 
