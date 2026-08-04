@@ -280,15 +280,15 @@ says what to do when a fit does not pass.
 
 For the ideas behind the method, Cranmer, Brehmer and Louppe (2020),
 [“The frontier of simulation-based
-inference”](https://www.pnas.org/doi/10.1073/pnas.1912789117), is a
-short and readable review. Papamakarios and Murray (2016), [“Fast ε-free
-inference of simulation models with Bayesian conditional density
-estimation”](https://arxiv.org/abs/1605.06376), introduced the approach
-NPE descends from. Talts et al. (2018), [“Validating Bayesian inference
-algorithms with simulation-based
-calibration”](https://arxiv.org/abs/1804.06788), is the reference for
-the calibration check used above. Lueckmann et al. (2021),
+inference”](https://doi.org/10.1073/pnas.1912789117), is a short and
+readable review. Papamakarios and Murray (2016), [“Fast ε-free inference
+of simulation models with Bayesian conditional density
+estimation”](https://doi.org/10.48550/arXiv.1605.06376), introduced the
+approach NPE descends from. Talts et al. (2018), [“Validating Bayesian
+inference algorithms with simulation-based
+calibration”](https://doi.org/10.48550/arXiv.1804.06788), is the
+reference for the calibration check used above. Lueckmann et al. (2021),
 [“Benchmarking simulation-based
-inference”](https://arxiv.org/abs/2101.04653), compares NPE against the
-other neural SBI algorithms, which is useful context for where
-`neuralsbi` sits.
+inference”](https://doi.org/10.48550/arXiv.2101.04653), compares NPE
+against the other neural SBI algorithms, which is useful context for
+where `neuralsbi` sits.

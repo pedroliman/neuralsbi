@@ -15,3 +15,9 @@ conditioning structure.
 ## Details
 
 Select with `npe(..., density_estimator = "nsf")`.
+
+## References
+
+Durkan, C., Bekasov, A., Murray, I. and Papamakarios, G. (2019). Neural
+Spline Flows. *NeurIPS*.
+[doi:10.48550/arXiv.1906.04032](https://doi.org/10.48550/arXiv.1906.04032)

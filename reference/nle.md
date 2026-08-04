@@ -164,6 +164,7 @@ with high-dimensional data NPE is usually the better choice.
 Papamakarios, G., Sterratt, D. and Murray, I. (2019). Sequential Neural
 Likelihood: Fast Likelihood-free Inference with Autoregressive Flows.
 *AISTATS*.
+[doi:10.48550/arXiv.1805.07226](https://doi.org/10.48550/arXiv.1805.07226)
 
 ## See also
 

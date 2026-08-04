@@ -18,12 +18,14 @@ here.
   $`x`$ to the weights, means and covariances of a Gaussian mixture.
   Mixtures can represent several modes and a good deal of skew, and they
   train quickly.
-- `"maf"` is a masked autoregressive flow (Papamakarios et al., 2017),
-  and the package default. It builds the density from a sequence of
-  invertible transformations of a Gaussian, which handles strong
-  nonlinear dependence between parameters better than a mixture does.
-  Python `sbi` uses the same default.
-- `"nsf"` is a neural spline flow (Durkan et al., 2019), a flow whose
+- `"maf"` is a masked autoregressive flow ([Papamakarios et al.,
+  2017](https://doi.org/10.48550/arXiv.1705.07057)), and the package
+  default. It builds the density from a sequence of invertible
+  transformations of a Gaussian, which handles strong nonlinear
+  dependence between parameters better than a mixture does. Python `sbi`
+  uses the same default.
+- `"nsf"` is a neural spline flow ([Durkan et al.,
+  2019](https://doi.org/10.48550/arXiv.1906.04032)), a flow whose
   transformations are monotonic splines. It is the most flexible of the
   three and the slowest to train.
 

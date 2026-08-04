@@ -18,3 +18,13 @@ This is `sbi`'s default flow family, and the default estimator in
 `neuralsbi` too. It handles non-Gaussian posteriors that the MDN
 struggles with. It is selected by default, or explicitly with
 `npe(..., density_estimator = "maf")`.
+
+## References
+
+Papamakarios, G., Pavlakou, T. and Murray, I. (2017). Masked
+Autoregressive Flow for Density Estimation. *NeurIPS*.
+[doi:10.48550/arXiv.1705.07057](https://doi.org/10.48550/arXiv.1705.07057)
+
+Germain, M., Gregor, K., Murray, I. and Larochelle, H. (2015). MADE:
+Masked Autoencoder for Distribution Estimation. *ICML*.
+[doi:10.48550/arXiv.1502.03509](https://doi.org/10.48550/arXiv.1502.03509)

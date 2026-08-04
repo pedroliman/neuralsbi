@@ -138,10 +138,10 @@ Real epidemics do not hold still, and the interesting question is why
 they move. Here we fit three competing models of that mechanism to daily
 reported cases in all 50 US states plus Washington, DC, over the first
 120 days of the SARS-CoV-2 pandemic (2020-01-21 to 2020-05-19). Two of
-them are behavioral-feedback models from Gozzi, Perra and Vespignani
-(2025, <em>PNAS</em> 122(24) e2421993122), where transmission responds
-to what people see happening around them. The third is a
-phenomenological baseline that lets
+them are behavioral-feedback models from <a href="https://doi.org/10.1073/pnas.2421993122" class="external-link">Gozzi, Perra and
+Vespignani (2025, <em>PNAS</em> 122(24) e2421993122)</a>, where
+transmission responds to what people see happening around them. The
+third is a phenomenological baseline that lets
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
 take a different constant value in each of a few time regimes.</p>
 <p>We train each model once, over its whole prior, and then condition it
@@ -278,8 +278,8 @@ second branch, driving
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
 into the low thousandths and the attack rate toward 1. Serology settles
 it from outside the case data. CDC’s commercial-lab study put
-spring-2020 infections at 6 to 24 times reported cases (Havers et
-al. 2020, <em>JAMA Internal Medicine</em>), which puts
+spring-2020 infections at 6 to 24 times reported cases (<a href="https://doi.org/10.1001/jamainternmed.2020.4130" class="external-link">Havers et
+al. 2020, <em>JAMA Internal Medicine</em></a>), which puts
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
 between about 0.04 and 0.17. We encode a logit-normal prior centered at
 0.10 with 95% mass in
@@ -298,7 +298,8 @@ identifiable from
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta(t)</annotation></semantics></math>,
 so we set
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><mi>γ</mi><mo>=</mo><mn>7</mn></mrow><annotation encoding="application/x-tex">1/\gamma = 7</annotation></semantics></math>
-days (Li et al. 2020, <em>NEJM</em>).</p>
+days (<a href="https://doi.org/10.1056/NEJMoa2001316" class="external-link">Li et al. 2020,
+<em>NEJM</em></a>).</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -404,10 +405,10 @@ perfectly calibrated under SBC, so this matters.</p>
 <div class="section level3">
 <h3 id="models-2-and-3-behavioral-feedback">Models 2 and 3: behavioral feedback<a class="anchor" aria-label="anchor" href="#models-2-and-3-behavioral-feedback"></a>
 </h3>
-<p>The two behavioral models from Gozzi, Perra and Vespignani (2025)
-need no external mobility data. Transmission responds to the epidemic’s
-own reported output, which makes each one a self-contained simulator,
-exactly what SBI wants.</p>
+<p>The two behavioral models from <a href="https://doi.org/10.1073/pnas.2421993122" class="external-link">Gozzi, Perra and
+Vespignani (2025)</a> need no external mobility data. Transmission
+responds to the epidemic’s own reported output, which makes each one a
+self-contained simulator, exactly what SBI wants.</p>
 <p>EFB, the effective force of infection, divides the force of infection
 by a factor that grows with recent and cumulative case experience:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mfrac><mrow><mi>I</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>N</mi></mfrac><mo>⋅</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>ξ</mi><mspace width="0.167em"></mspace><mi>c</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>ψ</mi><munder><mo>∑</mo><mrow><msup><mi>t</mi><mo>′</mo></msup><mo>&lt;</mo><mi>t</mi></mrow></munder><mi>c</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>t</mi><mo>′</mo></msup><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">\lambda(t) = \beta_0 \frac{I(t)}{N} \cdot \frac{1}{1 + \xi\, c(t-1) + \psi \sum_{t' &lt; t} c(t')}.</annotation></semantics></math></p>

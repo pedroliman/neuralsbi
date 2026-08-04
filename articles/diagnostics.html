@@ -252,10 +252,9 @@ the time.</p>
 <div class="section level2">
 <h2 id="tarp-a-sharper-coverage-test">TARP, a sharper coverage test<a class="anchor" aria-label="anchor" href="#tarp-a-sharper-coverage-test"></a>
 </h2>
-<p>SBC looks at each parameter’s marginal one at a time. TARP (Lemos et
-al., 2023) tests coverage of the joint posterior using random reference
-points, so it can catch miscalibration that per-parameter ranks
-miss.</p>
+<p>SBC looks at each parameter’s marginal one at a time. TARP (<a href="https://doi.org/10.48550/arXiv.2302.03026" class="external-link">Lemos et al., 2023</a>)
+tests coverage of the joint posterior using random reference points, so
+it can catch miscalibration that per-parameter ranks miss.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tarp.html">tarp</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_tarp <span class="op">=</span> <span class="fl">100</span>, n_posterior_samples <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>           seed <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>

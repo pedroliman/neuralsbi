@@ -23,6 +23,7 @@ that difference is the whole running time.
 
 Neal, R. M. (2003). Slice sampling. *The Annals of Statistics* 31(3),
 705-767.
+[doi:10.1214/aos/1056562461](https://doi.org/10.1214/aos/1056562461)
 
 ## See also
 

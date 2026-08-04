@@ -157,15 +157,15 @@ to the weights, means and covariances of a Gaussian mixture. Mixtures
 can represent several modes and a good deal of skew, and they train
 quickly.</li>
 <li>
-<code>"maf"</code> is a masked autoregressive flow (Papamakarios et
-al., 2017), and the package default. It builds the density from a
+<code>"maf"</code> is a masked autoregressive flow (<a href="https://doi.org/10.48550/arXiv.1705.07057" class="external-link">Papamakarios et al.,
+2017</a>), and the package default. It builds the density from a
 sequence of invertible transformations of a Gaussian, which handles
 strong nonlinear dependence between parameters better than a mixture
 does. Python <code>sbi</code> uses the same default.</li>
 <li>
-<code>"nsf"</code> is a neural spline flow (Durkan et al., 2019), a
-flow whose transformations are monotonic splines. It is the most
-flexible of the three and the slowest to train.</li>
+<code>"nsf"</code> is a neural spline flow (<a href="https://doi.org/10.48550/arXiv.1906.04032" class="external-link">Durkan et al.,
+2019</a>), a flow whose transformations are monotonic splines. It is the
+most flexible of the three and the slowest to train.</li>
 </ul>
 <p>The three neural estimators need the <code>torch</code> back end
 (<code>install.packages("torch"); torch::install_torch()</code>) and

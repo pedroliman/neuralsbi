@@ -123,9 +123,10 @@ the time.
 
 ## TARP, a sharper coverage test
 
-SBC looks at each parameter’s marginal one at a time. TARP (Lemos et
-al., 2023) tests coverage of the joint posterior using random reference
-points, so it can catch miscalibration that per-parameter ranks miss.
+SBC looks at each parameter’s marginal one at a time. TARP ([Lemos et
+al., 2023](https://doi.org/10.48550/arXiv.2302.03026)) tests coverage of
+the joint posterior using random reference points, so it can catch
+miscalibration that per-parameter ranks miss.
 
 ``` r
 

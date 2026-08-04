@@ -26,3 +26,4 @@ A data frame with one row per parameter: `rhat` and `ess_bulk`.
 Vehtari, A., Gelman, A., Simpson, D., Carpenter, B. and Burkner, P.-C.
 (2021). Rank-normalization, folding, and localization. *Bayesian
 Analysis* 16(2), 667-718.
+[doi:10.1214/20-BA1221](https://doi.org/10.1214/20-BA1221)

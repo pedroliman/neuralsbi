@@ -6,11 +6,12 @@ Real epidemics do not hold still, and the interesting question is why
 they move. Here we fit three competing models of that mechanism to daily
 reported cases in all 50 US states plus Washington, DC, over the first
 120 days of the SARS-CoV-2 pandemic (2020-01-21 to 2020-05-19). Two of
-them are behavioral-feedback models from Gozzi, Perra and Vespignani
-(2025, *PNAS* 122(24) e2421993122), where transmission responds to what
-people see happening around them. The third is a phenomenological
-baseline that lets $`\beta`$ take a different constant value in each of
-a few time regimes.
+them are behavioral-feedback models from [Gozzi, Perra and Vespignani
+(2025, *PNAS* 122(24)
+e2421993122)](https://doi.org/10.1073/pnas.2421993122), where
+transmission responds to what people see happening around them. The
+third is a phenomenological baseline that lets $`\beta`$ take a
+different constant value in each of a few time regimes.
 
 We train each model once, over its whole prior, and then condition it on
 51 state curves for the price of a forward pass each. That is what makes
@@ -154,17 +155,19 @@ well-ascertained epidemic and an enormous barely-ascertained one give
 the same curve. Left free, the fit takes the second branch, driving
 $`\rho`$ into the low thousandths and the attack rate toward 1. Serology
 settles it from outside the case data. CDC’s commercial-lab study put
-spring-2020 infections at 6 to 24 times reported cases (Havers et
-al. 2020, *JAMA Internal Medicine*), which puts $`\rho`$ between about
-0.04 and 0.17. We encode a logit-normal prior centered at 0.10 with 95%
-mass in $`[0.05, 0.19]`$.
+spring-2020 infections at 6 to 24 times reported cases ([Havers et
+al. 2020, *JAMA Internal
+Medicine*](https://doi.org/10.1001/jamainternmed.2020.4130)), which puts
+$`\rho`$ between about 0.04 and 0.17. We encode a logit-normal prior
+centered at 0.10 with 95% mass in $`[0.05, 0.19]`$.
 
 Population size $`N`$ is a known covariate. The simulator draws $`N`$
 across real US state sizes during training and the estimator conditions
 on $`\log N`$, so one network generalizes from Wyoming to California.
 The recovery rate $`\gamma`$ is fixed: with only case counts the
 generation interval is not identifiable from $`\beta(t)`$, so we set
-$`1/\gamma = 7`$ days (Li et al. 2020, *NEJM*).
+$`1/\gamma = 7`$ days ([Li et al. 2020,
+*NEJM*](https://doi.org/10.1056/NEJMoa2001316)).
 
 ``` r
 
@@ -279,10 +282,11 @@ beta_piecewise <- function(log_beta_segments, log_dur_ratio) {
 
 ### Models 2 and 3: behavioral feedback
 
-The two behavioral models from Gozzi, Perra and Vespignani (2025) need
-no external mobility data. Transmission responds to the epidemic’s own
-reported output, which makes each one a self-contained simulator,
-exactly what SBI wants.
+The two behavioral models from [Gozzi, Perra and Vespignani
+(2025)](https://doi.org/10.1073/pnas.2421993122) need no external
+mobility data. Transmission responds to the epidemic’s own reported
+output, which makes each one a self-contained simulator, exactly what
+SBI wants.
 
 EFB, the effective force of infection, divides the force of infection by
 a factor that grows with recent and cumulative case experience:
