@@ -39,7 +39,9 @@ R CMD INSTALL --no-docs . && (cd tests && Rscript testthat.R)
 
 Neural (torch) tests skip themselves automatically when libtorch is absent
 (`tests/testthat/helper-torch.R`), so the suite runs everywhere; only the
-`test-torch` CI job installs libtorch and exercises MDN/MAF/NSF end to end.
+`test-coverage` CI job installs libtorch and exercises MDN/MAF/NSF end to end,
+as a side effect of measuring coverage (`covr::package_coverage()` runs
+`tests/testthat.R` the same way `R CMD check` does).
 
 ## Architecture
 
@@ -130,7 +132,9 @@ handoff/next-steps section — **keep it current as you work.**
   change; once a version ships it carries no `.9000` dev suffix, so check
   `DESCRIPTION` itself for the current number rather than a hardcoded one
   here, which would go stale on the next release. **Tag released versions**
-  (`vX.Y.Z`) — there are no tags yet, so establish the habit.
+  (`vX.Y.Z`) — `.github/workflows/release-check.yaml` does this automatically
+  for every version it submits to CRAN (see `docs/verification-roadmap.md`
+  Part E), starting at `v0.5.0`.
 - Commit in small, self-contained increments with a clear imperative subject and
   a body explaining the *why*. Run `devtools::check()` (or at least
   `devtools::test()`) before pushing.

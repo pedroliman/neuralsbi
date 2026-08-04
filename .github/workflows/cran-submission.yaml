@@ -1,0 +1,37 @@
+# Submits the package to CRAN. Fires on the prerelease that release-check.yaml
+# publishes once a minor/major bump lands, or the three-week patch fallback
+# catches up (see that workflow for the trigger policy, issue #110).
+#
+# A manual run is also allowed, gated behind typing CONFIRM, for a submission
+# outside the automatic cadence.
+name: cran-submission
+
+on:
+  release:
+    types: [prereleased]
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type CONFIRM to submit the current DESCRIPTION version to CRAN'
+        required: true
+        default: ''
+
+jobs:
+  cran-submission:
+    runs-on: ubuntu-latest
+    name: Submit package to CRAN
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Submit R package to CRAN
+        uses: coatless-actions/cran-submission@v1
+        with:
+          pkg-directory: '.'
+          check-directory: 'check'
+          error-on: 'warning'
+          upload-snapshots: true
+          create-issue: true
+          confirmation: ${{ github.event.inputs.confirmation }}
