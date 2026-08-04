@@ -57,7 +57,7 @@ crossing rather than thirty."><meta property="og:image" content="https://neurals
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,6 +69,7 @@ crossing rather than thirty."><meta property="og:image" content="https://neurals
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
+    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -121,7 +122,10 @@ already a tensor.</p></dd>
 
 
 <dt id="arg-warmup">warmup<a class="anchor" aria-label="anchor" href="#arg-warmup"></a></dt>
-<dd><p>Calls to serve eagerly before recording anything.</p></dd>
+<dd><p>Calls to serve eagerly before recording anything. No caller
+overrides the default today, but it is a real tuning knob – how many
+evaluations tracing costs before it pays for itself – that a future
+caller would plausibly want to change, so it stays a parameter.</p></dd>
 
 </dl></div>
     <div class="section level2">

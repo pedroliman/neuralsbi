@@ -7,5 +7,5 @@ spend its time formatting text.
 ## Usage
 
 ``` r
-builtin_bar(label = NULL, width = 22L)
+builtin_bar(label = NULL)
 ```

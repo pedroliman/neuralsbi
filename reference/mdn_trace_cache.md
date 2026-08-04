@@ -30,7 +30,10 @@ mdn_trace_cache(de, xt, max_batch, eager, warmup = 4L)
 
 - warmup:
 
-  Calls to serve eagerly before recording anything.
+  Calls to serve eagerly before recording anything. No caller overrides
+  the default today, but it is a real tuning knob – how many evaluations
+  tracing costs before it pays for itself – that a future caller would
+  plausibly want to change, so it stays a parameter.
 
 ## Value
 

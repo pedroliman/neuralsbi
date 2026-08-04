@@ -1,5 +1,43 @@
 # Changelog
 
+## neuralsbi 0.5.1
+
+- **A slice-sampled NLE posterior now reports how many likelihood
+  evaluations its last run cost.**
+  [`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  has always counted `n_evals`, but nothing past
+  [`slice_sample()`](https://neuralsbi.pedrodelima.com/reference/slice_sample.md)
+  itself read it. The count is attached as an `n_evals` attribute on the
+  `diagnostics` data frame next to `rhat` and `ess_bulk` – an attribute
+  rather than a column, since it is one number for the whole run, not
+  one per parameter – and [`print()`](https://rdrr.io/r/base/print.html)
+  on an `nsbi_nle_posterior` now includes it alongside Rhat and ESS. It
+  is the cost the adapted slice width is trying to keep down (see
+  [`?nsbi_mcmc`](https://neuralsbi.pedrodelima.com/reference/nsbi_mcmc.md)),
+  and there was previously no way to see it.
+- Internal cleanup, no user-visible behavior change otherwise:
+  `helper-torch.R`’s `skip_if_no_torch()` now calls the package’s own
+  `torch_available()` instead of re-implementing the same check inline,
+  and
+  [`require_torch()`](https://neuralsbi.pedrodelima.com/reference/require_torch.md)
+  uses it too.
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  no longer returns an `ok` logical that nothing read.
+  [`dmvnorm_chol()`](https://neuralsbi.pedrodelima.com/reference/dmvnorm_chol.md)
+  dropped its `log` argument – every call site passed `log = TRUE`, so
+  the [`exp()`](https://rdrr.io/r/base/Log.html) branch never ran.
+  [`builtin_bar()`](https://neuralsbi.pedrodelima.com/reference/builtin_bar.md),
+  [`hint_parallel()`](https://neuralsbi.pedrodelima.com/reference/hint_parallel.md)
+  and
+  [`prior_scale()`](https://neuralsbi.pedrodelima.com/reference/prior_scale.md)
+  dropped default arguments no caller ever overrode. A doubled verbose
+  guard in the training loop (`R/train.R`) is now a single
+  [`cat()`](https://rdrr.io/r/base/cat.html) inside the
+  `if (verbose && ...)` block that was already checking it. The
+  commented-out neural-likelihood-estimation navbar entry in
+  `_pkgdown.yml` is restored, now that the vignette it links to builds
+  cleanly ([\#33](https://github.com/pedroliman/neuralsbi/issues/33)).
+
 ## neuralsbi 0.5.0
 
 - **CRAN submissions are now automated.**

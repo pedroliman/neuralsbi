@@ -6,5 +6,5 @@ width
 ## Usage
 
 ``` r
-prior_scale(prior, n = 1000L)
+prior_scale(prior)
 ```

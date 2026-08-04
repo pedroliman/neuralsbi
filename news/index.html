@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,6 +59,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
+    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -82,6 +83,12 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.1" id="neuralsbi-051">neuralsbi 0.5.1<a class="anchor" aria-label="anchor" href="#neuralsbi-051"></a></h2>
+<ul><li>
+<strong>A slice-sampled NLE posterior now reports how many likelihood evaluations its last run cost.</strong> <code><a href="../reference/slice_sample_run.html">slice_sample_run()</a></code> has always counted <code>n_evals</code>, but nothing past <code><a href="../reference/slice_sample.html">slice_sample()</a></code> itself read it. The count is attached as an <code>n_evals</code> attribute on the <code>diagnostics</code> data frame next to <code>rhat</code> and <code>ess_bulk</code> – an attribute rather than a column, since it is one number for the whole run, not one per parameter – and <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> on an <code>nsbi_nle_posterior</code> now includes it alongside Rhat and ESS. It is the cost the adapted slice width is trying to keep down (see <code><a href="../reference/nsbi_mcmc.html">?nsbi_mcmc</a></code>), and there was previously no way to see it.</li>
+<li>Internal cleanup, no user-visible behavior change otherwise: <code>helper-torch.R</code>’s <code>skip_if_no_torch()</code> now calls the package’s own <code>torch_available()</code> instead of re-implementing the same check inline, and <code><a href="../reference/require_torch.html">require_torch()</a></code> uses it too. <code><a href="../reference/drop_failed_sims.html">drop_failed_sims()</a></code> no longer returns an <code>ok</code> logical that nothing read. <code><a href="../reference/dmvnorm_chol.html">dmvnorm_chol()</a></code> dropped its <code>log</code> argument – every call site passed <code>log = TRUE</code>, so the <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> branch never ran. <code><a href="../reference/builtin_bar.html">builtin_bar()</a></code>, <code><a href="../reference/hint_parallel.html">hint_parallel()</a></code> and <code><a href="../reference/prior_scale.html">prior_scale()</a></code> dropped default arguments no caller ever overrode. A doubled verbose guard in the training loop (<code>R/train.R</code>) is now a single <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code> inside the <code>if (verbose &amp;&amp; ...)</code> block that was already checking it. The commented-out neural-likelihood-estimation navbar entry in <code>_pkgdown.yml</code> is restored, now that the vignette it links to builds cleanly (<a href="https://github.com/pedroliman/neuralsbi/issues/33" class="external-link">#33</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.0" id="neuralsbi-050">neuralsbi 0.5.0<a class="anchor" aria-label="anchor" href="#neuralsbi-050"></a></h2>
 <ul><li>
