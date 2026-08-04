@@ -38,3 +38,11 @@ It is exact for linear-Gaussian simulators and doubles as a fast baseline
 and a regression-test oracle.
 }
 }
+\references{
+Papamakarios, G., Pavlakou, T. and Murray, I. (2017). Masked
+Autoregressive Flow for Density Estimation. \emph{NeurIPS}.
+\doi{10.48550/arXiv.1705.07057}
+
+Durkan, C., Bekasov, A., Murray, I. and Papamakarios, G. (2019). Neural
+Spline Flows. \emph{NeurIPS}. \doi{10.48550/arXiv.1906.04032}
+}

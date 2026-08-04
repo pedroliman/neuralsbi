@@ -20,4 +20,13 @@ This is \code{sbi}'s default flow family, and the default estimator in \code{neu
 too. It handles non-Gaussian posteriors that the MDN struggles with. It is
 selected by default, or explicitly with \code{npe(..., density_estimator = "maf")}.
 }
+\references{
+Papamakarios, G., Pavlakou, T. and Murray, I. (2017). Masked
+Autoregressive Flow for Density Estimation. \emph{NeurIPS}.
+\doi{10.48550/arXiv.1705.07057}
+
+Germain, M., Gregor, K., Murray, I. and Larochelle, H. (2015). MADE:
+Masked Autoencoder for Distribution Estimation. \emph{ICML}.
+\doi{10.48550/arXiv.1502.03509}
+}
 \keyword{internal}
