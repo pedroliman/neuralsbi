@@ -1,3 +1,7 @@
+# neuralsbi 0.5.2
+
+* Internal cleanup, no user-visible behavior change: the MDN, MAF and NSF density estimators had three byte-identical copies of the tensor plumbing behind `de_log_prob.*` and two behind `de_sample.*` (`de_sample.nsbi_de_mdn` samples its mixture directly and shares nothing here), plus near-identical `fit_mdn()`/`fit_maf()`/`fit_nsf()` wrappers around `train_conditional_de()`. `R/density_estimator.R` now carries three internal helpers next to the generics they implement -- `de_log_prob_torch()`, `de_sample_flow()` and `fit_torch_de()` -- and each estimator's file calls them instead of repeating the body. `fit_mdn()`, `fit_maf()` and `fit_nsf()` keep their exact signatures; only their bodies collapsed, so `man/fit_mdn.Rd`, `man/fit_maf.Rd` and `man/fit_nsf.Rd` needed no edit (#57).
+
 # neuralsbi 0.5.1
 
 * **A slice-sampled NLE posterior now reports how many likelihood evaluations its last run cost.** `slice_sample_run()` has always counted `n_evals`, but nothing past `slice_sample()` itself read it. The count is attached as an `n_evals` attribute on the `diagnostics` data frame next to `rhat` and `ess_bulk` -- an attribute rather than a column, since it is one number for the whole run, not one per parameter -- and `print()` on an `nsbi_nle_posterior` now includes it alongside Rhat and ESS. It is the cost the adapted slice width is trying to keep down (see `?nsbi_mcmc`), and there was previously no way to see it.

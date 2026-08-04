@@ -110,42 +110,23 @@ fit_mdn <- function(theta, x, n_components = 10L, hidden = c(50L, 50L),
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
                     seed = NULL, verbose = FALSE) {
-  theta <- as_theta_matrix(theta)
-  x <- as_theta_matrix(x)
-  dim_theta <- ncol(theta)
-  dim_x <- ncol(x)
-
-  trained <- train_conditional_de(
-    build_net = function()
+  fit_torch_de(
+    theta, x,
+    build_net_fn = function(dim_x, dim_theta)
       mdn_module(dim_x, dim_theta, n_components, hidden, embedding)(),
     log_prob_fn = mdn_log_prob_tensor,
-    theta = theta, x = x,
+    class = "nsbi_de_mdn",
+    arch = list(n_components = n_components, hidden = hidden),
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    seed = seed, verbose = verbose
-  )
-
-  structure(
-    list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x,
-         n_components = n_components, hidden = hidden, embedding = embedding,
-         best_val_loss = trained$best_val_loss, history = trained$history),
-    class = c("nsbi_de_mdn", "nsbi_de")
+    embedding = embedding, seed = seed, verbose = verbose
   )
 }
 
 #' @export
 de_log_prob.nsbi_de_mdn <- function(de, theta, x) {
-  theta <- as_theta_matrix(theta, de$dim_theta)
-  x <- as_theta_matrix(x, de$dim_x)
-  if (nrow(x) == 1L && nrow(theta) > 1L) {
-    x <- matrix(x, nrow = nrow(theta), ncol = ncol(x), byrow = TRUE)
-  }
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
-  torch::with_no_grad({
-    as.numeric(mdn_log_prob_tensor(de$net, tt, xt)$to(dtype = torch::torch_float64()))
-  })
+  de_log_prob_torch(de, theta, x, mdn_log_prob_tensor)
 }
 
 #' @export
