@@ -1,5 +1,22 @@
 # Changelog
 
+## neuralsbi 0.5.4
+
+- Internal cleanup, no user-visible behavior change: the MADE trunk
+  ([`made_module()`](https://neuralsbi.pedrodelima.com/reference/made_module.md)
+  in `R/flows.R`,
+  [`nsf_made_module()`](https://neuralsbi.pedrodelima.com/reference/nsf_made_module.md)
+  in `R/nsf.R`) and the plain MLP trunk (the MDN in `R/mdn.R`, the
+  embedding network in `R/embedding.R`) each rebuilt the same
+  `linear, relu` stacking loop. `R/flows.R` now carries one internal
+  helper, `mlp_layers(dims, masks = NULL)`, that both variants call –
+  masked when `made_masks()$hidden` is passed, plain otherwise – so the
+  four call sites share one loop instead of four
+  ([\#59](https://github.com/pedroliman/neuralsbi/issues/59)). The
+  autoregressive forward/inverse transform-stack loops in
+  `flows.R`/`nsf.R` are left untouched; the issue flagged those as a
+  separate, riskier dedup.
+
 ## neuralsbi 0.5.3
 
 - Internal cleanup, no user-visible behavior change:

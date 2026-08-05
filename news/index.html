@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.4" id="neuralsbi-054">neuralsbi 0.5.4<a class="anchor" aria-label="anchor" href="#neuralsbi-054"></a></h2>
+<ul><li>Internal cleanup, no user-visible behavior change: the MADE trunk (<code><a href="../reference/made_module.html">made_module()</a></code> in <code>R/flows.R</code>, <code><a href="../reference/nsf_made_module.html">nsf_made_module()</a></code> in <code>R/nsf.R</code>) and the plain MLP trunk (the MDN in <code>R/mdn.R</code>, the embedding network in <code>R/embedding.R</code>) each rebuilt the same <code>linear, relu</code> stacking loop. <code>R/flows.R</code> now carries one internal helper, <code>mlp_layers(dims, masks = NULL)</code>, that both variants call – masked when <code>made_masks()$hidden</code> is passed, plain otherwise – so the four call sites share one loop instead of four (<a href="https://github.com/pedroliman/neuralsbi/issues/59" class="external-link">#59</a>). The autoregressive forward/inverse transform-stack loops in <code>flows.R</code>/<code>nsf.R</code> are left untouched; the issue flagged those as a separate, riskier dedup.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.3" id="neuralsbi-053">neuralsbi 0.5.3<a class="anchor" aria-label="anchor" href="#neuralsbi-053"></a></h2>
 <ul><li>Internal cleanup, no user-visible behavior change: <code>fit_density_estimator()</code> restated every <code>fit_*()</code> training default – <code>n_components</code>, <code>hidden</code>, <code>max_epochs</code>, <code>batch_size</code>, <code>lr</code>, <code>validation_fraction</code>, <code>patience</code>, <code>n_restarts</code>, <code>clip_grad_norm</code> – as a <code>%||%</code> fallback, once per estimator branch. Both callers, <code><a href="../reference/npe.html">npe()</a></code> and <code><a href="../reference/nle.html">nle()</a></code>, already pass every argument explicitly, so none of those fallbacks had ever fired; the numbers just had to be kept in sync by hand across <code>fit_density_estimator()</code>, each <code>fit_*()</code> signature, and the two callers. It now forwards only the arguments the chosen <code>fit_*()</code> accepts (<code>intersect(names(dots), names(formals(fn)))</code>, then <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code>), so each <code>fit_*()</code>’s own signature is the only place its defaults live. <code>linear_gaussian</code> only takes <code>ridge</code> and <code>verbose</code>, so an <code>n_components</code> or <code>embedding_net</code> passed alongside it is still silently dropped, as before (<a href="https://github.com/pedroliman/neuralsbi/issues/58" class="external-link">#58</a>).</li>
