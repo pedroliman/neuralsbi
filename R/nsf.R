@@ -114,13 +114,7 @@ nsf_made_module <- function(dim_x, dim_theta, hidden, n_bins) {
     initialize = function() {
       m <- made_masks(dim_theta, dim_x, hidden)
       sizes <- c(dim_theta + dim_x, hidden)
-      layers <- list()
-      for (l in seq_along(hidden)) {
-        layers[[length(layers) + 1L]] <-
-          masked_linear(sizes[l], sizes[l + 1L], m$hidden[[l]])
-        layers[[length(layers) + 1L]] <- torch::nn_relu()
-      }
-      self$trunk <- do.call(torch::nn_sequential, layers)
+      self$trunk <- do.call(torch::nn_sequential, mlp_layers(sizes, m$hidden))
       self$n_params <- 3L * n_bins - 1L
       self$n_bins <- n_bins
       self$dim_theta <- dim_theta

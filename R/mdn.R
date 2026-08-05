@@ -38,14 +38,9 @@ mdn_module <- function(dim_x, dim_theta, n_components, hidden,
       if (self$has_embedding) {
         self$embedding <- build_embedding_module(embedding, dim_x)
       }
-      layers <- list()
-      prev <- embedding_output_dim(embedding, dim_x)
-      for (h in hidden) {
-        layers[[length(layers) + 1L]] <- torch::nn_linear(prev, h)
-        layers[[length(layers) + 1L]] <- torch::nn_relu()
-        prev <- h
-      }
-      self$trunk <- do.call(torch::nn_sequential, layers)
+      sizes <- c(embedding_output_dim(embedding, dim_x), hidden)
+      self$trunk <- do.call(torch::nn_sequential, mlp_layers(sizes))
+      prev <- sizes[length(sizes)]
       self$head_logits <- torch::nn_linear(prev, self$K)
       self$head_means <- torch::nn_linear(prev, self$K * dim_theta)
       self$head_tril <- torch::nn_linear(prev, self$K * self$tril_size)

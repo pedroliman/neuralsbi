@@ -67,6 +67,29 @@ made_masks <- function(dim_theta, dim_x, hidden) {
   list(hidden = masks, out = out_mask)
 }
 
+#' Stack of `(linear, relu)` pairs, masked or plain.
+#'
+#' Each consecutive pair in `dims` becomes one `(linear, relu)` step, matching
+#' the trunk-building loop shared by the MADE, MDN and embedding networks.
+#' @param dims Layer sizes in order, e.g. `c(input, hidden1, hidden2, ...)`.
+#' @param masks One weight mask per pair (as returned by
+#'   `made_masks()$hidden`) for an autoregressive trunk; `NULL` for a plain
+#'   MLP.
+#' @return A list of torch layers, ready for `do.call(torch::nn_sequential, .)`.
+#' @keywords internal
+mlp_layers <- function(dims, masks = NULL) {
+  layers <- list()
+  for (l in seq_len(length(dims) - 1L)) {
+    layers[[length(layers) + 1L]] <- if (is.null(masks)) {
+      torch::nn_linear(dims[l], dims[l + 1L])
+    } else {
+      masked_linear(dims[l], dims[l + 1L], masks[[l]])
+    }
+    layers[[length(layers) + 1L]] <- torch::nn_relu()
+  }
+  layers
+}
+
 #' One MADE block: (theta, x) -> per-dimension shift mu and log-scale alpha
 #' @keywords internal
 made_module <- function(dim_x, dim_theta, hidden) {
@@ -75,13 +98,7 @@ made_module <- function(dim_x, dim_theta, hidden) {
     initialize = function() {
       m <- made_masks(dim_theta, dim_x, hidden)
       sizes <- c(dim_theta + dim_x, hidden)
-      layers <- list()
-      for (l in seq_along(hidden)) {
-        layers[[length(layers) + 1L]] <-
-          masked_linear(sizes[l], sizes[l + 1L], m$hidden[[l]])
-        layers[[length(layers) + 1L]] <- torch::nn_relu()
-      }
-      self$trunk <- do.call(torch::nn_sequential, layers)
+      self$trunk <- do.call(torch::nn_sequential, mlp_layers(sizes, m$hidden))
       self$out_mu <- masked_linear(sizes[length(sizes)], dim_theta, m$out)
       self$out_alpha <- masked_linear(sizes[length(sizes)], dim_theta, m$out)
       # Start at the identity transform (mu = 0, alpha = 0) for stable training.
