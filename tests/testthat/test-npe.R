@@ -176,6 +176,27 @@ test_that("simulate_for_sbi() checks n and the prior", {
                5L)
 })
 
+test_that("print.nsbi_npe() prints the ordinary summary, not just the dead-network path", {
+  # test-serialize.R only ever prints a fit whose network has died; the
+  # everyday branch of print.nsbi_npe() had never been asserted.
+  fit <- npe(toy_prior(), toy_simulator, n_simulations = 200,
+             density_estimator = "linear_gaussian", seed = 1)
+  out <- capture.output(print(fit))
+  txt <- paste(out, collapse = "\n")
+
+  expect_match(txt, "<nsbi_npe> Neural Posterior Estimation fit", fixed = TRUE)
+  expect_match(txt, "density estimator : linear_gaussian", fixed = TRUE)
+  expect_match(txt, "parameters \\(dim\\)  : 1")
+  expect_match(txt, "names           : mu", fixed = TRUE)
+  expect_match(txt, "data \\(dim\\)        : 1")
+  expect_match(txt, "names           : y", fixed = TRUE)
+  expect_match(txt, "simulations       : 200", fixed = TRUE)
+  expect_match(txt, "-> build a posterior with posterior\\(fit, x_obs = \\.\\.\\.\\)")
+  expect_false(grepl("network unusable", txt, fixed = TRUE))
+  expect_false(grepl("dropped", txt, fixed = TRUE))
+  expect_false(grepl("best val loss", txt, fixed = TRUE))
+})
+
 test_that("simulate_for_sbi() names a swapped (simulator, prior) pair", {
   expect_error(simulate_for_sbi(toy_prior(), toy_simulator, 100),
                "`simulator` and `prior` look swapped")

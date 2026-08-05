@@ -140,10 +140,8 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
 print.nsbi_sbc <- function(x, ...) {
   cat(sprintf("<nsbi_sbc> %d trials, %d posterior samples each\n",
               x$n_sbc, x$n_posterior_samples))
-  if (!is.null(x$n_dropped) && x$n_dropped > 0L) {
-    cat(sprintf("  %d further trials dropped for non-finite simulator output\n",
-                x$n_dropped))
-  }
+  cat_dropped(x$n_dropped,
+             what = "further trials dropped for non-finite simulator output")
   cat("  per-parameter uniformity p-values (large = calibrated):\n")
   if (!is.null(names(x$uniformity_pvalue))) {
     cat("   ", paste(names(x$uniformity_pvalue), sprintf("%.3f", x$uniformity_pvalue),
@@ -302,10 +300,8 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
 print.nsbi_tarp <- function(x, ...) {
   cat(sprintf("<nsbi_tarp> %d trials, %d posterior samples each\n",
               x$n_tarp, x$n_posterior_samples))
-  if (!is.null(x$n_dropped) && x$n_dropped > 0L) {
-    cat(sprintf("  %d further trials dropped for non-finite simulator output\n",
-                x$n_dropped))
-  }
+  cat_dropped(x$n_dropped,
+             what = "further trials dropped for non-finite simulator output")
   dev <- max(abs(x$ecp - x$levels))
   cat(sprintf("  max |ECP - nominal|: %.3f (0 = perfectly calibrated)\n", dev))
   cat("  plot with plot_tarp()\n")

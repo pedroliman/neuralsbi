@@ -121,27 +121,7 @@ print.nsbi_nle <- function(x, ...) {
   cat("<nsbi_nle> Neural Likelihood Estimation fit\n")
   cat(sprintf("  density estimator : %s  (learns q(x | theta))\n",
               x$density_estimator))
-  cat(sprintf("  parameters (dim)  : %d\n", x$dim_theta))
-  if (!is.null(x$param_names)) {
-    cat("    names           :", paste(x$param_names, collapse = ", "), "\n")
-  }
-  cat(sprintf("  data (dim)        : %d  per observation\n", x$dim_x))
-  if (!is.null(x$x_names)) {
-    cat("    names           :", paste(x$x_names, collapse = ", "), "\n")
-  }
-  cat(sprintf("  simulations       : %d\n", x$n_simulations))
-  if (!is.null(x$n_dropped) && x$n_dropped > 0L) {
-    total <- x$n_simulations + x$n_dropped
-    cat(sprintf("    dropped         : %d of %d, non-finite output (%.1f%%)\n",
-                x$n_dropped, total, 100 * x$n_dropped / total))
-  }
-  if (!is.null(x$de$best_val_loss) && is.finite(x$de$best_val_loss)) {
-    cat(sprintf("  best val loss     : %.4f\n", x$de$best_val_loss))
-  }
-  if (!torch_net_alive(x$de$net)) {
-    cat("  ! network unusable: a torch fit does not survive saveRDS();\n")
-    cat("    save with save_nle() and reload with load_nle().\n")
-  }
+  cat_fit_common(x, "save_nle", data_suffix = "  per observation")
   cat("  -> log_lik(fit, theta, x), posterior(fit, x_obs = ...), stan_code(fit)\n")
   invisible(x)
 }
