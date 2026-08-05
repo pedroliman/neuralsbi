@@ -45,6 +45,81 @@ diagnostic_draws <- function(post, n, trial) {
   draws
 }
 
+#' Shared simulate-and-drop preamble for sbc() and tarp()
+#'
+#' Both diagnostics draw "true" parameters from `prior`, simulate data for
+#' them, and drop trials whose simulation failed. The prior-width check lives
+#' here rather than in each caller, so `sbc()` and `tarp()` get it in one
+#' place: `prior` exists to be overridden (see their docs), and a prior of the
+#' wrong width would otherwise reach `sweep()`/z-scoring downstream and
+#' silently recycle against the fit's width.
+#' @param fit An `nsbi_npe` or `nsbi_nle` fit.
+#' @param simulator The simulator used for inference.
+#' @param prior The prior to draw true parameters from.
+#' @param n Number of trials to draw.
+#' @param sim_args Named list of extra simulator arguments.
+#' @param what Label for [drop_failed_sims()]'s warning (e.g. `"SBC trials"`).
+#' @return A list with `theta` and `x` (the surviving trials), `n` (their
+#'   count, i.e. `nrow(theta)` after dropping), and `n_dropped`.
+#' @keywords internal
+sbc_draws <- function(fit, simulator, prior, n, sim_args, what) {
+  check_inference_fit(fit)
+  check_prior(prior, dim = fit$dim_theta)
+  theta_true <- sample_prior(prior, n)
+  x_all <- run_simulator(simulator, theta_true, sim_args = sim_args,
+                         d = fit$dim_x)
+  kept <- drop_failed_sims(theta_true, x_all, what = what)
+  list(theta = kept$theta, x = kept$x, n = nrow(kept$theta),
+       n_dropped = kept$n_dropped)
+}
+
+#' Shared per-trial posterior-draw loop for sbc() and tarp()
+#'
+#' Draws a posterior for each row of `x_all`, insists on the full
+#' `n_posterior_samples` count via [diagnostic_draws()], and hands the result
+#' to `f(draws, i)` for whichever per-trial metric the caller wants: `sbc()`
+#' returns a rank row, `tarp()` a scalar coverage value.
+#'
+#' The denominator a caller bins or normalizes against (`sbc()`'s rank scale,
+#' via the p-value bins and [expected_coverage()]) is read back from how many
+#' draws a trial actually returned, not trusted from the `n_posterior_samples`
+#' argument -- so if a future change ever lets a short draw through instead of
+#' erroring, the diagnostic is still scored on the scale it was actually drawn
+#' on rather than the one it was asked for.
+#'
+#' `finally`, not `on.exit()`: this block runs inside
+#' `progressr::with_progress()`, so `on.exit()` would attach to the promise's
+#' forcing frame and close the bar before the loop starts (see
+#' `run_simulator()` in R/parallel.R).
+#' @param fit An `nsbi_npe` or `nsbi_nle` fit.
+#' @param x_all Matrix of simulated data, one row (one trial) per observation.
+#' @param n_posterior_samples Posterior draws requested per trial.
+#' @param label Progress-bar label.
+#' @param f `function(draws, i)`, the per-trial metric.
+#' @param ... Passed to [posterior()].
+#' @return A list with `results` (a list of length `nrow(x_all)`, one `f()`
+#'   return value per trial) and `n_posterior_samples` (the draw count trials
+#'   were actually scored against).
+#' @keywords internal
+for_each_trial <- function(fit, x_all, n_posterior_samples, label, f, ...) {
+  n <- nrow(x_all)
+  results <- vector("list", n)
+  n_drawn <- n_posterior_samples
+  with_nsbi_progress({
+    p <- nsbi_progressor(steps = n, label = label)
+    tryCatch({
+      for (i in seq_len(n)) {
+        post <- posterior(fit, x_obs = x_all[i, ], ...)
+        draws <- diagnostic_draws(post, n_posterior_samples, i)
+        n_drawn <- nrow(draws)
+        results[[i]] <- f(draws, i)
+        p(1)
+      }
+    }, finally = p(0, done = TRUE))
+  })
+  list(results = results, n_posterior_samples = n_drawn)
+}
+
 #' Simulation-Based Calibration (SBC)
 #'
 #' Repeatedly draws a "true" parameter from the prior, simulates data, and ranks
@@ -85,42 +160,27 @@ diagnostic_draws <- function(post, n, trial) {
 sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
                 n_posterior_samples = 1000L, sim_args = list(),
                 seed = NULL, ...) {
-  check_inference_fit(fit)
-  # The ranks are sized from the fit but the truths come from `prior`, so a
-  # prior of the wrong width makes sweep() recycle one against the other and
-  # the ranks come out of a comparison nobody asked for. Check it here, above
-  # the simulation loop: n_sbc simulator calls is a long way to travel before
-  # failing on an argument.
-  check_prior(prior, dim = fit$dim_theta)
   n_sbc <- check_count(n_sbc, "n_sbc")
   n_posterior_samples <- check_count(n_posterior_samples,
                                      "n_posterior_samples")
   if (!is.null(seed)) set.seed(seed)
-  d <- fit$dim_theta
-  theta_true <- sample_prior(prior, n_sbc)
-  x_all <- run_simulator(simulator, theta_true, sim_args = sim_args,
-                         d = fit$dim_x)
-  kept <- drop_failed_sims(theta_true, x_all, what = "SBC trials")
-  theta_true <- kept$theta
-  x_all <- kept$x
-  n_sbc <- nrow(theta_true)
-  ranks <- matrix(NA_real_, nrow = n_sbc, ncol = d)
-  with_nsbi_progress({
-    p <- nsbi_progressor(steps = n_sbc, label = "Ranking")
-    tryCatch({
-      for (i in seq_len(n_sbc)) {
-        post <- posterior(fit, x_obs = x_all[i, ], ...)
-        draws <- diagnostic_draws(post, n_posterior_samples, i)
-        ranks[i, ] <- colSums(sweep(draws, 2, theta_true[i, ], `<`))
-        p(1)
-      }
-    }, finally = p(0, done = TRUE))
-  })
+  prep <- sbc_draws(fit, simulator, prior, n_sbc, sim_args, what = "SBC trials")
+  theta_true <- prep$theta
+  n_sbc <- prep$n
+
+  trial <- for_each_trial(fit, prep$x, n_posterior_samples, "Ranking",
+    function(draws, i) colSums(sweep(draws, 2, theta_true[i, ], `<`)), ...)
+  ranks <- do.call(rbind, trial$results) %||%
+    matrix(NA_real_, nrow = 0L, ncol = fit$dim_theta)
   if (is.null(colnames(ranks)) && !is.null(fit$param_names)) {
     colnames(ranks) <- fit$param_names
   }
-  # per-parameter uniformity via chi-square on binned ranks
-  L <- n_posterior_samples
+  # per-parameter uniformity via chi-square on binned ranks. Binned against
+  # what trials were actually scored against (see for_each_trial()), not the
+  # requested n_posterior_samples -- these agree whenever every trial hits its
+  # full draw count, which diagnostic_draws() currently enforces, but the rank
+  # scale should follow the draws rather than the request either way.
+  L <- trial$n_posterior_samples
   pvals <- apply(ranks, 2, function(r) {
     nb <- min(20L, L + 1L)
     br <- cut(r, breaks = seq(0, L, length.out = nb + 1L),
@@ -131,7 +191,7 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
   names(pvals) <- colnames(ranks)
   structure(
     list(ranks = ranks, n_posterior_samples = L, n_sbc = n_sbc,
-         n_dropped = kept$n_dropped, uniformity_pvalue = pvals),
+         n_dropped = prep$n_dropped, uniformity_pvalue = pvals),
     class = "nsbi_sbc"
   )
 }
@@ -234,25 +294,15 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  n_posterior_samples = 1000L,
                  references = c("uniform", "prior"), sim_args = list(),
                  seed = NULL, ...) {
-  check_inference_fit(fit)
-  # Same reason as sbc(): the truths come from `prior` and everything they are
-  # measured against is sized from the fit, here the z-scoring and the
-  # distances. Above the simulation loop, so a wrong prior costs nothing.
-  check_prior(prior, dim = fit$dim_theta)
   references <- match.arg(references)
   n_tarp <- check_count(n_tarp, "n_tarp")
   n_posterior_samples <- check_count(n_posterior_samples,
                                      "n_posterior_samples")
   if (!is.null(seed)) set.seed(seed)
+  prep <- sbc_draws(fit, simulator, prior, n_tarp, sim_args, what = "TARP trials")
+  theta_true <- prep$theta
+  n_tarp <- prep$n
   d <- fit$dim_theta
-
-  theta_true <- sample_prior(prior, n_tarp)
-  x_all <- run_simulator(simulator, theta_true, sim_args = sim_args,
-                         d = fit$dim_x)
-  kept <- drop_failed_sims(theta_true, x_all, what = "TARP trials")
-  theta_true <- kept$theta
-  x_all <- kept$x
-  n_tarp <- nrow(theta_true)
 
   # z-score all distances by the spread of the true draws so no single
   # parameter dominates
@@ -269,28 +319,21 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
     prior = apply_standardizer(std, sample_prior(prior, n_tarp))
   )
 
-  f <- numeric(n_tarp)
-  with_nsbi_progress({
-    p <- nsbi_progressor(steps = n_tarp, label = "Coverage")
-    tryCatch({
-      for (i in seq_len(n_tarp)) {
-        post <- posterior(fit, x_obs = x_all[i, ], ...)
-        draws <- diagnostic_draws(post, n_posterior_samples, i)
-        draws_z <- apply_standardizer(std, draws)
-        d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
-        d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
-        f[i] <- mean(d_samples < d_truth)
-        p(1)
-      }
-    }, finally = p(0, done = TRUE))
-  })
+  trial <- for_each_trial(fit, prep$x, n_posterior_samples, "Coverage",
+    function(draws, i) {
+      draws_z <- apply_standardizer(std, draws)
+      d_samples <- sqrt(rowSums(sweep(draws_z, 2, ref[i, ], `-`)^2))
+      d_truth <- sqrt(sum((theta_z[i, ] - ref[i, ])^2))
+      mean(d_samples < d_truth)
+    }, ...)
+  f <- unlist(trial$results) %||% numeric(0)
 
   levels <- seq(0, 1, by = 0.05)
   ecp <- sapply(levels, function(a) mean(f < a))
   structure(
     list(coverage_values = f, levels = levels, ecp = ecp,
-         n_tarp = n_tarp, n_dropped = kept$n_dropped,
-         n_posterior_samples = n_posterior_samples,
+         n_tarp = n_tarp, n_dropped = prep$n_dropped,
+         n_posterior_samples = trial$n_posterior_samples,
          references = references),
     class = "nsbi_tarp"
   )
