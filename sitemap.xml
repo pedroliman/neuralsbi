@@ -65,6 +65,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_nsf.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_standardizer.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/fit_torch_de.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/for_each_trial.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/format_mcmc_diagnostics.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/hint_parallel.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/index.html</loc></url>
@@ -148,6 +149,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_prior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/save_npe.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sbc.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/sbc_draws.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sim_batches.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sim_dispatch.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.html</loc></url>

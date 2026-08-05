@@ -1,5 +1,53 @@
 # Changelog
 
+## neuralsbi 0.5.6
+
+- **[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)’s rank
+  denominator now comes from the draws a trial actually returned, not
+  from the requested `n_posterior_samples`.** The chi-square uniformity
+  test and
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  both bin
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)’s ranks
+  against a fixed scale, and that scale was read straight from the
+  `n_posterior_samples` argument rather than from `nrow(draws)`. The two
+  numbers happen to always agree today: a short draw (a bounded prior
+  and a leaky estimator defeating rejection sampling) is already turned
+  into a hard error by
+  [`diagnostic_draws()`](https://neuralsbi.pedrodelima.com/reference/diagnostic_draws.md)
+  (0.4.3) before any rank is computed, so no trial reaches the binning
+  step with fewer draws than requested. But the binning code was
+  trusting an argument instead of reading back what actually happened,
+  which is the wrong thing to trust even when the two currently
+  coincide. The shared trial loop introduced below now reports the draw
+  count it actually saw, and both
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) (whose
+  own per-trial [`mean()`](https://rdrr.io/r/base/mean.html) was already
+  dividing by `nrow(draws)`, and so was unaffected) size their scale
+  from that instead.
+- Internal cleanup, no user-visible behavior change otherwise:
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) each
+  restated the same preamble – check the fit and prior, draw truths from
+  the prior, simulate, drop failed simulations – and the same
+  progress-bar/`tryCatch` trial loop, differing only in the metric
+  computed per trial. `R/diagnostics.R` now carries two internal
+  helpers:
+  [`sbc_draws()`](https://neuralsbi.pedrodelima.com/reference/sbc_draws.md)
+  for the preamble, which is also where the `prior`-width check now
+  lives so both diagnostics get it from one place, and
+  [`for_each_trial()`](https://neuralsbi.pedrodelima.com/reference/for_each_trial.md)
+  for the loop, which both
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) call
+  with their own `f(draws, i)` (a rank row for
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md), a
+  scalar coverage value for
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md))
+  instead of repeating either block
+  ([\#61](https://github.com/pedroliman/neuralsbi/issues/61)).
+
 ## neuralsbi 0.5.5
 
 - Internal cleanup, no user-visible behavior change for
