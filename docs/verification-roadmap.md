@@ -271,12 +271,20 @@ bump, or at least every three weeks, but not on every patch bump.
 `DESCRIPTION` on pushes to `main` and on a Monday schedule, compares the
 current `Version` against the last `vX.Y.Z` git tag, and tags-and-publishes a
 prerelease when the major or minor component changed, or when a patch-only
-change is at least three weeks old. `.github/workflows/cran-submission.yaml`
-listens for that prerelease and runs
-[`coatless-actions/cran-submission`](https://github.com/coatless-actions/cran-submission),
-which checks the package, submits the tarball, and opens a tracking issue; a
-manual `workflow_dispatch` gated behind typing `CONFIRM` is also available for
-a submission outside the automatic cadence. 0.5.0 is the first tag this cut,
+change is at least three weeks old. It then explicitly dispatches
+`.github/workflows/cran-submission.yaml`, which runs
+[`coatless-actions/cran-submission`](https://github.com/coatless-actions/cran-submission)
+to check the package, submit the tarball, and open a tracking issue. That
+dispatch is necessary, not decorative: `cran-submission.yaml` also declares
+`release: types: [prereleased]` so a human publishing a prerelease by hand
+still triggers it, but a release created with `secrets.GITHUB_TOKEN` (as
+`release-check.yaml` does) does not fire that event -- GitHub does not chain
+workflow runs from GITHUB_TOKEN-generated events, to prevent accidental
+recursion, and `workflow_dispatch` is the trigger type exempt from that rule.
+Found the hard way: 0.5.0's tag and prerelease published cleanly but
+`cran-submission.yaml` never ran until the dispatch step was added. A manual
+`workflow_dispatch` gated behind typing `CONFIRM` is also available for a
+submission outside the automatic cadence. 0.5.0 is the first tag this cut,
 so the `vX.Y.Z` tagging habit `CLAUDE.md`'s release workflow section asks for
 is now established going forward.
 
