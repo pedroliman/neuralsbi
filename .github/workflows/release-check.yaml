@@ -41,10 +41,13 @@ jobs:
         run: |
           last_tag=$(git tag --list 'v*' --sort=-v:refname | head -n1)
           echo "tag=$last_tag" >> "$GITHUB_OUTPUT"
+          # Epoch seconds (%ct), not ISO 8601 (%cI). git writes the offset as
+          # -04:00, and glibc's strptime %z rejects the colon, so the R side
+          # used to parse the timestamp to NA and die on the comparison.
           if [ -n "$last_tag" ]; then
-            echo "date=$(git log -1 --format=%cI "$last_tag")" >> "$GITHUB_OUTPUT"
+            echo "epoch=$(git log -1 --format=%ct "$last_tag")" >> "$GITHUB_OUTPUT"
           else
-            echo "date=" >> "$GITHUB_OUTPUT"
+            echo "epoch=" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: r-lib/actions/setup-r@v2
@@ -55,7 +58,7 @@ jobs:
         id: decide
         env:
           LAST_TAG: ${{ steps.last_tag.outputs.tag }}
-          LAST_TAG_DATE: ${{ steps.last_tag.outputs.date }}
+          LAST_TAG_EPOCH: ${{ steps.last_tag.outputs.epoch }}
         run: |
           Rscript - <<'EOF' >> "$GITHUB_OUTPUT"
           desc <- read.dcf("DESCRIPTION")
@@ -63,7 +66,7 @@ jobs:
           current_v <- unclass(package_version(current))[[1]]
 
           last_tag <- Sys.getenv("LAST_TAG")
-          last_tag_date <- Sys.getenv("LAST_TAG_DATE")
+          last_tag_epoch <- suppressWarnings(as.numeric(Sys.getenv("LAST_TAG_EPOCH")))
 
           should_release <- FALSE
           reason <- ""
@@ -79,8 +82,12 @@ jobs:
               should_release <- TRUE
               reason <- sprintf("minor or major version bump (%s -> %s)", sub("^v", "", last_tag), current)
             } else {
-              weeks_since <- as.numeric(difftime(Sys.time(), as.POSIXct(last_tag_date, format = "%Y-%m-%dT%H:%M:%S%z"), units = "weeks"))
-              if (weeks_since >= 3) {
+              weeks_since <- as.numeric(difftime(Sys.time(), as.POSIXct(last_tag_epoch, origin = "1970-01-01", tz = "UTC"), units = "weeks"))
+              if (!is.finite(weeks_since)) {
+                # Never let an unreadable tag date halt the job: report it and
+                # hold the submission rather than guessing either way.
+                reason <- sprintf("patch bump %s -> %s, but the last release tag's date could not be read; not submitting", sub("^v", "", last_tag), current)
+              } else if (weeks_since >= 3) {
                 should_release <- TRUE
                 reason <- sprintf("patch bump %s -> %s, %.1f weeks since the last release", sub("^v", "", last_tag), current, weeks_since)
               } else {
