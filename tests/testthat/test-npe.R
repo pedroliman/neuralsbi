@@ -176,6 +176,45 @@ test_that("simulate_for_sbi() checks n and the prior", {
                5L)
 })
 
+test_that("print.nsbi_npe() prints the ordinary summary, not just the dead-network path", {
+  # test-serialize.R only ever prints a fit whose network has died; the
+  # everyday branch of print.nsbi_npe() had never been asserted.
+  fit <- npe(toy_prior(), toy_simulator, n_simulations = 200,
+             density_estimator = "linear_gaussian", seed = 1)
+  out <- capture.output(print(fit))
+  txt <- paste(out, collapse = "\n")
+
+  expect_match(txt, "<nsbi_npe> Neural Posterior Estimation fit", fixed = TRUE)
+  expect_match(txt, "density estimator : linear_gaussian", fixed = TRUE)
+  expect_match(txt, "parameters \\(dim\\)  : 1")
+  expect_match(txt, "names           : mu", fixed = TRUE)
+  expect_match(txt, "data \\(dim\\)        : 1")
+  expect_match(txt, "names           : y", fixed = TRUE)
+  expect_match(txt, "simulations       : 200", fixed = TRUE)
+  expect_match(txt, "-> build a posterior with posterior\\(fit, x_obs = \\.\\.\\.\\)")
+  expect_false(grepl("network unusable", txt, fixed = TRUE))
+  expect_false(grepl("dropped", txt, fixed = TRUE))
+  expect_false(grepl("best val loss", txt, fixed = TRUE))
+})
+
+test_that("cat_fit_common() prints the embedding line and a fit-level drop rate", {
+  # No existing fit exercises these two branches: linear_gaussian never has an
+  # embedding, and no test constructs a fit with simulations dropped before
+  # training (only sbc()'s trial-level drops, a different code path). Testing
+  # the helper directly on a hand-built fit is cheaper than training one.
+  x <- list(dim_theta = 2L, param_names = c("a", "b"),
+            dim_x = 3L, x_names = c("x1", "x2", "x3"),
+            de = list(embedding = list(output_dim = 5L), best_val_loss = 0.123,
+                      net = NULL),
+            n_simulations = 90L, n_dropped = 10L)
+  out <- capture.output(cat_fit_common(x, "save_npe"))
+  txt <- paste(out, collapse = "\n")
+
+  expect_match(txt, "embedding \\(mlp\\)   : 3 -> 5 features")
+  expect_match(txt, "dropped         : 10 of 100, non-finite output \\(10\\.0%\\)")
+  expect_match(txt, "best val loss     : 0\\.1230")
+})
+
 test_that("simulate_for_sbi() names a swapped (simulator, prior) pair", {
   expect_error(simulate_for_sbi(toy_prior(), toy_simulator, 100),
                "`simulator` and `prior` look swapped")

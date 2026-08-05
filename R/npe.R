@@ -303,31 +303,7 @@ simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
 print.nsbi_npe <- function(x, ...) {
   cat("<nsbi_npe> Neural Posterior Estimation fit\n")
   cat(sprintf("  density estimator : %s\n", x$density_estimator))
-  cat(sprintf("  parameters (dim)  : %d\n", x$dim_theta))
-  if (!is.null(x$param_names)) {
-    cat("    names           :", paste(x$param_names, collapse = ", "), "\n")
-  }
-  cat(sprintf("  data (dim)        : %d\n", x$dim_x))
-  if (!is.null(x$x_names)) {
-    cat("    names           :", paste(x$x_names, collapse = ", "), "\n")
-  }
-  if (!is.null(x$de$embedding)) {
-    cat(sprintf("  embedding (mlp)   : %d -> %d features\n",
-                x$dim_x, x$de$embedding$output_dim))
-  }
-  cat(sprintf("  simulations       : %d\n", x$n_simulations))
-  if (!is.null(x$n_dropped) && x$n_dropped > 0L) {
-    total <- x$n_simulations + x$n_dropped
-    cat(sprintf("    dropped         : %d of %d, non-finite output (%.1f%%)\n",
-                x$n_dropped, total, 100 * x$n_dropped / total))
-  }
-  if (!is.null(x$de$best_val_loss) && is.finite(x$de$best_val_loss)) {
-    cat(sprintf("  best val loss     : %.4f\n", x$de$best_val_loss))
-  }
-  if (!torch_net_alive(x$de$net)) {
-    cat("  ! network unusable: a torch fit does not survive saveRDS();\n")
-    cat("    save with save_npe() and reload with load_npe().\n")
-  }
+  cat_fit_common(x, "save_npe")
   cat("  -> build a posterior with posterior(fit, x_obs = ...)\n")
   invisible(x)
 }

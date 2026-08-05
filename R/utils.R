@@ -137,3 +137,69 @@ require_ggplot2 <- function(ggally = FALSE, ggdensity = FALSE) {
 verbose_cat <- function(verbose, ...) {
   if (isTRUE(verbose)) cat(...)
 }
+
+#' Print the fit-summary block shared by [print.nsbi_npe()], [print.nsbi_nle()]
+#' and [print.nsbi_snpe()]
+#'
+#' Parameter names, outcome names, the embedding line (when the fit used
+#' one), the simulation count and any drops, the best validation loss, and
+#' the dead-network warning read the same fields regardless of which
+#' factorization was learned. `save_fn_name` is the one line that legitimately
+#' differs between an NPE and an NLE fit, so it is the one argument callers
+#' must supply.
+#'
+#' @param x An `nsbi_npe`- or `nsbi_nle`-family fit.
+#' @param save_fn_name Name of the save function to point to in the
+#'   dead-network warning, e.g. `"save_npe"`; the matching `load_*()` name is
+#'   derived from it.
+#' @param data_suffix Text appended to the "data (dim)" line before its
+#'   newline, e.g. `"  per observation"` for [nle()].
+#' @keywords internal
+cat_fit_common <- function(x, save_fn_name, data_suffix = "") {
+  cat(sprintf("  parameters (dim)  : %d\n", x$dim_theta))
+  if (!is.null(x$param_names)) {
+    cat("    names           :", paste(x$param_names, collapse = ", "), "\n")
+  }
+  cat(sprintf("  data (dim)        : %d%s\n", x$dim_x, data_suffix))
+  if (!is.null(x$x_names)) {
+    cat("    names           :", paste(x$x_names, collapse = ", "), "\n")
+  }
+  if (!is.null(x$de$embedding)) {
+    cat(sprintf("  embedding (mlp)   : %d -> %d features\n",
+                x$dim_x, x$de$embedding$output_dim))
+  }
+  cat(sprintf("  simulations       : %d\n", x$n_simulations))
+  cat_dropped(x$n_dropped, x$n_simulations + x$n_dropped, "non-finite output")
+  if (!is.null(x$de$best_val_loss) && is.finite(x$de$best_val_loss)) {
+    cat(sprintf("  best val loss     : %.4f\n", x$de$best_val_loss))
+  }
+  if (!torch_net_alive(x$de$net)) {
+    cat("  ! network unusable: a torch fit does not survive saveRDS();\n")
+    cat(sprintf("    save with %s() and reload with %s().\n",
+                save_fn_name, sub("^save_", "load_", save_fn_name)))
+  }
+}
+
+#' Print an "N dropped" line shared by fit summaries and calibration
+#' diagnostics
+#'
+#' A fit knows its simulation budget, so its line reports a drop rate;
+#' [sbc()] and [tarp()] only know how many further trials were lost mid-run,
+#' so leaving `total` at `NULL` switches to that shorter wording.
+#'
+#' @param n_dropped Number dropped. Nothing is printed when this is `NULL`
+#'   or `0`.
+#' @param total Simulations attempted (dropped plus kept), or `NULL` for the
+#'   diagnostics wording, which has no rate to report.
+#' @param what What was dropped, e.g. `"non-finite output"`.
+#' @keywords internal
+cat_dropped <- function(n_dropped, total = NULL, what) {
+  if (is.null(n_dropped) || n_dropped == 0L) return(invisible())
+  if (is.null(total)) {
+    cat(sprintf("  %d %s\n", n_dropped, what))
+  } else {
+    cat(sprintf("    dropped         : %d of %d, %s (%.1f%%)\n",
+                n_dropped, total, what, 100 * n_dropped / total))
+  }
+  invisible()
+}

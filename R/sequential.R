@@ -210,11 +210,8 @@ check_x_obs <- function(x_obs, dim_x = NULL) {
 print.nsbi_snpe <- function(x, ...) {
   cat("<nsbi_snpe> Sequential NPE fit (TSNPE, truncated-prior proposals)\n")
   cat(sprintf("  density estimator : %s\n", x$density_estimator))
-  if (!is.null(x$param_names)) {
-    cat("    parameter names :", paste(x$param_names, collapse = ", "), "\n")
-  }
+  cat_fit_common(x, "save_npe")
   cat(sprintf("  rounds            : %d\n", length(x$rounds)))
-  cat(sprintf("  simulations       : %d\n", x$n_simulations))
   accs <- vapply(x$rounds, function(r) r$acceptance, numeric(1))
   cat(sprintf("  acceptance/round  : %s\n",
               paste(sprintf("%.2f", accs), collapse = ", ")))
