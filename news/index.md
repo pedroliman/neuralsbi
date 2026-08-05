@@ -1,6 +1,26 @@
 # Changelog
 
-## neuralsbi 0.5.4
+## neuralsbi 0.5.5
+
+- Internal cleanup, no user-visible behavior change for
+  `print.nsbi_npe()` and `print.nsbi_nle()`: both printed the same five
+  blocks by hand – parameter names, outcome names, the simulation count
+  and any drops, the best validation loss, and the dead-network warning
+  – differing only in the save-function name
+  ([`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  vs
+  [`save_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md))
+  and a “per observation” suffix on the data line. `R/utils.R` now
+  carries two internal helpers, `cat_fit_common()` and `cat_dropped()`,
+  that both print methods call instead of repeating the blocks;
+  `print.nsbi_sbc()` and `print.nsbi_tarp()` also switch to
+  `cat_dropped()` for their identical “N further trials dropped” line.
+  `print.nsbi_snpe()` now calls `cat_fit_common()` too, which means a
+  sequential fit’s summary gains the parameter/data dimensions,
+  dropped-simulation count, best validation loss and dead-network
+  warning it never showed before, alongside the round table and
+  not-amortized warning it already had
+  ([\#60](https://github.com/pedroliman/neuralsbi/issues/60)).
 
 - Internal cleanup, no user-visible behavior change: the MADE trunk
   ([`made_module()`](https://neuralsbi.pedrodelima.com/reference/made_module.md)
