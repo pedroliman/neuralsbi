@@ -69,14 +69,9 @@ build_embedding_module <- function(spec, dim_x) {
   torch::nn_module(
     classname = "nsbi_embedding_mlp",
     initialize = function() {
-      layers <- list()
-      prev <- dim_x
-      for (h in hidden) {
-        layers[[length(layers) + 1L]] <- torch::nn_linear(prev, h)
-        layers[[length(layers) + 1L]] <- torch::nn_relu()
-        prev <- h
-      }
-      layers[[length(layers) + 1L]] <- torch::nn_linear(prev, output_dim)
+      sizes <- c(dim_x, hidden)
+      layers <- mlp_layers(sizes)
+      layers[[length(layers) + 1L]] <- torch::nn_linear(sizes[length(sizes)], output_dim)
       self$net <- do.call(torch::nn_sequential, layers)
     },
     forward = function(x) self$net(x)
