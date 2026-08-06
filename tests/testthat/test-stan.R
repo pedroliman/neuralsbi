@@ -172,6 +172,26 @@ test_that("the generated Stan agrees with log_lik() for MDN and MAF", {
   }
 })
 
+test_that("stan_code() generates the MDN and MAF _sum_lpdf block without cmdstan", {
+  # stan_fn_mdn()/stan_fn_maf() are only otherwise exercised by the
+  # cmdstan-gated numeric round-trip above, which neither CI job runs (no
+  # CmdStan installed). This checks the generated text alone, so it still
+  # runs wherever torch does, including the coverage job.
+  skip_if_no_torch()
+
+  for (estimator in c("mdn", "maf")) {
+    fit <- nle(stan_prior(), stan_sim, n_simulations = 400,
+               density_estimator = estimator, hidden = c(8L, 8L),
+               n_components = 2L, n_transforms = 2L, max_epochs = 5L, seed = 9)
+    code <- stan_code(fit, model = FALSE)
+
+    expect_match(code, "real nsbi_log_lik_sum_lpdf\\(matrix x, vector theta, vector w\\)",
+                label = paste(estimator, "sum_lpdf signature"))
+    expect_match(code, "for \\(n in 1:rows\\(x\\)\\) \\{", label = paste(estimator, "loop"))
+    expect_match(code, "real total = 0;", label = paste(estimator, "accumulator"))
+  }
+})
+
 test_that("the MAF export handles a one-dimensional observation", {
   # With dim_x = 1 the flow skips its order reversal, a branch the
   # two-dimensional cases never reach.

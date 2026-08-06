@@ -316,6 +316,33 @@ stan_standardize_lines <- function(fit, target = "x", cond = "theta") {
 #' @keywords internal
 stan_jacobian <- function(fit) stan_num(standardizer_log_jac(fit$std_x))
 
+#' The i.i.d.-sum entry point shared by every generated `_sum_lpdf`
+#'
+#' Standardizes `theta`, declares `x`'s center/scale, and accumulates `body`
+#' (an expression for one observation's log density, in terms of `x[n]`) over
+#' `rows(x)` before applying the jacobian once at the end. `precompute` is the
+#' one place estimators differ: `linear_gaussian` and the MDN can build their
+#' conditional distribution once, outside the loop, because it depends on
+#' `theta` alone; MAF has nothing to hoist, so its caller leaves this at the
+#' default. Mirrors [de_log_lik_iid()] (R/likelihood.R), which sums the same
+#' per-observation log density on the R side; the two have to agree.
+#' @keywords internal
+stan_sum_lines <- function(fit, P, body, precompute = "") {
+  paste0(
+    sprintf("    vector[%d] ts = (theta - %s) ./ %s;\n",
+            fit$dim_theta, stan_vec(fit$std_theta$center),
+            stan_vec(fit$std_theta$scale)),
+    precompute,
+    sprintf("    vector[%d] xc = %s;\n", P, stan_vec(fit$std_x$center)),
+    sprintf("    vector[%d] xsc = %s;\n", P, stan_vec(fit$std_x$scale)),
+    "    real total = 0;\n",
+    "    for (n in 1:rows(x)) {\n",
+    sprintf("      total += %s;\n", body),
+    "    }\n",
+    sprintf("    return total + rows(x) * (%s);\n", stan_jacobian(fit))
+  )
+}
+
 # ---- linear-Gaussian ------------------------------------------------------
 
 #' @keywords internal
@@ -333,20 +360,16 @@ stan_fn_lingauss <- function(fit, name, packed) {
             name, stan_mat_of(b, "L"), stan_addend(standardizer_log_jac(fit$std_x))),
     "  }\n\n",
     sprintf("  real %s_sum_lpdf(matrix x, vector theta, vector w) {\n", name),
-    sprintf("    vector[%d] ts = (theta - %s) ./ %s;\n",
-            fit$dim_theta, stan_vec(fit$std_theta$center),
-            stan_vec(fit$std_theta$scale)),
-    # The conditional distribution depends on theta alone, so it is built once
-    # and reused for every observation.
-    sprintf("    vector[%d] mu = %s_mean(ts, w);\n", P, name),
-    sprintf("    matrix[%d, %d] L = %s;\n", P, P, stan_mat_of(b, "L")),
-    sprintf("    vector[%d] xc = %s;\n", P, stan_vec(fit$std_x$center)),
-    sprintf("    vector[%d] xsc = %s;\n", P, stan_vec(fit$std_x$scale)),
-    "    real total = 0;\n",
-    "    for (n in 1:rows(x)) {\n",
-    "      total += multi_normal_cholesky_lpdf((x[n]' - xc) ./ xsc | mu, L);\n",
-    "    }\n",
-    sprintf("    return total + rows(x) * (%s);\n", stan_jacobian(fit)),
+    stan_sum_lines(
+      fit, P,
+      body = "multi_normal_cholesky_lpdf((x[n]' - xc) ./ xsc | mu, L)",
+      # The conditional distribution depends on theta alone, so it is built
+      # once and reused for every observation.
+      precompute = paste0(
+        sprintf("    vector[%d] mu = %s_mean(ts, w);\n", P, name),
+        sprintf("    matrix[%d, %d] L = %s;\n", P, P, stan_mat_of(b, "L"))
+      )
+    ),
     "  }\n"
   )
 }
@@ -411,17 +434,11 @@ stan_fn_mdn <- function(fit, name, packed) {
             name, name, stan_addend(standardizer_log_jac(fit$std_x))),
     "  }\n\n",
     sprintf("  real %s_sum_lpdf(matrix x, vector theta, vector w) {\n", name),
-    sprintf("    vector[%d] ts = (theta - %s) ./ %s;\n",
-            fit$dim_theta, stan_vec(fit$std_theta$center),
-            stan_vec(fit$std_theta$scale)),
-    sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name),
-    sprintf("    vector[%d] xc = %s;\n", P, stan_vec(fit$std_x$center)),
-    sprintf("    vector[%d] xsc = %s;\n", P, stan_vec(fit$std_x$scale)),
-    "    real total = 0;\n",
-    "    for (n in 1:rows(x)) {\n",
-    sprintf("      total += %s_from_head((x[n]' - xc) ./ xsc, head);\n", name),
-    "    }\n",
-    sprintf("    return total + rows(x) * (%s);\n", stan_jacobian(fit)),
+    stan_sum_lines(
+      fit, P,
+      body = sprintf("%s_from_head((x[n]' - xc) ./ xsc, head)", name),
+      precompute = sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name)
+    ),
     "  }\n"
   )
 }
@@ -480,16 +497,7 @@ stan_fn_maf <- function(fit, name, packed) {
             stan_addend(standardizer_log_jac(fit$std_x))),
     "  }\n\n",
     sprintf("  real %s_sum_lpdf(matrix x, vector theta, vector w) {\n", name),
-    sprintf("    vector[%d] ts = (theta - %s) ./ %s;\n",
-            fit$dim_theta, stan_vec(fit$std_theta$center),
-            stan_vec(fit$std_theta$scale)),
-    sprintf("    vector[%d] xc = %s;\n", P, stan_vec(fit$std_x$center)),
-    sprintf("    vector[%d] xsc = %s;\n", P, stan_vec(fit$std_x$scale)),
-    "    real total = 0;\n",
-    "    for (n in 1:rows(x)) {\n",
-    sprintf("      total += %s_std((x[n]' - xc) ./ xsc, ts, w);\n", name),
-    "    }\n",
-    sprintf("    return total + rows(x) * (%s);\n", stan_jacobian(fit)),
+    stan_sum_lines(fit, P, body = sprintf("%s_std((x[n]' - xc) ./ xsc, ts, w)", name)),
     "  }\n"
   )
 }
