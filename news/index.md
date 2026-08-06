@@ -1,5 +1,26 @@
 # Changelog
 
+## neuralsbi 0.5.7
+
+- Internal cleanup, no user-visible behavior change:
+  [`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md)
+  (`R/posterior.R`) and
+  [`resolve_x_iid()`](https://neuralsbi.pedrodelima.com/reference/resolve_x_iid.md)
+  (`R/nle_posterior.R`) restated the same six lines – fall back to the
+  posterior’s `x_obs`, stop if neither is supplied,
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md),
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md),
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
+  – differing only in whether row 1 is kept (with a warning) or every
+  row is kept. `R/posterior.R` now carries one internal helper,
+  `resolve_obs(post, x, first_row, arg)`, that both call instead of
+  repeating the body;
+  [`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md)
+  and
+  [`resolve_x_iid()`](https://neuralsbi.pedrodelima.com/reference/resolve_x_iid.md)
+  keep their exact signatures and behavior, so no call site changed
+  ([\#62](https://github.com/pedroliman/neuralsbi/issues/62)).
+
 ## neuralsbi 0.5.6
 
 - **[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)’s rank

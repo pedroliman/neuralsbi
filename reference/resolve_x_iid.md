@@ -1,11 +1,10 @@
 # All rows of the observation, unlike `resolve_x()` which keeps only the first
 
-A non-finite entry is rejected here for the same reason it is in
-[`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md):
-the log-likelihood sums over rows, so one `NA` makes every starting
-point non-finite and the run fails in
-[`mcmc_init()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init.md)
-complaining about initialization instead of about the observation.
+Thin wrapper around
+[`resolve_obs()`](https://neuralsbi.pedrodelima.com/reference/resolve_obs.md)
+with `first_row = FALSE`; see there for the rationale shared with
+[`resolve_x()`](https://neuralsbi.pedrodelima.com/reference/resolve_x.md),
+including why a non-finite entry stops here rather than warns.
 
 ## Usage
 

@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.7" id="neuralsbi-057">neuralsbi 0.5.7<a class="anchor" aria-label="anchor" href="#neuralsbi-057"></a></h2>
+<ul><li>Internal cleanup, no user-visible behavior change: <code><a href="../reference/resolve_x.html">resolve_x()</a></code> (<code>R/posterior.R</code>) and <code><a href="../reference/resolve_x_iid.html">resolve_x_iid()</a></code> (<code>R/nle_posterior.R</code>) restated the same six lines – fall back to the posterior’s <code>x_obs</code>, stop if neither is supplied, <code><a href="../reference/check_numeric.html">check_numeric()</a></code>, <code><a href="../reference/check_finite.html">check_finite()</a></code>, <code><a href="../reference/as_theta_matrix.html">as_theta_matrix()</a></code> – differing only in whether row 1 is kept (with a warning) or every row is kept. <code>R/posterior.R</code> now carries one internal helper, <code>resolve_obs(post, x, first_row, arg)</code>, that both call instead of repeating the body; <code><a href="../reference/resolve_x.html">resolve_x()</a></code> and <code><a href="../reference/resolve_x_iid.html">resolve_x_iid()</a></code> keep their exact signatures and behavior, so no call site changed (<a href="https://github.com/pedroliman/neuralsbi/issues/62" class="external-link">#62</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.6" id="neuralsbi-056">neuralsbi 0.5.6<a class="anchor" aria-label="anchor" href="#neuralsbi-056"></a></h2>
 <ul><li>
