@@ -58,3 +58,21 @@ test_that("an NLE posterior does not warn about repeated observations", {
   expect_no_warning(sample(post, 50))
   expect_no_warning(log_prob(post, 0.3))
 })
+
+test_that("no observation supplied errors, naming the caller's own argument", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+
+  expect_error(sample(post, 10), "Pass `x = ...`")
+  expect_error(log_prob(post, c(0, 0)), "Pass `x = ...`")
+
+  set.seed(5)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) stats::rnorm(1, theta, sd = 0.5)
+  nle_fit <- nle(prior, simulator, n_simulations = 500,
+                 density_estimator = "linear_gaussian", seed = 5)
+  post_nle <- posterior(nle_fit, n_chains = 4, warmup = 20, thin = 1, seed = 6)
+
+  expect_error(sample(post_nle, 10), "Pass `obs = ...`")
+  expect_error(log_prob(post_nle, 0.3), "Pass `obs = ...`")
+})
