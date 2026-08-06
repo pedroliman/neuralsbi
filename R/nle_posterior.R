@@ -115,10 +115,9 @@ check_mcmc_count <- function(value, name, min, why = NULL) {
 
 #' All rows of the observation, unlike `resolve_x()` which keeps only the first
 #'
-#' A non-finite entry is rejected here for the same reason it is in
-#' [resolve_x()]: the log-likelihood sums over rows, so one `NA` makes every
-#' starting point non-finite and the run fails in [mcmc_init()] complaining
-#' about initialization instead of about the observation.
+#' Thin wrapper around [resolve_obs()] with `first_row = FALSE`; see there for
+#' the rationale shared with [resolve_x()], including why a non-finite entry
+#' stops here rather than warns.
 #'
 #' @param post An `nsbi_nle_posterior` object.
 #' @param x Observation to condition on, or `NULL` to use the posterior's
@@ -127,15 +126,7 @@ check_mcmc_count <- function(value, name, min, why = NULL) {
 #'   [sample()] calls it `obs` and [log_prob()] calls it `x`.
 #' @keywords internal
 resolve_x_iid <- function(post, x, arg = "obs") {
-  if (is.null(x)) arg <- "x_obs"
-  x <- x %||% post$x_obs
-  if (is.null(x)) {
-    stop("No observation supplied. Pass `obs = ...` or set `x_obs` in posterior().",
-         call. = FALSE)
-  }
-  x <- check_numeric(x, arg)
-  check_finite(x, arg)
-  as_theta_matrix(x, post$fit$dim_x)
+  resolve_obs(post, x, first_row = FALSE, arg = arg)
 }
 
 #' Sample an NLE posterior with MCMC

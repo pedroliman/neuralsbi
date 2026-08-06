@@ -16,9 +16,8 @@ resolve_x_iid(post, x, arg = "obs")
 \code{\link[=sample]{sample()}} calls it \code{obs} and \code{\link[=log_prob]{log_prob()}} calls it \code{x}.}
 }
 \description{
-A non-finite entry is rejected here for the same reason it is in
-\code{\link[=resolve_x]{resolve_x()}}: the log-likelihood sums over rows, so one \code{NA} makes every
-starting point non-finite and the run fails in \code{\link[=mcmc_init]{mcmc_init()}} complaining
-about initialization instead of about the observation.
+Thin wrapper around \code{\link[=resolve_obs]{resolve_obs()}} with \code{first_row = FALSE}; see there for
+the rationale shared with \code{\link[=resolve_x]{resolve_x()}}, including why a non-finite entry
+stops here rather than warns.
 }
 \keyword{internal}

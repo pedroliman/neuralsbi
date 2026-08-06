@@ -16,20 +16,7 @@ resolve_x(post, x)
 A one-row matrix with \code{dim_x} columns.
 }
 \description{
-An NPE fit maps one observation to one posterior, so only the first row of
-\code{x} can be used. \code{resolve_x_iid()}, the NLE counterpart, keeps every row,
-because there the rows are independent observations and the log-likelihood
-sums over them. The same \code{x_obs} therefore means "200 observations" to
-\code{\link[=nle]{nle()}} and "the first observation" to \code{\link[=npe]{npe()}}, and a user moving a working
-call from one to the other would otherwise get a posterior conditioned on a
-single data point with nothing said about it. Warn rather than fail: taking
-row 1 of a simulation matrix is a reasonable thing to ask for.
-}
-\details{
-A non-finite entry is a different matter and stops here. An \code{NA} passes
-through \code{apply_standardizer()} into \code{de_sample()} and comes back as all-\code{NaN}
-draws, so the complaint lands in \code{stats::quantile()} inside \code{summary()} with
-nothing to say about the observation. There is nothing sensible to condition
-on, so this errors rather than warns.
+Thin wrapper around \code{\link[=resolve_obs]{resolve_obs()}} with \code{first_row = TRUE}; see there for
+the rationale shared with \code{\link[=resolve_x_iid]{resolve_x_iid()}}.
 }
 \keyword{internal}
