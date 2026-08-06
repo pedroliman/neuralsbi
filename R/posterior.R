@@ -57,38 +57,55 @@ posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
   )
 }
 
-#' The single observation an NPE posterior conditions on
+#' Resolve the observation a posterior conditions on
 #'
-#' An NPE fit maps one observation to one posterior, so only the first row of
-#' `x` can be used. `resolve_x_iid()`, the NLE counterpart, keeps every row,
-#' because there the rows are independent observations and the log-likelihood
-#' sums over them. The same `x_obs` therefore means "200 observations" to
-#' [nle()] and "the first observation" to [npe()], and a user moving a working
-#' call from one to the other would otherwise get a posterior conditioned on a
-#' single data point with nothing said about it. Warn rather than fail: taking
-#' row 1 of a simulation matrix is a reasonable thing to ask for.
+#' `resolve_x()` and `resolve_x_iid()` are both thin wrappers around this: an
+#' NPE fit maps one observation to one posterior, so `resolve_x()` calls this
+#' with `first_row = TRUE` and keeps only row 1; an NLE fit's log-likelihood
+#' sums over rows as independent observations of the same parameter, so
+#' `resolve_x_iid()` calls this with `first_row = FALSE` and keeps every row.
+#' The same `x_obs` therefore means "the first observation" to [npe()] and
+#' "200 observations" to [nle()], and a user moving a working call from one to
+#' the other would otherwise get a posterior conditioned on a single data
+#' point with nothing said about it. Truncating to row 1 warns rather than
+#' fails: taking row 1 of a simulation matrix is a reasonable thing to ask
+#' for.
 #'
-#' A non-finite entry is a different matter and stops here. An `NA` passes
-#' through `apply_standardizer()` into `de_sample()` and comes back as all-`NaN`
-#' draws, so the complaint lands in `stats::quantile()` inside `summary()` with
-#' nothing to say about the observation. There is nothing sensible to condition
-#' on, so this errors rather than warns.
+#' A non-finite entry is a different matter and stops here regardless of
+#' `first_row`. An `NA` passes through `apply_standardizer()` into
+#' `de_sample()` (NPE) or into [mcmc_init()] (NLE) and comes back as
+#' unusable output with nothing to say about the observation -- for NPE the
+#' complaint lands in `stats::quantile()` inside `summary()`, for NLE in
+#' `mcmc_init()` complaining about initialization. There is nothing sensible
+#' to condition on either way, so this errors rather than warns.
 #'
 #' @param post An `nsbi_posterior` object.
 #' @param x Observation to condition on, or `NULL` to use the posterior's
 #'   `x_obs`.
-#' @return A one-row matrix with `dim_x` columns.
+#' @param first_row `TRUE` to keep row 1 only, with a warning when there was
+#'   more than one row (the [resolve_x()] behavior); `FALSE` to keep every row
+#'   (the [resolve_x_iid()] behavior).
+#' @param arg Name the caller's argument goes by, for `check_numeric()`'s and
+#'   `check_finite()`'s error messages. Defaults to `"x"` when `first_row` and
+#'   `"obs"` otherwise, matching [sample()]'s and [log_prob()]'s parameter
+#'   names; the "no observation supplied" message is fixed to the same names
+#'   and does not vary with `arg`.
+#' @return A matrix with `dim_x` columns: one row if `first_row`, every row
+#'   otherwise.
 #' @keywords internal
-resolve_x <- function(post, x) {
-  arg <- if (is.null(x)) "x_obs" else "x"
+resolve_obs <- function(post, x, first_row, arg = if (first_row) "x" else "obs") {
+  check_arg <- if (is.null(x)) "x_obs" else arg
   x <- x %||% post$x_obs
   if (is.null(x)) {
-    stop("No observation supplied. Pass `x = ...` or set `x_obs` in posterior().",
-         call. = FALSE)
+    stop(sprintf(
+      "No observation supplied. Pass `%s = ...` or set `x_obs` in posterior().",
+      if (first_row) "x" else "obs"),
+      call. = FALSE)
   }
-  x <- check_numeric(x, arg)
-  check_finite(x, arg)
+  x <- check_numeric(x, check_arg)
+  check_finite(x, check_arg)
   x <- as_theta_matrix(x, post$fit$dim_x)
+  if (!first_row) return(x)
   if (nrow(x) > 1L) {
     warning(sprintf(
       "Observation has %d rows; an NPE posterior conditions on one, so only row 1 is used. ",
@@ -97,6 +114,20 @@ resolve_x <- function(post, x) {
       call. = FALSE)
   }
   x[1, , drop = FALSE]
+}
+
+#' The single observation an NPE posterior conditions on
+#'
+#' Thin wrapper around [resolve_obs()] with `first_row = TRUE`; see there for
+#' the rationale shared with [resolve_x_iid()].
+#'
+#' @param post An `nsbi_posterior` object.
+#' @param x Observation to condition on, or `NULL` to use the posterior's
+#'   `x_obs`.
+#' @return A one-row matrix with `dim_x` columns.
+#' @keywords internal
+resolve_x <- function(post, x) {
+  resolve_obs(post, x, first_row = TRUE)
 }
 
 #' Sample from a posterior
