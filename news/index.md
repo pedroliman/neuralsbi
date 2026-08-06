@@ -1,5 +1,32 @@
 # Changelog
 
+## neuralsbi 0.5.8
+
+- Internal cleanup, no user-visible behavior change:
+  [`plot_coverage()`](https://neuralsbi.pedrodelima.com/reference/plot_coverage.md)
+  and
+  [`plot_tarp()`](https://neuralsbi.pedrodelima.com/reference/plot_tarp.md)
+  each computed their own 99% Monte-Carlo binomial band by hand and
+  built the same
+  `geom_ribbon() + geom_abline() + coord_equal() + theme_minimal()`
+  calibration figure around it, and
+  [`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md)
+  computed a third version of that band, unscaled, for its histogram’s
+  reference lines. `R/plotting.R` now carries two internal helpers,
+  `binom_band(nominal, n, level = 0.99)` and
+  `calibration_plot(df, band, xlab, ylab)`, so the confidence level and
+  the binomial parameterization live in one place instead of three:
+  [`plot_coverage()`](https://neuralsbi.pedrodelima.com/reference/plot_coverage.md)
+  and
+  [`plot_tarp()`](https://neuralsbi.pedrodelima.com/reference/plot_tarp.md)
+  call both and add only their own curve and title on top, and
+  [`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md)
+  calls
+  [`binom_band()`](https://neuralsbi.pedrodelima.com/reference/binom_band.md)
+  and scales it back to a count. All three functions keep their exact
+  signatures and output
+  ([\#63](https://github.com/pedroliman/neuralsbi/issues/63)).
+
 ## neuralsbi 0.5.7
 
 - Internal cleanup, no user-visible behavior change:
