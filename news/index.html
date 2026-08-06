@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.9" id="neuralsbi-059">neuralsbi 0.5.9<a class="anchor" aria-label="anchor" href="#neuralsbi-059"></a></h2>
+<ul><li>Internal cleanup, no user-visible behavior change: <code>stan_fn_lingauss()</code>, <code>stan_fn_mdn()</code> and <code>stan_fn_maf()</code> (<code>R/stan.R</code>) each wrote their own copy of the generated <code>_sum_lpdf</code> entry point – the <code>theta</code> standardization, the <code>x</code> center/scale declarations, <code>real total = 0</code>, the <code>for (n in 1:rows(x))</code> loop, and the jacobian-corrected return – differing only in the loop body and in what, if anything, gets precomputed once outside the loop (the linear-Gaussian mean/Cholesky factor and the MDN’s mixture head; MAF has nothing to hoist). <code>R/stan.R</code> now carries one internal helper, <code>stan_sum_lines(fit, P, body, precompute = "")</code>, that all three call instead of repeating the block; each generator keeps only its own loop body and precompute expression inline. Generated Stan output is unchanged for all three estimators. <code><a href="../reference/stan_sum_lines.html">stan_sum_lines()</a></code> sums the same per-observation log density that <code><a href="../reference/de_log_lik_iid.html">de_log_lik_iid()</a></code> (<code>R/likelihood.R</code>) sums on the R side, so a comment now points from one to the other (<a href="https://github.com/pedroliman/neuralsbi/issues/64" class="external-link">#64</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.8" id="neuralsbi-058">neuralsbi 0.5.8<a class="anchor" aria-label="anchor" href="#neuralsbi-058"></a></h2>
 <ul><li>Internal cleanup, no user-visible behavior change: <code><a href="../reference/plot_coverage.html">plot_coverage()</a></code> and <code><a href="../reference/plot_tarp.html">plot_tarp()</a></code> each computed their own 99% Monte-Carlo binomial band by hand and built the same <code>geom_ribbon() + geom_abline() + coord_equal() + theme_minimal()</code> calibration figure around it, and <code><a href="../reference/plot_sbc.html">plot_sbc()</a></code> computed a third version of that band, unscaled, for its histogram’s reference lines. <code>R/plotting.R</code> now carries two internal helpers, <code>binom_band(nominal, n, level = 0.99)</code> and <code>calibration_plot(df, band, xlab, ylab)</code>, so the confidence level and the binomial parameterization live in one place instead of three: <code><a href="../reference/plot_coverage.html">plot_coverage()</a></code> and <code><a href="../reference/plot_tarp.html">plot_tarp()</a></code> call both and add only their own curve and title on top, and <code><a href="../reference/plot_sbc.html">plot_sbc()</a></code> calls <code><a href="../reference/binom_band.html">binom_band()</a></code> and scales it back to a count. All three functions keep their exact signatures and output (<a href="https://github.com/pedroliman/neuralsbi/issues/63" class="external-link">#63</a>).</li>

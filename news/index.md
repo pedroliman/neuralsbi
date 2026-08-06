@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.5.9
+
+- Internal cleanup, no user-visible behavior change:
+  `stan_fn_lingauss()`, `stan_fn_mdn()` and `stan_fn_maf()` (`R/stan.R`)
+  each wrote their own copy of the generated `_sum_lpdf` entry point –
+  the `theta` standardization, the `x` center/scale declarations,
+  `real total = 0`, the `for (n in 1:rows(x))` loop, and the
+  jacobian-corrected return – differing only in the loop body and in
+  what, if anything, gets precomputed once outside the loop (the
+  linear-Gaussian mean/Cholesky factor and the MDN’s mixture head; MAF
+  has nothing to hoist). `R/stan.R` now carries one internal helper,
+  `stan_sum_lines(fit, P, body, precompute = "")`, that all three call
+  instead of repeating the block; each generator keeps only its own loop
+  body and precompute expression inline. Generated Stan output is
+  unchanged for all three estimators.
+  [`stan_sum_lines()`](https://neuralsbi.pedrodelima.com/reference/stan_sum_lines.md)
+  sums the same per-observation log density that
+  [`de_log_lik_iid()`](https://neuralsbi.pedrodelima.com/reference/de_log_lik_iid.md)
+  (`R/likelihood.R`) sums on the R side, so a comment now points from
+  one to the other
+  ([\#64](https://github.com/pedroliman/neuralsbi/issues/64)).
+
 ## neuralsbi 0.5.8
 
 - Internal cleanup, no user-visible behavior change:
