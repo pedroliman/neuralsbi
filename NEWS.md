@@ -1,3 +1,7 @@
+# neuralsbi 0.5.8
+
+* Internal cleanup, no user-visible behavior change: `plot_coverage()` and `plot_tarp()` each computed their own 99% Monte-Carlo binomial band by hand and built the same `geom_ribbon() + geom_abline() + coord_equal() + theme_minimal()` calibration figure around it, and `plot_sbc()` computed a third version of that band, unscaled, for its histogram's reference lines. `R/plotting.R` now carries two internal helpers, `binom_band(nominal, n, level = 0.99)` and `calibration_plot(df, band, xlab, ylab)`, so the confidence level and the binomial parameterization live in one place instead of three: `plot_coverage()` and `plot_tarp()` call both and add only their own curve and title on top, and `plot_sbc()` calls `binom_band()` and scales it back to a count. All three functions keep their exact signatures and output (#63).
+
 # neuralsbi 0.5.7
 
 * Internal cleanup, no user-visible behavior change: `resolve_x()` (`R/posterior.R`) and `resolve_x_iid()` (`R/nle_posterior.R`) restated the same six lines -- fall back to the posterior's `x_obs`, stop if neither is supplied, `check_numeric()`, `check_finite()`, `as_theta_matrix()` -- differing only in whether row 1 is kept (with a warning) or every row is kept. `R/posterior.R` now carries one internal helper, `resolve_obs(post, x, first_row, arg)`, that both call instead of repeating the body; `resolve_x()` and `resolve_x_iid()` keep their exact signatures and behavior, so no call site changed (#62).

@@ -106,6 +106,60 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
   invisible(p)
 }
 
+#' 99% Monte-Carlo binomial band for a calibration curve
+#'
+#' At each nominal level, how far empirical coverage over `n` trials can
+#' wander from the diagonal by chance alone, under a `Binomial(n, nominal)`
+#' model of the count that lands inside its interval. [plot_coverage()] and
+#' [plot_tarp()] shade this as the ribbon behind their curve; [plot_sbc()]
+#' uses the same interval, scaled back up to a count, for its histogram's
+#' dashed reference lines. One formula in one place means all three figures'
+#' bands agree on what "real" departure from calibration looks like.
+#'
+#' @param nominal Nominal level(s) the band is evaluated at.
+#' @param n Number of trials the empirical coverage was computed over.
+#' @param level Two-sided coverage of the band, e.g. `0.99` for the
+#'   `c(0.005, 0.995)` binomial quantiles.
+#' @return A data frame with columns `nominal`, `lo` and `hi`, all as
+#'   fractions of `n`.
+#' @keywords internal
+binom_band <- function(nominal, n, level = 0.99) {
+  tail <- (1 - level) / 2
+  data.frame(
+    nominal = nominal,
+    lo = stats::qbinom(tail, n, nominal) / n,
+    hi = stats::qbinom(1 - tail, n, nominal) / n
+  )
+}
+
+#' Shared skeleton for a nominal-vs-empirical calibration plot
+#'
+#' The Monte-Carlo band, the diagonal reference line, the equal-aspect
+#' `[0, 1] x [0, 1]` frame and the minimal theme are the same figure in
+#' [plot_coverage()] and [plot_tarp()]; only the curve drawn on top (one per
+#' parameter, with a legend, for [plot_coverage()]; a single curve for
+#' [plot_tarp()]) and the title differ. This builds the shared part and
+#' leaves the caller to add its own [ggplot2::geom_line()] and
+#' [ggplot2::labs()] on top.
+#'
+#' @param df Base data for the plot, inherited by whatever curve layer the
+#'   caller adds afterward.
+#' @param band A data frame with `nominal`, `lo` and `hi` columns (see
+#'   [binom_band()]), shaded as the Monte-Carlo uncertainty ribbon.
+#' @param xlab,ylab Axis labels.
+#' @return A `ggplot` object carrying the shared layers, ready for the
+#'   caller's curve, scale and title.
+#' @keywords internal
+calibration_plot <- function(df, band, xlab, ylab) {
+  ggplot2::ggplot(df) +
+    ggplot2::geom_ribbon(data = band, ggplot2::aes(x = .data$nominal, ymin = .data$lo, ymax = .data$hi),
+                         fill = "grey60", alpha = 0.3) +
+    ggplot2::geom_abline(slope = 1, intercept = 0, colour = "grey40", linetype = "dashed") +
+    ggplot2::coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
+    ggplot2::labs(x = xlab, y = ylab) +
+    ggplot2::theme_minimal()
+}
+
 #' Plot an SBC rank histogram
 #'
 #' Uniform bars indicate calibration; a U shape means the posterior is too
@@ -129,7 +183,8 @@ plot_sbc <- function(sbc_result, param = 1L, bins = 20L) {
   L <- sbc_result$n_posterior_samples
   breaks <- seq(0, L, length.out = bins + 1L)
   expected <- sbc_result$n_sbc / bins
-  ci <- stats::qbinom(c(0.005, 0.995), sbc_result$n_sbc, 1 / bins)
+  band <- binom_band(1 / bins, sbc_result$n_sbc)
+  ci <- c(band$lo, band$hi) * sbc_result$n_sbc
 
   param_name <- colnames(sbc_result$ranks)[param]
   title <- if (is.null(param_name)) {
@@ -166,29 +221,17 @@ plot_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
   require_ggplot2()
   cov <- expected_coverage(sbc_result, levels = levels)
   d <- ncol(cov) - 1L
-  n <- sbc_result$n_sbc
-  band <- data.frame(
-    nominal = cov$nominal,
-    lo = stats::qbinom(0.005, n, cov$nominal) / n,
-    hi = stats::qbinom(0.995, n, cov$nominal) / n
-  )
+  band <- binom_band(cov$nominal, sbc_result$n_sbc)
   long <- do.call(rbind, lapply(seq_len(d), function(j) {
     data.frame(nominal = cov$nominal, empirical = cov[[j + 1L]],
               parameter = colnames(cov)[j + 1L])
   }))
 
-  p <- ggplot2::ggplot() +
-    ggplot2::geom_ribbon(data = band, ggplot2::aes(x = .data$nominal, ymin = .data$lo, ymax = .data$hi),
-                         fill = "grey60", alpha = 0.3) +
-    ggplot2::geom_abline(slope = 1, intercept = 0, colour = "grey40", linetype = "dashed") +
-    ggplot2::geom_line(data = long,
-                       ggplot2::aes(x = .data$nominal, y = .data$empirical, colour = .data$parameter),
+  p <- calibration_plot(long, band, "nominal credibility level", "empirical coverage") +
+    ggplot2::geom_line(ggplot2::aes(x = .data$nominal, y = .data$empirical, colour = .data$parameter),
                        linewidth = 0.8) +
-    ggplot2::coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
     ggplot2::scale_colour_discrete(labels = math_labels) +
-    ggplot2::labs(title = "Expected coverage", x = "nominal credibility level",
-                 y = "empirical coverage", colour = NULL) +
-    ggplot2::theme_minimal()
+    ggplot2::labs(title = "Expected coverage", colour = NULL)
 
   print(p)
   invisible(cov)
@@ -209,24 +252,13 @@ plot_tarp <- function(tarp_result) {
   stopifnot(inherits(tarp_result, "nsbi_tarp"))
   require_ggplot2()
   lev <- tarp_result$levels
-  n <- tarp_result$n_tarp
-  band <- data.frame(
-    nominal = lev,
-    lo = stats::qbinom(0.005, n, lev) / n,
-    hi = stats::qbinom(0.995, n, lev) / n
-  )
+  band <- binom_band(lev, tarp_result$n_tarp)
   line <- data.frame(nominal = lev, ecp = tarp_result$ecp)
 
-  p <- ggplot2::ggplot() +
-    ggplot2::geom_ribbon(data = band, ggplot2::aes(x = .data$nominal, ymin = .data$lo, ymax = .data$hi),
-                         fill = "grey60", alpha = 0.3) +
-    ggplot2::geom_abline(slope = 1, intercept = 0, colour = "grey40", linetype = "dashed") +
-    ggplot2::geom_line(data = line, ggplot2::aes(x = .data$nominal, y = .data$ecp),
+  p <- calibration_plot(line, band, "nominal credibility level", "expected coverage probability") +
+    ggplot2::geom_line(ggplot2::aes(x = .data$nominal, y = .data$ecp),
                        colour = "steelblue", linewidth = 0.8) +
-    ggplot2::coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
-    ggplot2::labs(title = "TARP coverage", x = "nominal credibility level",
-                 y = "expected coverage probability") +
-    ggplot2::theme_minimal()
+    ggplot2::labs(title = "TARP coverage")
 
   print(p)
   invisible(line)
