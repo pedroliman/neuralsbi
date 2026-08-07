@@ -63,9 +63,8 @@ test_that("NSF trains end to end and yields a sane linear-Gaussian posterior", {
   post <- posterior(fit, x_obs = x_obs)
   draws <- sample(post, 5000)
 
-  prec <- diag(d) + diag(d) / sigma^2
-  Sigma <- solve(prec)
-  mu <- as.numeric(Sigma %*% (x_obs / sigma^2))
+  truth <- analytic_gauss_posterior(x_obs, sigma, d)
+  mu <- truth$mu; Sigma <- truth$Sigma
   # posterior mean in the right neighborhood; sd in a plausible band
   expect_lt(max(abs(colMeans(draws) - mu)), 0.2)
   expect_true(all(apply(draws, 2, sd) > 0.3 & apply(draws, 2, sd) < 0.7))

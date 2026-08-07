@@ -9,19 +9,9 @@ suppressMessages({
 set.seed(1)
 torch::torch_manual_seed(1)
 
-prior <- prior_uniform(low = c(-1, -1), high = c(1, 1))
+task <- task_two_moons()
 
-two_moons_sim <- function(theta) {
-  a <- runif(1, -pi / 2, pi / 2)
-  r <- rnorm(1, mean = 0.1, sd = 0.01)
-  p1 <- r * cos(a) + 0.25
-  p2 <- r * sin(a)
-  x1 <- p1 - abs(theta[1] + theta[2]) / sqrt(2)
-  x2 <- p2 + (-theta[1] + theta[2]) / sqrt(2)
-  c(x1 = x1, x2 = x2)
-}
-
-fit <- npe(prior, two_moons_sim, n_simulations = 20000,
+fit <- npe(task$prior, task$simulator, n_simulations = 20000,
            density_estimator = "mdn", n_components = 8L,
            hidden = c(64L, 64L), max_epochs = 400L, seed = 1, verbose = TRUE)
 

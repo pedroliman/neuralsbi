@@ -2,13 +2,6 @@
 # exercised end to end, and the final posterior must still match the analytic
 # conjugate posterior at the targeted observation.
 
-analytic_gauss_posterior <- function(x_obs, sigma, d) {
-  prec <- diag(d) + diag(d) / sigma^2
-  Sigma <- solve(prec)
-  mu <- as.numeric(Sigma %*% (x_obs / sigma^2))
-  list(mu = mu, Sigma = Sigma)
-}
-
 test_that("npe_sequential recovers the analytic posterior at x_obs", {
   set.seed(21)
   d <- 2; sigma <- 0.5

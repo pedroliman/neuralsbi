@@ -2,6 +2,7 @@
 # Train neuralsbi's NPE on the shared simulations and save posterior samples.
 # Usage: Rscript 03_run_neuralsbi.R --task gaussian_linear --estimator maf
 suppressMessages(library(neuralsbi))
+source("00_tasks.R")
 
 args <- as.list(commandArgs(trailingOnly = TRUE))
 opt <- function(flag, default) {
@@ -13,12 +14,7 @@ estimator <- opt("--estimator", "maf")
 n_samples <- as.integer(opt("--n_samples", "10000"))
 seed <- as.integer(opt("--seed", "42"))
 
-task <- switch(task_name,
-  gaussian_linear = task_gaussian_linear(),
-  two_moons = task_two_moons(),
-  slcp = task_slcp(),
-  stop("unknown task: ", task_name)
-)
+task <- benchmark_task(task_name)
 
 data_dir <- file.path("data", task_name)
 theta <- as.matrix(read.csv(file.path(data_dir, "theta.csv"), header = FALSE))
