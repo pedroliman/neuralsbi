@@ -116,7 +116,10 @@ test_that("npe(..., device = 'cpu') trains and records the device it used", {
              max_epochs = 5L, device = "cpu", seed = 5)
   expect_identical(fit$device, "cpu")
   expect_identical(fit$de$device, "cpu")
-  expect_identical(net_device(fit$de$net), torch::torch_device("cpu"))
+  # torch_device objects wrap an external pointer, so two separately
+  # constructed "cpu" devices are never identical() even though they name the
+  # same device; torch_device has its own `==` for exactly this comparison.
+  expect_true(net_device(fit$de$net) == torch::torch_device("cpu"))
 
   # de_log_prob()/de_sample() still work end to end (the ordinary path every
   # other neural test exercises, now routed through net_device()).
@@ -158,5 +161,5 @@ test_that("load_npe() lands a reloaded fit's device field back on cpu", {
 
   expect_identical(fit2$de$device, "cpu")
   expect_identical(fit2$device, "cpu")
-  expect_identical(net_device(fit2$de$net), torch::torch_device("cpu"))
+  expect_true(net_device(fit2$de$net) == torch::torch_device("cpu"))
 })
