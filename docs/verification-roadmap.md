@@ -399,6 +399,36 @@ arguments to the chosen `fit_*()` by intersecting them with its formals, so
 it carries no defaults of its own. When changing a default, update the
 `fit_*` signature and the hand-written `.Rd` `\usage` (codoc is checked).
 
+### sbibm benchmark reproduction (`dev/benchmarks/`, July 2026)
+
+Level 3 gained a second, stricter form: instead of comparing `neuralsbi` against
+a Python `sbi` run we do ourselves, compare it against the *published* numbers
+in Lueckmann et al. (2021), *Benchmarking Simulation-Based Inference*, on the
+same tasks, the same observations, the same reference posteriors and the same
+metric. `dev/benchmarks/` holds that harness. See its README for how to run it.
+
+What is there: all ten `sbibm` tasks reimplemented in R and vectorized
+(`R/tasks.R`), except the ODE tasks, which go through `deSolve::ode()` one
+parameter set at a time the way sbibm goes through Julia; the two tasks that
+depend on frozen constants pickled as PyTorch tensors work because `R/pt_io.R`
+reads those files without Python;
+sbibm's C2ST reimplemented in base R (`R/c2st.R`), because `c2st()` in the
+package is a logistic regression and not comparable to the paper's MLP; a runner
+that reproduces the paper's NPE and NLE hyperparameters (`R/runner.R`); and a
+report that prints, per (task, algorithm, budget), our C2ST next to the paper's
+with a MATCH/BETTER/WORSE verdict. `smoke_test.R` is the guard: 58 checks
+covering every simulator, the frozen constants, the metric and both algorithms
+end to end. It recomputes sbibm's own published GLM summary statistics from its
+own published raw spike trains (agrees to 4e-6, float32 rounding) and checks
+each shipped observation against our simulator at the parameters that generated
+it.
+
+What is *not* there: the run itself. Only a spot check has been executed
+(two_moons, NPE, 10^3 simulations, three observations: C2ST 0.739 against the
+paper's 0.677 over those observations, which is at the edge of the 0.05
+tolerance on a single seed). The scripts cover NPE and NLE only; SNPE, SNLE,
+NRE, SNRE and the two ABC algorithms in the paper's grid are out of scope.
+
 ### What exists right now
 
 | Area | File(s) | State |
@@ -474,24 +504,33 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    implementation. Write-up: `docs/benchmarks/nle-vs-sbi.md`. **Still open:**
    the NPE half (`01`–`04`), which has never been executed, and NLE at other
    tasks/estimators.
-3. **Two-moons calibration study** (finishes M2): done via
+3. **Run the sbibm reproduction** (`dev/benchmarks/`, see the section above).
+   The harness is built and smoke-tested; nothing but compute stands between
+   it and a full answer. Sensible order: NPE at 10^3 and 10^4 across all ten
+   tasks with three observations each, then widen. Commit the resulting
+   `comparison.csv` and `report.md` to `docs/benchmarks/`. Any cell that comes
+   out WORSE by a wide margin is the interesting output: triage against the
+   four documented departures from sbibm (`deSolve::ode()` in place of Julia's
+   solver, NLE in the original parameter space, autoregressive vs. coupling
+   NSF, the C2ST epoch cap) before blaming the estimator.
+4. **Two-moons calibration study** (finishes M2): done via
    `inst/benchmarks/two_moons_calibration.R` — `sbc()` + `plot_coverage()` +
    `tarp()` on a two-moons NSF fit, figures saved to `docs/figures/`. TARP
    matters here: two-moons marginals hide the crescent structure that the
    joint test sees. Remaining: a short README/vignette section embedding the
    figures.
-4. **SLCP with NSF** (finishes M4): `task_slcp()` exists; train NSF at 10k
+5. **SLCP with NSF** (finishes M4): `task_slcp()` exists; train NSF at 10k
    sims, compare to `sbi` via the harness. Expect this to stress leakage
    correction (uniform prior on [-3,3]^5).
-5. **v0.2 leftovers**: none — log-prob normalization tests, TARP,
+6. **v0.2 leftovers**: none — log-prob normalization tests, TARP,
    posterior-predictive plots, the SIR vignette, and truncated proposals
    (via TSNPE) are all done.
-6. **v0.4 embedding nets**: MLP done — `embedding_mlp()` + the `embedding_net`
+7. **v0.4 embedding nets**: MLP done — `embedding_mlp()` + the `embedding_net`
    argument to `npe()` (`R/embedding.R`), trained jointly inside each
    estimator. Still open: CNN/RNN embeddings for image/sequence `x`, a
    structured-data case study, and (optionally) standardizing at the
    embedding output rather than the raw input.
-7. **v0.5 sequential NPE**: TSNPE is done (`npe_sequential()`,
+8. **v0.5 sequential NPE**: TSNPE is done (`npe_sequential()`,
    `R/sequential.R`) and doubles as the truncated-proposal leakage
    handling. Still open: APT/NPE-C with the atomic loss correction, and a
    fixed-budget efficiency comparison (sequential vs. single-round) once a
