@@ -232,7 +232,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
                     max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
-                    device = "cpu", seed = NULL, verbose = FALSE) {
+                    seed = NULL, verbose = FALSE, device = "cpu") {
   fit_torch_de(
     theta, x,
     build_net_fn = function(dim_x, dim_theta)
@@ -245,7 +245,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    embedding = embedding, device = device, seed = seed, verbose = verbose
+    embedding = embedding, seed = seed, verbose = verbose, device = device
   )
 }
 

@@ -166,14 +166,9 @@ stan_pack <- function(fit) {
 }
 
 #' A torch tensor as a plain R matrix, in double precision
-#'
-#' The generated Stan code is plain text with the weights baked in as
-#' literals, so it makes no difference which device trained them; the
-#' `device = "cpu"` here just makes `as_array()` work when they did not train
-#' on the CPU.
 #' @keywords internal
 torch_mat <- function(t) {
-  m <- torch::as_array(t$to(dtype = torch::torch_float64(), device = "cpu"))
+  m <- torch::as_array(t$to(device = "cpu", dtype = torch::torch_float64()))
   if (is.null(dim(m))) matrix(m, ncol = 1L) else m
 }
 

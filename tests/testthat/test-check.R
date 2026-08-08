@@ -193,54 +193,6 @@ test_that("check_finite() names the argument and the first bad entry", {
   expect_error(check_finite("a", "x"), "`x` must be numeric")
 })
 
-test_that("check_device() accepts the three known device strings", {
-  expect_identical(check_device("cpu"), "cpu")
-  expect_identical(check_device("cuda"), "cuda")
-  expect_identical(check_device("mps"), "mps")
-})
-
-test_that("check_device() rejects anything else, without needing torch", {
-  expect_error(check_device("gpu"),
-               '`device` must be one of "cpu", "cuda" or "mps", not "gpu"')
-  expect_error(check_device(c("cpu", "cuda")), "a length-2")
-  expect_error(check_device(1), "not 1")
-  expect_error(check_device(NA), "not NA")
-  expect_error(check_device(NULL), "not NULL")
-})
-
-test_that("resolve_device() passes \"cpu\" straight through without touching torch", {
-  # No skip_if_no_torch(): the cpu branch returns before resolve_device() ever
-  # calls torch::cuda_is_available()/backends_mps_is_available(), so this must
-  # hold even when libtorch is not installed.
-  expect_identical(resolve_device("cpu"), "cpu")
-})
-
-test_that("resolve_device() rejects a bad device string the same way check_device() does", {
-  expect_error(resolve_device("gpu"), "`device` must be one of")
-})
-
-test_that("npe()/nle() validate `device` before simulating, independent of torch", {
-  prior <- prior_uniform(c(mu = -2), c(mu = 2))
-  simulator <- function(mu) c(y = mu + rnorm(1, sd = 0.1))
-
-  expect_error(
-    npe(prior, simulator, n_simulations = 10,
-        density_estimator = "linear_gaussian", device = "gpu"),
-    "`device` must be one of")
-  expect_error(
-    nle(prior, simulator, n_simulations = 10,
-        density_estimator = "linear_gaussian", device = "gpu"),
-    "`device` must be one of")
-
-  # A well-formed but exotic-for-this-estimator device is accepted at the
-  # format check and then simply ignored: fit_linear_gaussian() has no
-  # `device` formal, so fit_density_estimator() drops it before the call and
-  # resolve_device() (which needs torch) is never reached.
-  fit <- npe(prior, simulator, n_simulations = 10,
-             density_estimator = "linear_gaussian", device = "cuda")
-  expect_s3_class(fit, "nsbi_npe")
-})
-
 test_that("log_lik() rejects a wrong-length vector by name", {
   fit <- nle(prior_uniform(c(mu = -3), c(mu = 3)),
              function(mu) c(y = stats::rnorm(1, mu, 0.5)), n_simulations = 400,

@@ -52,13 +52,18 @@
 #' @param standardize Whether to z-score `theta` and `x` before training
 #'   (strongly recommended; default `TRUE`).
 #' @param device Where to train the neural estimator: `"cpu"` (the default),
-#'   `"cuda"` (Linux/Windows GPU) or `"mps"` (Apple Silicon GPU). Requesting a
-#'   backend that is not available on this machine falls back to `"cpu"` with
-#'   a warning rather than erroring, so the same call works on a GPU box or a
-#'   laptop. Ignored by `"linear_gaussian"`, which has no network to place.
-#'   The fitted estimator remembers its device and reuses it at `posterior()`/
-#'   `sample()` time; [load_npe()] lets you choose a different device when
-#'   reloading a saved fit.
+#'   `"cuda"`, `"mps"`, or `"gpu"`/`"auto"` to resolve CUDA -> MPS -> CPU
+#'   (mirroring Python `sbi`'s `"gpu"`). CPU is the default on purpose --
+#'   matching `sbi`, not auto-selecting a GPU -- and `"cuda"`/`"mps"` error if
+#'   the requested device is not actually available rather than falling back
+#'   silently, so a typo or a missing driver is not mistaken for a slow CPU
+#'   run. Only `"gpu"`/`"auto"` falls back to CPU without complaint, since it
+#'   never named a specific device. Ignored (with no error) by
+#'   `"linear_gaussian"`, which has no GPU concept. For the small networks
+#'   typical of SBI models (the SIR example, say), `"mps"`/`"cuda"` can be
+#'   *slower* than CPU -- per-kernel launch overhead dominates until the net
+#'   and batch are large -- so try CPU first and switch only if profiling
+#'   shows a win.
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print training progress.
 #'
@@ -99,6 +104,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   if (!is.function(density_estimator)) {
     density_estimator <- match.arg(density_estimator)
   }
+  device <- check_device_arg(device)
   check_prior(prior)
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
@@ -112,7 +118,6 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
-  check_device(device)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
@@ -133,8 +138,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
     embedding_net = embedding_net, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
     patience = patience, n_restarts = n_restarts,
-    clip_grad_norm = clip_grad_norm, device = device, seed = seed,
-    verbose = verbose
+    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose,
+    device = device
   )
 
   structure(
@@ -150,7 +155,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
       n_simulations = nrow(theta),
       n_dropped = n_dropped,
       density_estimator = if (is.character(density_estimator))
-        density_estimator[1] else "custom"
+        density_estimator[1] else "custom",
+      device = de$device %||% "cpu"
     ),
     class = "nsbi_npe"
   )
@@ -257,7 +263,12 @@ fit_density_estimator <- function(density_estimator, theta_z, x_z, ...) {
   # Forward only what the target function's own signature accepts, so its
   # defaults apply and an argument the target does not take (n_components
   # alongside linear_gaussian, say, which only takes theta/x/ridge/verbose)
-  # is silently dropped rather than raising "unused argument".
+  # is silently dropped rather than raising "unused argument". This is also
+  # what makes `device` a no-op for fit_linear_gaussian() rather than an
+  # error: it has no `device` formal (there is no GPU concept for a
+  # closed-form fit), and check_device_arg() alone never touches torch, so a
+  # `device = "cuda"` that is unavailable on this machine is never noticed
+  # when linear_gaussian was the estimator asked for.
   keep <- intersect(names(dots), names(formals(fn)))
   do.call(fn, c(list(theta_z, x_z), dots[keep]))
 }

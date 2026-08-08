@@ -85,13 +85,18 @@ validation improvement.}
 (strongly recommended; default \code{TRUE}).}
 
 \item{device}{Where to train the neural estimator: \code{"cpu"} (the default),
-\code{"cuda"} (Linux/Windows GPU) or \code{"mps"} (Apple Silicon GPU). Requesting a
-backend that is not available on this machine falls back to \code{"cpu"} with
-a warning rather than erroring, so the same call works on a GPU box or a
-laptop. Ignored by \code{"linear_gaussian"}, which has no network to place.
-The fitted estimator remembers its device and reuses it at \code{posterior()}/
-\code{sample()} time; \code{\link[=load_npe]{load_npe()}} lets you choose a different device when
-reloading a saved fit.}
+\code{"cuda"}, \code{"mps"}, or \code{"gpu"}/\code{"auto"} to resolve CUDA -> MPS -> CPU
+(mirroring Python \code{sbi}'s \code{"gpu"}). CPU is the default on purpose --
+matching \code{sbi}, not auto-selecting a GPU -- and \code{"cuda"}/\code{"mps"} error if
+the requested device is not actually available rather than falling back
+silently, so a typo or a missing driver is not mistaken for a slow CPU
+run. Only \code{"gpu"}/\code{"auto"} falls back to CPU without complaint, since it
+never named a specific device. Ignored (with no error) by
+\code{"linear_gaussian"}, which has no GPU concept. For the small networks
+typical of SBI models (the SIR example, say), \code{"mps"}/\code{"cuda"} can be
+\emph{slower} than CPU -- per-kernel launch overhead dominates until the net
+and batch are large -- so try CPU first and switch only if profiling
+shows a win.}
 
 \item{seed}{Optional integer seed for reproducibility.}
 

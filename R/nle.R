@@ -77,11 +77,11 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   if (!is.function(density_estimator)) {
     density_estimator <- match.arg(density_estimator)
   }
+  device <- check_device_arg(device)
   check_prior(prior)
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
-  check_device(device)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
@@ -96,8 +96,8 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
     embedding_net = NULL, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
     patience = patience, n_restarts = n_restarts,
-    clip_grad_norm = clip_grad_norm, device = device, seed = seed,
-    verbose = verbose
+    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose,
+    device = device
   )
 
   structure(
@@ -113,7 +113,8 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
       n_simulations = nrow(prep$theta),
       n_dropped = prep$n_dropped,
       density_estimator = if (is.character(density_estimator))
-        density_estimator[1] else "custom"
+        density_estimator[1] else "custom",
+      device = de$device %||% "cpu"
     ),
     class = "nsbi_nle"
   )

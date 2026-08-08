@@ -146,9 +146,6 @@ maf_module <- function(dim_x, dim_theta, n_transforms, hidden,
 maf_forward <- function(net, theta, x) {
   p <- net$dim_theta
   x <- embed_x(net, x)
-  # theta$device rather than torch's default-device context: torch_tensor()
-  # built from an R vector ignores the latter and would otherwise always land
-  # on CPU, even while training on a GPU.
   rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long(),
                                  device = theta$device)
   z <- theta
@@ -197,7 +194,7 @@ fit_maf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
                     max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
-                    device = "cpu", seed = NULL, verbose = FALSE) {
+                    seed = NULL, verbose = FALSE, device = "cpu") {
   fit_torch_de(
     theta, x,
     build_net_fn = function(dim_x, dim_theta)
@@ -208,7 +205,7 @@ fit_maf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    embedding = embedding, device = device, seed = seed, verbose = verbose
+    embedding = embedding, seed = seed, verbose = verbose, device = device
   )
 }
 

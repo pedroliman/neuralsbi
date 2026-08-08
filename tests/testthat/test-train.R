@@ -48,29 +48,6 @@ test_that("train_conditional_de() checks its controls without torch", {
   expect_error(train(validation_fraction = 0), "strictly between 0 and 1")
 })
 
-test_that("a torch-backed fit records the device it trained on", {
-  skip_if_no_torch()
-  set.seed(5)
-  prior <- prior_normal(mean = 0, sd = 1)
-  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.3)
-  fit <- npe(prior, simulator, n_simulations = 200, density_estimator = "mdn",
-             n_components = 1L, hidden = c(8L), max_epochs = 5L, seed = 5)
-  # No GPU on the CI runner or in this sandbox, so "cpu" is the only device
-  # actually reachable here; the cuda/mps fallback path is exercised by
-  # resolve_device()'s own unit tests instead.
-  expect_identical(fit$de$device, "cpu")
-})
-
-test_that("train_conditional_de() rejects a malformed device before training", {
-  theta <- matrix(stats::rnorm(50), ncol = 1)
-  x <- matrix(stats::rnorm(50), ncol = 1)
-  expect_error(
-    train_conditional_de(build_net = function() stop("not reached"),
-                         log_prob_fn = function(...) stop("not reached"),
-                         theta = theta, x = x, device = "gpu"),
-    "`device` must be one of")
-})
-
 test_that("train_conditional_de() says how many rows the split would need", {
   one <- matrix(0, nrow = 1, ncol = 1)
   expect_error(

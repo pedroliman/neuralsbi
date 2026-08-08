@@ -9,11 +9,11 @@
 \usage{
 save_npe(fit, path)
 
-load_npe(path, device = "cpu")
+load_npe(path)
 
 save_nle(fit, path)
 
-load_nle(path, device = "cpu")
+load_nle(path)
 }
 \arguments{
 \item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}, or an
@@ -21,11 +21,6 @@ load_nle(path, device = "cpu")
 
 \item{path}{File to write to (or read from). The convention is \code{.rds}.
 \code{load_npe()} says so when there is no such file.}
-
-\item{device}{Where to rebuild the network: \code{"cpu"} (the default), \code{"cuda"}
-or \code{"mps"}. See the \code{device} argument of \code{\link[=npe]{npe()}}/\code{\link[=nle]{nle()}}; the same
-fallback-with-a-warning applies when the requested backend is not
-available here.}
 }
 \value{
 \code{save_npe()} returns \code{path} invisibly. \code{load_npe()} returns the fit.
@@ -59,12 +54,12 @@ into a later one as long as the estimator's architecture has not changed;
 fit, and the two names exist only so calling code reads the way the fit was
 made.
 
-\code{save_npe()} always writes the network's weights from the CPU, regardless
-of what device the fit trained on, so the file itself does not pin you to
-the machine (or the GPU) that produced it. \code{load_npe()} defaults to
-rebuilding the network on the CPU for the same reason -- it is the one
-device every machine has -- and takes a \code{device} argument for when you do
-want it back on a GPU.
+A fit trained with \code{device = "cuda"}/\code{"mps"} (see \code{\link[=npe]{npe()}}/\code{\link[=nle]{nle()}}) always
+reloads onto CPU, never onto the original device: \code{torch::torch_load()}
+defaults to \code{device = "cpu"} regardless of where the tensors were saved
+from, and \code{\link[=de_rebuild_net]{de_rebuild_net()}} builds the network fresh with no
+\code{torch::with_device()} in effect. Move it back with
+\code{fit2$de$net$to(device = "cuda")} if you want the reloaded fit on a GPU.
 }
 \examples{
 prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))

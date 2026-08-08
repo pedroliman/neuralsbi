@@ -27,21 +27,17 @@
 #' fit, and the two names exist only so calling code reads the way the fit was
 #' made.
 #'
-#' `save_npe()` always writes the network's weights from the CPU, regardless
-#' of what device the fit trained on, so the file itself does not pin you to
-#' the machine (or the GPU) that produced it. `load_npe()` defaults to
-#' rebuilding the network on the CPU for the same reason -- it is the one
-#' device every machine has -- and takes a `device` argument for when you do
-#' want it back on a GPU.
+#' A fit trained with `device = "cuda"`/`"mps"` (see [npe()]/[nle()]) always
+#' reloads onto CPU, never onto the original device: `torch::torch_load()`
+#' defaults to `device = "cpu"` regardless of where the tensors were saved
+#' from, and [de_rebuild_net()] builds the network fresh with no
+#' `torch::with_device()` in effect. Move it back with
+#' `fit2$de$net$to(device = "cuda")` if you want the reloaded fit on a GPU.
 #'
 #' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
 #'   `nsbi_nle` object from [nle()].
 #' @param path File to write to (or read from). The convention is `.rds`.
 #'   `load_npe()` says so when there is no such file.
-#' @param device Where to rebuild the network: `"cpu"` (the default), `"cuda"`
-#'   or `"mps"`. See the `device` argument of [npe()]/[nle()]; the same
-#'   fallback-with-a-warning applies when the requested backend is not
-#'   available here.
 #' @return `save_npe()` returns `path` invisibly. `load_npe()` returns the fit.
 #'
 #' @examples
@@ -75,11 +71,7 @@ save_npe <- function(fit, path) {
     require_torch()
     tmp <- tempfile(fileext = ".pt")
     on.exit(unlink(tmp), add = TRUE)
-    # Saved to CPU regardless of the device the fit trained on, so the file
-    # itself is portable: reloading it on a machine with no GPU (or a
-    # different one) never has to allocate a CUDA/MPS tensor it cannot honor.
-    state <- lapply(net$state_dict(), function(t) t$cpu())
-    torch::torch_save(state, tmp)
+    torch::torch_save(net$state_dict(), tmp)
     weights <- readBin(tmp, "raw", n = file.size(tmp))
   }
   bundle <- list(
@@ -95,13 +87,12 @@ save_npe <- function(fit, path) {
 
 #' @rdname save_npe
 #' @export
-load_npe <- function(path, device = "cpu") {
+load_npe <- function(path) {
   # readRDS() on a path that is not a file says "cannot open the connection",
   # and the file it could not open is named only in the warning that comes with
   # it. save_npe() has checked its path since it was written; this is the same
   # check, plus the file has to be there.
   check_path(path, must_exist = TRUE)
-  check_device(device)
   bundle <- readRDS(path)
   if (!is.list(bundle) || !identical(bundle$nsbi_save_format, 1L)) {
     stop(sprintf("'%s' was not written by save_npe().", path), call. = FALSE)
@@ -110,13 +101,18 @@ load_npe <- function(path, device = "cpu") {
   if (is.null(bundle$weights)) return(fit)
 
   require_torch()
-  device <- resolve_device(device)
   tmp <- tempfile(fileext = ".pt")
   on.exit(unlink(tmp), add = TRUE)
   writeBin(bundle$weights, tmp)
-  # Rebuilt (and its saved state loaded) on the CPU, matching how it was
-  # saved, then moved to the requested device as a separate step -- state
-  # dicts load into a network on the same device they describe.
+  # de_rebuild_net() builds a fresh module with no with_device() in effect, so
+  # it lands on CPU; torch::torch_load()'s own default is device = "cpu"
+  # rather than the device the tensors were saved from, so the state dict
+  # lands there too. A fit trained with device = "mps"/"cuda" therefore always
+  # reloads onto CPU, never onto a device this machine might not have -- the
+  # `device` recorded on `fit$de` (a plain string; a torch device object would
+  # not survive saveRDS() any better than the module did) is updated below to
+  # match. Call `fit$de$net$to(device = ...)` yourself after loading if you
+  # want the reloaded fit back on a GPU.
   net <- de_rebuild_net(fit$de)
   state <- torch::torch_load(tmp)
   tryCatch(
@@ -130,10 +126,10 @@ load_npe <- function(path, device = "cpu") {
         call. = FALSE)
     }
   )
-  net$to(device = device)
   net$eval()
   fit$de$net <- net
-  fit$de$device <- device
+  if (!is.null(fit$de$device)) fit$de$device <- "cpu"
+  if (!is.null(fit$device)) fit$device <- "cpu"
   fit
 }
 
@@ -143,7 +139,7 @@ save_nle <- function(fit, path) save_npe(fit, path)
 
 #' @rdname save_npe
 #' @export
-load_nle <- function(path, device = "cpu") load_npe(path, device)
+load_nle <- function(path) load_npe(path)
 
 #' The fit without its torch module, for R-level serialization
 #' @keywords internal
