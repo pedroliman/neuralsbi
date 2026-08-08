@@ -19,26 +19,28 @@ through 84 days, drawing new infections and new recoveries as binomial
 variables, and reports a thinned weekly total. To compute
 $`p(x | \theta)`$ for an observed case curve we would have to add up the
 probability of every unobserved epidemic path that could have produced
-it: every combination of daily infections and recoveries, over twelve
-weeks, consistent with the twelve numbers we saw. There are
-astronomically many, and no closed form for the sum.
+it. That means every combination of daily infections and recoveries over
+twelve weeks that ends in the twelve numbers we saw. There are
+astronomically many of them, and no closed form for the sum.
 
-Simulating, on the other hand, is easy. One call to the simulator gives
-one $`(\theta, x)`$ pair, and we can have as many as we are willing to
-wait for. Simulation-based inference is the family of methods that
-replaces likelihood evaluation with simulation. Neural posterior
-estimation, which is what `neuralsbi` implements, learns
-$`p(\theta | x)`$ directly from those pairs.
+Simulating is the part we can do. One call to the simulator gives one
+$`(\theta, x)`$ pair, and we can have as many as we are willing to wait
+for. Simulation-based inference is the family of methods that replaces
+likelihood evaluation with simulation. Neural posterior estimation,
+which is what `neuralsbi` implements, learns $`p(\theta | x)`$ directly
+from those pairs.
 
 Other methods make other trades on the same problem. A particle filter
-estimates the likelihood by simulating the latent state forward, which
-works when you can write the *measurement* density even if the state
-process is a black box;
+estimates the likelihood by simulating the latent state forward. That
+works when you can write the *measurement* density, even if the state
+process itself is a black box.
 [`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md)
-runs `pomp` and `neuralsbi` side by side on one epidemic. Approximate
-Bayesian computation compares simulated to observed data through a
-distance threshold, which forces you to pick summary statistics. NPE
-conditions on the data as it comes and learns which features matter.
+runs `pomp` and `neuralsbi` side by side on one epidemic.
+
+Approximate Bayesian computation compares simulated to observed data
+through a distance threshold, which forces you to pick summary
+statistics. NPE conditions on the data as it comes and learns which
+features matter.
 
 ## What NPE learns
 
@@ -74,10 +76,10 @@ Expect to translate for a while.
 ## The model
 
 The simulator and prior are the ones from
-[`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md):
-a binomial SIR epidemic run day by day for twelve weeks, of which we
-observe a fraction $`\rho`$ of new infections as weekly case counts, on
-the $`\log(1 + \text{cases})`$ scale.
+[`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md).
+A binomial SIR epidemic runs day by day for twelve weeks, and we observe
+a fraction $`\rho`$ of the new infections as weekly case counts on the
+$`\log(1 + \text{cases})`$ scale.
 
 ``` r
 
@@ -199,7 +201,7 @@ of rates fit it about equally well, and the posterior says so by
 spreading along the ridge.
 
 Derived quantities come out of the posterior draws directly, and the
-contrast is easy to see in the relative widths:
+relative widths show the contrast:
 
 ``` r
 
@@ -252,9 +254,9 @@ nominal.](figures/intro-to-sbi-sbc-1.svg)
 plot of chunk sbc
 
 $`\beta`$ passes comfortably at 0.31. $`\gamma`$ (0.040) and $`\rho`$
-(0.086) are borderline, and the coverage curve sits a little under the
+(0.086) are borderline, and the coverage curve runs a little under the
 diagonal, so the intervals are mildly too narrow. Nothing here says the
-fit is broken; it says quote $`\gamma`$’s interval with care and add
+fit is broken. Quote $`\gamma`$’s interval with care, and add
 simulations if you need it sharper.
 
 SBC averages over the prior and never looks at the observation you
@@ -265,7 +267,7 @@ value.
 covers both, along with TARP and the classifier two-sample test, and
 says what to do when a fit does not pass.
 
-## Where to go next
+## Where next
 
 - [`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)
   is the short workflow tour on this same model.
@@ -291,4 +293,4 @@ reference for the calibration check used above. Lueckmann et al. (2021),
 [“Benchmarking simulation-based
 inference”](https://doi.org/10.48550/arXiv.2101.04653), compares NPE
 against the other neural SBI algorithms, which is useful context for
-where `neuralsbi` sits.
+where this package fits.

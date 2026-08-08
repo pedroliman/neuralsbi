@@ -46,10 +46,10 @@ $`(\beta, \gamma, \rho)`$. `neuralsbi` only ever calls the simulator.
 
 The simulator returns $`\log(1 + \text{cases})`$ rather than raw counts.
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
-standardizes whatever the simulator gives it, and across this prior the
+standardizes whatever the simulator gives it. Across this prior the
 weekly counts run from a handful to tens of thousands, which is a wide
-range to ask one scale to cover. The log keeps the small outbreaks
-legible next to the large ones.
+range for one scale to cover. The log keeps the small outbreaks legible
+next to the large ones.
 
 Here is one epidemic, on the natural count scale:
 
@@ -69,6 +69,10 @@ plot(1:12, expm1(x_obs), type = "b", pch = 16,
 outbreak.](figures/neuralsbi-outbreak-1.svg)
 
 plot of chunk outbreak
+
+Reported cases climb from 34 in the first week to about 11,000 in week
+8, then fall away as the susceptible pool empties. Those twelve numbers
+are the entire data set for everything below.
 
 ## Train your neural posterior estimator
 
@@ -213,20 +217,20 @@ plot of chunk sbc
 Read the p-values, not the fact that the check ran. $`\beta`$ comes back
 clean at 0.19. $`\gamma`$ (0.023) and $`\rho`$ (0.040) fall just under
 the conventional 0.05, and the coverage curve runs slightly below the
-diagonal, which is mild overconfidence: the intervals are a little too
-narrow rather than in the wrong place. That is a realistic first pass at
-8000 simulations, and the standard remedy is more simulations before a
-bigger network.
+diagonal. That is mild overconfidence: the intervals are a little too
+narrow rather than in the wrong place.
+
+A first pass at 8000 simulations often looks like this, and the remedy
+is more simulations before a bigger network.
 [`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
 covers how to read these plots and what to do when a fit does not pass.
 
-## Where to go next
+## Where next
 
 - [`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md)
-  explains what the method is doing with the same model: why a simulator
-  replaces the likelihood, what amortization buys you across many
-  outbreaks, and how to read a derived quantity like $`R_0`$ off the
-  posterior.
+  explains what the method is doing with the same model. It covers why a
+  simulator replaces the likelihood, what amortization buys across many
+  outbreaks, and how to read $`R_0`$ off the posterior draws.
 - [`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md)
   compares the estimators behind
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and says

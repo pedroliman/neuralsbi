@@ -48,10 +48,10 @@ Q(u) = A + B\left(1 + c\,\frac{1 - e^{-g z(u)}}{1 + e^{-g z(u)}}\right)\left(1 +
 
 $`A`$ and $`B`$ set location and scale, $`g`$ controls skewness, $`k`$
 controls tail weight, and $`c`$ is conventionally fixed at 0.8.
-Simulating is trivial: draw a uniform and push it through $`Q`$. Writing
-down the density is not, because $`Q`$ has no closed-form inverse. So
-the model is easy to simulate and impossible to fit by ordinary maximum
-likelihood, which is exactly the situation SBI is for.
+Simulating takes one line: draw a uniform and push it through $`Q`$.
+Writing down the density is another matter, because $`Q`$ has no
+closed-form inverse. So the model simulates freely and resists ordinary
+maximum likelihood, which is exactly the situation SBI is for.
 
 ``` r
 
@@ -123,16 +123,21 @@ The quantiles move by 0.7 per unit of $`g`$ between 1 and 2, and by
 more than half its range on values the data cannot tell apart, and the
 estimator spends its capacity learning that nothing happens there.
 Worse, a likelihood that is flat in a parameter over most of its prior
-is one whose surrogate is nearly flat, and the difference between the
-two is noise the sampler will happily chase. Putting $`g`$ on $`[0, 4]`$
+has a surrogate that is only nearly flat. The difference between the two
+is noise, and the sampler will chase it. Putting $`g`$ on $`[0, 4]`$
 keeps the part that is identified.
 
 This is worth doing before every fit, not just this one. A prior
-predictive check costs a few seconds of simulation and catches the class
+predictive check costs a few seconds of simulation. It catches the class
 of problem that otherwise shows up as an inexplicably bad posterior, or
 as chains that will not mix.
 
 ## Train the surrogate likelihood
+
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) takes the
+same prior and simulator
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) would, and
+trains $`q_\phi(x | \theta)`$ in place of $`q_\phi(\theta | x)`$.
 
 ``` r
 
@@ -152,22 +157,22 @@ fit
 
 Fifty thousand simulations of a four-parameter model, each producing a
 single scalar. That is a modest budget by SBI standards, and it goes
-further here than it would for NPE, because the estimator is learning a
-one-dimensional conditional density rather than a four-dimensional
-posterior.
+further here than it would for NPE. The target is a one-dimensional
+conditional density rather than a four-dimensional posterior.
 
 The estimator is an MDN rather than the package default MAF, and the
 reason is worth knowing. An MDN maps $`\theta`$ to the parameters of a
 Gaussian mixture over $`x`$, and the network never sees $`x`$ at all. So
 for $`n`$ independent observations the network runs once and all $`n`$
 densities are read off the same mixture. A flow’s transforms depend on
-$`x`$ as well as $`\theta`$, so it has to run $`n`$ times. On this model
-at 5000 observations a slice step costs about seven times more with a
-MAF than with the MDN, which is the difference between a posterior that
-takes a minute and one that takes ten. `neuralsbi` takes the shortcut
-automatically when the estimator allows it. Choose `"maf"` when the
-conditional density is shaped in a way a mixture cannot follow and you
-can afford the passes.
+$`x`$ as well as $`\theta`$, so it has to run $`n`$ times.
+
+On this model at 5000 observations a slice step costs about seven times
+more with a MAF than with the MDN. That is the difference between a
+posterior that takes a minute and one that takes ten. `neuralsbi` takes
+the shortcut automatically when the estimator allows it. Choose `"maf"`
+when the conditional density is shaped in a way a mixture cannot follow
+and you can afford the passes.
 
 The fitted likelihood is a plain function, and
 [`likelihood_fn()`](https://neuralsbi.pedrodelima.com/reference/likelihood_fn.md)
@@ -194,6 +199,11 @@ abline(v = 3, lty = 2)
 ![plot of chunk loglik](figures/neural-likelihood-loglik-1.svg)
 
 plot of chunk loglik
+
+Those 500 observations give a log-likelihood of -783 at the true
+parameters. `loglik` is an ordinary R function from here on, which is
+why the profile above is a plain
+[`sapply()`](https://rdrr.io/r/base/lapply.html) over a grid of $`A`$.
 
 ## One fit, any number of observations
 
@@ -251,8 +261,8 @@ plot of chunk contraction
 par(op)
 ```
 
-The dashed line is the truth. Each posterior is narrower than the last,
-and none of them required a second fit.
+Each posterior is narrower than the last, and the dashed line marks the
+truth. None of them required a second fit.
 
 ### The part nobody tells you about
 
@@ -278,11 +288,12 @@ the truth, and says so with complete confidence.
 
 This is not a bug and it is not the sampler. Stan’s NUTS, further down,
 lands on the same posterior from an entirely different algorithm. It is
-the arithmetic of the sum this whole article is built on. Suppose the
-surrogate is wrong by an average of $`\epsilon`$ nats per observation in
-some direction of parameter space. The log-likelihood of $`n`$
-observations is off by $`n\epsilon`$, while the information the data
-carry about the parameter also grows like $`n`$. The two race each
+the arithmetic of the sum this whole article is built on.
+
+Suppose the surrogate is wrong by an average of $`\epsilon`$ nats per
+observation in some direction of parameter space. The log-likelihood of
+$`n`$ observations is off by $`n\epsilon`$, while the information the
+data carry about the parameter also grows like $`n`$. The two race each
 other, and which one wins is set by how good the surrogate is, not by
 how much data you have. Past some $`n`$, more observations buy you a
 tighter posterior around the surrogate’s error rather than around the
@@ -331,11 +342,12 @@ ones are worth. Read both before reading the posterior.
 
 This target does not give you 1.00. A surrogate likelihood summed over
 five hundred observations is a rugged thing to sample, and the numbers
-above are what that looks like: `rhat` a few hundredths above 1, and an
-effective sample size between a few hundred and a couple of thousand out
-of eight thousand draws. That is the honest state of this run, and it is
-the reason this article does not use the defaults. At `warmup = 300` and
-2000 draws the same posterior reports `rhat` around 1.14.
+above are what that looks like. `rhat` comes in a few hundredths above
+1, and the effective sample size is a few hundred to a couple of
+thousand out of eight thousand draws. That is the honest state of this
+run, and it is the reason this article does not use the defaults. At
+`warmup = 300` and 2000 draws the same posterior reports `rhat` around
+1.14.
 
 Three levers, in the order worth trying them. Raise `warmup`, so the
 chains have longer to find the mass and the slice width longer to adapt
@@ -346,7 +358,7 @@ from seconds to minutes, not minutes to hours.
 
 The fourth lever is the model, and it is the one that matters most. The
 $`g`$ we did not narrow, back at the start, gave chains that never mixed
-at all: a flat direction in the likelihood is not a sampling problem you
+at all. A flat direction in the likelihood is not a sampling problem you
 can spend your way out of. And when `rhat` lands where it does here
 rather than at 1.5, the useful question is whether an independent
 sampler agrees. NUTS on the same likelihood, below, lands on the same
@@ -420,7 +432,7 @@ The generated `functions` block recomputes the mixture’s log-density in
 Stan’s own language: the MLP as matrix multiplies and a relu, a softplus
 on the Cholesky diagonal, then `log_sum_exp` over the components. The
 trained weights arrive as `data` in the packed vector `w`, which is why
-the block reads as a lot of `segment()` calls. Stan differentiates the
+the block reads as a run of `segment()` calls. Stan differentiates the
 code itself, so NUTS gets exact gradients and nothing has to be linked
 against `torch`.
 
@@ -551,11 +563,11 @@ c2st(d500, by_stan, seed = 1)$accuracy
 ```
 
 A C2ST near 0.5 says a classifier cannot tell the two sets of draws
-apart. Two samplers with nothing in common, a slice sampler driven from
-R against NUTS with exact gradients from Stan’s own autodiff, agreeing
-to that tolerance is the answer to the `rhat` left hanging above: what
-the slice run could not prove from twenty short chains, a different
-algorithm confirms. It also says the transpiled Stan means what
+apart. The two samplers have nothing in common: a slice sampler driven
+from R, and NUTS with exact gradients from Stan’s own autodiff. Their
+agreement is the answer to the `rhat` left hanging above. What the slice
+run could not prove from twenty short chains, a different algorithm
+confirms. It also says the transpiled Stan means what
 [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
 means, since a bug in the generated code would move this posterior and
 not the other.
@@ -598,10 +610,11 @@ model {
 }
 ```
 
-The same trick covers the other reasons people write models by hand: a
-covariate acting on one parameter, a second data stream whose likelihood
-you do know, an informative prior from a previous study. The surrogate
-stops being the analysis and becomes one term in it.
+The same pattern covers the other reasons people write models by hand: a
+covariate acting on one parameter, or a second data stream whose
+likelihood you do know. An informative prior from a previous study goes
+in the same way. The surrogate stops being the analysis and becomes one
+term in it.
 
 ## Check the fit before believing any of it
 
@@ -658,8 +671,9 @@ detected at this sample size” rather than as evidence of calibration,
 and raise `n_sbc` before believing either direction too hard. The $`k`$
 failure is not the marginal case: its p-value rounds to zero.
 
-And a posterior predictive check, which is the only diagnostic that
-looks at the observation you actually have:
+A posterior predictive check is the only diagnostic that looks at the
+observation you actually have. Read the panel below as one question:
+does the observed $`y`$ look like a typical draw from the predictive?
 
 ``` r
 
@@ -675,12 +689,28 @@ plot of chunk ppc
 
 Use [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) when
 there is one observation of fixed size, when the data are
-high-dimensional such as images or long time series, or when you need
-posteriors for many different observations quickly. Sampling is a
-forward pass and there is no MCMC to diagnose.
+high-dimensional, or when you need posteriors for many different
+observations quickly. Images and long time series are the
+high-dimensional case. Sampling is a forward pass, and there is no MCMC
+to diagnose.
 
 Use [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) when
-the observation is a variable number of independent measurements, when
-you want the likelihood itself rather than the posterior, or when the
-surrogate needs to live inside a larger model. Budget for MCMC, and read
-the `rhat` column before reading the posterior.
+the observation is a variable number of independent measurements, or
+when you want the likelihood itself rather than the posterior. Use it
+too when the surrogate has to become one term in a larger model. Budget
+for MCMC, and read the `rhat` column before reading the posterior.
+
+## See also
+
+[`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)
+and
+[`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md)
+cover the NPE half of the package.
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
+goes through the checks in more depth.
+[`?nle`](https://neuralsbi.pedrodelima.com/reference/nle.md),
+[`?likelihood_fn`](https://neuralsbi.pedrodelima.com/reference/likelihood_fn.md),
+[`?stan_code`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+and
+[`?posterior`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+document every argument used here.

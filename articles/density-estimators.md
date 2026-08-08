@@ -9,25 +9,26 @@ here.
 
 ## The four estimators
 
-- `"linear_gaussian"` is a closed-form conditional Gaussian fit by
-  linear regression. No neural network and no `torch`. It is exact when
-  the posterior is Gaussian in the parameters, which makes it both a
-  fast baseline and a way to check that the neural estimators are
-  behaving.
-- `"mdn"` is a mixture density network: a small neural network that maps
-  $`x`$ to the weights, means and covariances of a Gaussian mixture.
-  Mixtures can represent several modes and a good deal of skew, and they
-  train quickly.
-- `"maf"` is a masked autoregressive flow ([Papamakarios et al.,
-  2017](https://doi.org/10.48550/arXiv.1705.07057)), and the package
-  default. It builds the density from a sequence of invertible
-  transformations of a Gaussian, which handles strong nonlinear
-  dependence between parameters better than a mixture does. Python `sbi`
-  uses the same default.
-- `"nsf"` is a neural spline flow ([Durkan et al.,
-  2019](https://doi.org/10.48550/arXiv.1906.04032)), a flow whose
-  transformations are monotonic splines. It is the most flexible of the
-  three and the slowest to train.
+`"linear_gaussian"` is a closed-form conditional Gaussian fit by linear
+regression. No neural network and no `torch`. It is exact when the
+posterior is Gaussian in the parameters, which makes it both a fast
+baseline and a way to check that the neural estimators are behaving.
+
+`"mdn"` is a mixture density network. A small neural network maps $`x`$
+to the weights, means and covariances of a Gaussian mixture. Mixtures
+represent several modes and a good deal of skew, and they train quickly.
+
+`"maf"`, the package default, is a masked autoregressive flow
+([Papamakarios et al.,
+2017](https://doi.org/10.48550/arXiv.1705.07057)). It builds the density
+from a sequence of invertible transformations of a Gaussian. That
+handles strong nonlinear dependence between parameters better than a
+mixture does, and Python `sbi` defaults to it too.
+
+`"nsf"` is a neural spline flow ([Durkan et al.,
+2019](https://doi.org/10.48550/arXiv.1906.04032)), a flow whose
+transformations are monotonic splines. It is the most flexible of the
+three neural estimators, and the slowest to train.
 
 The three neural estimators need the `torch` back end
 (`install.packages("torch"); torch::install_torch()`) and share one
@@ -38,8 +39,9 @@ same thing whichever you pick.
 
 ## A posterior no Gaussian can fit
 
-The two-moons benchmark has a bimodal, crescent-shaped posterior, and it
-ships with the package:
+[`task_two_moons()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)
+builds the two-moons benchmark, whose posterior is bimodal and
+crescent-shaped:
 
 ``` r
 
@@ -89,7 +91,7 @@ MDN.](figures/density-estimators-unnamed-chunk-4-1.png)
 
 plot of chunk unnamed-chunk-4
 
-The spline flow gets the sharp crescent edges cleanest:
+Now the spline flow, on the same 2000 simulations:
 
 ``` r
 
@@ -103,6 +105,9 @@ pairplot(draws_nsf)
 flow.](figures/density-estimators-unnamed-chunk-5-1.png)
 
 plot of chunk unnamed-chunk-5
+
+Of the three, the spline flow renders the sharp crescent edges most
+cleanly.
 
 ## Comparing estimators with a number
 
@@ -132,13 +137,14 @@ c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
 That number is a trap, and it is worth knowing why.
 [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) trains a
 linear classifier, so it can only separate samples by their mean and
-covariance. The two moons are symmetric about the origin, so they have
-the same centre and roughly the same spread as the Gaussian blob, and no
-straight decision boundary can tell the two sets apart. The pairplots
-above show exactly the difference the score misses. A two-sample score
-is only as sharp as its classifier, and a linear one is blind to
-multimodality. When you suspect that, trust the picture or a calibration
-check
+covariance. The two moons are symmetric about the origin, so they share
+a centre and roughly a spread with the Gaussian blob. No straight
+decision boundary can tell the two sets apart, and the pairplots above
+show exactly the difference the score misses.
+
+A two-sample score is only as sharp as its classifier, and a linear one
+is blind to multimodality. When you suspect that, trust the picture or a
+calibration check
 ([`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)).
 
 When two posteriors differ in mean or covariance, as an estimated and an
@@ -176,7 +182,13 @@ simulations tend to buy more than a bigger network.
 - Use `"linear_gaussian"` when `torch` is unavailable, when you want a
   baseline in a second or two, or when the model really is
   linear-Gaussian, where it is exact.
-- Whichever you pick, check it.
-  [`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
-  shows how to verify a fitted posterior with calibration and predictive
-  checks.
+- Whichever you pick, check it before you quote an interval from it.
+
+## See also
+
+[`vignette("diagnostics")`](https://neuralsbi.pedrodelima.com/articles/diagnostics.md)
+shows how to verify a fitted posterior with calibration and predictive
+checks. [`?npe`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+documents every estimator argument, and
+[`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)
+is the short workflow tour if you have not read it yet.

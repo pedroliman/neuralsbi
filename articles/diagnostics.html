@@ -181,6 +181,9 @@ probability, so the ranks come out uniform.</p>
 plot of chunk unnamed-chunk-3
 </p>
 </div>
+<p>Nine of the ten parameters come back with large p-values. Parameter 3
+comes back at 0.003, which is low, though one value that small out of
+ten tests is not yet evidence of a problem.</p>
 <p>Read the rank histogram like this:</p>
 <ul>
 <li>Flat: calibrated.</li>
@@ -246,8 +249,9 @@ plot of chunk unnamed-chunk-4
 </p>
 </div>
 <p>A calibrated posterior hugs the diagonal. Points below it mean the
-intervals are too narrow: a 90% interval that covers the truth 70% of
-the time.</p>
+intervals are too narrow: a 90% interval that only covers the truth 70%
+of the time. Here the nominal-90% row runs from 0.80 to 0.93 across the
+ten parameters, close enough to the diagonal to be unremarkable.</p>
 </div>
 <div class="section level2">
 <h2 id="tarp-a-sharper-coverage-test">TARP, a sharper coverage test<a class="anchor" aria-label="anchor" href="#tarp-a-sharper-coverage-test"></a>
@@ -268,6 +272,9 @@ it can catch miscalibration that per-parameter ranks miss.</p>
 plot of chunk unnamed-chunk-5
 </p>
 </div>
+<p>The largest gap between expected and nominal coverage is 0.05 over
+the whole curve, so the joint posterior is calibrated about as well as
+the marginals were.</p>
 </div>
 <div class="section level2">
 <h2 id="posterior-predictive-checks">Posterior predictive checks<a class="anchor" aria-label="anchor" href="#posterior-predictive-checks"></a>
@@ -325,8 +332,16 @@ drawing any conclusion from the posterior.</li>
 draws with <code><a href="../reference/c2st.html">c2st()</a></code> to see whether the change moved the
 posterior at all.</li>
 </ol>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
 <p><code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code> runs this routine end to end on
-an applied problem.</p>
+an applied problem, against <code>pomp</code>’s particle-filter
+posterior. <code><a href="../reference/sbc.html">?sbc</a></code>, <code><a href="../reference/tarp.html">?tarp</a></code> and
+<code><a href="../reference/posterior_predictive.html">?posterior_predictive</a></code> document the arguments, and
+<code><a href="../articles/neural-likelihood.html">vignette("neural-likelihood")</a></code> shows what changes when the
+posterior comes from MCMC instead of a forward pass.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

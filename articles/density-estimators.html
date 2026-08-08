@@ -142,31 +142,27 @@ the case we use here.</p>
 <div class="section level2">
 <h2 id="the-four-estimators">The four estimators<a class="anchor" aria-label="anchor" href="#the-four-estimators"></a>
 </h2>
-<ul>
-<li>
-<code>"linear_gaussian"</code> is a closed-form conditional Gaussian
+<p><code>"linear_gaussian"</code> is a closed-form conditional Gaussian
 fit by linear regression. No neural network and no <code>torch</code>.
 It is exact when the posterior is Gaussian in the parameters, which
 makes it both a fast baseline and a way to check that the neural
-estimators are behaving.</li>
-<li>
-<code>"mdn"</code> is a mixture density network: a small neural
-network that maps
+estimators are behaving.</p>
+<p><code>"mdn"</code> is a mixture density network. A small neural
+network maps
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
 to the weights, means and covariances of a Gaussian mixture. Mixtures
-can represent several modes and a good deal of skew, and they train
-quickly.</li>
-<li>
-<code>"maf"</code> is a masked autoregressive flow (<a href="https://doi.org/10.48550/arXiv.1705.07057" class="external-link">Papamakarios et al.,
-2017</a>), and the package default. It builds the density from a
-sequence of invertible transformations of a Gaussian, which handles
-strong nonlinear dependence between parameters better than a mixture
-does. Python <code>sbi</code> uses the same default.</li>
-<li>
-<code>"nsf"</code> is a neural spline flow (<a href="https://doi.org/10.48550/arXiv.1906.04032" class="external-link">Durkan et al.,
+represent several modes and a good deal of skew, and they train
+quickly.</p>
+<p><code>"maf"</code>, the package default, is a masked autoregressive
+flow (<a href="https://doi.org/10.48550/arXiv.1705.07057" class="external-link">Papamakarios
+et al., 2017</a>). It builds the density from a sequence of invertible
+transformations of a Gaussian. That handles strong nonlinear dependence
+between parameters better than a mixture does, and Python
+<code>sbi</code> defaults to it too.</p>
+<p><code>"nsf"</code> is a neural spline flow (<a href="https://doi.org/10.48550/arXiv.1906.04032" class="external-link">Durkan et al.,
 2019</a>), a flow whose transformations are monotonic splines. It is the
-most flexible of the three and the slowest to train.</li>
-</ul>
+most flexible of the three neural estimators, and the slowest to
+train.</p>
 <p>The three neural estimators need the <code>torch</code> back end
 (<code>install.packages("torch"); torch::install_torch()</code>) and
 share one training loop, so <code>max_epochs</code>,
@@ -177,8 +173,8 @@ you pick.</p>
 <div class="section level2">
 <h2 id="a-posterior-no-gaussian-can-fit">A posterior no Gaussian can fit<a class="anchor" aria-label="anchor" href="#a-posterior-no-gaussian-can-fit"></a>
 </h2>
-<p>The two-moons benchmark has a bimodal, crescent-shaped posterior, and
-it ships with the package:</p>
+<p><code><a href="../reference/tasks.html">task_two_moons()</a></code> builds the two-moons benchmark, whose
+posterior is bimodal and crescent-shaped:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -216,7 +212,7 @@ plot of chunk unnamed-chunk-3
 plot of chunk unnamed-chunk-4
 </p>
 </div>
-<p>The spline flow gets the sharp crescent edges cleanest:</p>
+<p>Now the spline flow, on the same 2000 simulations:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_nsf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">task</span><span class="op">$</span><span class="va">prior</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>               density_estimator <span class="op">=</span> <span class="st">"nsf"</span>, max_epochs <span class="op">=</span> <span class="fl">150</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -227,6 +223,8 @@ plot of chunk unnamed-chunk-4
 plot of chunk unnamed-chunk-5
 </p>
 </div>
+<p>Of the three, the spline flow renders the sharp crescent edges most
+cleanly.</p>
 </div>
 <div class="section level2">
 <h2 id="comparing-estimators-with-a-number">Comparing estimators with a number<a class="anchor" aria-label="anchor" href="#comparing-estimators-with-a-number"></a>
@@ -246,13 +244,13 @@ crescents, and yet <code><a href="../reference/c2st.html">c2st()</a></code> give
 <p>That number is a trap, and it is worth knowing why.
 <code><a href="../reference/c2st.html">c2st()</a></code> trains a linear classifier, so it can only separate
 samples by their mean and covariance. The two moons are symmetric about
-the origin, so they have the same centre and roughly the same spread as
-the Gaussian blob, and no straight decision boundary can tell the two
-sets apart. The pairplots above show exactly the difference the score
-misses. A two-sample score is only as sharp as its classifier, and a
-linear one is blind to multimodality. When you suspect that, trust the
-picture or a calibration check
-(<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>).</p>
+the origin, so they share a centre and roughly a spread with the
+Gaussian blob. No straight decision boundary can tell the two sets
+apart, and the pairplots above show exactly the difference the score
+misses.</p>
+<p>A two-sample score is only as sharp as its classifier, and a linear
+one is blind to multimodality. When you suspect that, trust the picture
+or a calibration check (<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>).</p>
 <p>When two posteriors differ in mean or covariance, as an estimated and
 an exact posterior do for <code><a href="../reference/tasks.html">task_gaussian_linear()</a></code>, the
 linear classifier picks the gap up and <code><a href="../reference/c2st.html">c2st()</a></code> is the right
@@ -317,10 +315,18 @@ over, switch to <code>"nsf"</code>.</li>
 <li>Use <code>"linear_gaussian"</code> when <code>torch</code> is
 unavailable, when you want a baseline in a second or two, or when the
 model really is linear-Gaussian, where it is exact.</li>
-<li>Whichever you pick, check it. <code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>
-shows how to verify a fitted posterior with calibration and predictive
-checks.</li>
+<li>Whichever you pick, check it before you quote an interval from
+it.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
+<p><code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> shows how to verify a fitted
+posterior with calibration and predictive checks. <code><a href="../reference/npe.html">?npe</a></code>
+documents every estimator argument, and
+<code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code> is the short workflow tour if you
+have not read it yet.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

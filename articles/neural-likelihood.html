@@ -177,14 +177,14 @@ controls skewness,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
 controls tail weight, and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
-is conventionally fixed at 0.8. Simulating is trivial: draw a uniform
-and push it through
+is conventionally fixed at 0.8. Simulating takes one line: draw a
+uniform and push it through
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Q</mi><annotation encoding="application/x-tex">Q</annotation></semantics></math>.
-Writing down the density is not, because
+Writing down the density is another matter, because
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Q</mi><annotation encoding="application/x-tex">Q</annotation></semantics></math>
-has no closed-form inverse. So the model is easy to simulate and
-impossible to fit by ordinary maximum likelihood, which is exactly the
-situation SBI is for.</p>
+has no closed-form inverse. So the model simulates freely and resists
+ordinary maximum likelihood, which is exactly the situation SBI is
+for.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rgk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">u</span>, <span class="va">A</span>, <span class="va">B</span>, <span class="va">g</span>, <span class="va">k</span>, <span class="va">c</span> <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span>
@@ -265,20 +265,25 @@ between 1 and 2, and by 0.005 per unit between 6 and 10. A prior of
 therefore spends more than half its range on values the data cannot tell
 apart, and the estimator spends its capacity learning that nothing
 happens there. Worse, a likelihood that is flat in a parameter over most
-of its prior is one whose surrogate is nearly flat, and the difference
-between the two is noise the sampler will happily chase. Putting
+of its prior has a surrogate that is only nearly flat. The difference
+between the two is noise, and the sampler will chase it. Putting
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
 on
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>4</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 4]</annotation></semantics></math>
 keeps the part that is identified.</p>
 <p>This is worth doing before every fit, not just this one. A prior
-predictive check costs a few seconds of simulation and catches the class
+predictive check costs a few seconds of simulation. It catches the class
 of problem that otherwise shows up as an inexplicably bad posterior, or
 as chains that will not mix.</p>
 </div>
 <div class="section level2">
 <h2 id="train-the-surrogate-likelihood">Train the surrogate likelihood<a class="anchor" aria-label="anchor" href="#train-the-surrogate-likelihood"></a>
 </h2>
+<p><code><a href="../reference/nle.html">nle()</a></code> takes the same prior and simulator
+<code><a href="../reference/npe.html">npe()</a></code> would, and trains
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(x | \theta)</annotation></semantics></math>
+in place of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(\theta | x)</annotation></semantics></math>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/nle.html">nle</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">50000</span>,</span>
 <span>           density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, n_components <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -294,9 +299,8 @@ as chains that will not mix.</p>
 <span><span class="co">#&gt;   -&gt; log_lik(fit, theta, x), posterior(fit, x_obs = ...), stan_code(fit)</span></span></code></pre></div>
 <p>Fifty thousand simulations of a four-parameter model, each producing
 a single scalar. That is a modest budget by SBI standards, and it goes
-further here than it would for NPE, because the estimator is learning a
-one-dimensional conditional density rather than a four-dimensional
-posterior.</p>
+further here than it would for NPE. The target is a one-dimensional
+conditional density rather than a four-dimensional posterior.</p>
 <p>The estimator is an MDN rather than the package default MAF, and the
 reason is worth knowing. An MDN maps
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
@@ -314,8 +318,9 @@ as well as
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>,
 so it has to run
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-times. On this model at 5000 observations a slice step costs about seven
-times more with a MAF than with the MDN, which is the difference between
+times.</p>
+<p>On this model at 5000 observations a slice step costs about seven
+times more with a MAF than with the MDN. That is the difference between
 a posterior that takes a minute and one that takes ten.
 <code>neuralsbi</code> takes the shortcut automatically when the
 estimator allows it. Choose <code>"maf"</code> when the conditional
@@ -341,6 +346,11 @@ the passes.</p>
 <div class="float">
 <img src="figures/neural-likelihood-loglik-1.svg" alt="plot of chunk loglik"><div class="figcaption">plot of chunk loglik</div>
 </div>
+<p>Those 500 observations give a log-likelihood of -783 at the true
+parameters. <code>loglik</code> is an ordinary R function from here on,
+which is why the profile above is a plain <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply()</a></code> over a
+grid of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>.</p>
 </div>
 <div class="section level2">
 <h2 id="one-fit-any-number-of-observations">One fit, any number of observations<a class="anchor" aria-label="anchor" href="#one-fit-any-number-of-observations"></a>
@@ -388,8 +398,8 @@ cannot show you.</p>
 </div>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
-<p>The dashed line is the truth. Each posterior is narrower than the
-last, and none of them required a second fit.</p>
+<p>Each posterior is narrower than the last, and the dashed line marks
+the truth. None of them required a second fit.</p>
 <div class="section level3">
 <h3 id="the-part-nobody-tells-you-about">The part nobody tells you about<a class="anchor" aria-label="anchor" href="#the-part-nobody-tells-you-about"></a>
 </h3>
@@ -412,8 +422,8 @@ every parameter lands several standard deviations from the truth, and
 says so with complete confidence.</p>
 <p>This is not a bug and it is not the sampler. Stan’s NUTS, further
 down, lands on the same posterior from an entirely different algorithm.
-It is the arithmetic of the sum this whole article is built on. Suppose
-the surrogate is wrong by an average of
+It is the arithmetic of the sum this whole article is built on.</p>
+<p>Suppose the surrogate is wrong by an average of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>
 nats per observation in some direction of parameter space. The
 log-likelihood of
@@ -473,10 +483,10 @@ same distribution. <code>ess_bulk</code> says how many independent draws
 the retained ones are worth. Read both before reading the posterior.</p>
 <p>This target does not give you 1.00. A surrogate likelihood summed
 over five hundred observations is a rugged thing to sample, and the
-numbers above are what that looks like: <code>rhat</code> a few
-hundredths above 1, and an effective sample size between a few hundred
-and a couple of thousand out of eight thousand draws. That is the honest
-state of this run, and it is the reason this article does not use the
+numbers above are what that looks like. <code>rhat</code> comes in a few
+hundredths above 1, and the effective sample size is a few hundred to a
+couple of thousand out of eight thousand draws. That is the honest state
+of this run, and it is the reason this article does not use the
 defaults. At <code>warmup = 300</code> and 2000 draws the same posterior
 reports <code>rhat</code> around 1.14.</p>
 <p>Three levers, in the order worth trying them. Raise
@@ -490,7 +500,7 @@ seconds to minutes, not minutes to hours.</p>
 The
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
 we did not narrow, back at the start, gave chains that never mixed at
-all: a flat direction in the likelihood is not a sampling problem you
+all. A flat direction in the likelihood is not a sampling problem you
 can spend your way out of. And when <code>rhat</code> lands where it
 does here rather than at 1.5, the useful question is whether an
 independent sampler agrees. NUTS on the same likelihood, below, lands on
@@ -562,7 +572,7 @@ source, so it does not have to:</p>
 log-density in Stan’s own language: the MLP as matrix multiplies and a
 relu, a softplus on the Cholesky diagonal, then <code>log_sum_exp</code>
 over the components. The trained weights arrive as <code>data</code> in
-the packed vector <code>w</code>, which is why the block reads as a lot
+the packed vector <code>w</code>, which is why the block reads as a run
 of <code>segment()</code> calls. Stan differentiates the code itself, so
 NUTS gets exact gradients and nothing has to be linked against
 <code>torch</code>.</p>
@@ -682,13 +692,13 @@ place:</p>
 <span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="va">d500</span>, <span class="va">by_stan</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
 <span><span class="co">#&gt; [1] 0.51225</span></span></code></pre></div>
 <p>A C2ST near 0.5 says a classifier cannot tell the two sets of draws
-apart. Two samplers with nothing in common, a slice sampler driven from
-R against NUTS with exact gradients from Stan’s own autodiff, agreeing
-to that tolerance is the answer to the <code>rhat</code> left hanging
-above: what the slice run could not prove from twenty short chains, a
-different algorithm confirms. It also says the transpiled Stan means
-what <code><a href="../reference/log_lik.html">log_lik()</a></code> means, since a bug in the generated code
-would move this posterior and not the other.</p>
+apart. The two samplers have nothing in common: a slice sampler driven
+from R, and NUTS with exact gradients from Stan’s own autodiff. Their
+agreement is the answer to the <code>rhat</code> left hanging above.
+What the slice run could not prove from twenty short chains, a different
+algorithm confirms. It also says the transpiled Stan means what
+<code><a href="../reference/log_lik.html">log_lik()</a></code> means, since a bug in the generated code would
+move this posterior and not the other.</p>
 <div class="section level3">
 <h3 id="why-bother-if-the-answers-agree">Why bother, if the answers agree<a class="anchor" aria-label="anchor" href="#why-bother-if-the-answers-agree"></a>
 </h3>
@@ -725,10 +735,11 @@ around the same generated function.</p>
 <span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a>    y[j] ~ nsbi_log_lik_sum([A[j], B, g, k]', nsbi_w);</span>
 <span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a>  }</span>
 <span id="cb16-25"><a href="#cb16-25" tabindex="-1"></a>}</span></code></pre></div>
-<p>The same trick covers the other reasons people write models by hand:
-a covariate acting on one parameter, a second data stream whose
-likelihood you do know, an informative prior from a previous study. The
-surrogate stops being the analysis and becomes one term in it.</p>
+<p>The same pattern covers the other reasons people write models by
+hand: a covariate acting on one parameter, or a second data stream whose
+likelihood you do know. An informative prior from a previous study goes
+in the same way. The surrogate stops being the analysis and becomes one
+term in it.</p>
 </div>
 </div>
 <div class="section level2">
@@ -786,8 +797,11 @@ and raise <code>n_sbc</code> before believing either direction too hard.
 The
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
 failure is not the marginal case: its p-value rounds to zero.</p>
-<p>And a posterior predictive check, which is the only diagnostic that
-looks at the observation you actually have:</p>
+<p>A posterior predictive check is the only diagnostic that looks at the
+observation you actually have. Read the panel below as one question:
+does the observed
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+look like a typical draw from the predictive?</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior_predictive.html">posterior_predictive</a></span><span class="op">(</span><span class="va">post_500</span>, <span class="va">simulator</span>, n <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive</a></span><span class="op">(</span><span class="va">pred</span>, <span class="va">x_all</span><span class="op">[</span><span class="fl">1</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
@@ -799,14 +813,25 @@ looks at the observation you actually have:</p>
 <h2 id="when-to-use-which">When to use which<a class="anchor" aria-label="anchor" href="#when-to-use-which"></a>
 </h2>
 <p>Use <code><a href="../reference/npe.html">npe()</a></code> when there is one observation of fixed size,
-when the data are high-dimensional such as images or long time series,
-or when you need posteriors for many different observations quickly.
-Sampling is a forward pass and there is no MCMC to diagnose.</p>
+when the data are high-dimensional, or when you need posteriors for many
+different observations quickly. Images and long time series are the
+high-dimensional case. Sampling is a forward pass, and there is no MCMC
+to diagnose.</p>
 <p>Use <code><a href="../reference/nle.html">nle()</a></code> when the observation is a variable number of
-independent measurements, when you want the likelihood itself rather
-than the posterior, or when the surrogate needs to live inside a larger
-model. Budget for MCMC, and read the <code>rhat</code> column before
-reading the posterior.</p>
+independent measurements, or when you want the likelihood itself rather
+than the posterior. Use it too when the surrogate has to become one term
+in a larger model. Budget for MCMC, and read the <code>rhat</code>
+column before reading the posterior.</p>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
+<p><code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code> and
+<code><a href="../articles/intro-to-sbi.html">vignette("intro-to-sbi")</a></code> cover the NPE half of the package.
+<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> goes through the checks in more
+depth. <code><a href="../reference/nle.html">?nle</a></code>, <code><a href="../reference/likelihood_fn.html">?likelihood_fn</a></code>,
+<code><a href="../reference/stan_export.html">?stan_code</a></code> and <code><a href="../reference/posterior.html">?posterior</a></code> document every
+argument used here.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

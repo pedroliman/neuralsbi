@@ -148,12 +148,11 @@ through 84 days, drawing new infections and new recoveries as binomial
 variables, and reports a thinned weekly total. To compute
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(x | \theta)</annotation></semantics></math>
 for an observed case curve we would have to add up the probability of
-every unobserved epidemic path that could have produced it: every
-combination of daily infections and recoveries, over twelve weeks,
-consistent with the twelve numbers we saw. There are astronomically
-many, and no closed form for the sum.</p>
-<p>Simulating, on the other hand, is easy. One call to the simulator
-gives one
+every unobserved epidemic path that could have produced it. That means
+every combination of daily infections and recoveries over twelve weeks
+that ends in the twelve numbers we saw. There are astronomically many of
+them, and no closed form for the sum.</p>
+<p>Simulating is the part we can do. One call to the simulator gives one
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\theta, x)</annotation></semantics></math>
 pair, and we can have as many as we are willing to wait for.
 Simulation-based inference is the family of methods that replaces
@@ -162,14 +161,15 @@ which is what <code>neuralsbi</code> implements, learns
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | x)</annotation></semantics></math>
 directly from those pairs.</p>
 <p>Other methods make other trades on the same problem. A particle
-filter estimates the likelihood by simulating the latent state forward,
-which works when you can write the <em>measurement</em> density even if
-the state process is a black box; <code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code>
-runs <code>pomp</code> and <code>neuralsbi</code> side by side on one
-epidemic. Approximate Bayesian computation compares simulated to
-observed data through a distance threshold, which forces you to pick
-summary statistics. NPE conditions on the data as it comes and learns
-which features matter.</p>
+filter estimates the likelihood by simulating the latent state forward.
+That works when you can write the <em>measurement</em> density, even if
+the state process itself is a black box.
+<code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code> runs <code>pomp</code> and
+<code>neuralsbi</code> side by side on one epidemic.</p>
+<p>Approximate Bayesian computation compares simulated to observed data
+through a distance threshold, which forces you to pick summary
+statistics. NPE conditions on the data as it comes and learns which
+features matter.</p>
 </div>
 <div class="section level2">
 <h2 id="what-npe-learns">What NPE learns<a class="anchor" aria-label="anchor" href="#what-npe-learns"></a>
@@ -211,10 +211,10 @@ simulator. Expect to translate for a while.</p>
 <h2 id="the-model">The model<a class="anchor" aria-label="anchor" href="#the-model"></a>
 </h2>
 <p>The simulator and prior are the ones from
-<code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code>: a binomial SIR epidemic run day by
-day for twelve weeks, of which we observe a fraction
+<code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code>. A binomial SIR epidemic runs day by
+day for twelve weeks, and we observe a fraction
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-of new infections as weekly case counts, on the
+of the new infections as weekly case counts on the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><mtext mathvariant="normal">cases</mtext><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log(1 + \text{cases})</annotation></semantics></math>
 scale.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -338,7 +338,7 @@ data, not about the estimator. An epidemic curve is shaped mostly by
 so many pairs of rates fit it about equally well, and the posterior says
 so by spreading along the ridge.</p>
 <p>Derived quantities come out of the posterior draws directly, and the
-contrast is easy to see in the relative widths:</p>
+relative widths show the contrast:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x_obs</span> <span class="op">&lt;-</span> <span class="fu">sir_simulator</span><span class="op">(</span><span class="fl">2</span> <span class="op">*</span> <span class="va">gamma_true</span>, <span class="va">gamma_true</span>, rho <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span></span>
 <span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span>, <span class="fl">4000</span><span class="op">)</span></span>
@@ -402,11 +402,11 @@ passes comfortably at 0.31.
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
 (0.040) and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-(0.086) are borderline, and the coverage curve sits a little under the
+(0.086) are borderline, and the coverage curve runs a little under the
 diagonal, so the intervals are mildly too narrow. Nothing here says the
-fit is broken; it says quote
+fit is broken. Quote
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>’s
-interval with care and add simulations if you need it sharper.</p>
+interval with care, and add simulations if you need it sharper.</p>
 <p>SBC averages over the prior and never looks at the observation you
 actually have. A posterior predictive check does, and it is the one that
 catches a simulator that cannot reproduce your data at any parameter
@@ -415,7 +415,7 @@ and the classifier two-sample test, and says what to do when a fit does
 not pass.</p>
 </div>
 <div class="section level2">
-<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+<h2 id="where-next">Where next<a class="anchor" aria-label="anchor" href="#where-next"></a>
 </h2>
 <ul>
 <li>
@@ -443,8 +443,7 @@ inference algorithms with simulation-based calibration”</a>, is the
 reference for the calibration check used above. Lueckmann et al. (2021),
 <a href="https://doi.org/10.48550/arXiv.2101.04653" class="external-link">“Benchmarking
 simulation-based inference”</a>, compares NPE against the other neural
-SBI algorithms, which is useful context for where <code>neuralsbi</code>
-sits.</p>
+SBI algorithms, which is useful context for where this package fits.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

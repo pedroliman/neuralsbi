@@ -11,8 +11,8 @@ here we put them on the same problem to see whether their posteriors
 agree.
 
 The problem is a stochastic SIR epidemic. A population of size $`N`$
-splits into Susceptible, Infected and Recovered; the contact rate
-$`\beta`$ drives new infections and the recovery rate $`\gamma`$ drives
+splits into Susceptible, Infected and Recovered. The contact rate
+$`\beta`$ drives new infections, and the recovery rate $`\gamma`$ drives
 recoveries. We infer $`\beta`$ and $`\gamma`$ from a single noisy
 incidence curve. Infections and recoveries are random events rather than
 a smooth ODE, so there is no tractable likelihood for the observed
@@ -187,6 +187,9 @@ round(apply(draws_npe, 2, sd), 3)
 #> 0.257 0.202
 ```
 
+Both posterior means land within 0.02 of `pomp`’s, and the standard
+deviations come out 15 to 20% larger.
+
 ## Do the posteriors agree?
 
 We overlay the two posterior clouds and score them with a classifier
@@ -220,15 +223,17 @@ c2st(as.matrix(draws_npe), as.matrix(post_pomp), seed = 1)$accuracy
 #> [1] 0.7270909
 ```
 
-The two posteriors land on top of each other, on the same $`\beta`$ and
-$`\gamma`$ ridge. The two rates trade off because the data mostly pin
-down their ratio $`R_0 = \beta/\gamma`$, which is the same ridge the
-package README runs into on a different SIR model. The C2ST lands well
-above 0.5, and the plot shows why: the `neuralsbi` cloud is a little
-broader. `pomp`’s particle filter uses the known binomial measurement
-density to extract the sharpest posterior this data set supports. NPE
-gets only simulations, and at an 8000-simulation budget it stays
-slightly more cautious. More simulations tighten it toward `pomp`.
+Both clouds lie along the same $`\beta`$ and $`\gamma`$ ridge. The two
+rates trade off because the data mostly pin down their ratio
+$`R_0 = \beta/\gamma`$, the same ridge the package README runs into on a
+different SIR model.
+
+At 0.73 the C2ST is well above 0.5, and the plot shows why: the
+`neuralsbi` cloud is a little broader. `pomp`’s particle filter uses the
+known binomial measurement density to extract the sharpest posterior
+this data set supports. NPE gets only simulations, and at an
+8000-simulation budget it stays slightly more cautious. More simulations
+tighten it toward `pomp`.
 
 Is that extra width honest or a bug? Simulation-based calibration
 answers that without a reference posterior. Draw $`\theta`$ from the
@@ -274,6 +279,8 @@ box, or when you need to condition on many data sets and amortization
 pays for the training up front. On this problem the two agree, which is
 the reassuring outcome: two different simulation-based machines, pointed
 at the same stochastic model, recover the same rates.
+
+## See also
 
 For the `neuralsbi` workflow in more depth, see
 [`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)

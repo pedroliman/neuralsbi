@@ -180,8 +180,8 @@ do we write down how probable a case curve is at a given
 <p>The simulator returns
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><mtext mathvariant="normal">cases</mtext><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log(1 + \text{cases})</annotation></semantics></math>
 rather than raw counts. <code><a href="../reference/npe.html">npe()</a></code> standardizes whatever the
-simulator gives it, and across this prior the weekly counts run from a
-handful to tens of thousands, which is a wide range to ask one scale to
+simulator gives it. Across this prior the weekly counts run from a
+handful to tens of thousands, which is a wide range for one scale to
 cover. The log keeps the small outbreaks legible next to the large
 ones.</p>
 <p>Here is one epidemic, on the natural count scale:</p>
@@ -199,6 +199,9 @@ ones.</p>
 plot of chunk outbreak
 </p>
 </div>
+<p>Reported cases climb from 34 in the first week to about 11,000 in
+week 8, then fall away as the susceptible pool empties. Those twelve
+numbers are the entire data set for everything below.</p>
 </div>
 <div class="section level2">
 <h2 id="train-your-neural-posterior-estimator">Train your neural posterior estimator<a class="anchor" aria-label="anchor" href="#train-your-neural-posterior-estimator"></a>
@@ -337,24 +340,24 @@ comes back clean at 0.19.
 (0.023) and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
 (0.040) fall just under the conventional 0.05, and the coverage curve
-runs slightly below the diagonal, which is mild overconfidence: the
-intervals are a little too narrow rather than in the wrong place. That
-is a realistic first pass at 8000 simulations, and the standard remedy
-is more simulations before a bigger network.
+runs slightly below the diagonal. That is mild overconfidence: the
+intervals are a little too narrow rather than in the wrong place.</p>
+<p>A first pass at 8000 simulations often looks like this, and the
+remedy is more simulations before a bigger network.
 <code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> covers how to read these plots and
 what to do when a fit does not pass.</p>
 </div>
 <div class="section level2">
-<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+<h2 id="where-next">Where next<a class="anchor" aria-label="anchor" href="#where-next"></a>
 </h2>
 <ul>
 <li>
 <code><a href="../articles/intro-to-sbi.html">vignette("intro-to-sbi")</a></code> explains what the method is
-doing with the same model: why a simulator replaces the likelihood, what
-amortization buys you across many outbreaks, and how to read a derived
-quantity like
+doing with the same model. It covers why a simulator replaces the
+likelihood, what amortization buys across many outbreaks, and how to
+read
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>0</mn></msub><annotation encoding="application/x-tex">R_0</annotation></semantics></math>
-off the posterior.</li>
+off the posterior draws.</li>
 <li>
 <code><a href="../articles/density-estimators.html">vignette("density-estimators")</a></code> compares the estimators
 behind <code><a href="../reference/npe.html">npe()</a></code> and says when each one is worth using.</li>

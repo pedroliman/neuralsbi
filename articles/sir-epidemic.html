@@ -142,9 +142,9 @@ packages differ in what they do next, and here we put them on the same
 problem to see whether their posteriors agree.</p>
 <p>The problem is a stochastic SIR epidemic. A population of size
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
-splits into Susceptible, Infected and Recovered; the contact rate
+splits into Susceptible, Infected and Recovered. The contact rate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
-drives new infections and the recovery rate
+drives new infections, and the recovery rate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
 drives recoveries. We infer
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
@@ -309,6 +309,8 @@ density network suits this smooth, single-mode posterior.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">draws_npe</span>, <span class="fl">2</span>, <span class="va">sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  Beta gamma </span></span>
 <span><span class="co">#&gt; 0.257 0.202</span></span></code></pre></div>
+<p>Both posterior means land within 0.02 of <code>pomp</code>’s, and the
+standard deviations come out 15 to 20% larger.</p>
 </div>
 <div class="section level2">
 <h2 id="do-the-posteriors-agree">Do the posteriors agree?<a class="anchor" aria-label="anchor" href="#do-the-posteriors-agree"></a>
@@ -337,15 +339,16 @@ plot of chunk unnamed-chunk-9
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="../reference/c2st.html">c2st</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">draws_npe</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">post_pomp</span><span class="op">)</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">accuracy</span></span>
 <span><span class="co">#&gt; [1] 0.7270909</span></span></code></pre></div>
-<p>The two posteriors land on top of each other, on the same
+<p>Both clouds lie along the same
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
 ridge. The two rates trade off because the data mostly pin down their
 ratio
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mi>β</mi><mi>/</mi><mi>γ</mi></mrow><annotation encoding="application/x-tex">R_0 = \beta/\gamma</annotation></semantics></math>,
-which is the same ridge the package README runs into on a different SIR
-model. The C2ST lands well above 0.5, and the plot shows why: the
+the same ridge the package README runs into on a different SIR
+model.</p>
+<p>At 0.73 the C2ST is well above 0.5, and the plot shows why: the
 <code>neuralsbi</code> cloud is a little broader. <code>pomp</code>’s
 particle filter uses the known binomial measurement density to extract
 the sharpest posterior this data set supports. NPE gets only
@@ -431,6 +434,10 @@ on many data sets and amortization pays for the training up front. On
 this problem the two agree, which is the reassuring outcome: two
 different simulation-based machines, pointed at the same stochastic
 model, recover the same rates.</p>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
 <p>For the <code>neuralsbi</code> workflow in more depth, see
 <code><a href="../articles/neuralsbi.html">vignette("neuralsbi")</a></code> and
 <code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code>. For <code>pomp</code>, see the <a href="https://kingaa.github.io/pomp/docs.html" class="external-link">package
