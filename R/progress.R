@@ -66,7 +66,8 @@ progress_backend <- function() {
   opt <- progress_option()
   if (opt == "off") return("none")
   if (opt == "builtin") return("builtin")
-  if (has_progressr()) "progressr" else "builtin"
+  if (has_progressr()) return("progressr")
+  "builtin"
 }
 
 #' Should *we* draw a bar?

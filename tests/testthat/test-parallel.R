@@ -1,3 +1,46 @@
+test_that("nsbi_workers() falls back to 1 when future is not installed", {
+  local_mocked_bindings(requireNamespace = function(package, ...) FALSE,
+                        .package = "base")
+  expect_equal(nsbi_workers(), 1L)
+})
+
+test_that("nsbi_workers() treats an unusable worker count as sequential", {
+  skip_if_not_installed("future")
+  local_mocked_bindings(nbrOfWorkers = function() NA_real_, .package = "future")
+  expect_equal(nsbi_workers(), 1L)
+})
+
+test_that("nsbi_workers() caps an unbounded worker count", {
+  skip_if_not_installed("future")
+  local_mocked_bindings(nbrOfWorkers = function() Inf, .package = "future")
+  expect_equal(nsbi_workers(), 128L)
+})
+
+test_that("rng_streams() and nsbi_batch_apply() are no-ops on zero units of work", {
+  expect_identical(rng_streams(0), list())
+  expect_identical(nsbi_batch_apply(list(), function(b, tick) b), list())
+})
+
+test_that("run_simulator() returns an empty matrix for zero parameter sets", {
+  out <- run_simulator(function(theta) theta, matrix(numeric(0), nrow = 0, ncol = 1),
+                       d = 3)
+  expect_equal(dim(out), c(0L, 3L))
+})
+
+test_that("with_rng_stream() tolerates no prior .Random.seed", {
+  seed <- rng_streams(1)[[1]]
+  had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  saved <- if (had_seed) get(".Random.seed", envir = globalenv(), inherits = FALSE) else NULL
+  if (had_seed) rm(".Random.seed", envir = globalenv())
+  on.exit({
+    if (had_seed) assign(".Random.seed", saved, envir = globalenv())
+  }, add = TRUE)
+
+  result <- with_rng_stream(seed, 1 + 1)
+  expect_equal(result, 2)
+  expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+})
+
 test_that("batching is scheduling only: sequential runs are one loop", {
   # no plan declared, so no batching at all
   expect_length(sim_batches(1000), 1L)
