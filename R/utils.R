@@ -138,8 +138,8 @@ verbose_cat <- function(verbose, ...) {
   if (isTRUE(verbose)) cat(...)
 }
 
-#' Print the fit-summary block shared by [print.nsbi_npe()], [print.nsbi_nle()]
-#' and [print.nsbi_snpe()]
+#' Print the fit-summary block shared by `print.nsbi_npe()`, `print.nsbi_nle()`
+#' and `print.nsbi_snpe()`
 #'
 #' Parameter names, outcome names, the embedding line (when the fit used
 #' one), the simulation count and any drops, the best validation loss, and

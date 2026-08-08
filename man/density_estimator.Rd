@@ -15,9 +15,9 @@ generics:
 }
 
 The contract is really \code{q(target | condition)}: it makes no assumption
-about which of the two arguments is the parameter. \code{\link{npe}} calls it with
+about which of the two arguments is the parameter. \code{\link[=npe]{npe()}} calls it with
 \code{theta} as the target and \code{x} as the condition, learning the posterior.
-\code{\link{nle}} swaps the two, learning the likelihood instead, with the same
+\code{\link[=nle]{nle()}} swaps the two, learning the likelihood instead, with the same
 estimators and the same two generics.
 
 Four estimators ship today:

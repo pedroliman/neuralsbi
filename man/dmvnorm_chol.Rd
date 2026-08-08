@@ -8,9 +8,6 @@
 dmvnorm_chol(x, mean, R)
 }
 \description{
-Multivariate normal log density using a precomputed upper-Cholesky factor
-(\code{R} such that \code{Sigma = t(R) \%*\% R}, i.e. \code{chol(Sigma)}).
-
 Always returns the log density: every call site wants \code{log_prob()}'s
 contract, none of \code{dnorm()}'s \code{log = FALSE}, so there is no \code{log} argument
 to forget to set.

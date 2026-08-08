@@ -2,7 +2,7 @@
 % Please edit documentation in R/density_estimator.R
 \name{de_log_prob_torch}
 \alias{de_log_prob_torch}
-\title{Shared tensor plumbing behind every neural \code{de_log_prob.*} method}
+\title{Shared tensor plumbing behind every neural \verb{de_log_prob.*} method}
 \usage{
 de_log_prob_torch(de, theta, x, log_prob_fn)
 }
