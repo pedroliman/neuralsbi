@@ -27,7 +27,8 @@ train_conditional_de(
   lr_factor = 0.5,
   min_lr = 1e-06,
   seed = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  device = "cpu"
 )
 ```
 
@@ -61,7 +62,18 @@ train_conditional_de(
   Reduce the learning rate by `lr_factor` after `lr_patience` epochs
   without validation improvement, down to `min_lr`.
 
+- device:
+
+  Torch device keyword: `"cpu"` (the default), `"cuda"`, `"mps"`, or
+  `"gpu"`/`"auto"` (see `resolve_device()`, which is what turns this
+  into an actual, available device). Training and validation tensors are
+  created there, and the net is moved there right after `build_net()`,
+  so the two never disagree the way they do under a bare
+  [`torch::with_device()`](https://torch.mlverse.org/docs/reference/local_device.html).
+
 ## Value
 
-`list(net, best_val_loss, history)` where `history` is a data frame of
-per-epoch train/validation losses for the winning restart.
+`list(net, best_val_loss, history, device)`, where `history` is a data
+frame of per-epoch train/validation losses for the winning restart and
+`device` is the resolved device (`"cpu"`, `"cuda"` or `"mps"`) training
+actually ran on.

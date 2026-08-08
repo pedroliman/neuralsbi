@@ -57,7 +57,7 @@ match Python sbi, so results are comparable across the two packages."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,7 +121,8 @@ match Python <code>sbi</code>, so results are comparable across the two packages
 <span>  lr_factor <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  min_lr <span class="op">=</span> <span class="fl">1e-06</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  device <span class="op">=</span> <span class="st">"cpu"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -157,11 +158,22 @@ keep the one with the best validation loss.</p></dd>
 after <code>lr_patience</code> epochs without validation improvement, down to
 <code>min_lr</code>.</p></dd>
 
+
+<dt id="arg-device">device<a class="anchor" aria-label="anchor" href="#arg-device"></a></dt>
+<dd><p>Torch device keyword: <code>"cpu"</code> (the default), <code>"cuda"</code>,
+<code>"mps"</code>, or <code>"gpu"</code>/<code>"auto"</code> (see <code>resolve_device()</code>, which is what turns
+this into an actual, available device). Training and validation tensors
+are created there, and the net is moved there right after <code>build_net()</code>,
+so the two never disagree the way they do under a bare
+<code><a href="https://torch.mlverse.org/docs/reference/local_device.html" class="external-link">torch::with_device()</a></code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code>list(net, best_val_loss, history)</code> where <code>history</code> is a data frame
-of per-epoch train/validation losses for the winning restart.</p>
+    <p><code>list(net, best_val_loss, history, device)</code>, where <code>history</code> is a
+data frame of per-epoch train/validation losses for the winning restart
+and <code>device</code> is the resolved device (<code>"cpu"</code>, <code>"cuda"</code> or <code>"mps"</code>)
+training actually ran on.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

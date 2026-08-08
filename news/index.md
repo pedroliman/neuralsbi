@@ -1,5 +1,49 @@
 # Changelog
 
+## neuralsbi 0.5.10
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  gain a `device` argument for training on a GPU.** `device = "cpu"`
+  (the default, matching Python `sbi`; GPU is opt-in, never
+  auto-selected), `"cuda"`, `"mps"`, or `"gpu"`/`"auto"` to resolve CUDA
+  -\> MPS -\> CPU. Wrapping a fit in
+  [`torch::with_device()`](https://torch.mlverse.org/docs/reference/local_device.html)
+  used to crash with a mixed-device error: `torch_tensor()` built from
+  an R matrix ignores that context and always lands on CPU, and MAF, MDN
+  and NSF all build scratch tensors (`torch_zeros()`, an autoregressive
+  `rev_idx`, the spline’s tail padding, the MDN’s Cholesky buffer) the
+  same unqualified way, so a net moved to a GPU still hit CPU tensors
+  partway through a forward or inverse pass.
+  [`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md)
+  (`R/train.R`) now builds training/validation tensors on the resolved
+  device and calls `net$to(device = )`; the estimator-specific
+  forward/inverse code (`R/flows.R`, `R/mdn.R`, `R/nsf.R`) derives every
+  scratch tensor from an existing tensor’s device instead of relying on
+  the default; and the `de_log_prob()`/`de_sample()` S3 methods, plus
+  the MDN’s separate i.i.d. fast path used by
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)’s MCMC
+  sampling (`R/likelihood.R`) and
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)’s
+  weight export (`R/stan.R`), move inputs to the estimator’s device and
+  results back to the CPU for the caller. `"cuda"`/`"mps"` error clearly
+  when the requested backend is not available on this machine, rather
+  than silently downgrading to CPU – a request for a specific device
+  that is not honored should not look like a slow CPU run; only
+  `"gpu"`/`"auto"` falls back to CPU without complaint, since it never
+  named a specific device. `device` is a no-op, not an error, for
+  `density_estimator = "linear_gaussian"`, which has no GPU concept. A
+  fitted estimator remembers the device it trained on (`fit$device`,
+  `fit$de$device`, stored as a plain string so it survives
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md))
+  and
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)/[`load_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  always rebuild the network on the CPU on reload, regardless of the
+  device it trained on, since
+  [`torch::torch_load()`](https://torch.mlverse.org/docs/reference/torch_load.html)
+  already defaults there. Closes
+  [\#82](https://github.com/pedroliman/neuralsbi/issues/82)
+  ([\#132](https://github.com/pedroliman/neuralsbi/issues/132)).
+
 ## neuralsbi 0.5.9
 
 - Internal cleanup, no user-visible behavior change:

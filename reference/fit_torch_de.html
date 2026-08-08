@@ -51,7 +51,7 @@ object."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/re
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,8 @@ object.</p>
 <span>  <span class="va">clip_grad_norm</span>,</span>
 <span>  <span class="va">embedding</span>,</span>
 <span>  <span class="va">seed</span>,</span>
-<span>  <span class="va">verbose</span></span>
+<span>  <span class="va">verbose</span>,</span>
+<span>  device <span class="op">=</span> <span class="st">"cpu"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -124,6 +125,15 @@ object.</p>
 into the returned list ahead of <code>embedding</code>, matching the field order each
 estimator returned before this helper existed. This helper never needs to
 know what <code>arch</code>'s fields are.</p>
+<p><code>device</code> is a raw keyword here (<code>"cpu"</code>, <code>"cuda"</code>, <code>"mps"</code>, <code>"gpu"</code> or
+<code>"auto"</code>) – resolving it to an actual, available device needs <code>torch</code>
+loaded, so that happens inside <code><a href="train_conditional_de.html">train_conditional_de()</a></code>, after its own
+argument checks (<code><a href="check_train_controls.html">check_train_controls()</a></code>) have already run without
+needing <code>torch</code> at all. The <em>resolved</em> string comes back on
+<code><a href="train_conditional_de.html">train_conditional_de()</a></code>'s return value and is stored on the returned
+estimator (never a torch device object, which would not survive
+<code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>) so <code><a href="posterior.html">posterior()</a></code>/<code><a href="sample.html">sample()</a></code> can see what it was actually fit
+with.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

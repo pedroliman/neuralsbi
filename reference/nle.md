@@ -32,6 +32,7 @@ nle(
   n_restarts = 1L,
   clip_grad_norm = 5,
   standardize = TRUE,
+  device = "cpu",
   seed = NULL,
   verbose = FALSE
 )
@@ -119,6 +120,22 @@ nle(
 
   Whether to z-score `theta` and `x` before training (strongly
   recommended; default `TRUE`).
+
+- device:
+
+  Where to train the neural estimator: `"cpu"` (the default), `"cuda"`,
+  `"mps"`, or `"gpu"`/`"auto"` to resolve CUDA -\> MPS -\> CPU
+  (mirroring Python `sbi`'s `"gpu"`). CPU is the default on purpose –
+  matching `sbi`, not auto-selecting a GPU – and `"cuda"`/`"mps"` error
+  if the requested device is not actually available rather than falling
+  back silently, so a typo or a missing driver is not mistaken for a
+  slow CPU run. Only `"gpu"`/`"auto"` falls back to CPU without
+  complaint, since it never named a specific device. Ignored (with no
+  error) by `"linear_gaussian"`, which has no GPU concept. For the small
+  networks typical of SBI models (the SIR example, say),
+  `"mps"`/`"cuda"` can be *slower* than CPU – per-kernel launch overhead
+  dominates until the net and batch are large – so try CPU first and
+  switch only if profiling shows a win.
 
 - seed:
 

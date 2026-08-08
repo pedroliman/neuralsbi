@@ -57,7 +57,7 @@ round trip that works.'><meta property="og:image" content="https://neuralsbi.ped
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -150,6 +150,12 @@ into a later one as long as the estimator's architecture has not changed;
 <p><code>save_nle()</code> and <code>load_nle()</code> are aliases; both pairs handle either kind of
 fit, and the two names exist only so calling code reads the way the fit was
 made.</p>
+<p>A fit trained with <code>device = "cuda"</code>/<code>"mps"</code> (see <code><a href="npe.html">npe()</a></code>/<code><a href="nle.html">nle()</a></code>) always
+reloads onto CPU, never onto the original device: <code><a href="https://torch.mlverse.org/docs/reference/torch_load.html" class="external-link">torch::torch_load()</a></code>
+defaults to <code>device = "cpu"</code> regardless of where the tensors were saved
+from, and <code><a href="de_rebuild_net.html">de_rebuild_net()</a></code> builds the network fresh with no
+<code><a href="https://torch.mlverse.org/docs/reference/local_device.html" class="external-link">torch::with_device()</a></code> in effect. Move it back with
+<code>fit2$de$net$to(device = "cuda")</code> if you want the reloaded fit on a GPU.</p>
     </div>
 
     <div class="section level2">

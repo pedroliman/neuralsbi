@@ -24,6 +24,7 @@ train_restarts(
   lr_factor,
   min_lr,
   seed,
-  verbose
+  verbose,
+  device = "cpu"
 )
 ```

@@ -21,6 +21,7 @@ fit_nsf(
   clip_grad_norm = 5,
   embedding = NULL,
   seed = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  device = "cpu"
 )
 ```

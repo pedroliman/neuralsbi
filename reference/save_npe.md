@@ -64,6 +64,18 @@ rebuild fails.
 of fit, and the two names exist only so calling code reads the way the
 fit was made.
 
+A fit trained with `device = "cuda"`/`"mps"` (see
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md))
+always reloads onto CPU, never onto the original device:
+[`torch::torch_load()`](https://torch.mlverse.org/docs/reference/torch_load.html)
+defaults to `device = "cpu"` regardless of where the tensors were saved
+from, and
+[`de_rebuild_net()`](https://neuralsbi.pedrodelima.com/reference/de_rebuild_net.md)
+builds the network fresh with no
+[`torch::with_device()`](https://torch.mlverse.org/docs/reference/local_device.html)
+in effect. Move it back with `fit2$de$net$to(device = "cuda")` if you
+want the reloaded fit on a GPU.
+
 ## Examples
 
 ``` r
