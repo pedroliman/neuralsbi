@@ -24,8 +24,7 @@ fit_torch_de(
 )
 }
 \description{
-Coerces \code{theta} and \code{x}, builds the net from \code{build_net_fn(dim_x,
-dim_theta)} now that both are known, trains it with
+Coerces \code{theta} and \code{x}, builds the net from \code{build_net_fn(dim_x, dim_theta)} now that both are known, trains it with
 \code{\link[=train_conditional_de]{train_conditional_de()}}, and packages the result into a fitted \code{nsbi_de}
 object.
 }

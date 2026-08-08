@@ -13,7 +13,7 @@ lingauss_mean(de, x)
 with \code{de$dim_x} columns.}
 }
 \value{
-An \code{nrow(x) x de$dim_theta} matrix of conditional means.
+An \verb{nrow(x) x de$dim_theta} matrix of conditional means.
 }
 \description{
 \code{lingauss_mean()} is the only place \code{x} meets \code{de$B}, so it is also the

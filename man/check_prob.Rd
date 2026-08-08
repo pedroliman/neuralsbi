@@ -11,7 +11,7 @@ check_prob(p, arg, open = TRUE)
 
 \item{arg}{Name of the argument.}
 
-\item{open}{Require \code{0 < p < 1} (the default). \code{FALSE} allows the endpoints.}
+\item{open}{Require \verb{0 < p < 1} (the default). \code{FALSE} allows the endpoints.}
 }
 \value{
 \code{p} as a double.

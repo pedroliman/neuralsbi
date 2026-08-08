@@ -25,7 +25,7 @@ The Monte-Carlo band, the diagonal reference line, the equal-aspect
 \code{\link[=plot_coverage]{plot_coverage()}} and \code{\link[=plot_tarp]{plot_tarp()}}; only the curve drawn on top (one per
 parameter, with a legend, for \code{\link[=plot_coverage]{plot_coverage()}}; a single curve for
 \code{\link[=plot_tarp]{plot_tarp()}}) and the title differ. This builds the shared part and
-leaves the caller to add its own \code{\link[ggplot2:geom_path]{ggplot2::geom_line()}} and
+leaves the caller to add its own \code{\link[ggplot2:geom_line]{ggplot2::geom_line()}} and
 \code{\link[ggplot2:labs]{ggplot2::labs()}} on top.
 }
 \keyword{internal}
