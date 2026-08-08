@@ -27,6 +27,13 @@
 #' fit, and the two names exist only so calling code reads the way the fit was
 #' made.
 #'
+#' A fit trained with `device = "cuda"`/`"mps"` (see [npe()]/[nle()]) always
+#' reloads onto CPU, never onto the original device: `torch::torch_load()`
+#' defaults to `device = "cpu"` regardless of where the tensors were saved
+#' from, and [de_rebuild_net()] builds the network fresh with no
+#' `torch::with_device()` in effect. Move it back with
+#' `fit2$de$net$to(device = "cuda")` if you want the reloaded fit on a GPU.
+#'
 #' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
 #'   `nsbi_nle` object from [nle()].
 #' @param path File to write to (or read from). The convention is `.rds`.
@@ -97,6 +104,15 @@ load_npe <- function(path) {
   tmp <- tempfile(fileext = ".pt")
   on.exit(unlink(tmp), add = TRUE)
   writeBin(bundle$weights, tmp)
+  # de_rebuild_net() builds a fresh module with no with_device() in effect, so
+  # it lands on CPU; torch::torch_load()'s own default is device = "cpu"
+  # rather than the device the tensors were saved from, so the state dict
+  # lands there too. A fit trained with device = "mps"/"cuda" therefore always
+  # reloads onto CPU, never onto a device this machine might not have -- the
+  # `device` recorded on `fit$de` (a plain string; a torch device object would
+  # not survive saveRDS() any better than the module did) is updated below to
+  # match. Call `fit$de$net$to(device = ...)` yourself after loading if you
+  # want the reloaded fit back on a GPU.
   net <- de_rebuild_net(fit$de)
   state <- torch::torch_load(tmp)
   tryCatch(
@@ -112,6 +128,8 @@ load_npe <- function(path) {
   )
   net$eval()
   fit$de$net <- net
+  if (!is.null(fit$de$device)) fit$de$device <- "cpu"
+  if (!is.null(fit$device)) fit$device <- "cpu"
   fit
 }
 

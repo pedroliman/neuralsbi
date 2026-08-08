@@ -53,7 +53,7 @@ rq_spline <- function(inputs, w_un, h_un, d_un, inverse = FALSE,
   heights <- min_bin + (1 - min_bin * K) * heights
   cumw <- torch::torch_cumsum(widths, dim = 2) * (2 * B) - B
   cumh <- torch::torch_cumsum(heights, dim = 2) * (2 * B) - B
-  pad <- torch::torch_full(c(cumw$shape[1], 1), -B)
+  pad <- torch::torch_full(c(cumw$shape[1], 1), -B, device = cumw$device)
   cumw <- torch::torch_cat(list(pad, cumw), dim = 2)   # (N, K+1)
   cumh <- torch::torch_cat(list(pad, cumh), dim = 2)
   # exact endpoints (cumsum can drift slightly)
@@ -61,7 +61,7 @@ rq_spline <- function(inputs, w_un, h_un, d_un, inverse = FALSE,
   cumh[, K + 1] <- B
   # derivatives: softplus, boundary derivatives fixed at 1 for linear tails
   derivs <- min_deriv + torch::nnf_softplus(d_un + 0.5413)  # ~1 at init 0
-  ones <- torch::torch_ones(c(derivs$shape[1], 1))
+  ones <- torch::torch_ones(c(derivs$shape[1], 1), device = derivs$device)
   derivs <- torch::torch_cat(list(ones, derivs, ones), dim = 2)  # (N, K+1)
 
   bin_grid <- if (inverse) cumh else cumw
@@ -190,9 +190,10 @@ nsf_apply <- function(net, made, z, x, inverse = FALSE, values = z) {
 nsf_log_prob_tensor <- function(net, theta, x) {
   p <- net$dim_theta
   x <- embed_x(net, x)
-  rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long())
+  rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long(),
+                                 device = theta$device)
   z <- theta
-  logdet <- torch::torch_zeros(theta$shape[1])
+  logdet <- torch::torch_zeros(theta$shape[1], device = theta$device)
   for (k in seq_len(net$n_transforms)) {
     if (k > 1L && p > 1L) z <- z[, rev_idx, drop = FALSE]
     st <- nsf_apply(net, net$mades[[k]], z, x, inverse = FALSE)
@@ -208,7 +209,8 @@ nsf_log_prob_tensor <- function(net, theta, x) {
 nsf_inverse <- function(net, u, x) {
   p <- net$dim_theta
   x <- embed_x(net, x)
-  rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long())
+  rev_idx <- torch::torch_tensor(rev(seq_len(p)), dtype = torch::torch_long(),
+                                 device = u$device)
   z <- u
   for (k in rev(seq_len(net$n_transforms))) {
     made <- net$mades[[k]]
@@ -230,7 +232,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
                     max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
-                    seed = NULL, verbose = FALSE) {
+                    seed = NULL, verbose = FALSE, device = "cpu") {
   fit_torch_de(
     theta, x,
     build_net_fn = function(dim_x, dim_theta)
@@ -243,7 +245,7 @@ fit_nsf <- function(theta, x, n_transforms = 5L, hidden = c(50L, 50L),
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    embedding = embedding, seed = seed, verbose = verbose
+    embedding = embedding, seed = seed, verbose = verbose, device = device
   )
 }
 

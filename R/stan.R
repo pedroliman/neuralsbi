@@ -168,7 +168,7 @@ stan_pack <- function(fit) {
 #' A torch tensor as a plain R matrix, in double precision
 #' @keywords internal
 torch_mat <- function(t) {
-  m <- torch::as_array(t$to(dtype = torch::torch_float64()))
+  m <- torch::as_array(t$to(device = "cpu", dtype = torch::torch_float64()))
   if (is.null(dim(m))) matrix(m, ncol = 1L) else m
 }
 

@@ -106,6 +106,60 @@ torch_available <- function() {
   requireNamespace("torch", quietly = TRUE) && isTRUE(torch::torch_is_installed())
 }
 
+#' Resolve a validated `device` keyword to a concrete, available torch device
+#'
+#' [check_device_arg()] has already rejected anything but `"cpu"`, `"cuda"`,
+#' `"mps"`, `"gpu"` or `"auto"`; this turns that keyword into `"cpu"`,
+#' `"cuda"` or `"mps"`, matching what Python `sbi`'s `process_device()` does.
+#' Requires `torch` (call [require_torch()] first; every caller here is about
+#' to build a network, so it already has).
+#'
+#' `"cuda"`/`"mps"` name a specific device, so asking for one that is not
+#' there errors rather than downgrading silently -- a silent fallback would
+#' hide a real problem (a missing CUDA build, a non-Apple-silicon Mac).
+#' `"gpu"`/`"auto"` never named a specific device, so it resolves
+#' CUDA -> MPS -> CPU and *can* fall back silently, mirroring `sbi`'s `"gpu"`.
+#'
+#' @param device One of `"cpu"`, `"cuda"`, `"mps"`, `"gpu"`, `"auto"`.
+#' @return `"cpu"`, `"cuda"` or `"mps"`.
+#' @keywords internal
+resolve_device <- function(device) {
+  if (device == "cpu") return("cpu")
+  if (device %in% c("gpu", "auto")) {
+    if (isTRUE(torch::cuda_is_available())) return("cuda")
+    if (isTRUE(torch::backends_mps_is_available())) return("mps")
+    return("cpu")
+  }
+  if (device == "cuda" && !isTRUE(torch::cuda_is_available())) {
+    stop("`device = \"cuda\"` was requested, but torch::cuda_is_available() ",
+         "is FALSE on this machine.\nUse device = \"cpu\" (the default), or ",
+         "\"gpu\"/\"auto\" to fall back to whichever device is available.",
+         call. = FALSE)
+  }
+  if (device == "mps" && !isTRUE(torch::backends_mps_is_available())) {
+    stop("`device = \"mps\"` was requested, but ",
+         "torch::backends_mps_is_available() is FALSE on this machine.\n",
+         "Use device = \"cpu\" (the default), or \"gpu\"/\"auto\" to fall ",
+         "back to whichever device is available.",
+         call. = FALSE)
+  }
+  device
+}
+
+#' The torch device a fitted net's parameters currently live on
+#'
+#' `de_log_prob()`/`de_sample()` need to know where to put their input
+#' tensors, and the one place that is always true is the net itself --
+#' `de$device` (set at fit time) is a record of that, not a guarantee, since
+#' nothing stops a user from moving the net with `net$to()` afterwards. A net
+#' with no parameters (there is no such estimator today, but nothing rules one
+#' out) defaults to CPU.
+#' @keywords internal
+net_device <- function(net) {
+  params <- net$parameters
+  if (length(params)) params[[1L]]$device else torch::torch_device("cpu")
+}
+
 #' Check that ggplot2 (and, for [pairplot()], GGally and ggdensity) are available
 #' @keywords internal
 require_ggplot2 <- function(ggally = FALSE, ggdensity = FALSE) {

@@ -33,7 +33,7 @@ if (requireNamespace("future", quietly = TRUE)) {
 
 [`pomp`](https://kingaa.github.io/pomp/) is the established R toolkit for partially observed Markov process models, the stochastic dynamical systems that show up all over epidemiology and ecology. It fits them by particle filtering: a sequential Monte Carlo scheme that only ever simulates the latent state process, so you never write down its transition density. That makes `pomp` simulation-based in the same spirit as `neuralsbi`. The two packages differ in what they do next, and here we put them on the same problem to see whether their posteriors agree.
 
-The problem is a stochastic SIR epidemic. A population of size $N$ splits into Susceptible, Infected and Recovered; the contact rate $\beta$ drives new infections and the recovery rate $\gamma$ drives recoveries. We infer $\beta$ and $\gamma$ from a single noisy incidence curve. Infections and recoveries are random events rather than a smooth ODE, so there is no tractable likelihood for the observed curve.
+The problem is a stochastic SIR epidemic. A population of size $N$ splits into Susceptible, Infected and Recovered. The contact rate $\beta$ drives new infections, and the recovery rate $\gamma$ drives recoveries. We infer $\beta$ and $\gamma$ from a single noisy incidence curve. Infections and recoveries are random events rather than a smooth ODE, so there is no tractable likelihood for the observed curve.
 
 A note on notation: SBI writes the observed data as $x$, the role regression gives to $y$. Here $x$ is the reported-case time series.
 
@@ -160,6 +160,8 @@ round(colMeans(draws_npe), 3)
 round(apply(draws_npe, 2, sd), 3)
 ```
 
+Both posterior means land within 0.02 of `pomp`'s, and the standard deviations come out 15 to 20% larger.
+
 ## Do the posteriors agree?
 
 We overlay the two posterior clouds and score them with a classifier two-sample test. An accuracy near 0.5 means a classifier cannot tell the two sets of draws apart.
@@ -180,7 +182,9 @@ legend("topright", c("pomp (pMCMC)", "neuralsbi (NPE)", "truth"),
 c2st(as.matrix(draws_npe), as.matrix(post_pomp), seed = 1)$accuracy
 ```
 
-The two posteriors land on top of each other, on the same $\beta$ and $\gamma$ ridge. The two rates trade off because the data mostly pin down their ratio $R_0 = \beta/\gamma$, which is the same ridge the package README runs into on a different SIR model. The C2ST lands well above 0.5, and the plot shows why: the `neuralsbi` cloud is a little broader. `pomp`'s particle filter uses the known binomial measurement density to extract the sharpest posterior this data set supports. NPE gets only simulations, and at an 8000-simulation budget it stays slightly more cautious. More simulations tighten it toward `pomp`.
+Both clouds lie along the same $\beta$ and $\gamma$ ridge. The two rates trade off because the data mostly pin down their ratio $R_0 = \beta/\gamma$, the same ridge the package README runs into on a different SIR model.
+
+At 0.73 the C2ST is well above 0.5, and the plot shows why: the `neuralsbi` cloud is a little broader. `pomp`'s particle filter uses the known binomial measurement density to extract the sharpest posterior this data set supports. NPE gets only simulations, and at an 8000-simulation budget it stays slightly more cautious. More simulations tighten it toward `pomp`.
 
 Is that extra width honest or a bug? Simulation-based calibration answers that without a reference posterior. Draw $\theta$ from the prior, simulate, and rank the truth among the posterior draws. Calibrated posteriors give uniform ranks.
 
@@ -205,5 +209,7 @@ The ranks are flat and the p-values are large, so NPE's wider intervals are cali
 | Exactness | exact in the MCMC limit | approximate, so check the calibration |
 
 Use `pomp` when you can write the measurement density and have one or a few data sets to fit. It will give you the sharpest and best understood posterior. Use `neuralsbi` when the measurement model itself is a black box, or when you need to condition on many data sets and amortization pays for the training up front. On this problem the two agree, which is the reassuring outcome: two different simulation-based machines, pointed at the same stochastic model, recover the same rates.
+
+## See also
 
 For the `neuralsbi` workflow in more depth, see `vignette("neuralsbi")` and `vignette("diagnostics")`. For `pomp`, see the [package tutorials](https://kingaa.github.io/pomp/docs.html).

@@ -18,7 +18,8 @@ fit_mdn(
   clip_grad_norm = 5,
   embedding = NULL,
   seed = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  device = "cpu"
 )
 }
 \arguments{

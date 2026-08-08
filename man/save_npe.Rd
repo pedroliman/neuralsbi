@@ -53,6 +53,13 @@ into a later one as long as the estimator's architecture has not changed;
 \code{save_nle()} and \code{load_nle()} are aliases; both pairs handle either kind of
 fit, and the two names exist only so calling code reads the way the fit was
 made.
+
+A fit trained with \code{device = "cuda"}/\code{"mps"} (see \code{\link[=npe]{npe()}}/\code{\link[=nle]{nle()}}) always
+reloads onto CPU, never onto the original device: \code{torch::torch_load()}
+defaults to \code{device = "cpu"} regardless of where the tensors were saved
+from, and \code{\link[=de_rebuild_net]{de_rebuild_net()}} builds the network fresh with no
+\code{torch::with_device()} in effect. Move it back with
+\code{fit2$de$net$to(device = "cuda")} if you want the reloaded fit on a GPU.
 }
 \examples{
 prior <- prior_uniform(c(mu = -2, nu = -2), c(mu = 2, nu = 2))
