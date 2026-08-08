@@ -43,7 +43,7 @@ after \code{lr_patience} epochs without validation improvement, down to
 \code{min_lr}.}
 
 \item{device}{Torch device keyword: \code{"cpu"} (the default), \code{"cuda"},
-\code{"mps"}, or \code{"gpu"}/\code{"auto"} (see \code{\link[=resolve_device]{resolve_device()}}, which is what turns
+\code{"mps"}, or \code{"gpu"}/\code{"auto"} (see \code{resolve_device()}, which is what turns
 this into an actual, available device). Training and validation tensors
 are created there, and the net is moved there right after \code{build_net()},
 so the two never disagree the way they do under a bare

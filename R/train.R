@@ -19,7 +19,7 @@
 #'   after `lr_patience` epochs without validation improvement, down to
 #'   `min_lr`.
 #' @param device Torch device keyword: `"cpu"` (the default), `"cuda"`,
-#'   `"mps"`, or `"gpu"`/`"auto"` (see [resolve_device()], which is what turns
+#'   `"mps"`, or `"gpu"`/`"auto"` (see `resolve_device()`, which is what turns
 #'   this into an actual, available device). Training and validation tensors
 #'   are created there, and the net is moved there right after `build_net()`,
 #'   so the two never disagree the way they do under a bare
@@ -101,7 +101,7 @@ check_train_controls <- function(max_epochs, batch_size, lr,
 #'
 #' `device` here is still the raw, unresolved keyword `train_conditional_de()`
 #' was given (`"cpu"`, `"cuda"`, `"mps"`, `"gpu"` or `"auto"`); resolving it to
-#' an actual, available device needs `torch` loaded (see [resolve_device()]),
+#' an actual, available device needs `torch` loaded (see `resolve_device()`),
 #' and this is the first point that is guaranteed true -- `require_torch()` is
 #' the line above. Doing it here rather than earlier in
 #' `train_conditional_de()` keeps [check_train_controls()] (which needs no
