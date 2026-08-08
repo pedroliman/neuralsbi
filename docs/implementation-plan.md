@@ -54,7 +54,7 @@ Core ideas we reproduce:
 | `BoxUniform`, torch distributions as priors | `prior_uniform()`, `prior_normal()`, `prior_custom()` |
 | `simulate_for_sbi` | `simulate_for_sbi()` |
 | `NPE(prior).append_simulations().train()` | `npe(prior, simulator, ...)` |
-| density estimators: MDN, MAF, NSF | `"mdn"` (v0), `"maf"`/`"nsf"` (roadmap) |
+| density estimators: MDN, MAF, NSF | `"maf"` (default), `"mdn"`, `"nsf"` |
 | z-scoring of theta/x | internal standardizers |
 | `build_posterior()` + `.sample()` / `.log_prob()` | `posterior()` + `sample()` / `log_prob()` |
 | leakage correction for bounded priors | rejection sampling + acceptance-renormalized `log_prob` |
@@ -96,19 +96,26 @@ sim  ──┘                                                          │
 
 ### Modules (`R/`)
 
-| File | Responsibility |
-|---|---|
-| `prior.R` | `nsbi_prior` objects: sample, log_prob, support checks |
-| `simulator.R`* | (folded into `npe.R`) run simulators over prior draws |
-| `standardize.R` | z-scoring transforms + Jacobians |
-| `density_estimator.R` | generic interface + closed-form `linear_gaussian` |
-| `mdn.R` | torch Mixture Density Network (MLP → Gaussian mixture) |
-| `npe.R` | `npe()` trainer, `simulate_for_sbi()` |
-| `posterior.R` | `nsbi_posterior`: sample, log_prob, MAP, leakage handling |
-| `diagnostics.R` | `sbc`, `expected_coverage`, `c2st`, `posterior_predictive` |
-| `plotting.R` | `pairplot`, `plot_sbc` (base graphics) |
-| `generics.R` | `sample()` S3 generic (sbi-style ergonomics) |
-| `utils.R` | matrix coercion, torch availability |
+`R/` holds 26 files, organized around the pipeline above: `prior.R` defines
+`nsbi_prior` objects; `simulator.R` fixes the simulator contract, with
+`parallel.R` and `progress.R` handling `future`-backed dispatch and ETA
+reporting; `standardize.R` owns z-scoring and its Jacobian; `mdn.R`,
+`flows.R` (MAF), and `nsf.R` are the neural density estimators, all trained
+through the shared engine in `train.R`, alongside the closed-form oracle in
+`density_estimator.R`; `npe.R` and `sequential.R` fit the posterior directly,
+while `nle.R`, `nle_posterior.R`, `likelihood.R`, and `mcmc.R` fit the
+likelihood and turn it into posterior draws (`stan.R` exports a fit as Stan
+source); `posterior.R` and `generics.R` carry sampling, `log_prob`, and
+leakage handling; `diagnostics.R` and `summaries.R` implement `sbc`,
+`expected_coverage`, `c2st`, and `tarp`; `plotting.R` builds on ggplot2 and
+GGally; and `check.R`, `serialize.R`, `embedding.R`, `utils.R`, and `tasks.R`
+round out argument validation, save/load, embedding nets, and the benchmark
+tasks shared with the test suite.
+
+`docs/verification-roadmap.md`'s "What exists right now" table (Part E) is
+the maintained file-by-file inventory, kept current alongside the code it
+describes. This document stays about the method and the design choices, not
+a second copy of that table.
 
 ### The density-estimator contract
 
@@ -119,9 +126,10 @@ de_log_prob(de, theta, x)  # length-n vector of log q(theta | x)
 de_sample(de, x, n)        # n x dim matrix of draws given a single x
 ```
 
-Standardization and the change-of-variables Jacobian live in `posterior.R`, so
-estimators stay simple and interchangeable. Adding a normalizing flow later
-means implementing exactly these two methods.
+Standardization and the change-of-variables Jacobian live in `standardize.R`,
+not in the estimators, so estimators stay simple and interchangeable. Adding
+a new density estimator means implementing exactly these two methods and
+wiring it into `fit_density_estimator()`'s `switch()` in `npe.R`.
 
 ### The MDN (a neural estimator; the default is the MAF, matching `sbi`)
 
@@ -134,8 +142,8 @@ means implementing exactly these two methods.
 - Log-density via `logsumexp` over components; Cholesky solve for the quadratic
   form (numerically stable, no explicit inverse).
 - Training: Adam, minibatches, validation split, early stopping on validation
-  loss — matching `sbi`'s defaults (batch 100/50, lr 5e-4, 10% validation,
-  patience ~20).
+  loss — matching `sbi`'s defaults (batch 200, lr 5e-4, 10% validation,
+  patience 20).
 
 Full covariance (vs. diagonal) matters: the linear-Gaussian benchmark has a
 correlated posterior, and we want to recover it exactly enough to pass C2ST.
@@ -166,7 +174,7 @@ sample_prior(prior, n);    within_support(prior, theta)
 # inference
 simulate_for_sbi(simulator, prior, n)
 fit <- npe(prior, simulator, n_simulations = 1000,
-           density_estimator = c("mdn", "linear_gaussian"), ...)
+           density_estimator = c("maf", "mdn", "nsf", "linear_gaussian"), ...)
 
 # posterior
 post <- posterior(fit, x_obs = ...)
@@ -180,5 +188,3 @@ pairplot(samples, truth = ...);  plot_sbc(sbc_result)
 
 See `docs/verification-roadmap.md` for how each piece is validated against
 analytic truth and against Python `sbi`.
-
-*`simulator.R` responsibilities currently live in `npe.R`; split out if it grows.
