@@ -37,13 +37,8 @@ for (j in 1:2) {
 par(op); dev.off()
 
 ## ---- 2. Two Moons ---------------------------------------------------------
-prior_tm <- prior_uniform(low = c(-1, -1), high = c(1, 1))
-two_moons_sim <- function(theta) {
-  a <- runif(1, -pi / 2, pi / 2); r <- rnorm(1, 0.1, 0.01)
-  c(r * cos(a) + 0.25 - abs(theta[1] + theta[2]) / sqrt(2),
-    r * sin(a) + (-theta[1] + theta[2]) / sqrt(2))
-}
-fit_tm <- npe(prior_tm, two_moons_sim, n_simulations = 15000,
+task_tm <- task_two_moons()
+fit_tm <- npe(task_tm$prior, task_tm$simulator, n_simulations = 15000,
               density_estimator = "mdn", n_components = 8L,
               hidden = c(64L, 64L), max_epochs = 300L, seed = 1)
 post_tm <- posterior(fit_tm, x_obs = c(0, 0))

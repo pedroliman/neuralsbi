@@ -55,9 +55,8 @@ test_that("MAF posterior is close to the analytic linear-Gaussian posterior", {
   post <- posterior(fit, x_obs = x_obs)
   draws <- sample(post, 10000)
 
-  prec <- diag(d) + diag(d) / sigma^2
-  Sigma <- solve(prec)
-  mu <- as.numeric(Sigma %*% (x_obs / sigma^2))
+  truth <- analytic_gauss_posterior(x_obs, sigma, d)
+  mu <- truth$mu; Sigma <- truth$Sigma
   expect_equal(colMeans(draws), mu, tolerance = 0.1)
   expect_equal(apply(draws, 2, sd), sqrt(diag(Sigma)), tolerance = 0.1)
 })

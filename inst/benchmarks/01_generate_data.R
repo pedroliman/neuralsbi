@@ -2,6 +2,7 @@
 # Generate shared simulations for a benchmark task.
 # Usage: Rscript 01_generate_data.R --task gaussian_linear --n 10000 --seed 42
 suppressMessages(library(neuralsbi))
+source("00_tasks.R")
 
 args <- as.list(commandArgs(trailingOnly = TRUE))
 opt <- function(flag, default) {
@@ -13,12 +14,7 @@ n <- as.integer(opt("--n", "10000"))
 n_obs <- as.integer(opt("--n_obs", "5"))
 seed <- as.integer(opt("--seed", "42"))
 
-task <- switch(task_name,
-  gaussian_linear = task_gaussian_linear(),
-  two_moons = task_two_moons(),
-  slcp = task_slcp(),
-  stop("unknown task: ", task_name)
-)
+task <- benchmark_task(task_name)
 
 set.seed(seed)
 sims <- simulate_for_sbi(task$simulator, task$prior, n, seed = seed)

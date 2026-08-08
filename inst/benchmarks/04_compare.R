@@ -2,6 +2,7 @@
 # Compare neuralsbi vs Python sbi posterior samples with C2ST and moments.
 # Usage: Rscript 04_compare.R --task gaussian_linear --estimator maf
 suppressMessages(library(neuralsbi))
+source("00_tasks.R")
 
 args <- as.list(commandArgs(trailingOnly = TRUE))
 opt <- function(flag, default) {
@@ -11,12 +12,7 @@ opt <- function(flag, default) {
 task_name <- opt("--task", "gaussian_linear")
 estimator <- opt("--estimator", "maf")
 
-task <- switch(task_name,
-  gaussian_linear = task_gaussian_linear(),
-  two_moons = task_two_moons(),
-  slcp = task_slcp(),
-  stop("unknown task: ", task_name)
-)
+task <- benchmark_task(task_name)
 res_dir <- file.path("results", task_name)
 x_obs <- as.matrix(read.csv(file.path("data", task_name, "x_obs.csv"),
                             header = FALSE))

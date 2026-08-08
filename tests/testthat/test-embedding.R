@@ -96,8 +96,7 @@ test_that("a jointly trained embedding still recovers the linear-Gaussian poster
   post <- posterior(fit, x_obs = x_obs)
   draws <- sample(post, 10000)
 
-  prec <- diag(d) + diag(d) / sigma^2
-  Sigma <- solve(prec)
-  mu <- as.numeric(Sigma %*% (x_obs / sigma^2))
+  truth <- analytic_gauss_posterior(x_obs, sigma, d)
+  mu <- truth$mu
   expect_equal(colMeans(draws), mu, tolerance = 0.12)
 })

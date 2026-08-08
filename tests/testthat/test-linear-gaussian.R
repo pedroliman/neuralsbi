@@ -1,13 +1,6 @@
 # The linear_gaussian estimator is exact for a linear-Gaussian model, so it
 # gives a torch-free regression oracle for the whole NPE pipeline.
 
-analytic_gauss_posterior <- function(x_obs, sigma, d) {
-  prec <- diag(d) + diag(d) / sigma^2
-  Sigma <- solve(prec)
-  mu <- as.numeric(Sigma %*% (x_obs / sigma^2))
-  list(mu = mu, Sigma = Sigma)
-}
-
 test_that("linear_gaussian NPE recovers the analytic Gaussian posterior", {
   set.seed(42)
   d <- 2; sigma <- 0.5
