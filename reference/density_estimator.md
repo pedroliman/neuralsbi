@@ -12,9 +12,9 @@ exposes two generics:
 
 The contract is really `q(target | condition)`: it makes no assumption
 about which of the two arguments is the parameter.
-[`npe`](https://neuralsbi.pedrodelima.com/reference/npe.md) calls it
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) calls it
 with `theta` as the target and `x` as the condition, learning the
-posterior. [`nle`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+posterior. [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
 swaps the two, learning the likelihood instead, with the same estimators
 and the same two generics.
 

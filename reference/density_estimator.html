@@ -101,9 +101,9 @@ generics:</p>
 <ul><li><p><code>de_log_prob(de, theta, x)</code> – log density of <code>theta</code> given <code>x</code></p></li>
 <li><p><code>de_sample(de, x, n)</code> – draw <code>n</code> parameter vectors given a single <code>x</code></p></li>
 </ul><p>The contract is really <code>q(target | condition)</code>: it makes no assumption
-about which of the two arguments is the parameter. <code><a href="npe.html">npe</a></code> calls it with
+about which of the two arguments is the parameter. <code><a href="npe.html">npe()</a></code> calls it with
 <code>theta</code> as the target and <code>x</code> as the condition, learning the posterior.
-<code><a href="nle.html">nle</a></code> swaps the two, learning the likelihood instead, with the same
+<code><a href="nle.html">nle()</a></code> swaps the two, learning the likelihood instead, with the same
 estimators and the same two generics.</p>
 <p>Four estimators ship today:</p><ul><li><p><code>"maf"</code> – a Masked Autoregressive Flow (Papamakarios et al., 2017), a
 stack of invertible autoregressive transforms with an exact

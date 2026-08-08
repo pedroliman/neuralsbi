@@ -1,15 +1,16 @@
 # neuralsbi: Neural Simulation-Based Inference
 
-A native R implementation of neural simulation-based inference. Given a
-prior over parameters and a simulator, 'neuralsbi' trains a conditional
-neural density estimator for likelihood-free Bayesian inference: Neural
-Posterior Estimation approximates the posterior directly and samples it
-in a forward pass, while Neural Likelihood Estimation learns a surrogate
-likelihood that is sampled with MCMC, handles repeated independent
-observations, and can be exported as 'Stan' code for use inside a larger
-model. Neural estimators run on the 'torch' back end. It targets applied
-researchers who want an approachable interface with sensible defaults
-and built-in posterior diagnostics.
+A native R implementation of neural simulation-based inference (SBI)
+methods. Given a prior over parameters and a simulator, 'neuralsbi'
+trains a conditional neural density estimator for likelihood-free
+Bayesian inference: Neural Posterior Estimation approximates the
+posterior directly and samples it in a forward pass, while Neural
+Likelihood Estimation learns a surrogate likelihood that is sampled with
+MCMC, handles repeated independent observations, and can be exported as
+'Stan' code for use inside a larger model. Neural estimators run on the
+'torch' back end. This package is developed for applied researchers who
+want an R-native approachable SBI interface with sensible defaults and
+built-in posterior diagnostics.
 
 ## See also
 
@@ -25,3 +26,8 @@ Useful links:
 
 **Maintainer**: Pedro Nascimento de Lima <plima@rand.org>
 ([ORCID](https://orcid.org/0000-0001-9057-198X))
+
+Authors:
+
+- Pedro Nascimento de Lima <plima@rand.org>
+  ([ORCID](https://orcid.org/0000-0001-9057-198X))

@@ -129,15 +129,20 @@
   vs
   [`save_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md))
   and a “per observation” suffix on the data line. `R/utils.R` now
-  carries two internal helpers, `cat_fit_common()` and `cat_dropped()`,
+  carries two internal helpers,
+  [`cat_fit_common()`](https://neuralsbi.pedrodelima.com/reference/cat_fit_common.md)
+  and
+  [`cat_dropped()`](https://neuralsbi.pedrodelima.com/reference/cat_dropped.md),
   that both print methods call instead of repeating the blocks;
   `print.nsbi_sbc()` and `print.nsbi_tarp()` also switch to
-  `cat_dropped()` for their identical “N further trials dropped” line.
-  `print.nsbi_snpe()` now calls `cat_fit_common()` too, which means a
-  sequential fit’s summary gains the parameter/data dimensions,
-  dropped-simulation count, best validation loss and dead-network
-  warning it never showed before, alongside the round table and
-  not-amortized warning it already had
+  [`cat_dropped()`](https://neuralsbi.pedrodelima.com/reference/cat_dropped.md)
+  for their identical “N further trials dropped” line.
+  `print.nsbi_snpe()` now calls
+  [`cat_fit_common()`](https://neuralsbi.pedrodelima.com/reference/cat_fit_common.md)
+  too, which means a sequential fit’s summary gains the parameter/data
+  dimensions, dropped-simulation count, best validation loss and
+  dead-network warning it never showed before, alongside the round table
+  and not-amortized warning it already had
   ([\#60](https://github.com/pedroliman/neuralsbi/issues/60)).
 
 - Internal cleanup, no user-visible behavior change: the MADE trunk
