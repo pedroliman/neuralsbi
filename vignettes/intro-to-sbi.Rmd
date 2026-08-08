@@ -19,11 +19,13 @@ vignette: >
 
 Ordinary Bayesian inference needs a likelihood $p(x | \theta)$, a formula for how probable the data are at each parameter value. For the SIR model we cannot write one down.
 
-The reason is the part of the model we never see. The simulator steps through 84 days, drawing new infections and new recoveries as binomial variables, and reports a thinned weekly total. To compute $p(x | \theta)$ for an observed case curve we would have to add up the probability of every unobserved epidemic path that could have produced it: every combination of daily infections and recoveries, over twelve weeks, consistent with the twelve numbers we saw. There are astronomically many, and no closed form for the sum.
+The reason is the part of the model we never see. The simulator steps through 84 days, drawing new infections and new recoveries as binomial variables, and reports a thinned weekly total. To compute $p(x | \theta)$ for an observed case curve we would have to add up the probability of every unobserved epidemic path that could have produced it. That means every combination of daily infections and recoveries over twelve weeks that ends in the twelve numbers we saw. There are astronomically many of them, and no closed form for the sum.
 
-Simulating, on the other hand, is easy. One call to the simulator gives one $(\theta, x)$ pair, and we can have as many as we are willing to wait for. Simulation-based inference is the family of methods that replaces likelihood evaluation with simulation. Neural posterior estimation, which is what `neuralsbi` implements, learns $p(\theta | x)$ directly from those pairs.
+Simulating is the part we can do. One call to the simulator gives one $(\theta, x)$ pair, and we can have as many as we are willing to wait for. Simulation-based inference is the family of methods that replaces likelihood evaluation with simulation. Neural posterior estimation, which is what `neuralsbi` implements, learns $p(\theta | x)$ directly from those pairs.
 
-Other methods make other trades on the same problem. A particle filter estimates the likelihood by simulating the latent state forward, which works when you can write the *measurement* density even if the state process is a black box; `vignette("sir-epidemic")` runs `pomp` and `neuralsbi` side by side on one epidemic. Approximate Bayesian computation compares simulated to observed data through a distance threshold, which forces you to pick summary statistics. NPE conditions on the data as it comes and learns which features matter.
+Other methods make other trades on the same problem. A particle filter estimates the likelihood by simulating the latent state forward. That works when you can write the *measurement* density, even if the state process itself is a black box. `vignette("sir-epidemic")` runs `pomp` and `neuralsbi` side by side on one epidemic.
+
+Approximate Bayesian computation compares simulated to observed data through a distance threshold, which forces you to pick summary statistics. NPE conditions on the data as it comes and learns which features matter.
 
 ## What NPE learns
 
@@ -37,7 +39,7 @@ A note on notation, especially if you come from regression. SBI writes the obser
 
 ## The model
 
-The simulator and prior are the ones from `vignette("neuralsbi")`: a binomial SIR epidemic run day by day for twelve weeks, of which we observe a fraction $\rho$ of new infections as weekly case counts, on the $\log(1 + \text{cases})$ scale.
+The simulator and prior are the ones from `vignette("neuralsbi")`. A binomial SIR epidemic runs day by day for twelve weeks, and we observe a fraction $\rho$ of the new infections as weekly case counts on the $\log(1 + \text{cases})$ scale.
 
 
 ``` r
@@ -135,7 +137,7 @@ The intervals also stay inside the prior, which is why the grid stops at $R_0 = 
 
 The pairplot in `vignette("neuralsbi")` shows $\beta$ and $\gamma$ lying along a ridge rather than in a blob. That is a statement about the data, not about the estimator. An epidemic curve is shaped mostly by $R_0 = \beta/\gamma$, so many pairs of rates fit it about equally well, and the posterior says so by spreading along the ridge.
 
-Derived quantities come out of the posterior draws directly, and the contrast is easy to see in the relative widths:
+Derived quantities come out of the posterior draws directly, and the relative widths show the contrast:
 
 
 ``` r
@@ -176,15 +178,15 @@ plot_coverage(res_sbc)
 <p class="caption">plot of chunk sbc</p>
 </div>
 
-$\beta$ passes comfortably at 0.31. $\gamma$ (0.040) and $\rho$ (0.086) are borderline, and the coverage curve sits a little under the diagonal, so the intervals are mildly too narrow. Nothing here says the fit is broken; it says quote $\gamma$'s interval with care and add simulations if you need it sharper.
+$\beta$ passes comfortably at 0.31. $\gamma$ (0.040) and $\rho$ (0.086) are borderline, and the coverage curve runs a little under the diagonal, so the intervals are mildly too narrow. Nothing here says the fit is broken. Quote $\gamma$'s interval with care, and add simulations if you need it sharper.
 
 SBC averages over the prior and never looks at the observation you actually have. A posterior predictive check does, and it is the one that catches a simulator that cannot reproduce your data at any parameter value. `vignette("diagnostics")` covers both, along with TARP and the classifier two-sample test, and says what to do when a fit does not pass.
 
-## Where to go next
+## Where next
 
 - `vignette("neuralsbi")` is the short workflow tour on this same model.
 - `vignette("density-estimators")` compares the mixture-density-network, flow and closed-form estimators.
 - `vignette("diagnostics")` is the complete diagnostic toolkit.
 - `vignette("sir-epidemic")` puts NPE next to `pomp`'s particle-filter MCMC on one epidemic, and `vignette("sir-time-varying-beta")` scales the idea to three competing models across all 50 US states.
 
-For the ideas behind the method, Cranmer, Brehmer and Louppe (2020), ["The frontier of simulation-based inference"](https://doi.org/10.1073/pnas.1912789117), is a short and readable review. Papamakarios and Murray (2016), ["Fast &epsilon;-free inference of simulation models with Bayesian conditional density estimation"](https://doi.org/10.48550/arXiv.1605.06376), introduced the approach NPE descends from. Talts et al. (2018), ["Validating Bayesian inference algorithms with simulation-based calibration"](https://doi.org/10.48550/arXiv.1804.06788), is the reference for the calibration check used above. Lueckmann et al. (2021), ["Benchmarking simulation-based inference"](https://doi.org/10.48550/arXiv.2101.04653), compares NPE against the other neural SBI algorithms, which is useful context for where `neuralsbi` sits.
+For the ideas behind the method, Cranmer, Brehmer and Louppe (2020), ["The frontier of simulation-based inference"](https://doi.org/10.1073/pnas.1912789117), is a short and readable review. Papamakarios and Murray (2016), ["Fast &epsilon;-free inference of simulation models with Bayesian conditional density estimation"](https://doi.org/10.48550/arXiv.1605.06376), introduced the approach NPE descends from. Talts et al. (2018), ["Validating Bayesian inference algorithms with simulation-based calibration"](https://doi.org/10.48550/arXiv.1804.06788), is the reference for the calibration check used above. Lueckmann et al. (2021), ["Benchmarking simulation-based inference"](https://doi.org/10.48550/arXiv.2101.04653), compares NPE against the other neural SBI algorithms, which is useful context for where this package fits.

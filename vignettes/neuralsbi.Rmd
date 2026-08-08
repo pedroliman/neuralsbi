@@ -45,7 +45,7 @@ sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
 
 That is the whole model specification. Note what is missing: nowhere do we write down how probable a case curve is at a given $(\beta, \gamma, \rho)$. `neuralsbi` only ever calls the simulator.
 
-The simulator returns $\log(1 + \text{cases})$ rather than raw counts. `npe()` standardizes whatever the simulator gives it, and across this prior the weekly counts run from a handful to tens of thousands, which is a wide range to ask one scale to cover. The log keeps the small outbreaks legible next to the large ones.
+The simulator returns $\log(1 + \text{cases})$ rather than raw counts. `npe()` standardizes whatever the simulator gives it. Across this prior the weekly counts run from a handful to tens of thousands, which is a wide range for one scale to cover. The log keeps the small outbreaks legible next to the large ones.
 
 Here is one epidemic, on the natural count scale:
 
@@ -65,6 +65,8 @@ plot(1:12, expm1(x_obs), type = "b", pch = 16,
 <img src="figures/neuralsbi-outbreak-1.svg" alt="Weekly reported cases from one simulated SIR outbreak."  />
 <p class="caption">plot of chunk outbreak</p>
 </div>
+
+Reported cases climb from 34 in the first week to about 11,000 in week 8, then fall away as the susceptible pool empties. Those twelve numbers are the entire data set for everything below.
 
 ## Train your neural posterior estimator
 
@@ -172,11 +174,13 @@ plot_coverage(res)
 <p class="caption">plot of chunk sbc</p>
 </div>
 
-Read the p-values, not the fact that the check ran. $\beta$ comes back clean at 0.19. $\gamma$ (0.023) and $\rho$ (0.040) fall just under the conventional 0.05, and the coverage curve runs slightly below the diagonal, which is mild overconfidence: the intervals are a little too narrow rather than in the wrong place. That is a realistic first pass at 8000 simulations, and the standard remedy is more simulations before a bigger network. `vignette("diagnostics")` covers how to read these plots and what to do when a fit does not pass.
+Read the p-values, not the fact that the check ran. $\beta$ comes back clean at 0.19. $\gamma$ (0.023) and $\rho$ (0.040) fall just under the conventional 0.05, and the coverage curve runs slightly below the diagonal. That is mild overconfidence: the intervals are a little too narrow rather than in the wrong place.
 
-## Where to go next
+A first pass at 8000 simulations often looks like this, and the remedy is more simulations before a bigger network. `vignette("diagnostics")` covers how to read these plots and what to do when a fit does not pass.
 
-- `vignette("intro-to-sbi")` explains what the method is doing with the same model: why a simulator replaces the likelihood, what amortization buys you across many outbreaks, and how to read a derived quantity like $R_0$ off the posterior.
+## Where next
+
+- `vignette("intro-to-sbi")` explains what the method is doing with the same model. It covers why a simulator replaces the likelihood, what amortization buys across many outbreaks, and how to read $R_0$ off the posterior draws.
 - `vignette("density-estimators")` compares the estimators behind `npe()` and says when each one is worth using.
 - `vignette("diagnostics")` covers the full set of checks: SBC, expected coverage, TARP, and posterior predictive checks.
 - `vignette("sir-epidemic")` puts `neuralsbi` next to `pomp` on the same epidemic and compares the two posteriors.

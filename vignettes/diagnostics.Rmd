@@ -55,6 +55,8 @@ plot_sbc(res, param = 1)
 <p class="caption">plot of chunk unnamed-chunk-3</p>
 </div>
 
+Nine of the ten parameters come back with large p-values. Parameter 3 comes back at 0.003, which is low, though one value that small out of ten tests is not yet evidence of a problem.
+
 Read the rank histogram like this:
 
 - Flat: calibrated.
@@ -117,7 +119,7 @@ plot_coverage(res)
 <p class="caption">plot of chunk unnamed-chunk-4</p>
 </div>
 
-A calibrated posterior hugs the diagonal. Points below it mean the intervals are too narrow: a 90% interval that covers the truth 70% of the time.
+A calibrated posterior hugs the diagonal. Points below it mean the intervals are too narrow: a 90% interval that only covers the truth 70% of the time. Here the nominal-90% row runs from 0.80 to 0.93 across the ten parameters, close enough to the diagonal to be unremarkable.
 
 ## TARP, a sharper coverage test
 
@@ -138,6 +140,8 @@ plot_tarp(tr)   # ECP curve on the diagonal = calibrated
 <img src="figures/diagnostics-unnamed-chunk-5-1.png" alt="TARP expected-coverage-probability curve on the diagonal."  />
 <p class="caption">plot of chunk unnamed-chunk-5</p>
 </div>
+
+The largest gap between expected and nominal coverage is 0.05 over the whole curve, so the joint posterior is calibrated about as well as the marginals were.
 
 ## Posterior predictive checks
 
@@ -181,4 +185,6 @@ As a rule of thumb, accuracies below about 0.55 to 0.6 indicate a close match, a
 2. Run a posterior predictive check for the actual observation before drawing any conclusion from the posterior.
 3. When you change estimator or training settings, compare old and new draws with `c2st()` to see whether the change moved the posterior at all.
 
-`vignette("sir-epidemic")` runs this routine end to end on an applied problem.
+## See also
+
+`vignette("sir-epidemic")` runs this routine end to end on an applied problem, against `pomp`'s particle-filter posterior. `?sbc`, `?tarp` and `?posterior_predictive` document the arguments, and `vignette("neural-likelihood")` shows what changes when the posterior comes from MCMC instead of a forward pass.
