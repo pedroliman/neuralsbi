@@ -401,6 +401,32 @@ check_function <- function(f, arg, what = NULL) {
   invisible(f)
 }
 
+#' Validate the `device` argument shared by [npe()] and [nle()]
+#'
+#' Only checks that `device` is one of the recognized keywords -- `"cpu"`,
+#' `"cuda"`, `"mps"`, or `"gpu"`/`"auto"` -- so a typo is caught before the
+#' simulator runs, the same reason [check_train_controls()] runs early. This
+#' is the whole check for `"cpu"`. Turning `"cuda"`/`"mps"`/`"gpu"`/`"auto"`
+#' into a concrete, available device needs `torch` loaded, which
+#' `density_estimator = "linear_gaussian"` never requires; that step is
+#' [resolve_device()]'s job, called only once a `torch`-backed estimator is
+#' about to train.
+#'
+#' @param device The user's value.
+#' @return `device`, unchanged.
+#' @keywords internal
+check_device_arg <- function(device) {
+  ok <- is.character(device) && length(device) == 1L && !is.na(device)
+  valid <- c("cpu", "cuda", "mps", "gpu", "auto")
+  if (!ok || !device %in% valid) {
+    stop(sprintf("`device` must be one of %s, not %s.",
+                 paste(sprintf('"%s"', valid), collapse = ", "),
+                 describe_value(device)),
+         call. = FALSE)
+  }
+  device
+}
+
 #' Validate a support bound
 #'
 #' [within_support()] compares `theta` against `lower`/`upper` with `sweep()`,

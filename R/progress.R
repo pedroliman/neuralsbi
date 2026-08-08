@@ -169,28 +169,86 @@ nsbi_progressor <- function(steps, label = NULL) {
   }
 }
 
+#' Recent-window step rate for the built-in bar's ETA
+#'
+#' `elapsed / pos` -- the lifetime average since the bar started -- is what
+#' the old ETA extrapolated from, and it is a poor estimate of the *current*
+#' speed: it is dragged down for the whole run by the first step's one-time
+#' setup cost (device/net initialization, first CUDA/MPS kernel compilation,
+#' R JIT warmup), and across training restarts it blends restarts that may
+#' cost very different amounts per epoch. `times`/`positions` are a short
+#' rolling window of recent calls (oldest first), so the rate reflects what
+#' the last few steps actually cost, not the whole run's history. Falls back
+#' to the lifetime average when the window is too short to trust (fewer than
+#' two samples, or no time/progress elapsed within it yet).
+#'
+#' @param times,positions Parallel vectors of recent `Sys.time()` timestamps
+#'   (as numeric seconds) and the `pos` reported at each.
+#' @param elapsed,pos Lifetime elapsed seconds and current position, used
+#'   only as the fallback.
+#' @return Steps per second, or `NA_real_` if no rate can be estimated yet.
+#' @keywords internal
+bar_rate <- function(times, positions, elapsed, pos) {
+  n <- length(times)
+  if (n >= 2) {
+    dt <- times[n] - times[1]
+    dp <- positions[n] - positions[1]
+    if (dt > 0 && dp > 0) return(dp / dt)
+  }
+  if (elapsed > 0 && pos > 0) return(pos / elapsed)
+  NA_real_
+}
+
+#' ETA in seconds from a steps/sec rate
+#' @param rate Steps per second, as returned by [bar_rate()].
+#' @param pos,total Current position and (possibly projected) total.
+#' @return Seconds remaining, or `NA_real_` if `rate` is not usable.
+#' @keywords internal
+bar_eta <- function(rate, pos, total) {
+  if (!is.finite(rate) || rate <= 0) return(NA_real_)
+  max(0, total - pos) / rate
+}
+
 #' Minimal dependency-free progress bar with an ETA
 #'
 #' Draws to `stderr()`, redrawing in place. Updates are throttled so a fast
-#' inner loop does not spend its time formatting text.
+#' inner loop does not spend its time formatting text. The ETA is
+#' extrapolated from a short rolling window of recent calls (see
+#' [bar_rate()]), not the lifetime average, so it tracks the current speed
+#' rather than a blend of setup overhead and past restarts.
 #' @keywords internal
 builtin_bar <- function(label = NULL) {
   width <- 22L
+  window <- 8L
   start <- Sys.time()
   last_draw <- -Inf
   finished <- FALSE
   label <- label %||% ""
+  hist_time <- numeric(0)
+  hist_pos <- numeric(0)
 
   function(pos, total, done = FALSE) {
     if (finished) return(invisible(NULL))
     now <- as.numeric(Sys.time())
+
+    # Recorded on every call (not just draws) so the window reflects real
+    # step timing even while redraws are throttled below.
+    hist_time <<- c(hist_time, now)
+    hist_pos <<- c(hist_pos, pos)
+    if (length(hist_time) > window) {
+      keep <- seq(length(hist_time) - window + 1L, length(hist_time))
+      hist_time <<- hist_time[keep]
+      hist_pos <<- hist_pos[keep]
+    }
+
     if (!done && now - last_draw < 0.1) return(invisible(NULL))
     last_draw <<- now
     frac <- if (total > 0) min(1, pos / total) else 0
     if (done) frac <- 1
     filled <- round(frac * width)
     elapsed <- as.numeric(difftime(Sys.time(), start, units = "secs"))
-    eta <- if (frac > 0 && !done) elapsed * (1 - frac) / frac else 0
+    rate <- bar_rate(hist_time, hist_pos, elapsed, pos)
+    eta <- if (done) 0 else bar_eta(rate, pos, total)
     cat(sprintf("\r%-10s [%s%s] %3.0f%% | %s/%s | %s elapsed | ETA %s   ",
                 label,
                 strrep("=", filled), strrep(" ", width - filled),

@@ -20,7 +20,8 @@ fit_torch_de(
   clip_grad_norm,
   embedding,
   seed,
-  verbose
+  verbose,
+  device = "cpu"
 )
 }
 \description{
@@ -35,5 +36,15 @@ object.
 into the returned list ahead of \code{embedding}, matching the field order each
 estimator returned before this helper existed. This helper never needs to
 know what \code{arch}'s fields are.
+
+\code{device} is a raw keyword here (\code{"cpu"}, \code{"cuda"}, \code{"mps"}, \code{"gpu"} or
+\code{"auto"}) -- resolving it to an actual, available device needs \code{torch}
+loaded, so that happens inside \code{train_conditional_de()}, after its own
+argument checks (\code{check_train_controls()}) have already run without
+needing \code{torch} at all. The \emph{resolved} string comes back on
+\code{train_conditional_de()}'s return value and is stored on the returned
+estimator (never a torch device object, which would not survive
+\code{saveRDS()}) so \code{posterior()}/\code{sample()} can see what it was actually fit
+with.
 }
 \keyword{internal}

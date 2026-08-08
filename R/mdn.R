@@ -65,7 +65,8 @@ mdn_build_tril <- function(net, tril_flat) {
   b <- tril_flat$shape[1]
   K <- net$K
   p <- net$dim_theta
-  L <- torch::torch_zeros(c(b, K, p, p), dtype = tril_flat$dtype)
+  L <- torch::torch_zeros(c(b, K, p, p), dtype = tril_flat$dtype,
+                          device = tril_flat$device)
   for (m in seq_len(net$tril_size)) {
     val <- tril_flat[, , m]
     if (net$tri$is_diag[m]) {
@@ -104,7 +105,7 @@ fit_mdn <- function(theta, x, n_components = 10L, hidden = c(50L, 50L),
                     max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                     validation_fraction = 0.1, patience = 20L,
                     n_restarts = 1L, clip_grad_norm = 5, embedding = NULL,
-                    seed = NULL, verbose = FALSE) {
+                    seed = NULL, verbose = FALSE, device = "cpu") {
   fit_torch_de(
     theta, x,
     build_net_fn = function(dim_x, dim_theta)
@@ -115,7 +116,7 @@ fit_mdn <- function(theta, x, n_components = 10L, hidden = c(50L, 50L),
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    embedding = embedding, seed = seed, verbose = verbose
+    embedding = embedding, seed = seed, verbose = verbose, device = device
   )
 }
 
@@ -127,12 +128,13 @@ de_log_prob.nsbi_de_mdn <- function(de, theta, x) {
 #' @export
 de_sample.nsbi_de_mdn <- function(de, x, n) {
   x <- as_theta_matrix(x, de$dim_x)[1, , drop = FALSE]
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
+  dev <- net_device(de$net)
+  xt <- torch::torch_tensor(x, dtype = torch::torch_float(), device = dev)
   params <- torch::with_no_grad(de$net(xt))
   L <- torch::with_no_grad(mdn_build_tril(de$net, params$tril_flat))
-  logits <- as.numeric(torch::as_array(params$logits[1, ]))
-  means <- torch::as_array(params$means[1, , ])           # K x p
-  Larr <- torch::as_array(L[1, , , ])                      # K x p x p
+  logits <- as.numeric(torch::as_array(params$logits[1, ]$to(device = "cpu")))
+  means <- torch::as_array(params$means[1, , ]$to(device = "cpu"))  # K x p
+  Larr <- torch::as_array(L[1, , , ]$to(device = "cpu"))            # K x p x p
   if (de$n_components == 1L) {
     means <- matrix(means, nrow = 1L)
     Larr <- array(Larr, dim = c(1L, de$dim_theta, de$dim_theta))
