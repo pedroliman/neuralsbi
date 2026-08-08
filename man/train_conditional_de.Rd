@@ -20,7 +20,8 @@ train_conditional_de(
   lr_factor = 0.5,
   min_lr = 1e-06,
   seed = NULL,
-  verbose = FALSE
+  verbose = FALSE,
+  device = "cpu"
 )
 }
 \arguments{
@@ -40,10 +41,19 @@ keep the one with the best validation loss.}
 \item{lr_patience, lr_factor, min_lr}{Reduce the learning rate by \code{lr_factor}
 after \code{lr_patience} epochs without validation improvement, down to
 \code{min_lr}.}
+
+\item{device}{Torch device keyword: \code{"cpu"} (the default), \code{"cuda"},
+\code{"mps"}, or \code{"gpu"}/\code{"auto"} (see \code{resolve_device()}, which is what turns
+this into an actual, available device). Training and validation tensors
+are created there, and the net is moved there right after \code{build_net()},
+so the two never disagree the way they do under a bare
+\code{torch::with_device()}.}
 }
 \value{
-\code{list(net, best_val_loss, history)} where \code{history} is a data frame
-of per-epoch train/validation losses for the winning restart.
+\code{list(net, best_val_loss, history, device)}, where \code{history} is a
+data frame of per-epoch train/validation losses for the winning restart
+and \code{device} is the resolved device (\code{"cpu"}, \code{"cuda"} or \code{"mps"})
+training actually ran on.
 }
 \description{
 All neural estimators (MDN, MAF, NSF) share one training loop so that

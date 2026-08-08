@@ -25,6 +25,7 @@ nle(
   n_restarts = 1L,
   clip_grad_norm = 5,
   standardize = TRUE,
+  device = "cpu",
   seed = NULL,
   verbose = FALSE
 )
@@ -82,6 +83,20 @@ validation improvement.}
 
 \item{standardize}{Whether to z-score \code{theta} and \code{x} before training
 (strongly recommended; default \code{TRUE}).}
+
+\item{device}{Where to train the neural estimator: \code{"cpu"} (the default),
+\code{"cuda"}, \code{"mps"}, or \code{"gpu"}/\code{"auto"} to resolve CUDA -> MPS -> CPU
+(mirroring Python \code{sbi}'s \code{"gpu"}). CPU is the default on purpose --
+matching \code{sbi}, not auto-selecting a GPU -- and \code{"cuda"}/\code{"mps"} error if
+the requested device is not actually available rather than falling back
+silently, so a typo or a missing driver is not mistaken for a slow CPU
+run. Only \code{"gpu"}/\code{"auto"} falls back to CPU without complaint, since it
+never named a specific device. Ignored (with no error) by
+\code{"linear_gaussian"}, which has no GPU concept. For the small networks
+typical of SBI models (the SIR example, say), \code{"mps"}/\code{"cuda"} can be
+\emph{slower} than CPU -- per-kernel launch overhead dominates until the net
+and batch are large -- so try CPU first and switch only if profiling
+shows a win.}
 
 \item{seed}{Optional integer seed for reproducibility.}
 

@@ -9,9 +9,11 @@ de_log_prob_torch(de, theta, x, log_prob_fn)
 \description{
 Coerces \code{theta} and \code{x} to matrices, broadcasts a single-row \code{x} up to
 \code{theta}'s row count (the same broadcast \code{\link[=lingauss_mean]{lingauss_mean()}}'s caller does on
-\code{mu}, just on the other operand), moves both to torch, and evaluates
-\code{log_prob_fn} under \code{with_no_grad()}. \code{log_prob_fn} is the per-estimator
-tensor function -- \code{mdn_log_prob_tensor()}, \code{maf_log_prob_tensor()} or
-\code{nsf_log_prob_tensor()}.
+\code{mu}, just on the other operand), moves both to the net's device (see
+\code{net_device()}), and evaluates \code{log_prob_fn} under \code{with_no_grad()}.
+\code{log_prob_fn} is the per-estimator tensor function -- \code{mdn_log_prob_tensor()},
+\code{maf_log_prob_tensor()} or \code{nsf_log_prob_tensor()}. The result comes back to
+CPU before it leaves torch, so the rest of the pipeline stays device-agnostic
+plain R.
 }
 \keyword{internal}
