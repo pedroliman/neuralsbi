@@ -137,6 +137,26 @@ test_that("mcmc_init reports an impossible start rather than looping", {
   )
 })
 
+test_that("mcmc_init proposal strategy gives up after 20 attempts", {
+  prior <- prior_uniform(low = 0, high = 1)
+  expect_error(
+    mcmc_init(prior, function(theta) rep(-Inf, nrow(theta)), n_chains = 2,
+              strategy = "proposal"),
+    "after 20 attempts"
+  )
+})
+
+test_that("mcmc_init pads with repeats when fewer finite draws than chains turn up", {
+  set.seed(1)
+  prior <- prior_uniform(low = 0, high = 1)
+  # only draws above 0.9999 are finite: with n_pool = 1000 there are far fewer
+  # of those than n_chains, so mcmc_init must pad by repeating them
+  lp <- function(theta) ifelse(theta[, 1] > 0.9999, 0, -Inf)
+  init <- mcmc_init(prior, lp, n_chains = 500, n_pool = 1000)
+  expect_equal(dim(init), c(500L, 1L))
+  expect_true(all(init > 0.9999))
+})
+
 test_that("split-Rhat flags chains that disagree", {
   set.seed(6)
   converged <- array(stats::rnorm(400 * 4), c(400, 4, 1))
@@ -210,4 +230,23 @@ test_that("format_mcmc_diagnostics() reports a run it could not score", {
   fine <- data.frame(rhat = c(1.0, 1.02), ess_bulk = c(900, 750))
   expect_identical(format_mcmc_diagnostics(fine),
                    "max Rhat 1.020, min bulk ESS 750")
+})
+
+test_that("split_rhat() returns NA for too few draws, too few chains, or a degenerate run", {
+  # mcmc_diagnostics() never reaches these itself -- its own n_iter < 4 guard
+  # and the always-even split-chain count keep split_rhat()'s shapes above
+  # this floor -- but split_rhat() is `@keywords internal` and called
+  # directly elsewhere, so it validates on its own.
+  expect_true(is.na(split_rhat(matrix(1:4, nrow = 1))))  # n = 1
+  expect_true(is.na(split_rhat(matrix(1:4, ncol = 1))))  # k = 1
+  # a chain with a non-finite variance (here, an NA draw)
+  expect_true(is.na(split_rhat(matrix(c(1, 2, NA, 4, 5, 6), nrow = 3, ncol = 2))))
+  # every chain constant: zero within-chain variance
+  expect_true(is.na(split_rhat(matrix(1, nrow = 5, ncol = 4))))
+})
+
+test_that("bulk_ess() returns NA for too few draws or a degenerate run", {
+  expect_true(is.na(bulk_ess(matrix(1:8, nrow = 2, ncol = 4))))  # n = 2 < 4
+  # every chain constant: rank-normalized variance is 0
+  expect_true(is.na(bulk_ess(matrix(1, nrow = 5, ncol = 4))))
 })

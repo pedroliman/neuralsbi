@@ -11,6 +11,10 @@ test_that("check_matrix() names the argument it is complaining about", {
   expect_error(check_matrix(numeric(0), 2L, "theta"), "`theta` is empty")
   expect_error(check_matrix(data.frame(a = 1, b = "x"), 2L, "theta"),
                "non-numeric columns: b")
+  # d = NULL: no fixed width to report, so the message falls back to the
+  # generic "vector or matrix" phrasing.
+  expect_error(check_matrix(NULL, d = NULL, arg = "theta"),
+               "`theta` is missing. It must be a numeric vector or matrix\\.")
 })
 
 test_that("check_matrix() errors on a wrong-length vector instead of recycling", {
@@ -203,4 +207,42 @@ test_that("log_lik() rejects a wrong-length vector by name", {
   expect_error(log_lik(fit, seq(-2, 2, length.out = 5), matrix(0, 1, 1)),
                "`theta` must have 1 column")
   expect_error(log_lik(fit, 0, matrix(0, 2, 2)), "`x` must have 1 column")
+})
+
+test_that("describe_params() names an empty parameter set", {
+  # call_sim_once()'s error message calls this with whatever theta_i it was
+  # given; a length-0 parameter set is degenerate but should still describe
+  # itself rather than error inside the error handler.
+  expect_equal(describe_params(numeric(0)), "none")
+})
+
+test_that("check_index() accepts a numeric index and rejects an out-of-range one", {
+  expect_equal(check_index(2, "param", c("a", "b", "c"), n = 3), 2L)
+  expect_equal(check_index(2L, "param", NULL, n = 3), 2L)
+  expect_error(check_index(0, "param", c("a", "b", "c"), n = 3),
+               "must be one parameter index between 1 and 3, or one of a, b, c")
+  expect_error(check_index(4, "param", NULL, n = 3),
+               "must be one parameter index between 1 and 3, not 4")
+  expect_error(check_index(1.5, "param", NULL, n = 3), "not 1.5")
+  expect_error(check_index(NA_real_, "param", NULL, n = 3), "not NA")
+})
+
+test_that("check_index() rejects a name when the columns are unnamed", {
+  expect_error(check_index("b", "param", nms = NULL, n = 3),
+               "is \"b\", but the parameters are unnamed. Give an index between 1 and 3")
+})
+
+test_that("check_index() rejects a name that is not among the given names", {
+  expect_error(check_index("z", "param", c("a", "b", "c"), n = 3),
+               "is \"z\", which is not one of the parameter names: a, b, c")
+})
+
+test_that("check_index() accepts a factor and rejects an unusable character value", {
+  # calibration_plot()'s `param` argument takes a factor column name as
+  # readily as a plain character one.
+  expect_equal(check_index(factor("b"), "param", c("a", "b", "c"), n = 3), 2L)
+  expect_error(check_index(c("a", "b"), "param", c("a", "b"), n = 2),
+               "must be one parameter name or index")
+  expect_error(check_index(NA_character_, "param", c("a", "b"), n = 2),
+               "must be one parameter name or index")
 })

@@ -31,6 +31,12 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       TORCH_HOME: /home/runner/.cache/torch
+      # A handful of tests (the future-multisession path in parallel.R, the
+      # slower two-moons NPE fit) skip_on_cran() to stay off CRAN's check
+      # machine. This job is not a CRAN check, so let them run here too --
+      # without it those branches never execute anywhere and the coverage
+      # number understates what is actually tested.
+      NOT_CRAN: "true"
       # tests/testthat.R attaches a JunitReporter alongside its check reporter
       # whenever this is set, whether the tests run plain or under covr.
       NEURALSBI_JUNIT: ${{ github.workspace }}/junit.xml
