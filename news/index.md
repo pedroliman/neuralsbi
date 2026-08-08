@@ -1,5 +1,29 @@
 # Changelog
 
+## neuralsbi 0.5.11
+
+- **The built-in training progress bar’s ETA now tracks a short rolling
+  window of recent epochs instead of the lifetime average.**
+  [`builtin_bar()`](https://neuralsbi.pedrodelima.com/reference/builtin_bar.md)
+  (`R/progress.R`) previously extrapolated from `elapsed / pos` since
+  the bar started, which is the average over the *whole* run so far. For
+  NPE/NLE training that average is dragged down by the first epoch’s
+  one-time setup cost (device/net initialization, first CUDA/MPS kernel
+  compilation, R JIT warmup) and, across `n_restarts > 1`, blends in
+  restarts whose per-epoch cost can differ from the current one. A new
+  `bar_rate()` estimates steps/sec from the last 8 calls instead,
+  falling back to the lifetime average only while that window is too
+  short to trust; `bar_eta()` turns the resulting rate into seconds
+  remaining. The moving-target denominator that
+  [`train_progress_total()`](https://neuralsbi.pedrodelima.com/reference/train_progress_total.md)
+  projects (`best_epoch + patience`, growing every time validation loss
+  improves) is unchanged and remains documented in
+  [`?nsbi_progress`](https://neuralsbi.pedrodelima.com/reference/nsbi_progress.md)
+  as a running estimate, not a promise – this fix addresses the rate
+  half of the ETA, not the total
+  ([\#108](https://github.com/pedroliman/neuralsbi/issues/108))
+  ([\#134](https://github.com/pedroliman/neuralsbi/issues/134)).
+
 ## neuralsbi 0.5.10
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)

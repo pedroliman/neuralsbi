@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.11" id="neuralsbi-0511">neuralsbi 0.5.11<a class="anchor" aria-label="anchor" href="#neuralsbi-0511"></a></h2>
+<ul><li>
+<strong>The built-in training progress bar’s ETA now tracks a short rolling window of recent epochs instead of the lifetime average.</strong> <code><a href="../reference/builtin_bar.html">builtin_bar()</a></code> (<code>R/progress.R</code>) previously extrapolated from <code>elapsed / pos</code> since the bar started, which is the average over the <em>whole</em> run so far. For NPE/NLE training that average is dragged down by the first epoch’s one-time setup cost (device/net initialization, first CUDA/MPS kernel compilation, R JIT warmup) and, across <code>n_restarts &gt; 1</code>, blends in restarts whose per-epoch cost can differ from the current one. A new <code>bar_rate()</code> estimates steps/sec from the last 8 calls instead, falling back to the lifetime average only while that window is too short to trust; <code>bar_eta()</code> turns the resulting rate into seconds remaining. The moving-target denominator that <code><a href="../reference/train_progress_total.html">train_progress_total()</a></code> projects (<code>best_epoch + patience</code>, growing every time validation loss improves) is unchanged and remains documented in <code><a href="../reference/nsbi_progress.html">?nsbi_progress</a></code> as a running estimate, not a promise – this fix addresses the rate half of the ETA, not the total (<a href="https://github.com/pedroliman/neuralsbi/issues/108" class="external-link">#108</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/134" class="external-link">#134</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.10" id="neuralsbi-0510">neuralsbi 0.5.10<a class="anchor" aria-label="anchor" href="#neuralsbi-0510"></a></h2>
 <ul><li>
