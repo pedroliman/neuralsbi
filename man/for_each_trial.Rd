@@ -15,7 +15,7 @@ for_each_trial(fit, x_all, n_posterior_samples, label, f, ...)
 
 \item{label}{Progress-bar label.}
 
-\item{f}{\code{function(draws, i)}, the per-trial metric.}
+\item{f}{\verb{function(draws, i)}, the per-trial metric.}
 
 \item{...}{Passed to \code{\link[=posterior]{posterior()}}.}
 }

@@ -17,7 +17,7 @@ check_numeric(value, arg)
 \description{
 The type half of \code{\link[=check_matrix]{check_matrix()}}, split out because the shape rules differ
 between entry points but this rule does not. On the pre-computed
-\code{(theta, x)} path a row is one simulation, so a bare vector is a column of
+\verb{(theta, x)} path a row is one simulation, so a bare vector is a column of
 values rather than \code{\link[=check_matrix]{check_matrix()}}'s single row; a character or factor
 column is the same mistake in either place. Left to
 \code{storage.mode(x) <- "double"} such a column becomes all \code{NA}, every row is

@@ -38,5 +38,4 @@ Config/Needs/coverage: covr
 VignetteBuilder: knitr
 URL: https://neuralsbi.pedrodelima.com/, https://github.com/pedroliman/neuralsbi
 BugReports: https://github.com/pedroliman/neuralsbi/issues
-Config/roxygen2/version: 7.3.3
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.1.0

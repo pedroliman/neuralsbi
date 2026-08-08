@@ -21,7 +21,7 @@ to keep aligned.}
 
 \item{x_hint}{What to check when the non-finite values are in \code{x}. The
 default points at the simulator, which is only useful advice when one was
-run; the pre-computed \code{(theta, x)} path passes advice about \code{x} itself.}
+run; the pre-computed \verb{(theta, x)} path passes advice about \code{x} itself.}
 }
 \description{
 A row survives only when every value in both \code{theta} and \code{x} is finite, and
