@@ -20,7 +20,8 @@
   [`de_log_lik_iid()`](https://neuralsbi.pedrodelima.com/reference/de_log_lik_iid.md)
   (`R/likelihood.R`) sums on the R side, so a comment now points from
   one to the other
-  ([\#64](https://github.com/pedroliman/neuralsbi/issues/64)).
+  ([\#64](https://github.com/pedroliman/neuralsbi/issues/64))
+  ([\#126](https://github.com/pedroliman/neuralsbi/issues/126)).
 
 ## neuralsbi 0.5.8
 
@@ -47,7 +48,8 @@
   [`binom_band()`](https://neuralsbi.pedrodelima.com/reference/binom_band.md)
   and scales it back to a count. All three functions keep their exact
   signatures and output
-  ([\#63](https://github.com/pedroliman/neuralsbi/issues/63)).
+  ([\#63](https://github.com/pedroliman/neuralsbi/issues/63))
+  ([\#125](https://github.com/pedroliman/neuralsbi/issues/125)).
 
 ## neuralsbi 0.5.7
 
@@ -68,7 +70,8 @@
   and
   [`resolve_x_iid()`](https://neuralsbi.pedrodelima.com/reference/resolve_x_iid.md)
   keep their exact signatures and behavior, so no call site changed
-  ([\#62](https://github.com/pedroliman/neuralsbi/issues/62)).
+  ([\#62](https://github.com/pedroliman/neuralsbi/issues/62))
+  ([\#124](https://github.com/pedroliman/neuralsbi/issues/124)).
 
 ## neuralsbi 0.5.6
 
@@ -95,7 +98,8 @@
   [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) (whose
   own per-trial [`mean()`](https://rdrr.io/r/base/mean.html) was already
   dividing by `nrow(draws)`, and so was unaffected) size their scale
-  from that instead.
+  from that instead
+  ([\#122](https://github.com/pedroliman/neuralsbi/issues/122)).
 - Internal cleanup, no user-visible behavior change otherwise:
   [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
   [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) each
@@ -116,7 +120,8 @@
   scalar coverage value for
   [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md))
   instead of repeating either block
-  ([\#61](https://github.com/pedroliman/neuralsbi/issues/61)).
+  ([\#61](https://github.com/pedroliman/neuralsbi/issues/61))
+  ([\#122](https://github.com/pedroliman/neuralsbi/issues/122)).
 
 ## neuralsbi 0.5.5
 
@@ -143,7 +148,8 @@
   dimensions, dropped-simulation count, best validation loss and
   dead-network warning it never showed before, alongside the round table
   and not-amortized warning it already had
-  ([\#60](https://github.com/pedroliman/neuralsbi/issues/60)).
+  ([\#60](https://github.com/pedroliman/neuralsbi/issues/60))
+  ([\#121](https://github.com/pedroliman/neuralsbi/issues/121)).
 
 - Internal cleanup, no user-visible behavior change: the MADE trunk
   ([`made_module()`](https://neuralsbi.pedrodelima.com/reference/made_module.md)
@@ -155,7 +161,8 @@
   helper, `mlp_layers(dims, masks = NULL)`, that both variants call –
   masked when `made_masks()$hidden` is passed, plain otherwise – so the
   four call sites share one loop instead of four
-  ([\#59](https://github.com/pedroliman/neuralsbi/issues/59)). The
+  ([\#59](https://github.com/pedroliman/neuralsbi/issues/59))
+  ([\#120](https://github.com/pedroliman/neuralsbi/issues/120)). The
   autoregressive forward/inverse transform-stack loops in
   `flows.R`/`nsf.R` are left untouched; the issue flagged those as a
   separate, riskier dedup.
@@ -179,7 +186,8 @@
   `linear_gaussian` only takes `ridge` and `verbose`, so an
   `n_components` or `embedding_net` passed alongside it is still
   silently dropped, as before
-  ([\#58](https://github.com/pedroliman/neuralsbi/issues/58)).
+  ([\#58](https://github.com/pedroliman/neuralsbi/issues/58))
+  ([\#118](https://github.com/pedroliman/neuralsbi/issues/118)).
 
 ## neuralsbi 0.5.2
 
@@ -204,7 +212,8 @@
   [`fit_nsf()`](https://neuralsbi.pedrodelima.com/reference/fit_nsf.md)
   keep their exact signatures; only their bodies collapsed, so
   `man/fit_mdn.Rd`, `man/fit_maf.Rd` and `man/fit_nsf.Rd` needed no edit
-  ([\#57](https://github.com/pedroliman/neuralsbi/issues/57)).
+  ([\#57](https://github.com/pedroliman/neuralsbi/issues/57))
+  ([\#117](https://github.com/pedroliman/neuralsbi/issues/117)).
 
 ## neuralsbi 0.5.1
 
@@ -220,7 +229,8 @@
   on an `nsbi_nle_posterior` now includes it alongside Rhat and ESS. It
   is the cost the adapted slice width is trying to keep down (see
   [`?nsbi_mcmc`](https://neuralsbi.pedrodelima.com/reference/nsbi_mcmc.md)),
-  and there was previously no way to see it.
+  and there was previously no way to see it
+  ([\#114](https://github.com/pedroliman/neuralsbi/issues/114)).
 - Internal cleanup, no user-visible behavior change otherwise:
   `helper-torch.R`’s `skip_if_no_torch()` now calls the package’s own
   `torch_available()` instead of re-implementing the same check inline,
@@ -242,7 +252,8 @@
   `if (verbose && ...)` block that was already checking it. The
   commented-out neural-likelihood-estimation navbar entry in
   `_pkgdown.yml` is restored, now that the vignette it links to builds
-  cleanly ([\#33](https://github.com/pedroliman/neuralsbi/issues/33)).
+  cleanly ([\#33](https://github.com/pedroliman/neuralsbi/issues/33))
+  ([\#114](https://github.com/pedroliman/neuralsbi/issues/114)).
 
 ## neuralsbi 0.5.0
 
@@ -258,7 +269,8 @@
   [`coatless-actions/cran-submission`](https://github.com/coatless-actions/cran-submission),
   which checks the package and submits the tarball. This release is the
   first tag the new workflow cuts, establishing the `vX.Y.Z` tagging
-  habit `CLAUDE.md` has called for since 0.4.1.
+  habit `CLAUDE.md` has called for since 0.4.1
+  ([\#115](https://github.com/pedroliman/neuralsbi/issues/115)).
 
 ## neuralsbi 0.4.16
 

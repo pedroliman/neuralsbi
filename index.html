@@ -124,7 +124,7 @@
 </div>
 <!-- badges: start -->
 
-<p><code>neuralsbi</code> implements <a href="https://simulation-based-inference.org" class="external-link">neural simulation-based inference</a> (SBI) methods directly in R. Given a prior over parameters and a simulator, it trains a neural network to approximate the Bayesian posterior <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | x)</annotation></semantics></math>. The neural density estimators for posterior estimation (mixture density networks, masked autoregressive flows, neural spline flows) run directly on the <a href="https://torch.mlverse.org/" class="external-link"><code>torch</code></a> R package (libtorch). You don’t need python or Julia to use <code>neuralsbi</code>.</p>
+<p><code>neuralsbi</code> implements <a href="https://simulation-based-inference.org" class="external-link">neural simulation-based inference</a> (SBI) methods directly in R. Given a prior over parameters and a simulator, it trains a neural network to approximate the Bayesian posterior <code>p(theta | x)</code>. The neural density estimators for posterior estimation (mixture density networks, masked autoregressive flows, neural spline flows) run directly on the <a href="https://torch.mlverse.org/" class="external-link"><code>torch</code></a> R package (libtorch). You don’t need python or Julia to use <code>neuralsbi</code>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -140,7 +140,7 @@
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
 <p>All you need to provide <code>neuralsbi</code> is a simulator that takes a vector of parameters, other inputs it needs and returns a vector of outcomes. Unlike in stan where you need to provide a likelihood function, here you only need to simulate your data generation process.</p>
-<p>In this example, we create an SIR model, where only a fraction <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math> of cases is observed. Parameters to be fit are <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>. We know in this example that the quantity that is better identified by the model is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mi>β</mi><mi>/</mi><mi>γ</mi></mrow><annotation encoding="application/x-tex">R_0=\beta/\gamma</annotation></semantics></math>, but that is fine. In a real-world application, we would constrain <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math> given external information.</p>
+<p>In this example, we create an SIR model, where only a fraction <code>rho</code> of cases is observed. Parameters to be fit are <code>beta</code> and <code>gamma</code>. We know in this example that the quantity that is better identified by the model is <code>R0 = beta / gamma</code>, but that is fine. In a real-world application, we would constrain <code>gamma</code> given external information.</p>
 <div class="section level3">
 <h3 id="define-your-simulator">Define your simulator:<a class="anchor" aria-label="anchor" href="#define-your-simulator"></a>
 </h3>
@@ -225,7 +225,7 @@
 <div class="section level3">
 <h3 id="condition-on-your-data-to-get-a-posterior-distribution">Condition on your data to get a posterior distribution<a class="anchor" aria-label="anchor" href="#condition-on-your-data-to-get-a-posterior-distribution"></a>
 </h3>
-<p>Now, let’s create some data with the model. Let’s say there’s an outbreak that looks like COVID-19, with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mn>2.5</mn></mrow><annotation encoding="application/x-tex">R_0=2.5</annotation></semantics></math> and a recovery rate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>γ</mi><mo>=</mo><mn>1</mn><mi>/</mi><mn>7</mn></mrow><annotation encoding="application/x-tex">\gamma = 1/7</annotation></semantics></math>. Note that our neural posterior estimator <em>hasn’t seen any data yet</em>. We get a posterior by calling the <code>posterior</code> function on our <code>npe</code> and giving it a data vector. The <code>posterior</code> call is fast.</p>
+<p>Now, let’s create some data with the model. Let’s say there’s an outbreak that looks like COVID-19, with <code>R0 = 2.5</code> and a recovery rate <code>gamma = 1/7</code>. Note that our neural posterior estimator <em>hasn’t seen any data yet</em>. We get a posterior by calling the <code>posterior</code> function on our <code>npe</code> and giving it a data vector. The <code>posterior</code> call is fast.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">true_r0</span> <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="va">true_gamma</span> <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">7</span></span>
@@ -246,8 +246,8 @@
 <div class="section level3">
 <h3 id="posterior-predictive-distribution">Posterior Predictive Distribution<a class="anchor" aria-label="anchor" href="#posterior-predictive-distribution"></a>
 </h3>
-<p>Now, what if <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>0</mn></msub><annotation encoding="application/x-tex">R_0</annotation></semantics></math> was lower, or higher? Does this machinery still work? Also, how do you fit the model to multiple data sets, like multiple cities?</p>
-<p>Thanks to neural poesterior estimation, that is no problem. We can just condition again on new data and get a new posterior. Let’s do that on a loop for a few values of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>0</mn></msub><annotation encoding="application/x-tex">R_0</annotation></semantics></math> and do a posterior predictive distribution test. If everything is working we should be able to estimate the model anywhere in the parameter space that we used as a prior.</p>
+<p>Now, what if <code>R0</code> was lower, or higher? Does this machinery still work? Also, how do you fit the model to multiple data sets, like multiple cities?</p>
+<p>Thanks to neural poesterior estimation, that is no problem. We can just condition again on new data and get a new posterior. Let’s do that on a loop for a few values of <code>R0</code> and do a posterior predictive distribution test. If everything is working we should be able to estimate the model anywhere in the parameter space that we used as a prior.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span></span>
