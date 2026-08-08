@@ -143,6 +143,14 @@ handoff/next-steps section — **keep it current as you work.**
   package code changes** — new features, behavior changes, bug fixes in `R/`.
   Cosmetic/tooling changes (README wording, the hex logo, pkgdown/SEO
   metadata, CI config) don't get a `NEWS.md` entry or a version bump.
+- **Every `NEWS.md` entry links to the pull request that shipped it**, as
+  `(#123)` at the end of the entry — GitHub renders that as a link to the PR.
+  The PR number doesn't exist until you open the PR, so write the entry first
+  and add the number once GitHub assigns it: push the branch, open the PR,
+  then edit `NEWS.md` in that same PR (or a follow-up commit on it) with its
+  own number before it merges. An entry can cite the GitHub issue it closes
+  too, but that's not a substitute for the PR link — an issue describes the
+  problem, the PR is what a reader lands on to see the fix.
 
 ## Writing style (docs, roxygen, commits, PRs, vignettes, comments)
 
