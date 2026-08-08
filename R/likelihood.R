@@ -114,11 +114,12 @@ de_log_lik_iid.nsbi_de_lingauss <- function(de, x, theta, max_batch = 1e5) {
 
 #' @export
 de_log_lik_iid.nsbi_de_mdn <- function(de, x, theta, max_batch = 1e5) {
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
+  xt <- torch::torch_tensor(x, dtype = torch::torch_float(),
+                            device = de$device %||% "cpu")
   pieces <- list()
   mdn_iid_blocks(de, xt, theta, max_batch, function(idx, lp) {
     pieces[[length(pieces) + 1L]] <<-
-      torch::as_array(lp$to(dtype = torch::torch_float64()))
+      torch::as_array(lp$to(dtype = torch::torch_float64())$cpu())
   })
   matrix(unlist(pieces), nrow = nrow(theta))
 }
@@ -173,14 +174,15 @@ de_iid_evaluator.nsbi_de_lingauss <- function(de, x, max_batch = 1e5) {
 
 #' @export
 de_iid_evaluator.nsbi_de_mdn <- function(de, x, max_batch = 1e5) {
+  device <- de$device %||% "cpu"
   # The observations become a tensor once, not once per MCMC step.
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
+  xt <- torch::torch_tensor(x, dtype = torch::torch_float(), device = device)
   force(max_batch)
   eager <- function(theta) {
     total <- numeric(nrow(theta))
     mdn_iid_blocks(de, xt, theta, max_batch, function(idx, lp) {
       total <<- total +
-        as.numeric(lp$to(dtype = torch::torch_float64())$sum(dim = 2))
+        as.numeric(lp$to(dtype = torch::torch_float64())$sum(dim = 2)$cpu())
     })
     total
   }
@@ -190,8 +192,9 @@ de_iid_evaluator.nsbi_de_mdn <- function(de, x, max_batch = 1e5) {
   function(theta) {
     fn <- traced(theta)
     if (is.null(fn)) return(eager(theta))
-    tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-    as.numeric(torch::with_no_grad(fn(tt)))
+    tt <- torch::torch_tensor(theta, dtype = torch::torch_float(),
+                              device = device)
+    as.numeric(torch::with_no_grad(fn(tt))$cpu())
   }
 }
 
@@ -254,15 +257,16 @@ mdn_trace_cache <- function(de, xt, max_batch, eager, warmup = 4L) {
     hit <- cache[[key]]
     if (!is.null(hit)) return(hit$fn)
 
-    tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
+    tt <- torch::torch_tensor(theta, dtype = torch::torch_float(),
+                              device = xt$device)
     fn <- tryCatch(mdn_trace(de, xt, tt), error = function(e) NULL)
     if (!is.null(fn)) {
       # A traced graph has no data-dependent branches, so agreeing once at this
       # shape is the whole guarantee. Disagreeing means a shape was baked in
       # somewhere it should not have been, and the trace is discarded.
       ok <- tryCatch(
-        isTRUE(all.equal(as.numeric(torch::with_no_grad(fn(tt))), eager(theta),
-                         tolerance = 1e-5)),
+        isTRUE(all.equal(as.numeric(torch::with_no_grad(fn(tt))$cpu()),
+                         eager(theta), tolerance = 1e-5)),
         error = function(e) FALSE)
       if (!ok) fn <- NULL
     }
@@ -324,7 +328,8 @@ cross_iid <- function(de, x, theta, max_batch, collect) {
 mdn_iid_blocks <- function(de, xt, theta, max_batch, collect) {
   n_theta <- nrow(theta)
   n_obs <- xt$shape[1]
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
+  tt <- torch::torch_tensor(theta, dtype = torch::torch_float(),
+                            device = xt$device)
   torch::with_no_grad({
     mix <- mdn_mixture(de, tt)
     per_chunk <- mdn_chunk_size(n_theta, max_batch,

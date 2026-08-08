@@ -71,7 +71,8 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
                 max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
-                standardize = TRUE, seed = NULL, verbose = FALSE) {
+                standardize = TRUE, device = "cpu",
+                seed = NULL, verbose = FALSE) {
   # See npe(): everything here is checked before the simulator runs.
   if (!is.function(density_estimator)) {
     density_estimator <- match.arg(density_estimator)
@@ -80,6 +81,7 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
+  check_device(device)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
@@ -94,7 +96,8 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
     embedding_net = NULL, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
     patience = patience, n_restarts = n_restarts,
-    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose
+    clip_grad_norm = clip_grad_norm, device = device, seed = seed,
+    verbose = verbose
   )
 
   structure(

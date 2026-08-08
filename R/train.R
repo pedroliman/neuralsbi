@@ -18,8 +18,14 @@
 #' @param lr_patience,lr_factor,min_lr Reduce the learning rate by `lr_factor`
 #'   after `lr_patience` epochs without validation improvement, down to
 #'   `min_lr`.
-#' @return `list(net, best_val_loss, history)` where `history` is a data frame
-#'   of per-epoch train/validation losses for the winning restart.
+#' @param device Where to train: `"cpu"` (default), `"cuda"` or `"mps"`. See
+#'   [npe()]. Resolved against what is actually available on this machine
+#'   once `torch` is loaded (a request for an absent backend falls back to
+#'   `"cpu"` with a warning); the device training actually used comes back as
+#'   `$device` on the result.
+#' @return `list(net, best_val_loss, history, device)` where `history` is a
+#'   data frame of per-epoch train/validation losses for the winning restart,
+#'   and `device` is the (possibly downgraded) device training ran on.
 #' @keywords internal
 train_conditional_de <- function(build_net, log_prob_fn, theta, x,
                                  max_epochs = 2000L, batch_size = 200L,
@@ -27,17 +33,18 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
                                  patience = 20L, n_restarts = 1L,
                                  clip_grad_norm = 5,
                                  lr_patience = 10L, lr_factor = 0.5,
-                                 min_lr = 1e-6,
+                                 min_lr = 1e-6, device = "cpu",
                                  seed = NULL, verbose = FALSE) {
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm,
                        n = nrow(as_theta_matrix(theta)))
+  check_device(device)
   # The bar spans every restart, so progress reporting is set up out here and
   # the loop itself lives in train_restarts().
   with_nsbi_progress(train_restarts(
     build_net, log_prob_fn, theta, x, max_epochs, batch_size, lr,
     validation_fraction, patience, n_restarts, clip_grad_norm, lr_patience,
-    lr_factor, min_lr, seed, verbose
+    lr_factor, min_lr, device, seed, verbose
   ))
 }
 
@@ -93,8 +100,11 @@ check_train_controls <- function(max_epochs, batch_size, lr,
 train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
                            batch_size, lr, validation_fraction, patience,
                            n_restarts, clip_grad_norm, lr_patience, lr_factor,
-                           min_lr, seed, verbose) {
+                           min_lr, device, seed, verbose) {
   require_torch()
+  # Only meaningful once torch is loaded: this is where "cuda"/"mps" get
+  # checked against what libtorch actually reports as available here.
+  device <- resolve_device(device)
   if (!is.null(seed)) torch::torch_manual_seed(seed)
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
@@ -106,8 +116,11 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
   val_idx <- perm[seq_len(n_val)]
   tr_idx <- perm[-seq_len(n_val)]
 
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
+  # torch_tensor() built from an R matrix ignores torch's "default device" set
+  # by with_device()/local_device(); device has to be named explicitly here or
+  # every batch this trains on stays on the CPU regardless of where net lives.
+  tt <- torch::torch_tensor(theta, dtype = torch::torch_float(), device = device)
+  xt <- torch::torch_tensor(x, dtype = torch::torch_float(), device = device)
   theta_tr <- tt[tr_idx, , drop = FALSE]; x_tr <- xt[tr_idx, , drop = FALSE]
   theta_val <- tt[val_idx, , drop = FALSE]; x_val <- xt[val_idx, , drop = FALSE]
   n_tr <- length(tr_idx)
@@ -126,6 +139,7 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
 
   for (restart in seq_len(n_restarts)) {
     net <- build_net()
+    net$to(device = device)
     opt <- torch::optim_adam(net$parameters, lr = lr)
     scheduler <- torch::lr_reduce_on_plateau(opt, factor = lr_factor,
                                              patience = lr_patience,
@@ -204,7 +218,8 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
     stop("Training failed: no restart produced a finite validation loss.",
          call. = FALSE)
   }
-  list(net = best$net, best_val_loss = best$val, history = best$history)
+  list(net = best$net, best_val_loss = best$val, history = best$history,
+       device = device)
 }
 
 #' Projected epoch count for the training progress bar

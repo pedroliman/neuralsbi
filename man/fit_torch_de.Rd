@@ -19,9 +19,16 @@ fit_torch_de(
   n_restarts,
   clip_grad_norm,
   embedding,
+  device = "cpu",
   seed,
   verbose
 )
+}
+\arguments{
+\item{device}{Where to train: \code{"cpu"} (default), \code{"cuda"} or \code{"mps"}. See
+\code{\link[=npe]{npe()}}. Resolved (and, if unavailable, warned about and downgraded to
+\code{"cpu"}) by \code{\link[=train_conditional_de]{train_conditional_de()}}; the device that training actually
+used is what ends up on the returned \code{nsbi_de$device}.}
 }
 \description{
 Coerces \code{theta} and \code{x}, builds the net from \code{build_net_fn(dim_x,

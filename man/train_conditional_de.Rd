@@ -19,6 +19,7 @@ train_conditional_de(
   lr_patience = 10L,
   lr_factor = 0.5,
   min_lr = 1e-06,
+  device = "cpu",
   seed = NULL,
   verbose = FALSE
 )
@@ -40,10 +41,17 @@ keep the one with the best validation loss.}
 \item{lr_patience, lr_factor, min_lr}{Reduce the learning rate by \code{lr_factor}
 after \code{lr_patience} epochs without validation improvement, down to
 \code{min_lr}.}
+
+\item{device}{Where to train: \code{"cpu"} (default), \code{"cuda"} or \code{"mps"}. See
+\code{\link[=npe]{npe()}}. Resolved against what is actually available on this machine
+once \code{torch} is loaded (a request for an absent backend falls back to
+\code{"cpu"} with a warning); the device training actually used comes back as
+\verb{$device} on the result.}
 }
 \value{
-\code{list(net, best_val_loss, history)} where \code{history} is a data frame
-of per-epoch train/validation losses for the winning restart.
+\code{list(net, best_val_loss, history, device)} where \code{history} is a
+data frame of per-epoch train/validation losses for the winning restart,
+and \code{device} is the (possibly downgraded) device training ran on.
 }
 \description{
 All neural estimators (MDN, MAF, NSF) share one training loop so that

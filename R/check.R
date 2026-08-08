@@ -454,6 +454,39 @@ check_prior <- function(prior, arg = "prior", dim = NULL) {
   invisible(prior)
 }
 
+#' Validate the `device` argument's format
+#'
+#' Pure string validation, independent of whether `torch` is installed: it
+#' only checks that `device` names a device kind `neuralsbi` knows about.
+#' Whether that device actually exists on this machine is a separate question,
+#' answered by [resolve_device()] once `torch` is loaded. Splitting the two
+#' means an unrecognized string such as `device = "gpu"` is caught before
+#' [npe()]/[nle()] simulate anything, the same way [check_train_controls()]
+#' catches a bad `batch_size` first.
+#'
+#' @param device The user's value.
+#' @return `device`, unchanged.
+#' @keywords internal
+check_device <- function(device) {
+  ok <- is.character(device) && length(device) == 1L && !is.na(device) &&
+    device %in% c("cpu", "cuda", "mps")
+  if (!ok) {
+    # A wrong device name (the expected mistake) is worth showing verbatim,
+    # the way check_index() does for a bad column name; describe_value()'s
+    # generic "a character value" only helps for a wrong-shaped/typed input.
+    shown <- if (is.character(device) && length(device) == 1L &&
+                 !is.na(device)) {
+      sprintf("\"%s\"", device)
+    } else {
+      describe_value(device)
+    }
+    stop(sprintf(
+      "`device` must be one of \"cpu\", \"cuda\" or \"mps\", not %s.", shown),
+      call. = FALSE)
+  }
+  device
+}
+
 #' Require every entry to be finite
 #'
 #' `NA`, `NaN` and `Inf` all reach the estimators as a `chol()` failure or a

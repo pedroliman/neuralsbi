@@ -25,6 +25,7 @@ nle(
   n_restarts = 1L,
   clip_grad_norm = 5,
   standardize = TRUE,
+  device = "cpu",
   seed = NULL,
   verbose = FALSE
 )
@@ -82,6 +83,15 @@ validation improvement.}
 
 \item{standardize}{Whether to z-score \code{theta} and \code{x} before training
 (strongly recommended; default \code{TRUE}).}
+
+\item{device}{Where to train the neural estimator: \code{"cpu"} (the default),
+\code{"cuda"} (Linux/Windows GPU) or \code{"mps"} (Apple Silicon GPU). Requesting a
+backend that is not available on this machine falls back to \code{"cpu"} with
+a warning rather than erroring, so the same call works on a GPU box or a
+laptop. Ignored by \code{"linear_gaussian"}, which has no network to place.
+The fitted estimator remembers its device and reuses it at \code{posterior()}/
+\code{sample()} time; \code{\link[=load_npe]{load_npe()}} lets you choose a different device when
+reloading a saved fit.}
 
 \item{seed}{Optional integer seed for reproducibility.}
 

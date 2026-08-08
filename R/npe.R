@@ -51,6 +51,14 @@
 #'   validation improvement.
 #' @param standardize Whether to z-score `theta` and `x` before training
 #'   (strongly recommended; default `TRUE`).
+#' @param device Where to train the neural estimator: `"cpu"` (the default),
+#'   `"cuda"` (Linux/Windows GPU) or `"mps"` (Apple Silicon GPU). Requesting a
+#'   backend that is not available on this machine falls back to `"cpu"` with
+#'   a warning rather than erroring, so the same call works on a GPU box or a
+#'   laptop. Ignored by `"linear_gaussian"`, which has no network to place.
+#'   The fitted estimator remembers its device and reuses it at `posterior()`/
+#'   `sample()` time; [load_npe()] lets you choose a different device when
+#'   reloading a saved fit.
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print training progress.
 #'
@@ -83,7 +91,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                 max_epochs = 2000L, batch_size = 200L, lr = 5e-4,
                 validation_fraction = 0.1, patience = 20L,
                 n_restarts = 1L, clip_grad_norm = 5,
-                standardize = TRUE, seed = NULL, verbose = FALSE) {
+                standardize = TRUE, device = "cpu",
+                seed = NULL, verbose = FALSE) {
   # Everything here runs before the simulator does. An argument that is only
   # noticed by the arithmetic inside training costs the whole budget first,
   # and the budget is the expensive part of a run.
@@ -103,6 +112,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
+  check_device(device)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
@@ -123,7 +133,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
     embedding_net = embedding_net, max_epochs = max_epochs,
     batch_size = batch_size, lr = lr, validation_fraction = validation_fraction,
     patience = patience, n_restarts = n_restarts,
-    clip_grad_norm = clip_grad_norm, seed = seed, verbose = verbose
+    clip_grad_norm = clip_grad_norm, device = device, seed = seed,
+    verbose = verbose
   )
 
   structure(

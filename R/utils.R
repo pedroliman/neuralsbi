@@ -106,6 +106,36 @@ torch_available <- function() {
   requireNamespace("torch", quietly = TRUE) && isTRUE(torch::torch_is_installed())
 }
 
+#' Resolve a requested training device to one actually usable here
+#'
+#' `device = "cuda"` and `device = "mps"` only work when the matching backend
+#' is compiled into this build of libtorch and the hardware is present.
+#' Requesting one that is not falls back to `"cpu"` with a warning instead of
+#' an error, so the same `npe(..., device = "cuda")` call written on a GPU box
+#' also runs, just slower, on a laptop or a CI runner -- neither of which has
+#' CUDA or MPS. Call this only after [require_torch()]; it needs the `torch`
+#' namespace loaded to ask `torch::cuda_is_available()` /
+#' `torch::backends_mps_is_available()`.
+#'
+#' @param device The user's value, as validated by [check_device()] (called
+#'   here too, so this function is safe to call on its own).
+#' @return `device`, or `"cpu"` if the requested backend is not available.
+#' @keywords internal
+resolve_device <- function(device) {
+  device <- check_device(device)
+  if (identical(device, "cpu")) return(device)
+  available <- if (identical(device, "cuda")) {
+    torch::cuda_is_available()
+  } else {
+    torch::backends_mps_is_available()
+  }
+  if (isTRUE(available)) return(device)
+  warning(sprintf(
+    "`device = \"%s\"` was requested but is not available on this machine; falling back to \"cpu\".",
+    device), call. = FALSE)
+  "cpu"
+}
+
 #' Check that ggplot2 (and, for [pairplot()], GGally and ggdensity) are available
 #' @keywords internal
 require_ggplot2 <- function(ggally = FALSE, ggdensity = FALSE) {

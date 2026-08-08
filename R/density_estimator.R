@@ -52,10 +52,12 @@ de_sample <- function(de, x, n) UseMethod("de_sample")
 #'
 #' Coerces `theta` and `x` to matrices, broadcasts a single-row `x` up to
 #' `theta`'s row count (the same broadcast [lingauss_mean()]'s caller does on
-#' `mu`, just on the other operand), moves both to torch, and evaluates
-#' `log_prob_fn` under `with_no_grad()`. `log_prob_fn` is the per-estimator
-#' tensor function -- `mdn_log_prob_tensor()`, `maf_log_prob_tensor()` or
-#' `nsf_log_prob_tensor()`.
+#' `mu`, just on the other operand), moves both to the net's device, and
+#' evaluates `log_prob_fn` under `with_no_grad()`. `log_prob_fn` is the
+#' per-estimator tensor function -- `mdn_log_prob_tensor()`,
+#' `maf_log_prob_tensor()` or `nsf_log_prob_tensor()`. `de$device` is `NULL`
+#' for a fit trained before the `device` argument existed, which is CPU
+#' either way.
 #' @keywords internal
 de_log_prob_torch <- function(de, theta, x, log_prob_fn) {
   theta <- as_theta_matrix(theta, de$dim_theta)
@@ -63,10 +65,11 @@ de_log_prob_torch <- function(de, theta, x, log_prob_fn) {
   if (nrow(x) == 1L && nrow(theta) > 1L) {
     x <- matrix(x, nrow = nrow(theta), ncol = ncol(x), byrow = TRUE)
   }
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float())
-  xt <- torch::torch_tensor(x, dtype = torch::torch_float())
+  device <- de$device %||% "cpu"
+  tt <- torch::torch_tensor(theta, dtype = torch::torch_float(), device = device)
+  xt <- torch::torch_tensor(x, dtype = torch::torch_float(), device = device)
   torch::with_no_grad({
-    as.numeric(log_prob_fn(de$net, tt, xt)$to(dtype = torch::torch_float64()))
+    as.numeric(log_prob_fn(de$net, tt, xt)$to(dtype = torch::torch_float64())$cpu())
   })
 }
 
@@ -80,10 +83,12 @@ de_log_prob_torch <- function(de, theta, x, log_prob_fn) {
 de_sample_flow <- function(de, x, n, inverse_fn) {
   x <- as_theta_matrix(x, de$dim_x)[1, , drop = FALSE]
   xrep <- matrix(x, nrow = n, ncol = de$dim_x, byrow = TRUE)
-  xt <- torch::torch_tensor(xrep, dtype = torch::torch_float())
-  u <- torch::torch_randn(c(n, de$dim_theta))
+  device <- de$device %||% "cpu"
+  xt <- torch::torch_tensor(xrep, dtype = torch::torch_float(), device = device)
+  u <- torch::torch_randn(c(n, de$dim_theta), device = device)
   torch::with_no_grad({
-    torch::as_array(inverse_fn(de$net, u, xt)$to(dtype = torch::torch_float64()))
+    torch::as_array(
+      inverse_fn(de$net, u, xt)$to(dtype = torch::torch_float64())$cpu())
   })
 }
 
@@ -100,11 +105,15 @@ de_sample_flow <- function(de, x, n, inverse_fn) {
 #' into the returned list ahead of `embedding`, matching the field order each
 #' estimator returned before this helper existed. This helper never needs to
 #' know what `arch`'s fields are.
+#' @param device Where to train: `"cpu"` (default), `"cuda"` or `"mps"`. See
+#'   [npe()]. Resolved (and, if unavailable, warned about and downgraded to
+#'   `"cpu"`) by [train_conditional_de()]; the device that training actually
+#'   used is what ends up on the returned `nsbi_de$device`.
 #' @keywords internal
 fit_torch_de <- function(theta, x, build_net_fn, log_prob_fn, class, arch,
                          max_epochs, batch_size, lr, validation_fraction,
                          patience, n_restarts, clip_grad_norm, embedding,
-                         seed, verbose) {
+                         device = "cpu", seed, verbose) {
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
   dim_theta <- ncol(theta)
@@ -117,14 +126,14 @@ fit_torch_de <- function(theta, x, build_net_fn, log_prob_fn, class, arch,
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    seed = seed, verbose = verbose
+    device = device, seed = seed, verbose = verbose
   )
 
   structure(
     c(list(net = trained$net, dim_theta = dim_theta, dim_x = dim_x),
       arch,
       list(embedding = embedding, best_val_loss = trained$best_val_loss,
-           history = trained$history)),
+           history = trained$history, device = trained$device)),
     class = c(class, "nsbi_de")
   )
 }
