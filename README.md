@@ -15,7 +15,7 @@ coverage](https://codecov.io/gh/pedroliman/neuralsbi/graph/badge.svg)](https://a
 `neuralsbi` implements [neural simulation-based
 inference](https://simulation-based-inference.org) (SBI) methods
 directly in R. Given a prior over parameters and a simulator, it trains
-a neural network to approximate the Bayesian posterior $p(\theta | x)$.
+a neural network to approximate the Bayesian posterior `p(theta | x)`.
 The neural density estimators for posterior estimation (mixture density
 networks, masked autoregressive flows, neural spline flows) run directly
 on the [`torch`](https://torch.mlverse.org/) R package (libtorch). You
@@ -39,11 +39,11 @@ of parameters, other inputs it needs and returns a vector of outcomes.
 Unlike in stan where you need to provide a likelihood function, here you
 only need to simulate your data generation process.
 
-In this example, we create an SIR model, where only a fraction $\rho$ of
-cases is observed. Parameters to be fit are $\beta$ and $\gamma$. We
-know in this example that the quantity that is better identified by the
-model is $R_0=\beta/\gamma$, but that is fine. In a real-world
-application, we would constrain $\gamma$ given external information.
+In this example, we create an SIR model, where only a fraction `rho` of
+cases is observed. Parameters to be fit are `beta` and `gamma`. We know
+in this example that the quantity that is better identified by the
+model is `R0 = beta / gamma`, but that is fine. In a real-world
+application, we would constrain `gamma` given external information.
 
 ### Define your simulator:
 
@@ -133,8 +133,8 @@ Looks like it works. We don’t know if it is any good yet, let’s see!
 ### Condition on your data to get a posterior distribution
 
 Now, let’s create some data with the model. Let’s say there’s an
-outbreak that looks like COVID-19, with $R_0=2.5$ and a recovery rate
-$\gamma = 1/7$. Note that our neural posterior estimator *hasn’t seen
+outbreak that looks like COVID-19, with `R0 = 2.5` and a recovery rate
+`gamma = 1/7`. Note that our neural posterior estimator *hasn’t seen
 any data yet*. We get a posterior by calling the `posterior` function on
 our `npe` and giving it a data vector. The `posterior` call is fast.
 
@@ -162,16 +162,15 @@ get some identification from this data; that’s nice.
 
 ### Posterior Predictive Distribution
 
-Now, what if $R_0$ was lower, or higher? Does this machinery still work?
+Now, what if `R0` was lower, or higher? Does this machinery still work?
 Also, how do you fit the model to multiple data sets, like multiple
 cities?
 
 Thanks to neural poesterior estimation, that is no problem. We can just
 condition again on new data and get a new posterior. Let’s do that on a
-loop for a few values of $R_0$ and do a posterior predictive
-distribution test. If everything is working we should be able to
-estimate the model anywhere in the parameter space that we used as a
-prior.
+loop for a few values of `R0` and do a posterior predictive distribution
+test. If everything is working we should be able to estimate the model
+anywhere in the parameter space that we used as a prior.
 
 ``` r
 
