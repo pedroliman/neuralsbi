@@ -8,6 +8,9 @@ builtin_bar(label = NULL)
 }
 \description{
 Draws to \code{stderr()}, redrawing in place. Updates are throttled so a fast
-inner loop does not spend its time formatting text.
+inner loop does not spend its time formatting text. The ETA is
+extrapolated from a short rolling window of recent calls (see
+\code{\link[=bar_rate]{bar_rate()}}), not the lifetime average, so it tracks the current speed
+rather than a blend of setup overhead and past restarts.
 }
 \keyword{internal}

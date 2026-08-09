@@ -133,6 +133,7 @@ reference:
   - npe
   - npe_sequential
   - nle
+  - nre
   - save_npe
   - density_estimator
   - embedding_mlp
@@ -145,6 +146,12 @@ reference:
   - sample.nsbi_nle_posterior
   - nsbi_mcmc
   - stan_export
+- title: Neural ratio estimation
+  desc: Learn the likelihood-to-evidence ratio with a classifier and sample it with MCMC.
+  contents:
+  - log_ratio
+  - posterior.nsbi_nre
+  - sample.nsbi_nre_posterior
 - title: Running the simulator
   desc: The simulator contract, parallel execution, and progress reporting.
   contents:

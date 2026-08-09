@@ -1,0 +1,412 @@
+gauss_prior <- function() {
+  prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+}
+
+gauss_sim <- function(mu, nu) {
+  c(a = mu + stats::rnorm(1, sd = 0.4), b = nu + 0.5 * mu + stats::rnorm(1, sd = 0.3))
+}
+
+logistic_fit <- function(n = 4000, seed = 1) {
+  nre(gauss_prior(), gauss_sim, n_simulations = n, classifier = "logistic",
+      seed = seed)
+}
+
+# The log ratio differs from the log likelihood by log p(x), a function of x
+# alone, so a comparison against the truth is only ever up to an offset. Every
+# accuracy check below removes it the same way.
+centred <- function(v) v - mean(v)
+
+test_that("nre() returns a fit carrying the fields the pipeline expects", {
+  fit <- logistic_fit()
+
+  expect_s3_class(fit, "nsbi_nre")
+  expect_equal(fit$dim_theta, 2L)
+  expect_equal(fit$dim_x, 2L)
+  expect_equal(fit$param_names, c("mu", "nu"))
+  expect_equal(fit$x_names, c("a", "b"))
+  expect_equal(fit$n_simulations, 4000L)
+  expect_equal(fit$classifier, "logistic")
+  expect_s3_class(fit$std_theta, "nsbi_standardizer")
+  expect_s3_class(fit$std_x, "nsbi_standardizer")
+  expect_output(print(fit), "Neural Ratio Estimation")
+  expect_output(print(fit), "p\\(x \\| theta\\) / p\\(x\\)")
+  expect_output(print(fit), "contrastive atoms : 10")
+})
+
+test_that("the learned ratio tracks the true likelihood up to log p(x)", {
+  # x | theta is Gaussian and linear in theta, so the quadratic feature basis
+  # spans the log ratio's parameter dependence exactly and the fit can be
+  # scored against the truth.
+  fit <- logistic_fit(n = 8000, seed = 2)
+  set.seed(3)
+  theta <- matrix(stats::runif(40, -1.5, 1.5), ncol = 2)
+  x <- matrix(c(0.3, -0.4), nrow = 1)
+
+  Sigma <- matrix(c(0.4^2, 0, 0, 0.3^2), 2, 2)
+  truth <- vapply(seq_len(nrow(theta)), function(i) {
+    mu <- c(theta[i, 1], theta[i, 2] + 0.5 * theta[i, 1])
+    dmvnorm_chol(x, mu, chol(Sigma))
+  }, numeric(1))
+
+  expect_equal(centred(log_ratio(fit, theta, x)), centred(truth),
+               tolerance = 0.15)
+})
+
+test_that("the ratio responds to x, not just to theta", {
+  fit <- logistic_fit()
+  theta <- c(1, -0.5)
+
+  near <- log_ratio(fit, theta, matrix(c(1, 0), nrow = 1))
+  far <- log_ratio(fit, theta, matrix(c(1, 8), nrow = 1))
+
+  expect_gt(near, far)
+})
+
+test_that("independent observations add up", {
+  fit <- logistic_fit()
+  theta <- rbind(c(0.5, -0.5), c(1, 1))
+  x1 <- matrix(c(0.4, 0.1), nrow = 1)
+  x2 <- matrix(c(-0.2, 0.7), nrow = 1)
+
+  expect_equal(log_ratio(fit, theta, rbind(x1, x2)),
+               log_ratio(fit, theta, x1) + log_ratio(fit, theta, x2))
+})
+
+test_that("sum_iid = FALSE returns the per-observation matrix", {
+  fit <- logistic_fit()
+  theta <- rbind(c(0.5, -0.5), c(1, 1), c(-1, 0))
+  x <- matrix(stats::rnorm(8), ncol = 2)
+
+  per_obs <- log_ratio(fit, theta, x, sum_iid = FALSE)
+
+  expect_equal(dim(per_obs), c(3L, 4L))
+  expect_equal(rowSums(per_obs), log_ratio(fit, theta, x))
+})
+
+test_that("the shape is right at every corner of the cross product", {
+  fit <- logistic_fit(n = 1000)
+  for (n_theta in c(1L, 5L)) {
+    for (n_obs in c(1L, 3L)) {
+      theta <- matrix(stats::runif(2 * n_theta, -2, 2), ncol = 2)
+      x <- matrix(stats::rnorm(2 * n_obs), ncol = 2)
+      label <- sprintf("%d theta, %d obs", n_theta, n_obs)
+
+      per_obs <- log_ratio(fit, theta, x, sum_iid = FALSE)
+      expect_equal(dim(per_obs), c(n_theta, n_obs), label = label)
+      expect_equal(rowSums(per_obs), log_ratio(fit, theta, x), label = label)
+    }
+  }
+})
+
+test_that("blocking does not change the answer", {
+  fit <- logistic_fit(n = 1000)
+  theta <- matrix(stats::runif(40, -2, 2), ncol = 2)
+  x <- matrix(stats::rnorm(20), ncol = 2)
+
+  expect_equal(log_ratio(fit, theta, x, max_batch = 7),
+               log_ratio(fit, theta, x, max_batch = 1e5))
+  expect_equal(log_ratio(fit, theta, x, sum_iid = FALSE, max_batch = 7),
+               log_ratio(fit, theta, x, sum_iid = FALSE, max_batch = 1e5))
+})
+
+test_that("standardizing x leaves the ratio unchanged", {
+  # A ratio needs no change-of-variables term: the Jacobian cancels between
+  # p(x | theta) and p(x). Rescaling the data by a constant therefore has to
+  # leave the fitted log ratio alone, which the log-likelihood of an nle() fit
+  # would not.
+  set.seed(11)
+  sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 3000)
+  plain <- nre(gauss_prior(), theta = sims$theta, x = sims$x,
+               classifier = "logistic")
+  scaled <- nre(gauss_prior(), theta = sims$theta, x = sims$x * 100,
+                classifier = "logistic")
+  theta <- matrix(stats::runif(10, -2, 2), ncol = 2)
+  x <- matrix(stats::rnorm(4), ncol = 2)
+
+  expect_equal(log_ratio(plain, theta, x),
+               log_ratio(scaled, theta, x * 100), tolerance = 1e-4)
+})
+
+test_that("the posterior recovers a conjugate Gaussian", {
+  # theta ~ U(-3, 3)^2 wide enough to act flat, x | theta ~ N(theta, 0.5^2),
+  # 40 independent observations. The posterior is then Gaussian with mean
+  # colMeans(x_obs) and sd 0.5 / sqrt(40) in each coordinate.
+  set.seed(20)
+  prior <- prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+  sim <- function(mu, nu) c(a = stats::rnorm(1, mu, 0.5),
+                            b = stats::rnorm(1, nu, 0.5))
+  fit <- nre(prior, sim, n_simulations = 8000, classifier = "logistic",
+             seed = 21)
+  x_obs <- cbind(stats::rnorm(40, 0.8, 0.5), stats::rnorm(40, -0.6, 0.5))
+
+  post <- posterior(fit, x_obs, n_chains = 8, warmup = 200, seed = 22)
+  draws <- sample(post, 2000)
+
+  expect_equal(colMeans(draws), colMeans(x_obs), tolerance = 0.05,
+               ignore_attr = TRUE)
+  expect_equal(unname(apply(draws, 2, stats::sd)), rep(0.5 / sqrt(40), 2),
+               tolerance = 0.25)
+})
+
+test_that("the posterior object reports itself and caches its draws", {
+  fit <- logistic_fit(n = 2000)
+  x_obs <- matrix(stats::rnorm(20), ncol = 2)
+  post <- posterior(fit, x_obs, n_chains = 4, warmup = 50, seed = 5)
+
+  expect_s3_class(post, "nsbi_nre_posterior")
+  expect_s3_class(post, "nsbi_posterior")
+  expect_output(print(post), "nsbi_nre_posterior")
+  # No Stan export for a ratio estimator, so the print method must not offer one.
+  expect_output(print(post), "map_estimate\\(post\\)")
+  expect_false(any(grepl("stan_code", utils::capture.output(print(post)))))
+
+  first <- sample(post, 200)
+  expect_equal(dim(first), c(200L, 2L))
+  expect_equal(colnames(first), c("mu", "nu"))
+  expect_false(is.null(attr(first, "diagnostics")))
+  # Second call is served from the cache, so it is identical rather than merely
+  # distributed the same way.
+  expect_identical(sample(post, 200), first)
+})
+
+test_that("log_prob() on an NRE posterior is the unnormalized potential", {
+  fit <- logistic_fit(n = 2000)
+  x_obs <- matrix(stats::rnorm(10), ncol = 2)
+  post <- posterior(fit, x_obs, n_chains = 4, warmup = 20)
+  theta <- rbind(c(0.5, -0.5), c(1, 1))
+
+  lp <- log_prob(post, theta)
+  expect_equal(lp, log_ratio(fit, theta, x_obs) +
+                     as.numeric(fit$prior$log_prob(theta)))
+  expect_warning(log_prob(post, theta, normalize = TRUE), "no normalizing")
+  expect_equal(log_prob(post, rbind(c(9, 9))), -Inf)
+})
+
+test_that("wrongly shaped input is rejected by name", {
+  fit <- logistic_fit(n = 500)
+
+  expect_error(log_ratio(fit, matrix(0, 2, 3), matrix(0, 1, 2)),
+               "`theta` must have 2 columns")
+  expect_error(log_ratio(fit, matrix(0, 2, 2), matrix(0, 1, 3)),
+               "`x` must have 2 columns")
+})
+
+test_that("nre() checks its arguments before the simulator runs", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "resnest"),
+    "should be one of")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", num_atoms = 1L),
+    "`num_atoms` must be a single whole number of at least 2")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", hidden = 0L),
+    "`hidden` must be a single whole number of at least 1")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", n_blocks = -1L),
+    "`n_blocks` must be a single whole number")
+  expect_identical(calls, 0L)
+})
+
+test_that("nre() needs either a simulator or pre-computed simulations", {
+  expect_error(nre(gauss_prior()), "Provide either")
+})
+
+test_that("an embedding net is rejected by the logistic classifier", {
+  expect_warning(
+    nre(gauss_prior(), gauss_sim, n_simulations = 200, classifier = "logistic",
+        embedding_net = embedding_mlp(output_dim = 2L)),
+    "ignored by the logistic classifier")
+  expect_error(
+    nre(gauss_prior(), gauss_sim, n_simulations = 200, embedding_net = "no"),
+    "must be built with embedding_mlp")
+})
+
+test_that("the logistic fit is deterministic given the same simulations", {
+  # Contrasts are cyclic shifts, not random draws, so no RNG enters the fit.
+  sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 800, seed = 9)
+  a <- nre(gauss_prior(), theta = sims$theta, x = sims$x,
+           classifier = "logistic")
+  b <- nre(gauss_prior(), theta = sims$theta, x = sims$x,
+           classifier = "logistic")
+
+  expect_identical(a$de$beta, b$de$beta)
+})
+
+test_that("a custom classifier is accepted as a function", {
+  sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 500, seed = 8)
+  fit <- nre(gauss_prior(), theta = sims$theta, x = sims$x,
+             classifier = function(theta, x) fit_logistic_ratio(theta, x))
+
+  expect_equal(fit$classifier, "custom")
+  expect_length(log_ratio(fit, rbind(c(0, 0), c(1, 1)),
+                          matrix(c(0, 0), nrow = 1)), 2L)
+})
+
+test_that("a fit survives the save/load round trip", {
+  fit <- logistic_fit(n = 1000)
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path), add = TRUE)
+  save_nre(fit, path)
+  again <- load_nre(path)
+
+  expect_s3_class(again, "nsbi_nre")
+  expect_equal(log_ratio(again, c(0.5, 0.5), matrix(c(0, 0), nrow = 1)),
+               log_ratio(fit, c(0.5, 0.5), matrix(c(0, 0), nrow = 1)))
+})
+
+test_that("summary() reports the classifier rather than a density estimator", {
+  fit <- logistic_fit(n = 500)
+  info <- expect_output(summary(fit), "Neural Ratio Estimation")
+
+  expect_equal(info$classifier, "logistic")
+  expect_equal(info$dim_theta, 2L)
+  expect_null(info$density_estimator)
+})
+
+test_that("sbc() accepts an NRE fit", {
+  set.seed(30)
+  fit <- logistic_fit(n = 2000, seed = 31)
+  res <- sbc(fit, gauss_sim, n_sbc = 4L, n_posterior_samples = 60L,
+             n_chains = 4L, warmup = 30L)
+
+  expect_s3_class(res, "nsbi_sbc")
+  expect_equal(dim(res$ranks), c(4L, 2L))
+})
+
+test_that("the atomic row index picks the true parameter and distinct contrasts", {
+  set.seed(4)
+  b <- 12L
+  k <- 4L
+  rows <- matrix(neuralsbi:::nre_atom_rows(b, k), nrow = k)
+
+  expect_equal(rows[1, ], seq_len(b))
+  for (i in seq_len(b)) {
+    expect_length(unique(rows[, i]), k)
+    expect_false(i %in% rows[-1L, i])
+  }
+})
+
+test_that("the atomic row index can be frozen without disturbing the stream", {
+  set.seed(7)
+  before <- stats::runif(1)
+  set.seed(7)
+  invisible(stats::runif(1))
+  a <- neuralsbi:::nre_atom_rows(6L, 3L, deterministic = TRUE)
+  after_frozen <- stats::runif(1)
+
+  set.seed(7)
+  invisible(stats::runif(1))
+  b <- neuralsbi:::nre_atom_rows(6L, 3L, deterministic = TRUE)
+  after_again <- stats::runif(1)
+
+  expect_identical(a, b)
+  expect_identical(after_frozen, after_again)
+  expect_false(identical(before, after_frozen))
+})
+
+test_that("the neural classifiers fit and evaluate", {
+  skip_if_no_torch()
+  for (kind in c("resnet", "mlp", "linear")) {
+    fit <- nre(gauss_prior(), gauss_sim, n_simulations = 600,
+               classifier = kind, hidden = 16L, n_blocks = 2L,
+               max_epochs = 15L, seed = 1)
+    x <- matrix(stats::rnorm(6), ncol = 2)
+    lr <- log_ratio(fit, rbind(c(0, 0), c(1, 1)), x)
+
+    expect_equal(fit$classifier, kind)
+    expect_length(lr, 2L)
+    expect_true(all(is.finite(lr)), label = kind)
+    expect_true(is.finite(fit$de$best_val_loss), label = kind)
+  }
+})
+
+test_that("a neural fit survives the save/load round trip", {
+  skip_if_no_torch()
+  fit <- nre(gauss_prior(), gauss_sim, n_simulations = 600,
+             classifier = "resnet", hidden = 16L, max_epochs = 10L, seed = 1)
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path), add = TRUE)
+  save_nre(fit, path)
+  again <- load_nre(path)
+
+  expect_equal(log_ratio(again, rbind(c(0.5, 0.5), c(-1, 0.2)),
+                         matrix(c(0, 0), nrow = 1)),
+               log_ratio(fit, rbind(c(0.5, 0.5), c(-1, 0.2)),
+                         matrix(c(0, 0), nrow = 1)))
+})
+
+test_that("blocking does not change a neural classifier's answer either", {
+  skip_if_no_torch()
+  fit <- nre(gauss_prior(), gauss_sim, n_simulations = 600, hidden = 16L,
+             max_epochs = 10L, seed = 1)
+  theta <- matrix(stats::runif(14, -2, 2), ncol = 2)
+  x <- matrix(stats::rnorm(14), ncol = 2)
+
+  expect_equal(log_ratio(fit, theta, x, max_batch = 11),
+               log_ratio(fit, theta, x, max_batch = 1e5), tolerance = 1e-6)
+  expect_equal(log_ratio(fit, theta, x, sum_iid = FALSE, max_batch = 11),
+               log_ratio(fit, theta, x, sum_iid = FALSE, max_batch = 1e5),
+               tolerance = 1e-6)
+})
+
+test_that("a neural classifier reproduces a Gaussian likelihood ratio", {
+  skip_if_no_torch()
+  fit <- nre(gauss_prior(), gauss_sim, n_simulations = 6000,
+             max_epochs = 300L, seed = 5)
+  set.seed(6)
+  theta <- matrix(stats::runif(40, -1.5, 1.5), ncol = 2)
+  x <- matrix(c(0.3, -0.4), nrow = 1)
+
+  Sigma <- matrix(c(0.4^2, 0, 0, 0.3^2), 2, 2)
+  truth <- vapply(seq_len(nrow(theta)), function(i) {
+    mu <- c(theta[i, 1], theta[i, 2] + 0.5 * theta[i, 1])
+    dmvnorm_chol(x, mu, chol(Sigma))
+  }, numeric(1))
+
+  # A trained classifier is not exact the way the closed-form baseline is; this
+  # checks it gets the shape right, not that it nails the ratio. The bar is
+  # looser than the MAF's 0.97 in test-nle.R on purpose: at this budget the
+  # correlation runs about 0.96 to 0.98 across seeds, and climbs with more
+  # simulations (0.978 at 20k), so a 0.97 bar would fail on some runs for no
+  # reason but the draw.
+  expect_gt(stats::cor(log_ratio(fit, theta, x), truth), 0.95)
+})
+
+test_that("a neural classifier's posterior samples", {
+  # The classifiers are checked above and the MCMC path below the logistic
+  # baseline; this is the one test that runs both together.
+  skip_if_no_torch()
+  set.seed(40)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nre(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 4000, hidden = 32L, max_epochs = 100L, seed = 41)
+  x_obs <- matrix(stats::rnorm(20, 0.7, 0.5), ncol = 1)
+
+  post <- posterior(fit, x_obs, n_chains = 8, warmup = 100, seed = 42)
+  draws <- sample(post, 1000)
+
+  expect_equal(dim(draws), c(1000L, 1L))
+  expect_true(all(is.finite(draws)))
+  expect_equal(mean(draws), mean(x_obs), tolerance = 0.2)
+})
+
+test_that("an embedding net trains jointly with the classifier", {
+  skip_if_no_torch()
+  fit <- nre(gauss_prior(), gauss_sim, n_simulations = 600, hidden = 16L,
+             max_epochs = 10L, seed = 1,
+             embedding_net = embedding_mlp(output_dim = 4L, hidden = 8L))
+
+  expect_equal(fit$de$embedding$output_dim, 4L)
+  expect_output(print(fit), "embedding \\(mlp\\)")
+  expect_true(all(is.finite(log_ratio(fit, rbind(c(0, 0), c(1, 1)),
+                                      matrix(c(0.2, -0.1), nrow = 1)))))
+})

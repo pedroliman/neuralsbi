@@ -245,8 +245,9 @@ test_that("thin and warmup are validated, and thin = 1 keeps every draw", {
   expect_gt(stats::sd(as.numeric(draws)), 0)
 })
 
-test_that("posterior() rejects an object that is neither fit", {
-  expect_error(posterior(list(a = 1)), "needs a fit from npe\\(\\) or nle\\(\\)")
+test_that("posterior() rejects an object that is no kind of fit", {
+  expect_error(posterior(list(a = 1)),
+               "needs a fit from npe\\(\\), nle\\(\\) or nre\\(\\)")
 })
 
 test_that("sbc() and posterior_predictive() accept an NLE fit", {

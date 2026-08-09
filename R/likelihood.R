@@ -91,11 +91,24 @@ de_log_lik_iid <- function(de, x, theta, max_batch = 1e5) {
 
 #' @export
 de_log_lik_iid.default <- function(de, x, theta, max_batch = 1e5) {
+  iid_matrix(de, x, theta, max_batch, de_log_prob)
+}
+
+#' The `n_theta x n_obs` cross product, block by block
+#'
+#' The body of [de_log_lik_iid()]'s default method, with the per-pair scorer
+#' left open so [nre()] can reuse it. `score(de, x_rows, theta_rows)` is
+#' [de_log_prob()][density_estimator] for a density estimator and
+#' [nre_score()] for a ratio estimator.
+#' @inheritParams de_log_lik_iid
+#' @param score The per-pair scorer, `function(de, x, theta)`.
+#' @keywords internal
+iid_matrix <- function(de, x, theta, max_batch, score) {
   n_obs <- nrow(x)
   out <- matrix(0, nrow = nrow(theta), ncol = n_obs)
   cross_iid(de, x, theta, max_batch, function(idx, lp) {
     out[idx, ] <<- matrix(lp, nrow = length(idx), ncol = n_obs, byrow = TRUE)
-  })
+  }, score = score)
   out
 }
 
@@ -150,14 +163,26 @@ de_iid_evaluator <- function(de, x, max_batch = 1e5) UseMethod("de_iid_evaluator
 
 #' @export
 de_iid_evaluator.default <- function(de, x, max_batch = 1e5) {
+  iid_evaluator(de, x, max_batch, de_log_prob)
+}
+
+#' Summed log densities over a fixed observation set, block by block
+#'
+#' The body of [de_iid_evaluator()]'s default method, with the per-pair scorer
+#' left open so [nre_iid_evaluator()] can reuse it.
+#' @inheritParams de_iid_evaluator
+#' @param score The per-pair scorer, `function(de, x, theta)`.
+#' @keywords internal
+iid_evaluator <- function(de, x, max_batch, score) {
   n_obs <- nrow(x)
   force(max_batch)
+  force(score)
   function(theta) {
     out <- numeric(nrow(theta))
     cross_iid(de, x, theta, max_batch, function(idx, lp) {
       # `lp` runs theta-major, so a matrix of it has one column per theta.
       out[idx] <<- colSums(matrix(lp, nrow = n_obs))
-    })
+    }, score = score)
     out
   }
 }
@@ -298,11 +323,12 @@ mdn_trace <- function(de, xt, tt) {
 
 #' Walk the theta blocks of the cross product, calling `collect(idx, lp)`
 #'
-#' `lp` is the flat vector [de_log_prob()][density_estimator] returns for the
-#' block, running theta-major: the whole observation set for the first
-#' parameter, then for the second, and so on.
+#' `lp` is the flat vector `score()` returns for the block, running theta-major:
+#' the whole observation set for the first parameter, then for the second, and
+#' so on. `score` is [de_log_prob()][density_estimator] for a density estimator
+#' and [nre_score()] for a ratio estimator; the blocking is the same either way.
 #' @keywords internal
-cross_iid <- function(de, x, theta, max_batch, collect) {
+cross_iid <- function(de, x, theta, max_batch, collect, score = de_log_prob) {
   n_theta <- nrow(theta)
   n_obs <- nrow(x)
   per_block <- max(1L, floor(max_batch / max(n_obs, 1L)))
@@ -313,8 +339,8 @@ cross_iid <- function(de, x, theta, max_batch, collect) {
   for (s in seq.int(1L, n_theta, by = per_block)) {
     idx <- seq.int(s, min(s + per_block - 1L, n_theta))
     rows <- seq_len(length(idx) * n_obs)
-    collect(idx, de_log_prob(de, target[rows, , drop = FALSE],
-                             theta[rep(idx, each = n_obs), , drop = FALSE]))
+    collect(idx, score(de, target[rows, , drop = FALSE],
+                       theta[rep(idx, each = n_obs), , drop = FALSE]))
   }
   invisible(NULL)
 }
@@ -428,15 +454,50 @@ likelihood_fn <- function(fit, x_obs, ...) {
   f
 }
 
-#' Unnormalized log posterior of an NLE fit
+#' Unnormalized log posterior of a surrogate fit
 #'
-#' \eqn{\log q_\phi(x \mid \theta) + \log p(\theta)}, returning `-Inf` outside
-#' the prior support. This is the potential the MCMC samplers target.
+#' \eqn{\log q_\phi(x \mid \theta) + \log p(\theta)} for an [nle()] fit and
+#' \eqn{\log r_\phi(\theta, x) + \log p(\theta)} for an [nre()] fit, returning
+#' `-Inf` outside the prior support. This is the potential the MCMC samplers
+#' target, and the two fits differ only in which surrogate contributes the
+#' first term.
+#'
+#' @param fit An `nsbi_nle` or `nsbi_nre` fit.
+#' @param x_obs The observation to condition on. Rows are independent
+#'   observations of the same parameter.
+#' @param max_batch Largest number of `(theta, x)` pairs evaluated at once. No
+#'   caller overrides it today, but it is a real tuning knob -- the batch size
+#'   the MCMC evaluations are chunked into -- that a future caller would
+#'   plausibly want to change, so it stays a parameter.
+#' @return `function(theta)` giving one unnormalized log posterior density per
+#'   row.
 #' @keywords internal
-nle_potential <- function(fit, x_obs, max_batch = 1e5) {
-  # No caller overrides max_batch today, but it is a real tuning knob -- the
-  # batch size de_iid_evaluator() chunks the MCMC evaluations into -- that a
-  # future caller would plausibly want to change, so it stays a parameter.
+surrogate_potential <- function(fit, x_obs, max_batch = 1e5) {
+  UseMethod("surrogate_potential")
+}
+
+#' @export
+surrogate_potential.nsbi_nle <- function(fit, x_obs, max_batch = 1e5) {
+  make_potential(fit, x_obs, de_iid_evaluator, log_jac = TRUE,
+                 max_batch = max_batch)
+}
+
+#' The body every `surrogate_potential()` method shares
+#'
+#' `evaluator` is what turns the fitted estimator and the observation into a
+#' `function(theta)`: [de_iid_evaluator()] for a learned density,
+#' [nre_iid_evaluator()] for a learned ratio. `log_jac` says whether the
+#' standardization of `x` needs a change-of-variables correction -- a density
+#' reported in the simulator's units does, a ratio does not, since the Jacobian
+#' cancels between its numerator and denominator.
+#'
+#' @inheritParams surrogate_potential
+#' @param evaluator `function(de, x_z, max_batch)` returning the summed
+#'   per-observation score as a function of standardized parameters.
+#' @param log_jac Apply the `x` standardizer's log-Jacobian, once per
+#'   observation.
+#' @keywords internal
+make_potential <- function(fit, x_obs, evaluator, log_jac, max_batch = 1e5) {
   prior <- fit$prior
   # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
   # only way to find out is to ask it. Better here than as a puzzling
@@ -444,7 +505,7 @@ nle_potential <- function(fit, x_obs, max_batch = 1e5) {
   probe <- tryCatch(prior$log_prob(sample_prior(prior, 2L)),
                     error = function(e) NA_real_)
   if (is.null(prior$log_prob) || all(is.na(probe))) {
-    stop("Sampling an NLE posterior needs a prior log-density, and this prior ",
+    stop("Sampling this posterior needs a prior log-density, and this prior ",
          "does not have one.\nRebuild it with prior_custom(..., log_prob_fn = ).",
          call. = FALSE)
   }
@@ -453,11 +514,15 @@ nle_potential <- function(fit, x_obs, max_batch = 1e5) {
 
   # A chain calls this thousands of times with the same observation, so
   # everything that depends on the observation alone is settled here: the
-  # standardization, its Jacobian, and whatever the estimator wants to
+  # standardization, any Jacobian, and whatever the estimator wants to
   # precompute. Only the parameter side is left for the call itself.
   x_z <- apply_standardizer(fit$std_x, x_obs)
-  offset <- nrow(x_z) * standardizer_log_jac(fit$std_x)
-  ev <- de_iid_evaluator(fit$de, x_z, max_batch = max_batch)
+  offset <- if (isTRUE(log_jac)) {
+    nrow(x_z) * standardizer_log_jac(fit$std_x)
+  } else {
+    0
+  }
+  ev <- evaluator(fit$de, x_z, max_batch = max_batch)
 
   function(theta) {
     theta <- as_theta_matrix(theta, fit$dim_theta)

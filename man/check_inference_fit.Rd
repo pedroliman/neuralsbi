@@ -2,11 +2,11 @@
 % Please edit documentation in R/diagnostics.R
 \name{check_inference_fit}
 \alias{check_inference_fit}
-\title{Accept either kind of fit, and say which ones exist when neither matches}
+\title{Accept any kind of fit, and say which ones exist when none matches}
 \usage{
 check_inference_fit(fit)
 }
 \description{
-Accept either kind of fit, and say which ones exist when neither matches
+Accept any kind of fit, and say which ones exist when none matches
 }
 \keyword{internal}

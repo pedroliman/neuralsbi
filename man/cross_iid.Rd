@@ -4,11 +4,12 @@
 \alias{cross_iid}
 \title{Walk the theta blocks of the cross product, calling \code{collect(idx, lp)}}
 \usage{
-cross_iid(de, x, theta, max_batch, collect)
+cross_iid(de, x, theta, max_batch, collect, score = de_log_prob)
 }
 \description{
-\code{lp} is the flat vector \link[=density_estimator]{de_log_prob()} returns for the
-block, running theta-major: the whole observation set for the first
-parameter, then for the second, and so on.
+\code{lp} is the flat vector \code{score()} returns for the block, running theta-major:
+the whole observation set for the first parameter, then for the second, and
+so on. \code{score} is \link[=density_estimator]{de_log_prob()} for a density estimator
+and \code{\link[=nre_score]{nre_score()}} for a ratio estimator; the blocking is the same either way.
 }
 \keyword{internal}

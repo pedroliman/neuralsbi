@@ -5,7 +5,7 @@
 #' data-frame workflows (dplyr, ggplot2, ...).
 #'
 #' @param object An `nsbi_samples` matrix from [sample()], an `nsbi_posterior`,
-#'   or an `nsbi_npe` or `nsbi_nle` fit.
+#'   or an `nsbi_npe`, `nsbi_nle` or `nsbi_nre` fit.
 #' @param probs Quantiles to report.
 #' @param n Number of draws used to summarize a posterior.
 #' @param x Observation to condition on (defaults to the posterior's `x_obs`);
@@ -15,8 +15,8 @@
 #' @return For samples and posteriors, a data frame with one row per parameter
 #'   (mean, sd, and quantiles). For fits, an invisible list of training
 #'   metadata. In that list `dim_x` counts the data dimension the estimator was
-#'   trained on, which for an `nsbi_nle` fit is one observation rather than the
-#'   whole data set.
+#'   trained on, which for an `nsbi_nle` or `nsbi_nre` fit is one observation
+#'   rather than the whole data set.
 #' @name summaries
 NULL
 
@@ -56,20 +56,7 @@ summary.nsbi_posterior <- function(object, n = 1000L, x = NULL, ...) {
 #' @rdname summaries
 #' @export
 summary.nsbi_npe <- function(object, ...) {
-  info <- list(
-    density_estimator = object$density_estimator,
-    dim_theta = object$dim_theta,
-    dim_x = object$dim_x,
-    n_simulations = object$n_simulations,
-    best_val_loss = object$de$best_val_loss %||% NA_real_,
-    epochs_trained = if (!is.null(object$de$history)) nrow(object$de$history)
-                     else NA_integer_
-  )
-  print(object)
-  if (!is.na(info$epochs_trained)) {
-    cat(sprintf("  epochs trained    : %d\n", info$epochs_trained))
-  }
-  invisible(info)
+  fit_summary(object, list(density_estimator = object$density_estimator))
 }
 
 #' @rdname summaries
@@ -78,3 +65,37 @@ summary.nsbi_npe <- function(object, ...) {
 # print() call inside dispatches on the class, so there is nothing to
 # specialize here.
 summary.nsbi_nle <- function(object, ...) summary.nsbi_npe(object, ...)
+
+#' @rdname summaries
+#' @export
+# An NRE fit records which classifier it trained rather than which density
+# estimator, so that one field is named differently; everything else matches.
+summary.nsbi_nre <- function(object, ...) {
+  fit_summary(object, list(classifier = object$classifier))
+}
+
+#' Print a fit and return its training metadata invisibly
+#'
+#' The body every `summary()` method for a fit shares. `estimator` is the one
+#' field whose name depends on what was trained: `density_estimator` for
+#' [npe()] and [nle()], `classifier` for [nre()]. `print()` inside dispatches
+#' on the object's own class, so nothing else here has to know which fit it has.
+#'
+#' @param object The fit.
+#' @param estimator A one-element named list, spliced in ahead of the rest.
+#' @keywords internal
+fit_summary <- function(object, estimator) {
+  info <- c(estimator, list(
+    dim_theta = object$dim_theta,
+    dim_x = object$dim_x,
+    n_simulations = object$n_simulations,
+    best_val_loss = object$de$best_val_loss %||% NA_real_,
+    epochs_trained = if (!is.null(object$de$history)) nrow(object$de$history)
+                     else NA_integer_
+  ))
+  print(object)
+  if (!is.na(info$epochs_trained)) {
+    cat(sprintf("  epochs trained    : %d\n", info$epochs_trained))
+  }
+  invisible(info)
+}

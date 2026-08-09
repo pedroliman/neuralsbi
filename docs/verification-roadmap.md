@@ -25,6 +25,11 @@ Status: **linear Gaussian implemented and passing** (see
 `tests/testthat/test-linear-gaussian.R`, `test-mdn.R`). The `linear_gaussian`
 estimator is *exact* here and acts as a torch-free oracle for the whole
 pipeline; the MDN is checked against the same analytic target with looser tol.
+`nre()`'s `"logistic"` classifier plays the same role for the ratio path
+(`tests/testthat/test-nre.R`): its quadratic feature basis spans the log
+ratio's parameter dependence exactly for a linear-Gaussian simulator, so the
+whole NRE pipeline -- ratio, i.i.d. sum, MCMC posterior, SBC -- is checked
+against closed form without libtorch.
 
 ### Level 2 — Calibration on models without closed-form posteriors
 
@@ -191,8 +196,9 @@ leakage handling) and documented.
 
 ### v0.6+ — Breadth
 
-- Other families: NRE (ratio estimation) behind the same API. NLE landed in
-  0.4.3.
+- Other families: NRE landed in 0.5.14 (`nre()`, `R/nre.R`), NLE in 0.4.3.
+  What is left of the family is the sequential variants (SNRE) and NRE-C's
+  calibrated multi-class loss.
 - NSF in the Stan exporter, which means generating the rational-quadratic
   spline transform.
 - A VI posterior for NLE, as an alternative to MCMC (`sbi` has one).
@@ -228,7 +234,18 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.4.3 neural-likelihood pass (branches
+pick up the work. Last updated for the 0.5.14 neural-ratio pass (branch
+`claude/neural-likelihood-ratio-estimator-8mot0m`, August 2026): the package
+now carries all three factorizations. `nre()` (`R/nre.R`) trains a classifier
+on the atomic (NRE-B) loss that `sbi`'s `NRE` uses, `log_ratio()` evaluates
+the learned ratio and sums it over i.i.d. observations, and
+`R/nre_posterior.R` wires it into `posterior()` through the same slice sampler
+NLE uses. Almost nothing new was needed underneath: the atomic loss is a
+per-row `log_prob_fn` so `train_conditional_de()` runs it unchanged, and the
+potential, the i.i.d. blocking, the draw cache and the posterior printing are
+now shared between the two MCMC fit types rather than duplicated. The
+torch-free `"logistic"` classifier is the analytic oracle that keeps the whole
+path testable in CI. Before that, the 0.4.3 neural-likelihood pass (branches
 `claude/neural-likelihood-estimation-stan-x6jwxa` then
 `claude/nle-implementation-performance-lvfp92`, July 2026): the package is
 no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood
@@ -421,6 +438,8 @@ it carries no defaults of its own. When changing a default, update the
 | Leakage normalization | tests in `test-posterior-normalization.R` | done |
 | Sequential NPE (TSNPE) | `npe_sequential()` in `R/sequential.R` | done + analytic parity test; NPE-C open |
 | NLE | `nle()` in `R/nle.R` | done + analytic parity test; reuses every estimator by swapping the target and condition |
+| NRE | `nre()` in `R/nre.R` | done + analytic parity test; atomic (NRE-B) loss at `num_atoms = 10`, classifiers `resnet`/`mlp`/`linear` (torch) and `logistic` (closed form). Shares the training engine via `train_conditional_de()` by expressing the atomic loss as its per-row `log_prob_fn`, and the MCMC posterior with NLE via `surrogate_potential()`. No Stan export, no sequential variant |
+| Learned ratio | `log_ratio()` in `R/nre.R` | done; rows of `x` are i.i.d. observations and the log ratio sums over them. No standardization Jacobian -- it cancels between numerator and denominator -- and no absolute level, since the atomic loss fixes the ratio only up to a function of `x` |
 | Surrogate likelihood | `log_lik()`, `likelihood_fn()` in `R/likelihood.R` | done; rows of `x` are i.i.d. observations and the log-density sums over them |
 | MCMC | `slice_sample()`, `mcmc_init()`, `mcmc_diagnostics()` in `R/mcmc.R` | done + tested against closed-form targets; vectorized across chains, slice width adapted during warmup, `thin` defaults to 2 rather than sbi's 10 (ESS ~96% of draws either way). Stepping out and shrinkage both carry several of a chain's future moves per call, capped so no call is wider than the one that opened the coordinate. Split-Rhat and bulk ESS match \pkg{posterior} to 0.3%. NUTS-via-Stan is the alternative; no VI posterior |
 | i.i.d. fast path | `de_log_lik_iid()`, `de_iid_evaluator()` in `R/likelihood.R` | done; MDN and linear_gaussian compute the conditional once per parameter and score every observation against it, MAF/NSF fall back to the cross-product expansion. Same factorization the Stan `_sum` entry point uses. `de_iid_evaluator()` is the summed form the sampler uses: it closes over the observation so the estimator can hoist what depends on it, and reduces where the densities are produced so the `n_theta x n_obs` matrix is never built |

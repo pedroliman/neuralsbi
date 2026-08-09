@@ -7,7 +7,7 @@
 for_each_trial(fit, x_all, n_posterior_samples, label, f, ...)
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} or \code{nsbi_nle} fit.}
+\item{fit}{An \code{nsbi_npe}, \code{nsbi_nle} or \code{nsbi_nre} fit.}
 
 \item{x_all}{Matrix of simulated data, one row (one trial) per observation.}
 

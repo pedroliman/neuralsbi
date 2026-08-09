@@ -15,19 +15,20 @@ NULL
 
 #' Build a posterior from a fit
 #'
-#' The two inference methods reach a posterior by different routes, and
+#' The three inference methods reach a posterior by different routes, and
 #' `posterior()` hides the difference. An [npe()] fit already *is* a posterior
 #' estimator, so the returned object samples with a forward pass. An [nle()]
-#' fit only knows the likelihood, so the returned object samples with MCMC and
-#' takes the extra arguments that implies.
+#' fit only knows the likelihood and an [nre()] fit only the likelihood ratio,
+#' so both return an object that samples with MCMC and takes the extra
+#' arguments that implies.
 #'
-#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
-#'   `nsbi_nle` object from [nle()].
+#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], an
+#'   `nsbi_nle` object from [nle()], or an `nsbi_nre` object from [nre()].
 #' @param x_obs Optional default observation to condition on. If supplied it
 #'   becomes the default `x` for [sample()], [log_prob()] and [map_estimate()].
-#'   For an NLE fit, rows of `x_obs` are independent observations.
-#' @param ... Passed to methods. See [posterior.nsbi_nle()] for the MCMC
-#'   controls an NLE fit accepts.
+#'   For an NLE or NRE fit, rows of `x_obs` are independent observations.
+#' @param ... Passed to methods. See [posterior.nsbi_nle()] and
+#'   [posterior.nsbi_nre()] for the MCMC controls those fits accept.
 #' @return An `nsbi_posterior` object.
 #' @seealso [save_npe()], which is how a torch-backed fit gets to disk and
 #'   back; `readRDS()` returns one whose network is dead, and `posterior()`
@@ -38,7 +39,8 @@ posterior <- function(fit, x_obs = NULL, ...) UseMethod("posterior")
 #' @rdname posterior
 #' @export
 posterior.default <- function(fit, x_obs = NULL, ...) {
-  stop("posterior() needs a fit from npe() or nle(), not an object of class ",
+  stop("posterior() needs a fit from npe(), nle() or nre(), not an object ",
+       "of class ",
        paste(class(fit), collapse = "/"), ".", call. = FALSE)
 }
 
@@ -198,9 +200,9 @@ standardized_obs <- function(post, obs) {
 #'   (acceptance) constant when `normalize = TRUE`.
 #' @param ... Passed to methods.
 #' @return Numeric vector of log posterior densities. For a posterior built
-#'   from an [nle()] fit the value is **unnormalized** -- the evidence
-#'   \eqn{p(x)} is not available -- so differences between two `theta` are
-#'   meaningful but the absolute level is not.
+#'   from an [nle()] or [nre()] fit the value is **unnormalized** -- the
+#'   evidence \eqn{p(x)} is not available -- so differences between two `theta`
+#'   are meaningful but the absolute level is not.
 #' @export
 log_prob <- function(post, theta, x = NULL, ...) UseMethod("log_prob")
 
@@ -233,9 +235,9 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
 #' Starts from the best of a set of posterior draws and refines with a
 #' derivative-free optimizer.
 #'
-#' On a posterior from [nle()] the initial draws come from MCMC, so `n_init`
-#' buys a chain rather than a forward pass. They are cached on the posterior
-#' like any other run.
+#' On a posterior from [nle()] or [nre()] the initial draws come from MCMC, so
+#' `n_init` buys a chain rather than a forward pass. They are cached on the
+#' posterior like any other run.
 #'
 #' @param post An `nsbi_posterior` object.
 #' @param x Observation to condition on (defaults to `x_obs`).
@@ -248,8 +250,8 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
                         why = "since the search starts from the best of them")
   fit <- post$fit
   # Through the generic, not sample.nsbi_posterior() directly: an nle() fit's
-  # estimator has the roles swapped, so the NPE sampler asked to draw from it
-  # returns draws in x space. Where dim_x and dim_theta differ that is an error
+  # estimator has the roles swapped (and an nre() fit's cannot sample at all),
+  # so the NPE sampler asked to draw from it returns draws in x space. Where dim_x and dim_theta differ that is an error
   # about non-conformable arguments; where they happen to match it is a set of
   # starting points quietly drawn from the wrong distribution.
   draws <- sample(post, n = n_init, obs = x)

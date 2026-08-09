@@ -8,9 +8,10 @@ de_sample_flow(de, x, n, inverse_fn)
 }
 \description{
 Takes the single conditioning row, replicates it to \code{n} rows, draws a
-standard-normal base sample, and inverts the flow -- all on the net's device
-(see \code{net_device()}), then brings the draws back to CPU as a plain R matrix.
-\code{inverse_fn} is the per-flow inverse -- \code{maf_inverse()} or \code{nsf_inverse()}.
-The MDN has no inverse to share here; it samples its mixture directly.
+standard-normal base sample, and inverts the flow -- all on the net's
+device (see \code{\link[=net_device]{net_device()}}), then brings the draws back to CPU as a plain R
+matrix. \code{inverse_fn} is the per-flow inverse -- \code{maf_inverse()} or
+\code{nsf_inverse()}. The MDN has no inverse to share here; it samples its
+mixture directly.
 }
 \keyword{internal}
