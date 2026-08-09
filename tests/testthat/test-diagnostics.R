@@ -1,3 +1,11 @@
+test_that("sbc() rejects an object that is not an npe/nle fit, naming its class", {
+  expect_error(
+    sbc(structure(list(), class = "lm"), function(theta) theta,
+        prior_normal(mean = 0, sd = 1)),
+    "Expected a fit from npe\\(\\) or nle\\(\\), not an object of class lm"
+  )
+})
+
 test_that("sbc returns ranks of the right shape and reasonable calibration", {
   set.seed(7)
   d <- 2; sigma <- 0.5
@@ -9,6 +17,17 @@ test_that("sbc returns ranks of the right shape and reasonable calibration", {
   expect_equal(dim(res$ranks), c(100L, 2L))
   # a well-specified exact estimator should not fail uniformity badly
   expect_true(all(res$uniformity_pvalue > 0.001))
+})
+
+test_that("print.nsbi_sbc() labels each parameter's p-value when the fit is named", {
+  set.seed(2)
+  prior <- prior_normal(mean = c(beta = 0, rho = 0), sd = 1)
+  simulator <- function(theta) unname(theta) + rnorm(2, sd = 0.3)
+  fit <- npe(prior, simulator, n_simulations = 1500,
+             density_estimator = "linear_gaussian")
+  res <- sbc(fit, simulator, n_sbc = 50, n_posterior_samples = 100, seed = 3)
+  expect_output(print(res), "beta=")
+  expect_output(print(res), "rho=")
 })
 
 test_that("expected_coverage produces a monotone-ish curve near the diagonal", {

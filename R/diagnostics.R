@@ -186,7 +186,12 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
     br <- cut(r, breaks = seq(0, L, length.out = nb + 1L),
               include.lowest = TRUE)
     tab <- table(br)
-    stats::chisq.test(tab)$p.value
+    # Monte Carlo p-value: bypasses the asymptotic chi-squared approximation
+    # entirely (and its low-expected-count warning), rather than working
+    # around a case where the approximation happens to hold. Also valid at
+    # the small n_sbc test fixtures use, where the asymptotic version warns
+    # routinely.
+    stats::chisq.test(tab, simulate.p.value = TRUE)$p.value
   })
   names(pvals) <- colnames(ranks)
   structure(

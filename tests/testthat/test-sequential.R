@@ -62,6 +62,56 @@ test_that("npe_sequential requires a simulator function", {
                "simulator")
 })
 
+test_that("npe_sequential requires x_obs to be supplied at all, not just non-NULL", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.5)
+  expect_error(npe_sequential(prior, simulator, n_rounds = 1, n_simulations = 100,
+                              density_estimator = "linear_gaussian"),
+               "`x_obs` is required")
+})
+
+test_that("npe_sequential accepts x_obs as a one-row data frame", {
+  set.seed(41)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.5)
+  fit <- npe_sequential(prior, simulator, x_obs = data.frame(y = 0.3),
+                        n_rounds = 1, n_simulations = 200,
+                        density_estimator = "linear_gaussian", seed = 1)
+  expect_equal(fit$x_obs, 0.3)
+})
+
+test_that("npe_sequential rejects a prior that is not an nsbi_prior", {
+  expect_error(npe_sequential(list(), function(theta) theta, x_obs = 0),
+               "inherits")
+})
+
+test_that("npe_sequential warns and continues with fewer draws when the proposal batch cap bites", {
+  set.seed(31)
+  # a wide prior and a tight likelihood: round 2's truncated region is narrow,
+  # so with only one proposal batch allowed, most rounds fall short of budget
+  prior <- prior_uniform(low = -50, high = 50)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.05)
+  expect_warning(
+    fit <- npe_sequential(prior, simulator, x_obs = 0.2, n_rounds = 2,
+                          n_simulations = 500, epsilon = 0.5,
+                          max_proposal_batches = 1,
+                          density_estimator = "linear_gaussian", seed = 8),
+    "proposal draws inside the truncated region"
+  )
+  expect_lt(fit$rounds[[2]]$n_new, 500L)
+})
+
+test_that("print.nsbi_snpe() labels the targeted x_obs by name when the fit has names", {
+  set.seed(9)
+  prior <- prior_normal(mean = c(beta = 0, rho = 0), sd = 1)
+  simulator <- function(beta, rho) c(cases = beta, deaths = rho) + rnorm(2, sd = 0.3)
+  fit <- npe_sequential(prior, simulator, x_obs = c(cases = 0.2, deaths = -0.1),
+                        n_rounds = 2, n_simulations = 400,
+                        density_estimator = "linear_gaussian", seed = 8)
+  expect_equal(fit$x_names, c("cases", "deaths"))
+  expect_output(print(fit), "cases=.*deaths=")
+})
+
 test_that("npe_sequential rejects an x_obs the simulator cannot have produced", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + rnorm(1, sd = 0.5)

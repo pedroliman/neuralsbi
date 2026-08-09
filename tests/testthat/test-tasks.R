@@ -48,6 +48,13 @@ test_that("sir task simulates plausible epidemics under its prior", {
   expect_gt(max(x_fast), max(x_slow))
 })
 
+test_that("print.nsbi_task() reports dimensions and whether a reference posterior exists", {
+  expect_output(print(task_gaussian_linear(dim = 3L)),
+               "gaussian_linear: 3 parameters -> 3 data dims \\(analytic reference available\\)")
+  expect_output(print(task_two_moons()),
+               "two_moons: 2 parameters -> 2 data dims$")
+})
+
 test_that("slcp simulator has the right shape and support behavior", {
   set.seed(11)
   task <- task_slcp()

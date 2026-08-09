@@ -90,6 +90,22 @@ test_that("sim_args is checked before anything runs", {
                "must be a function")
 })
 
+test_that("sim_dispatch() rejects a non-function simulator directly", {
+  # simulate_for_sbi() never reaches this: check_function() catches it first
+  # (see the test above). sim_dispatch() is called by other internal paths
+  # too, so it validates on its own rather than trusting every caller.
+  expect_error(sim_dispatch("not a function", c("mu")), "must be a function")
+})
+
+test_that("sim_dispatch() falls back to the vector form for a zero-argument simulator", {
+  expect_equal(sim_dispatch(function() NULL, c("mu")), "vector")
+})
+
+test_that("simulator_caller() rejects a non-list sim_args", {
+  expect_error(simulator_caller(function(theta) theta, c("mu"), sim_args = "x_grid"),
+               "must be a named list")
+})
+
 test_that("a single named parameter keeps its name -- the documented sharp edge", {
   prior <- prior_uniform(low = c(beta = 1, gamma = 1),
                          high = c(beta = 2, gamma = 2))
@@ -170,4 +186,39 @@ test_that("npe() runs end to end on a per-parameter-set simulator", {
   x_obs <- truth["alpha"] + truth["beta"] * grid
   draws <- sample(posterior(fit, x_obs = x_obs), 4000)
   expect_equal(unname(colMeans(draws)), unname(truth), tolerance = 0.15)
+})
+
+test_that("as_sim_draw() names the actual problem with a bad return value", {
+  # one draw per call: a multi-row data frame or matrix is never legal output.
+  expect_error(as_sim_draw(data.frame(a = 1:2, b = 3:4)),
+               "data frame with 2 rows")
+  expect_error(as_sim_draw(data.frame(a = 1, b = "x")),
+               "non-numeric column\\(s\\): b")
+  expect_error(as_sim_draw(array(1, dim = c(1, 1, 1))),
+               "3-dimensional array")
+  expect_error(as_sim_draw(matrix(c("a", "b"), nrow = 1)),
+               "matrix. The output must be numeric")
+  expect_error(as_sim_draw(matrix(1:4, nrow = 2)),
+               "matrix with 2 rows")
+  expect_error(as_sim_draw(list(1, 2)), "returned a list")
+  expect_error(as_sim_draw("not numeric"), "must be numeric")
+  expect_error(as_sim_draw(numeric(0)), "returned nothing")
+  # the ordinary cases: scalar, named vector, one-row matrix
+  expect_equal(as_sim_draw(3), 3)
+  expect_equal(as_sim_draw(c(a = 1, b = 2)), c(a = 1, b = 2))
+  expect_equal(as_sim_draw(matrix(c(1, 2), nrow = 1, dimnames = list(NULL, c("a", "b")))),
+               c(a = 1, b = 2))
+})
+
+test_that("bind_sim_draws() returns a d-column empty matrix for zero draws", {
+  m <- bind_sim_draws(list(), d = 3)
+  expect_equal(dim(m), c(0L, 3L))
+})
+
+test_that("drop_failed_sims() is a no-op on zero rows", {
+  x <- matrix(numeric(0), nrow = 0, ncol = 2)
+  res <- drop_failed_sims(NULL, x)
+  expect_equal(res$n_dropped, 0L)
+  expect_equal(nrow(res$x), 0L)
+  expect_null(res$theta)
 })
