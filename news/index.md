@@ -1,5 +1,26 @@
 # Changelog
 
+## neuralsbi 0.5.14
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  reject `n_bins < 2` for the NSF density estimator instead of crashing
+  on the first forward pass.**
+  [`nsf_made_module()`](https://neuralsbi.pedrodelima.com/reference/nsf_made_module.md)’s
+  `forward` splits a per-dimension parameter tensor into `K` bin widths,
+  `K` bin heights and `K - 1` interior derivatives by slicing
+  `params[, , (2 * K + 1):(3 * K - 1)]`; for `K = 1` that range is
+  `3:2`, which R’s `:` reads as the descending index `c(3, 2)` rather
+  than an empty selection, and the parameter tensor only has 2 columns
+  for `K = 1`, so the read went out of bounds.
+  [`check_architecture()`](https://neuralsbi.pedrodelima.com/reference/check_architecture.md)
+  already validated `n_bins` with
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md),
+  but its default `min = 1L` let `n_bins = 1` through; it now passes
+  `min = 2L`, the honest lower bound for a spline that needs an interior
+  derivative to fit. Closes
+  [\#137](https://github.com/pedroliman/neuralsbi/issues/137)
+  ([\#140](https://github.com/pedroliman/neuralsbi/issues/140)).
+
 ## neuralsbi 0.5.13
 
 - **Reference/help-topic pages on the pkgdown site now render their

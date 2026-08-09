@@ -55,7 +55,7 @@ once, you can condition on any observation without re-simulating."><meta propert
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -185,7 +185,8 @@ transforms (default 5, as in <code>sbi</code>).</p></dd>
 
 <dt id="arg-n-bins-tail-bound">n_bins, tail_bound<a class="anchor" aria-label="anchor" href="#arg-n-bins-tail-bound"></a></dt>
 <dd><p>NSF settings: number of spline bins per transform
-and the half-width of the interval the spline acts on (outside it the
+(at least 2, since the spline needs an interior derivative to fit) and
+the half-width of the interval the spline acts on (outside it the
 transform is the identity).</p></dd>
 
 

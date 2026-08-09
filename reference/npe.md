@@ -94,8 +94,9 @@ npe(
 
 - n_bins, tail_bound:
 
-  NSF settings: number of spline bins per transform and the half-width
-  of the interval the spline acts on (outside it the transform is the
+  NSF settings: number of spline bins per transform (at least 2, since
+  the spline needs an interior derivative to fit) and the half-width of
+  the interval the spline acts on (outside it the transform is the
   identity).
 
 - embedding_net:

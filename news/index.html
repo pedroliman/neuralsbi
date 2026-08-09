@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.14" id="neuralsbi-0514">neuralsbi 0.5.14<a class="anchor" aria-label="anchor" href="#neuralsbi-0514"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code> reject <code>n_bins &lt; 2</code> for the NSF density estimator instead of crashing on the first forward pass.</strong> <code><a href="../reference/nsf_made_module.html">nsf_made_module()</a></code>’s <code>forward</code> splits a per-dimension parameter tensor into <code>K</code> bin widths, <code>K</code> bin heights and <code>K - 1</code> interior derivatives by slicing <code>params[, , (2 * K + 1):(3 * K - 1)]</code>; for <code>K = 1</code> that range is <code>3:2</code>, which R’s <code>:</code> reads as the descending index <code>c(3, 2)</code> rather than an empty selection, and the parameter tensor only has 2 columns for <code>K = 1</code>, so the read went out of bounds. <code><a href="../reference/check_architecture.html">check_architecture()</a></code> already validated <code>n_bins</code> with <code><a href="../reference/check_count.html">check_count()</a></code>, but its default <code>min = 1L</code> let <code>n_bins = 1</code> through; it now passes <code>min = 2L</code>, the honest lower bound for a spline that needs an interior derivative to fit. Closes <a href="https://github.com/pedroliman/neuralsbi/issues/137" class="external-link">#137</a> (<a href="https://github.com/pedroliman/neuralsbi/issues/140" class="external-link">#140</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.13" id="neuralsbi-0513">neuralsbi 0.5.13<a class="anchor" aria-label="anchor" href="#neuralsbi-0513"></a></h2>
 <ul><li>

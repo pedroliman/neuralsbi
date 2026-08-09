@@ -94,7 +94,9 @@ nle(
 
 - n_bins, tail_bound:
 
-  NSF settings.
+  NSF settings: number of spline bins per transform (at least 2) and the
+  tail bound. See
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md).
 
 - max_epochs, batch_size, lr, validation_fraction, patience:
 
