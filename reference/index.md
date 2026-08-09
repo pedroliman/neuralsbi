@@ -29,10 +29,14 @@ Generate training data and fit a neural posterior estimator.
   : Sequential NPE with truncated-prior proposals (TSNPE)
 - [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) : Neural
   Likelihood Estimation (NLE)
+- [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) : Neural
+  Ratio Estimation (NRE)
 - [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   [`save_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   [`load_nle()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  [`save_nre()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  [`load_nre()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
   : Save and reload a fitted model
 - [`density_estimator`](https://neuralsbi.pedrodelima.com/reference/density_estimator.md)
   : Conditional density estimators
@@ -58,6 +62,18 @@ Stan.
   [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
   [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
   : Export a learned likelihood to Stan
+
+## Neural ratio estimation
+
+Learn the likelihood-to-evidence ratio with a classifier and sample it
+with MCMC.
+
+- [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  : Evaluate a learned likelihood-to-evidence ratio
+- [`posterior(`*`<nsbi_nre>`*`)`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
+  : Posterior from a neural ratio
+- [`sample(`*`<nsbi_nre_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nre_posterior.md)
+  : Sample an NRE posterior with MCMC
 
 ## Running the simulator
 
@@ -91,6 +107,7 @@ Condition on data, then sample, evaluate, and summarize.
   [`summary(`*`<nsbi_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
   [`summary(`*`<nsbi_npe>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
   [`summary(`*`<nsbi_nle>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
+  [`summary(`*`<nsbi_nre>`*`)`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
   : Summaries and tidy accessors
 
 ## Diagnostics

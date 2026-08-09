@@ -57,7 +57,7 @@ match Python sbi, so results are comparable across the two packages."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -161,7 +161,7 @@ after <code>lr_patience</code> epochs without validation improvement, down to
 
 <dt id="arg-device">device<a class="anchor" aria-label="anchor" href="#arg-device"></a></dt>
 <dd><p>Torch device keyword: <code>"cpu"</code> (the default), <code>"cuda"</code>,
-<code>"mps"</code>, or <code>"gpu"</code>/<code>"auto"</code> (see <code>resolve_device()</code>, which is what turns
+<code>"mps"</code>, or <code>"gpu"</code>/<code>"auto"</code> (see <code><a href="resolve_device.html">resolve_device()</a></code>, which is what turns
 this into an actual, available device). Training and validation tensors
 are created there, and the net is moved there right after <code>build_net()</code>,
 so the two never disagree the way they do under a bare

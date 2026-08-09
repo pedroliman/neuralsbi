@@ -209,5 +209,5 @@ fit <- nle(prior, simulator, n_simulations = 2000,
 
 x_obs <- matrix(rnorm(200, mean = 1, sd = 0.5), ncol = 1)
 log_lik(fit, theta = c(1, log(0.5)), x = x_obs)
-#> [1] -255.1691
+#> [1] -258.5992
 ```

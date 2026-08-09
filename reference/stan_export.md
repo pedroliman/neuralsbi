@@ -94,6 +94,11 @@ evaluating the emitted functions and comparing them against
 rational-quadratic spline transform would be a large and fragile block
 of generated Stan. Refit with `"maf"` if you need a flow.
 
+[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) fits are
+not exported at all. What gets transpiled here is a density; a ratio
+estimator holds a classifier instead, and there is no `p(x | theta)` in
+it to write out.
+
 ## Examples
 
 ``` r
@@ -114,9 +119,9 @@ cat(substr(stan_code(fit), 1, 400))
 str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
 #> List of 6
 #>  $ nsbi_nw  : int 3
-#>  $ nsbi_w   : num [1:3] -1.63e-17 9.63e-01 2.71e-01
+#>  $ nsbi_w   : num [1:3] 2.46e-18 9.57e-01 2.91e-01
 #>  $ N        : int 10
-#>  $ x        : num [1:10, 1] -1.42 -0.896 -1.375 -1.254 -0.605 ...
+#>  $ x        : num [1:10, 1] 0.128 1.352 -0.507 -0.931 0.203 ...
 #>  $ nsbi_low : num -3
 #>  $ nsbi_high: num 3
 ```

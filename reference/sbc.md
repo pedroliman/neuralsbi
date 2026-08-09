@@ -25,11 +25,13 @@ sbc(
 - fit:
 
   An `nsbi_npe` fit from
-  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md), or an
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md), an
   `nsbi_nle` fit from
-  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md). With an
-  NLE fit every trial is a separate MCMC run, so start with a small
-  `n_sbc` and raise it once the cost is known.
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md), or an
+  `nsbi_nre` fit from
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md). With an
+  NLE or NRE fit every trial is a separate MCMC run, so start with a
+  small `n_sbc` and raise it once the cost is known.
 
 - simulator:
 
@@ -68,7 +70,7 @@ sbc(
   Passed to
   [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md),
   which is how the MCMC controls (`n_chains`, `warmup`, `thin`,
-  `sampler`) reach an NLE fit.
+  `sampler`) reach an NLE or NRE fit.
 
 ## Value
 

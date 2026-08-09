@@ -57,7 +57,7 @@ round trip that works.'><meta property="og:image" content="https://neuralsbi.ped
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,7 +111,11 @@ round trip that works.</p>
 <span></span>
 <span><span class="fu">save_nle</span><span class="op">(</span><span class="va">fit</span>, <span class="va">path</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">load_nle</span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">load_nle</span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">save_nre</span><span class="op">(</span><span class="va">fit</span>, <span class="va">path</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">load_nre</span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -119,8 +123,8 @@ round trip that works.</p>
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>An <code>nsbi_npe</code> object from <code><a href="npe.html">npe()</a></code> or <code><a href="npe_sequential.html">npe_sequential()</a></code>, or an
-<code>nsbi_nle</code> object from <code><a href="nle.html">nle()</a></code>.</p></dd>
+<dd><p>An <code>nsbi_npe</code> object from <code><a href="npe.html">npe()</a></code> or <code><a href="npe_sequential.html">npe_sequential()</a></code>, an
+<code>nsbi_nle</code> object from <code><a href="nle.html">nle()</a></code>, or an <code>nsbi_nre</code> object from <code><a href="nre.html">nre()</a></code>.</p></dd>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
@@ -147,9 +151,9 @@ not have to know which estimator was used.</p>
 <p>Weights are saved, not code. A fit saved by one version of <code>neuralsbi</code> loads
 into a later one as long as the estimator's architecture has not changed;
 <code>load_npe()</code> reports the version that wrote the file when the rebuild fails.</p>
-<p><code>save_nle()</code> and <code>load_nle()</code> are aliases; both pairs handle either kind of
-fit, and the two names exist only so calling code reads the way the fit was
-made.</p>
+<p><code>save_nle()</code>/<code>load_nle()</code> and <code>save_nre()</code>/<code>load_nre()</code> are aliases; every
+pair handles every kind of fit, and the extra names exist only so calling
+code reads the way the fit was made.</p>
 <p>A fit trained with <code>device = "cuda"</code>/<code>"mps"</code> (see <code><a href="npe.html">npe()</a></code>/<code><a href="nle.html">nle()</a></code>) always
 reloads onto CPU, never onto the original device: <code><a href="https://torch.mlverse.org/docs/reference/torch_load.html" class="external-link">torch::torch_load()</a></code>
 defaults to <code>device = "cpu"</code> regardless of where the tensors were saved
@@ -173,12 +177,12 @@ from, and <code><a href="de_rebuild_net.html">de_rebuild_net()</a></code> builds
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;nsbi_samples&gt; 100 draws x 2 parameters</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   support acceptance rate: 1.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>             mu        nu</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.8109182 0.7061073</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.9344368 0.6240042</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.8394031 0.4957250</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.6778220 0.7418857</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.7117454 0.4071814</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 0.7317529 0.6402445</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 0.8916293 0.6112835</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.7583974 0.5059718</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] 0.7534376 0.5132677</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,] 0.8778185 0.6371749</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5,] 0.5963739 0.6593765</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [6,] 0.8952856 0.5518988</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>

@@ -49,7 +49,7 @@ restarts, one progress bar – in a progress-reporting context."><meta property=
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -114,8 +114,20 @@ restarts, one progress bar – in a progress-reporting context.</p>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><code>device</code> here is still the raw, unresolved keyword <code><a href="train_conditional_de.html">train_conditional_de()</a></code>
+was given (<code>"cpu"</code>, <code>"cuda"</code>, <code>"mps"</code>, <code>"gpu"</code> or <code>"auto"</code>); resolving it to
+an actual, available device needs <code>torch</code> loaded (see <code><a href="resolve_device.html">resolve_device()</a></code>),
+and this is the first point that is guaranteed true – <code><a href="require_torch.html">require_torch()</a></code> is
+the line above. Doing it here rather than earlier in
+<code><a href="train_conditional_de.html">train_conditional_de()</a></code> keeps <code><a href="check_train_controls.html">check_train_controls()</a></code> (which needs no
+torch at all) running first, so a bad <code>batch_size</code> is still reported before
+an unavailable device is.</p>
+    </div>
 
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

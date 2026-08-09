@@ -4,20 +4,22 @@ observation x_obs. It knows how to draw posterior samples, evaluate the
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
 space are handled internally.
-The two inference methods reach a posterior by different routes, and
+The three inference methods reach a posterior by different routes, and
 posterior() hides the difference. An npe() fit already is a posterior
 estimator, so the returned object samples with a forward pass. An nle()
-fit only knows the likelihood, so the returned object samples with MCMC and
-takes the extra arguments that implies."><meta property="og:description" content="A posterior wraps a trained npe() fit together with (optionally) a default
+fit only knows the likelihood and an nre() fit only the likelihood ratio,
+so both return an object that samples with MCMC and takes the extra
+arguments that implies."><meta property="og:description" content="A posterior wraps a trained npe() fit together with (optionally) a default
 observation x_obs. It knows how to draw posterior samples, evaluate the
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
 space are handled internally.
-The two inference methods reach a posterior by different routes, and
+The three inference methods reach a posterior by different routes, and
 posterior() hides the difference. An npe() fit already is a posterior
 estimator, so the returned object samples with a forward pass. An nle()
-fit only knows the likelihood, so the returned object samples with MCMC and
-takes the extra arguments that implies."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/reference/figures/logo.png"><meta property="og:image:alt" content="neuralsbi hex logo: a neural network feeding a posterior density"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
+fit only knows the likelihood and an nre() fit only the likelihood ratio,
+so both return an object that samples with MCMC and takes the extra
+arguments that implies."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/reference/figures/logo.png"><meta property="og:image:alt" content="neuralsbi hex logo: a neural network feeding a posterior density"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -65,7 +67,7 @@ takes the extra arguments that implies."><meta property="og:image" content="http
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,11 +110,12 @@ observation <code>x_obs</code>. It knows how to draw posterior samples, evaluate
 posterior log-density, and find the maximum-a-posteriori (MAP) estimate. All
 transforms between standardized training space and the original parameter
 space are handled internally.</p>
-<p>The two inference methods reach a posterior by different routes, and
+<p>The three inference methods reach a posterior by different routes, and
 <code>posterior()</code> hides the difference. An <code><a href="npe.html">npe()</a></code> fit already <em>is</em> a posterior
 estimator, so the returned object samples with a forward pass. An <code><a href="nle.html">nle()</a></code>
-fit only knows the likelihood, so the returned object samples with MCMC and
-takes the extra arguments that implies.</p>
+fit only knows the likelihood and an <code><a href="nre.html">nre()</a></code> fit only the likelihood ratio,
+so both return an object that samples with MCMC and takes the extra
+arguments that implies.</p>
     </div>
 
     <div class="section level2">
@@ -131,19 +134,19 @@ takes the extra arguments that implies.</p>
 
 
 <dl><dt id="arg-fit">fit<a class="anchor" aria-label="anchor" href="#arg-fit"></a></dt>
-<dd><p>An <code>nsbi_npe</code> object from <code><a href="npe.html">npe()</a></code> or <code><a href="npe_sequential.html">npe_sequential()</a></code>, or an
-<code>nsbi_nle</code> object from <code><a href="nle.html">nle()</a></code>.</p></dd>
+<dd><p>An <code>nsbi_npe</code> object from <code><a href="npe.html">npe()</a></code> or <code><a href="npe_sequential.html">npe_sequential()</a></code>, an
+<code>nsbi_nle</code> object from <code><a href="nle.html">nle()</a></code>, or an <code>nsbi_nre</code> object from <code><a href="nre.html">nre()</a></code>.</p></dd>
 
 
 <dt id="arg-x-obs">x_obs<a class="anchor" aria-label="anchor" href="#arg-x-obs"></a></dt>
 <dd><p>Optional default observation to condition on. If supplied it
 becomes the default <code>x</code> for <code><a href="sample.html">sample()</a></code>, <code><a href="log_prob.html">log_prob()</a></code> and <code><a href="map_estimate.html">map_estimate()</a></code>.
-For an NLE fit, rows of <code>x_obs</code> are independent observations.</p></dd>
+For an NLE or NRE fit, rows of <code>x_obs</code> are independent observations.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Passed to methods. See <code><a href="posterior.nsbi_nle.html">posterior.nsbi_nle()</a></code> for the MCMC
-controls an NLE fit accepts.</p></dd>
+<dd><p>Passed to methods. See <code><a href="posterior.nsbi_nle.html">posterior.nsbi_nle()</a></code> and
+<code><a href="posterior.nsbi_nre.html">posterior.nsbi_nre()</a></code> for the MCMC controls those fits accept.</p></dd>
 
 </dl></div>
     <div class="section level2">

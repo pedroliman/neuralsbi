@@ -20,7 +20,7 @@ sbc_draws(fit, simulator, prior, n, sim_args, what)
 
 - fit:
 
-  An `nsbi_npe` or `nsbi_nle` fit.
+  An `nsbi_npe`, `nsbi_nle` or `nsbi_nre` fit.
 
 - simulator:
 

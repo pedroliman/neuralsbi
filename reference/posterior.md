@@ -8,14 +8,16 @@ the maximum-a-posteriori (MAP) estimate. All transforms between
 standardized training space and the original parameter space are handled
 internally.
 
-The two inference methods reach a posterior by different routes, and
+The three inference methods reach a posterior by different routes, and
 `posterior()` hides the difference. An
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) fit
 already *is* a posterior estimator, so the returned object samples with
 a forward pass. An
 [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) fit only
-knows the likelihood, so the returned object samples with MCMC and takes
-the extra arguments that implies.
+knows the likelihood and an
+[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) fit only
+the likelihood ratio, so both return an object that samples with MCMC
+and takes the extra arguments that implies.
 
 ## Usage
 
@@ -36,8 +38,10 @@ posterior(fit, x_obs = NULL, ...)
   An `nsbi_npe` object from
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) or
   [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
-  or an `nsbi_nle` object from
-  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md).
+  an `nsbi_nle` object from
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md), or an
+  `nsbi_nre` object from
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md).
 
 - x_obs:
 
@@ -47,13 +51,15 @@ posterior(fit, x_obs = NULL, ...)
   [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
   and
   [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md).
-  For an NLE fit, rows of `x_obs` are independent observations.
+  For an NLE or NRE fit, rows of `x_obs` are independent observations.
 
 - ...:
 
   Passed to methods. See
   [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
-  for the MCMC controls an NLE fit accepts.
+  and
+  [`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
+  for the MCMC controls those fits accept.
 
 ## Value
 

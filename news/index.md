@@ -1,5 +1,189 @@
 # Changelog
 
+## neuralsbi 0.5.16
+
+- **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) adds
+  Neural Ratio Estimation, the third factorization of the joint.** Where
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) learns
+  the posterior and
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) learns
+  the likelihood,
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  (`R/nre.R`) learns neither density but their ratio
+  `r(theta, x) = p(x | theta) / p(x)`, by training a classifier to tell
+  `(theta, x)` pairs drawn from the joint apart from pairs whose
+  parameter came from a different simulation. Defaults mirror Python
+  `sbi`’s `NRE` (an alias for its `NRE_B`): the `"resnet"` classifier (a
+  residual MLP, `hidden = 50`, `n_blocks = 2`), the atomic loss of
+  Durkan et al. (2020) at `num_atoms = 10`, and the training controls
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  already share with `sbi` (`batch_size = 200`, `lr = 5e-4`,
+  `validation_fraction = 0.1`, `patience = 20`, `clip_grad_norm = 5`).
+  `"mlp"` and `"linear"` are `sbi`’s other two classifiers; `"logistic"`
+  is a torch-free baseline. `log_ratio(fit, theta, x)` evaluates the
+  learned ratio, summing over rows of `x` as independent observations of
+  the same parameter the way
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  does for an NLE fit, and `posterior(fit, x_obs)` returns an
+  `nsbi_nre_posterior` that samples `r(theta, x) p(theta)` with the same
+  vectorized slice sampler an NLE posterior uses.
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md),
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md),
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md),
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md),
+  [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`save_nre()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)/[`load_nre()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  all take the new fit. There is no
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  for a ratio estimator: the Stan exporter transpiles a fitted density,
+  and a residual classifier has no such export.
+- The `"logistic"` classifier is to
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) what
+  `"linear_gaussian"` is to
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md):
+  a closed-form, torch-free baseline that is *exact* for a
+  linear-Gaussian simulator and so serves as the CI oracle for the whole
+  NRE path. It fits a ridge-penalized logistic regression on the
+  quadratic basis `[1, z, vech(z z')]` for `z = (theta, x)`. Two atoms
+  make the atomic loss collapse to a logistic regression on the
+  *difference* of two feature rows, which is what IRLS can solve in
+  closed form; working in differences also cancels every term depending
+  on `x` alone, including the evidence `log p(x)`, which is the one part
+  of the log ratio a quadratic basis cannot represent. Contrasts are
+  cyclic shifts rather than random draws, so the fit is deterministic
+  given the simulations.
+- A ratio needs no change-of-variables correction, unlike a density: the
+  standardization Jacobian cancels between `p(x | theta)` and `p(x)`, so
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  in the estimator’s z-scored space is already the ratio in the units
+  the simulator returned.
+  [`surrogate_ops()`](https://neuralsbi.pedrodelima.com/reference/surrogate_ops.md)
+  (`R/likelihood.R`) is the one table where each surrogate fit type says
+  which functions score it and whether the Jacobian travels with them,
+  so
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  (which replaces the internal `nle_potential()`),
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  and
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  all read the answer off it instead of each restating it.
+- **`linear_gaussian`’s ridge no longer depends on the scale of the
+  data.** `fit_linear_gaussian()` (`R/density_estimator.R`) added a flat
+  `1e-06` to the diagonals of `X'X` and of the residual covariance. That
+  is only a negligible regularizer when the data are O(1), which is what
+  `standardize = TRUE` arranges and why the default path was never
+  affected. Under `standardize = FALSE`, a target column whose variance
+  is `2.5e-07` had `1e-06` added to it and came back five times too
+  wide, throwing the reported log-density off by 20 nats on a
+  three-column example spanning `1e-03` to `1e+03`. The ridge is now
+  measured per column against that column’s own scale: `diag(X'X)` for
+  the design, and the *target’s* variance for the covariance, since a
+  noiseless model leaves no residual to measure against and that is
+  exactly when the ridge has to keep
+  [`chol()`](https://rdrr.io/r/base/chol.html) alive. A column with no
+  scale of its own borrows the largest one that has any. On standardized
+  data both diagonals are already about 1, so the fits every other test
+  pins are unchanged to six significant figures
+  ([\#139](https://github.com/pedroliman/neuralsbi/issues/139)).
+- **A final training minibatch of exactly one row no longer kills an
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) fit.**
+  One simulation has no contrasting parameter to be scored against, so
+  the atomic loss returned a constant that torch had not built and
+  `backward()` failed with “element 0 of tensors does not require grad
+  and does not have a grad_fn”. Whether it happens at all depends on
+  nothing but `n_simulations` modulo `batch_size`: 2001 simulations
+  leave 1801 training rows, which at the default `batch_size = 200` is
+  nine full batches and one row.
+  [`minibatches()`](https://neuralsbi.pedrodelima.com/reference/minibatches.md)
+  (`R/train.R`) now folds a trailing single row into the batch before
+  it, for every estimator rather than just the ratio ones – a gradient
+  step from one sample is a bad step for any of them – and the atomic
+  loss returns a tensor torch built, so a validation split of one row
+  cannot reintroduce the failure
+  ([\#139](https://github.com/pedroliman/neuralsbi/issues/139)).
+- **The `"logistic"` classifier’s ridge no longer depends on the scale
+  of the data either.**
+  [`irls_logistic()`](https://neuralsbi.pedrodelima.com/reference/irls_logistic.md)
+  (`R/nre.R`) added a flat `1e-06` to the diagonal of `X'WX`, and its
+  features are quadratic in `(theta, x)`, so under `standardize = FALSE`
+  they carry the fourth power of the data’s units. On a simulator whose
+  output has sd `5e-04` that ridge swamped the normal equations and the
+  fitted ratio collapsed to noise: RMSE `5.88` against an analytic log
+  ratio whose own spread is `6.29`. The ridge is now measured per column
+  against that column’s own scale, through the same
+  [`ridge_scale()`](https://neuralsbi.pedrodelima.com/reference/ridge_scale.md)
+  that `fit_linear_gaussian()` uses, and the `standardize = FALSE` fit
+  matches the `standardize = TRUE` one to six decimal places
+  ([\#139](https://github.com/pedroliman/neuralsbi/issues/139)).
+- The
+  [`iid_matrix()`](https://neuralsbi.pedrodelima.com/reference/iid_matrix.md)/[`iid_evaluator()`](https://neuralsbi.pedrodelima.com/reference/iid_evaluator.md)
+  blocking loop is now tested without torch. `linear_gaussian` has its
+  own
+  [`de_log_lik_iid()`](https://neuralsbi.pedrodelima.com/reference/de_log_lik_iid.md)
+  and
+  [`de_iid_evaluator()`](https://neuralsbi.pedrodelima.com/reference/de_iid_evaluator.md)
+  methods that score the whole observation set per parameter and ignore
+  `max_batch`, so the existing “blocking does not change the answer”
+  test compared two calls that did the same thing;
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md),
+  the path every flow and every ratio estimator takes, was reached only
+  by the torch tests that CI skips. A scorer that encodes which
+  `(theta, x)` pair it was handed now pins the block layout across eight
+  batch sizes, so a transposition cannot hide inside a row sum
+  ([\#139](https://github.com/pedroliman/neuralsbi/issues/139)).
+- The `"resnet"` classifier is now pinned to `nflows`’ `ResidualNet`
+  numerically rather than by comment. `sbi`’s `"resnet"` *is* that
+  network, and
+  [`nre_module()`](https://neuralsbi.pedrodelima.com/reference/nre_module.md)
+  reimplements it; filling both with the same deterministic weights and
+  evaluating them on the same rows agrees to `7e-08`, which is float32.
+  `test-nre.R` carries the three reference numbers, so where the
+  activations sit inside a block, which of its two linear layers is
+  zero-initialized, and whether the final layer sees an activation are
+  all checked against the original
+  ([\#139](https://github.com/pedroliman/neuralsbi/issues/139)).
+- Internal cleanup, no user-visible behavior change: the pieces
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  posteriors share are now written once.
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  and
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  had the same body apart from the Jacobian and the pair of functions
+  that score the estimator, so both now call
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  (`R/likelihood.R`), which reads them off
+  [`surrogate_ops()`](https://neuralsbi.pedrodelima.com/reference/surrogate_ops.md).
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) built
+  the same thirteen-field list in the same order, and now call
+  [`new_nsbi_fit()`](https://neuralsbi.pedrodelima.com/reference/new_nsbi_fit.md)
+  (`R/npe.R`) with whichever fields are their own.
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  (`R/likelihood.R`) takes the per-pair scorer as an argument, so
+  [`de_log_lik_iid()`](https://neuralsbi.pedrodelima.com/reference/de_log_lik_iid.md)’s
+  and
+  [`de_iid_evaluator()`](https://neuralsbi.pedrodelima.com/reference/de_iid_evaluator.md)’s
+  default methods and their ratio counterparts split into
+  [`iid_matrix()`](https://neuralsbi.pedrodelima.com/reference/iid_matrix.md)/[`iid_evaluator()`](https://neuralsbi.pedrodelima.com/reference/iid_evaluator.md)
+  over one blocking loop; `R/nle_posterior.R` grows
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md),
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md),
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  and
+  [`cat_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/cat_mcmc_posterior.md)
+  for the argument checking, construction, sampling, log-density and
+  printing that both posterior classes do identically, and
+  `slice_sample_nle()` becomes
+  [`slice_sample_surrogate()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_surrogate.md);
+  [`summary.nsbi_npe()`](https://neuralsbi.pedrodelima.com/reference/summaries.md)’s
+  body moves to
+  [`fit_summary()`](https://neuralsbi.pedrodelima.com/reference/fit_summary.md),
+  which the NRE method calls with `classifier` where the others pass
+  `density_estimator`.
+
 ## neuralsbi 0.5.15
 
 - **Rejection-sampling loops for bounded priors now request only the
@@ -132,10 +316,12 @@
   one-time setup cost (device/net initialization, first CUDA/MPS kernel
   compilation, R JIT warmup) and, across `n_restarts > 1`, blends in
   restarts whose per-epoch cost can differ from the current one. A new
-  `bar_rate()` estimates steps/sec from the last 8 calls instead,
-  falling back to the lifetime average only while that window is too
-  short to trust; `bar_eta()` turns the resulting rate into seconds
-  remaining. The moving-target denominator that
+  [`bar_rate()`](https://neuralsbi.pedrodelima.com/reference/bar_rate.md)
+  estimates steps/sec from the last 8 calls instead, falling back to the
+  lifetime average only while that window is too short to trust;
+  [`bar_eta()`](https://neuralsbi.pedrodelima.com/reference/bar_eta.md)
+  turns the resulting rate into seconds remaining. The moving-target
+  denominator that
   [`train_progress_total()`](https://neuralsbi.pedrodelima.com/reference/train_progress_total.md)
   projects (`best_epoch + patience`, growing every time validation loss
   improves) is unchanged and remains documented in
@@ -704,9 +890,8 @@
   once at construction.** It is the one prior a user writes by hand and
   it took everything on trust, so the mistakes surfaced far from their
   cause. A `log_prob_fn` returning a single number instead of one
-  density per row of `theta` passed the probe in
-  [`nle_potential()`](https://neuralsbi.pedrodelima.com/reference/nle_potential.md)
-  and came back from the sampler as “Some MCMC starting points have zero
+  density per row of `theta` passed the probe in `nle_potential()` and
+  came back from the sampler as “Some MCMC starting points have zero
   posterior density. This is an initialization failure, not a sampling
   one”, which is accurate about where it noticed and wrong about the
   cause. A `lower` or `upper` of the wrong length was recycled by

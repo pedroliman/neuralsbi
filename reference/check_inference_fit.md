@@ -1,6 +1,6 @@
-# Accept either kind of fit, and say which ones exist when neither matches
+# Accept any kind of fit, and say which ones exist when none matches
 
-Accept either kind of fit, and say which ones exist when neither matches
+Accept any kind of fit, and say which ones exist when none matches
 
 ## Usage
 

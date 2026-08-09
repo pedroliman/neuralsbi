@@ -28,3 +28,19 @@ train_restarts(
   device = "cpu"
 )
 ```
+
+## Details
+
+`device` here is still the raw, unresolved keyword
+[`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md)
+was given (`"cpu"`, `"cuda"`, `"mps"`, `"gpu"` or `"auto"`); resolving
+it to an actual, available device needs `torch` loaded (see
+[`resolve_device()`](https://neuralsbi.pedrodelima.com/reference/resolve_device.md)),
+and this is the first point that is guaranteed true –
+[`require_torch()`](https://neuralsbi.pedrodelima.com/reference/require_torch.md)
+is the line above. Doing it here rather than earlier in
+[`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md)
+keeps
+[`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+(which needs no torch at all) running first, so a bad `batch_size` is
+still reported before an unavailable device is.

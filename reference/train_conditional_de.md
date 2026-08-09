@@ -65,10 +65,12 @@ train_conditional_de(
 - device:
 
   Torch device keyword: `"cpu"` (the default), `"cuda"`, `"mps"`, or
-  `"gpu"`/`"auto"` (see `resolve_device()`, which is what turns this
-  into an actual, available device). Training and validation tensors are
-  created there, and the net is moved there right after `build_net()`,
-  so the two never disagree the way they do under a bare
+  `"gpu"`/`"auto"` (see
+  [`resolve_device()`](https://neuralsbi.pedrodelima.com/reference/resolve_device.md),
+  which is what turns this into an actual, available device). Training
+  and validation tensors are created there, and the net is moved there
+  right after `build_net()`, so the two never disagree the way they do
+  under a bare
   [`torch::with_device()`](https://torch.mlverse.org/docs/reference/local_device.html).
 
 ## Value

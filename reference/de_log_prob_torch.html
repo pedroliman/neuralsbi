@@ -3,16 +3,18 @@
 theta's row count (the same broadcast lingauss_mean()'s caller does on
 mu, just on the other operand), moves both to the net's device (see
 net_device()), and evaluates log_prob_fn under with_no_grad().
-log_prob_fn is the per-estimator tensor function – mdn_log_prob_tensor(),
-maf_log_prob_tensor() or nsf_log_prob_tensor(). The result comes back to
-CPU before it leaves torch, so the rest of the pipeline stays device-agnostic
+log_prob_fn is the per-estimator tensor function –
+mdn_log_prob_tensor(), maf_log_prob_tensor() or nsf_log_prob_tensor().
+The result comes back to CPU before it leaves torch, so the rest of the
+pipeline (and everything downstream of de_log_prob()) stays device-agnostic
 plain R."><meta property="og:description" content="Coerces theta and x to matrices, broadcasts a single-row x up to
 theta's row count (the same broadcast lingauss_mean()'s caller does on
 mu, just on the other operand), moves both to the net's device (see
 net_device()), and evaluates log_prob_fn under with_no_grad().
-log_prob_fn is the per-estimator tensor function – mdn_log_prob_tensor(),
-maf_log_prob_tensor() or nsf_log_prob_tensor(). The result comes back to
-CPU before it leaves torch, so the rest of the pipeline stays device-agnostic
+log_prob_fn is the per-estimator tensor function –
+mdn_log_prob_tensor(), maf_log_prob_tensor() or nsf_log_prob_tensor().
+The result comes back to CPU before it leaves torch, so the rest of the
+pipeline (and everything downstream of de_log_prob()) stays device-agnostic
 plain R."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/reference/figures/logo.png"><meta property="og:image:alt" content="neuralsbi hex logo: a neural network feeding a posterior density"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -61,7 +63,7 @@ plain R."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/r
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,10 +104,11 @@ plain R."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/r
     <p>Coerces <code>theta</code> and <code>x</code> to matrices, broadcasts a single-row <code>x</code> up to
 <code>theta</code>'s row count (the same broadcast <code><a href="lingauss_mean.html">lingauss_mean()</a></code>'s caller does on
 <code>mu</code>, just on the other operand), moves both to the net's device (see
-<code>net_device()</code>), and evaluates <code>log_prob_fn</code> under <code>with_no_grad()</code>.
-<code>log_prob_fn</code> is the per-estimator tensor function – <code><a href="mdn_log_prob_tensor.html">mdn_log_prob_tensor()</a></code>,
-<code><a href="maf_log_prob_tensor.html">maf_log_prob_tensor()</a></code> or <code><a href="nsf_log_prob_tensor.html">nsf_log_prob_tensor()</a></code>. The result comes back to
-CPU before it leaves torch, so the rest of the pipeline stays device-agnostic
+<code><a href="net_device.html">net_device()</a></code>), and evaluates <code>log_prob_fn</code> under <code>with_no_grad()</code>.
+<code>log_prob_fn</code> is the per-estimator tensor function –
+<code><a href="mdn_log_prob_tensor.html">mdn_log_prob_tensor()</a></code>, <code><a href="maf_log_prob_tensor.html">maf_log_prob_tensor()</a></code> or <code><a href="nsf_log_prob_tensor.html">nsf_log_prob_tensor()</a></code>.
+The result comes back to CPU before it leaves torch, so the rest of the
+pipeline (and everything downstream of <code>de_log_prob()</code>) stays device-agnostic
 plain R.</p>
     </div>
 

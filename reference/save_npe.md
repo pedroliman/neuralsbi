@@ -18,6 +18,10 @@ load_npe(path)
 save_nle(fit, path)
 
 load_nle(path)
+
+save_nre(fit, path)
+
+load_nre(path)
 ```
 
 ## Arguments
@@ -27,8 +31,10 @@ load_nle(path)
   An `nsbi_npe` object from
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) or
   [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
-  or an `nsbi_nle` object from
-  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md).
+  an `nsbi_nle` object from
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md), or an
+  `nsbi_nre` object from
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md).
 
 - path:
 
@@ -60,9 +66,9 @@ loads into a later one as long as the estimator's architecture has not
 changed; `load_npe()` reports the version that wrote the file when the
 rebuild fails.
 
-`save_nle()` and `load_nle()` are aliases; both pairs handle either kind
-of fit, and the two names exist only so calling code reads the way the
-fit was made.
+`save_nle()`/`load_nle()` and `save_nre()`/`load_nre()` are aliases;
+every pair handles every kind of fit, and the extra names exist only so
+calling code reads the way the fit was made.
 
 A fit trained with `device = "cuda"`/`"mps"` (see
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md))
@@ -92,11 +98,11 @@ sample(posterior(fit2, x_obs = c(0.8, 0.6)), 100)
 #> <nsbi_samples> 100 draws x 2 parameters
 #>   support acceptance rate: 1.000
 #>             mu        nu
-#> [1,] 0.8109182 0.7061073
-#> [2,] 0.9344368 0.6240042
-#> [3,] 0.8394031 0.4957250
-#> [4,] 0.6778220 0.7418857
-#> [5,] 0.7117454 0.4071814
-#> [6,] 0.7317529 0.6402445
+#> [1,] 0.8916293 0.6112835
+#> [2,] 0.7583974 0.5059718
+#> [3,] 0.7534376 0.5132677
+#> [4,] 0.8778185 0.6371749
+#> [5,] 0.5963739 0.6593765
+#> [6,] 0.8952856 0.5518988
 unlink(path)
 ```

@@ -55,7 +55,7 @@ nothing has to be linked against torch at run time."><meta property="og:image" c
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -191,6 +191,9 @@ them against <code><a href="log_lik.html">log_lik()</a></code>.</p>
 <p><code>"mdn"</code>, <code>"maf"</code> and <code>"linear_gaussian"</code>. <code>"nsf"</code> is not exported – its
 rational-quadratic spline transform would be a large and fragile block of
 generated Stan. Refit with <code>"maf"</code> if you need a flow.</p>
+<p><code><a href="nre.html">nre()</a></code> fits are not exported at all. What gets transpiled here is a
+density; a ratio estimator holds a classifier instead, and there is no
+<code>p(x | theta)</code> in it to write out.</p>
     </div>
 
     <div class="section level2">
@@ -212,9 +215,9 @@ generated Stan. Refit with <code>"maf"</code> if you need a flow.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="fu">stan_data</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_nw  : int 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_w   : num [1:3] -1.63e-17 9.63e-01 2.71e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_w   : num [1:3] 2.46e-18 9.57e-01 2.91e-01</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ N        : int 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ x        : num [1:10, 1] -1.42 -0.896 -1.375 -1.254 -0.605 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ x        : num [1:10, 1] 0.128 1.352 -0.507 -0.931 0.203 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_low : num -3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_high: num 3</span>
 </code></pre></div>

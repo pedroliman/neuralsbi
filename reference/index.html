@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -173,7 +173,14 @@
 
         <dt>
 
-          <code><a href="save_npe.html">save_npe()</a></code> <code><a href="save_npe.html">load_npe()</a></code> <code><a href="save_npe.html">save_nle()</a></code> <code><a href="save_npe.html">load_nle()</a></code>
+          <code><a href="nre.html">nre()</a></code>
+
+        </dt>
+        <dd>Neural Ratio Estimation (NRE)</dd>
+
+        <dt>
+
+          <code><a href="save_npe.html">save_npe()</a></code> <code><a href="save_npe.html">load_npe()</a></code> <code><a href="save_npe.html">save_nle()</a></code> <code><a href="save_npe.html">load_nle()</a></code> <code><a href="save_npe.html">save_nre()</a></code> <code><a href="save_npe.html">load_nre()</a></code>
 
         </dt>
         <dd>Save and reload a fitted model</dd>
@@ -242,6 +249,36 @@
 
         </dt>
         <dd>Export a learned likelihood to Stan</dd>
+      </dl></div><div class="section level2">
+      <h2 id="neural-ratio-estimation">Neural ratio estimation<a class="anchor" aria-label="anchor" href="#neural-ratio-estimation"></a></h2>
+
+      <div class="section-desc"><p>Learn the likelihood-to-evidence ratio with a classifier and sample it with MCMC.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="log_ratio.html">log_ratio()</a></code>
+
+        </dt>
+        <dd>Evaluate a learned likelihood-to-evidence ratio</dd>
+
+        <dt>
+
+          <code><a href="posterior.nsbi_nre.html">posterior(<i>&lt;nsbi_nre&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Posterior from a neural ratio</dd>
+
+        <dt>
+
+          <code><a href="sample.nsbi_nre_posterior.html">sample(<i>&lt;nsbi_nre_posterior&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Sample an NRE posterior with MCMC</dd>
       </dl></div><div class="section level2">
       <h2 id="running-the-simulator">Running the simulator<a class="anchor" aria-label="anchor" href="#running-the-simulator"></a></h2>
 
@@ -326,7 +363,7 @@
 
         <dt>
 
-          <code><a href="summaries.html">as.data.frame(<i>&lt;nsbi_samples&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_samples&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_posterior&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_npe&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_nle&gt;</i>)</a></code>
+          <code><a href="summaries.html">as.data.frame(<i>&lt;nsbi_samples&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_samples&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_posterior&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_npe&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_nle&gt;</i>)</a></code> <code><a href="summaries.html">summary(<i>&lt;nsbi_nre&gt;</i>)</a></code>
 
         </dt>
         <dd>Summaries and tidy accessors</dd>

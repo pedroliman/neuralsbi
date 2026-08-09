@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,7 +80,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Posterior log-density</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/R/nle_posterior.R" class="external-link"><code>R/nle_posterior.R</code></a>, <a href="https://github.com/pedroliman/neuralsbi/blob/main/R/posterior.R" class="external-link"><code>R/posterior.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/R/nle_posterior.R" class="external-link"><code>R/nle_posterior.R</code></a>, <a href="https://github.com/pedroliman/neuralsbi/blob/main/R/nre_posterior.R" class="external-link"><code>R/nre_posterior.R</code></a>, <a href="https://github.com/pedroliman/neuralsbi/blob/main/R/posterior.R" class="external-link"><code>R/posterior.R</code></a></small>
       <div class="d-none name"><code>log_prob.Rd</code></div>
     </div>
 
@@ -91,6 +91,9 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'nsbi_nle_posterior'</span></span>
+<span><span class="fu">log_prob</span><span class="op">(</span><span class="va">post</span>, <span class="va">theta</span>, x <span class="op">=</span> <span class="cn">NULL</span>, normalize <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'nsbi_nre_posterior'</span></span>
 <span><span class="fu">log_prob</span><span class="op">(</span><span class="va">post</span>, <span class="va">theta</span>, x <span class="op">=</span> <span class="cn">NULL</span>, normalize <span class="op">=</span> <span class="cn">TRUE</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">log_prob</span><span class="op">(</span><span class="va">post</span>, <span class="va">theta</span>, x <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
@@ -139,9 +142,9 @@ probability and return <code>-Inf</code> outside the prior support.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Numeric vector of log posterior densities. For a posterior built
-from an <code><a href="nle.html">nle()</a></code> fit the value is <strong>unnormalized</strong> – the evidence
-\(p(x)\) is not available – so differences between two <code>theta</code> are
-meaningful but the absolute level is not.</p>
+from an <code><a href="nle.html">nle()</a></code> or <code><a href="nre.html">nre()</a></code> fit the value is <strong>unnormalized</strong> – the
+evidence \(p(x)\) is not available – so differences between two <code>theta</code>
+are meaningful but the absolute level is not.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

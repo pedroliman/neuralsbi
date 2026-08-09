@@ -8,6 +8,9 @@ Posterior log-density
 # S3 method for class 'nsbi_nle_posterior'
 log_prob(post, theta, x = NULL, normalize = TRUE, ...)
 
+# S3 method for class 'nsbi_nre_posterior'
+log_prob(post, theta, x = NULL, normalize = TRUE, ...)
+
 log_prob(post, theta, x = NULL, ...)
 
 # S3 method for class 'nsbi_posterior'
@@ -52,7 +55,8 @@ log_prob(
 ## Value
 
 Numeric vector of log posterior densities. For a posterior built from an
-[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) fit the
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) or
+[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) fit the
 value is **unnormalized** – the evidence \\p(x)\\ is not available – so
 differences between two `theta` are meaningful but the absolute level is
 not.

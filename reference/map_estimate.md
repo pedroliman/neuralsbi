@@ -30,6 +30,7 @@ Numeric vector: the MAP parameter estimate.
 ## Details
 
 On a posterior from
-[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) the
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) or
+[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) the
 initial draws come from MCMC, so `n_init` buys a chain rather than a
 forward pass. They are cached on the posterior like any other run.

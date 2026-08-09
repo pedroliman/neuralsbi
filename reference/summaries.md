@@ -23,6 +23,9 @@ summary(object, ...)
 
 # S3 method for class 'nsbi_nle'
 summary(object, ...)
+
+# S3 method for class 'nsbi_nre'
+summary(object, ...)
 ```
 
 ## Arguments
@@ -47,7 +50,7 @@ summary(object, ...)
 
   An `nsbi_samples` matrix from
   [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
-  an `nsbi_posterior`, or an `nsbi_npe` or `nsbi_nle` fit.
+  an `nsbi_posterior`, or an `nsbi_npe`, `nsbi_nle` or `nsbi_nre` fit.
 
 - probs:
 
@@ -62,5 +65,5 @@ summary(object, ...)
 For samples and posteriors, a data frame with one row per parameter
 (mean, sd, and quantiles). For fits, an invisible list of training
 metadata. In that list `dim_x` counts the data dimension the estimator
-was trained on, which for an `nsbi_nle` fit is one observation rather
-than the whole data set.
+was trained on, which for an `nsbi_nle` or `nsbi_nre` fit is one
+observation rather than the whole data set.

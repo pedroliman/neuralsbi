@@ -20,7 +20,7 @@ for_each_trial(fit, x_all, n_posterior_samples, label, f, ...)
 
 - fit:
 
-  An `nsbi_npe` or `nsbi_nle` fit.
+  An `nsbi_npe`, `nsbi_nle` or `nsbi_nre` fit.
 
 - x_all:
 
