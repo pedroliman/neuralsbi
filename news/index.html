@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.15" id="neuralsbi-0515">neuralsbi 0.5.15<a class="anchor" aria-label="anchor" href="#neuralsbi-0515"></a></h2>
+<ul><li>
+<strong>Rejection-sampling loops for bounded priors now request only the still-missing draws each round, not a full batch.</strong> <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code>’s support-rejection loop (<code>R/posterior.R</code>) and <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code>’s truncated-proposal loop (<code>R/sequential.R</code>) both looped <code>while (collected &lt; n) { draw n more; keep the accepted ones }</code>, asking <code>de_sample()</code>/<code><a href="../reference/sample_prior.html">sample_prior()</a></code> for a full <code>n</code> (or full round budget) every round regardless of how many draws were already collected. For an estimator with real leakage at, say, 60% acceptance, requesting <code>size = 1000</code> cost roughly <code>1000 + 1000 + ...</code> per round instead of <code>1000 + 400 + ...</code>, wasting sampling and support-checking work on later rounds. Both loops now request <code>n - nrow(collected)</code> (or <code>budgets[r] - nrow(theta_new)</code>) each round instead of the full count. Neither loop’s stopping condition or returned shape changes – both already stopped once <code>n</code> accepted draws were collected – so this is a pure efficiency fix, not a behavior change (<a href="https://github.com/pedroliman/neuralsbi/issues/138" class="external-link">#138</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/143" class="external-link">#143</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.14" id="neuralsbi-0514">neuralsbi 0.5.14<a class="anchor" aria-label="anchor" href="#neuralsbi-0514"></a></h2>
 <ul><li>
