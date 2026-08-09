@@ -66,7 +66,8 @@ function \verb{function(theta, x)} returning a fitted estimator.}
 transforms (default 5, as in \code{sbi}).}
 
 \item{n_bins, tail_bound}{NSF settings: number of spline bins per transform
-and the half-width of the interval the spline acts on (outside it the
+(at least 2, since the spline needs an interior derivative to fit) and
+the half-width of the interval the spline acts on (outside it the
 transform is the identity).}
 
 \item{embedding_net}{Optional summary network built with \code{\link[=embedding_mlp]{embedding_mlp()}}.

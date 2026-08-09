@@ -38,7 +38,8 @@
 #'   transforms.
 #' @param n_components,hidden MDN settings: number of mixture components and a
 #'   vector of hidden-layer widths.
-#' @param n_bins,tail_bound NSF settings.
+#' @param n_bins,tail_bound NSF settings: number of spline bins per transform
+#'   (at least 2) and the tail bound. See [npe()].
 #'
 #' @return An object of class `nsbi_nle`. Evaluate the surrogate likelihood with
 #'   [log_lik()], turn it into a posterior with [posterior()], or export it to

@@ -58,6 +58,37 @@ test_that("unbounded priors are unaffected by normalize", {
                log_prob(post, theta, normalize = FALSE))
 })
 
+test_that("sample() requests the shortfall each rejection-sampling round, not a full batch, and still returns exactly n rows", {
+  set.seed(11)
+  prior <- prior_uniform(low = c(0, 0), high = c(1, 1))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  # shift the fitted mean partway out of the box: leaks enough mass that more
+  # than one rejection-sampling round is needed, without exhausting
+  # max_sampling_batches
+  fit$de$B[1, ] <- fit$de$B[1, ] + 0.5
+  post <- posterior(fit, x_obs = c(0.9, 0.9))
+
+  requested <- integer(0)
+  real_de_sample <- de_sample
+  local_mocked_bindings(
+    de_sample = function(de, x, n) {
+      requested[[length(requested) + 1L]] <<- n
+      real_de_sample(de, x, n)
+    }
+  )
+
+  draws <- sample(post, n = 500, max_sampling_batches = 50)
+  expect_equal(nrow(draws), 500L)
+  expect_gt(length(requested), 1L)   # more than one round was needed here
+  expect_equal(requested[1], 500L)   # first round always asks for the full n
+  # every later round asks only for the still-missing draws, never the full
+  # 500 again, and the shortfall never grows round to round
+  expect_true(all(requested[-1] < 500L))
+  expect_true(all(diff(requested) <= 0))
+})
+
 test_that("the posterior counts are checked before they reach de_sample()", {
   set.seed(12)
   prior <- prior_uniform(-1, 1)

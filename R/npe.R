@@ -32,7 +32,8 @@
 #' @param n_components,hidden MDN settings: number of mixture components
 #'   (default 10, as in `sbi`) and a vector of hidden-layer widths.
 #' @param n_bins,tail_bound NSF settings: number of spline bins per transform
-#'   and the half-width of the interval the spline acts on (outside it the
+#'   (at least 2, since the spline needs an interior derivative to fit) and
+#'   the half-width of the interval the spline acts on (outside it the
 #'   transform is the identity).
 #' @param embedding_net Optional summary network built with [embedding_mlp()].
 #'   When supplied, the neural estimators condition on the learned features
@@ -248,10 +249,12 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
 
 #' Validate the architecture arguments shared by [npe()] and [nle()]
 #'
-#' All of them are checked whichever estimator was asked for, so `n_bins = 0`
+#' All of them are checked whichever estimator was asked for, so `n_bins < 2`
 #' is an error even under `"linear_gaussian"`, which ignores it. A value that
 #' cannot build a network is a mistake in the call whether or not this run
-#' would have read it.
+#' would have read it. NSF needs at least 2 bins: its per-dimension spline
+#' parameterization is `K` bin widths, `K` bin heights and `K - 1` interior
+#' derivatives, and `K = 1` leaves no interior derivative to estimate.
 #'
 #' @inheritParams npe
 #' @keywords internal
@@ -260,7 +263,8 @@ check_architecture <- function(n_components, n_transforms, hidden, n_bins,
   check_count(n_components, "n_components")
   check_count(n_transforms, "n_transforms")
   check_counts(hidden, "hidden", what = "one hidden-layer width per entry")
-  check_count(n_bins, "n_bins")
+  check_count(n_bins, "n_bins", min = 2L,
+             why = "since NSF's spline needs at least 2 bins")
   check_positive(tail_bound, "tail_bound")
   invisible(TRUE)
 }

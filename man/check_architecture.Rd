@@ -14,13 +14,16 @@ check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
 transforms (default 5, as in \code{sbi}).}
 
 \item{n_bins, tail_bound}{NSF settings: number of spline bins per transform
-and the half-width of the interval the spline acts on (outside it the
+(at least 2, since the spline needs an interior derivative to fit) and
+the half-width of the interval the spline acts on (outside it the
 transform is the identity).}
 }
 \description{
-All of them are checked whichever estimator was asked for, so \code{n_bins = 0}
+All of them are checked whichever estimator was asked for, so \code{n_bins < 2}
 is an error even under \code{"linear_gaussian"}, which ignores it. A value that
 cannot build a network is a mistake in the call whether or not this run
-would have read it.
+would have read it. NSF needs at least 2 bins: its per-dimension spline
+parameterization is \code{K} bin widths, \code{K} bin heights and \code{K - 1} interior
+derivatives, and \code{K = 1} leaves no interior derivative to estimate.
 }
 \keyword{internal}
