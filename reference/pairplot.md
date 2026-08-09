@@ -46,7 +46,14 @@ pairplot(
 - limits:
 
   Optional list (one `c(lo, hi)` per parameter, in column order) or
-  matrix of per-parameter axis limits.
+  matrix of per-parameter axis limits. Defaults to each parameter's own
+  data range (padded 5%), applied consistently across every panel that
+  plots it – without this, the lower-triangle and diagonal panels for
+  the same parameter can each draw a different range, since
+  [`ggdensity::geom_hdr()`](https://jamesotto852.github.io/ggdensity/reference/geom_hdr.html)
+  and
+  [`ggplot2::geom_density()`](https://ggplot2.tidyverse.org/reference/geom_density.html)
+  estimate their density grid independently per panel.
 
 - col:
 

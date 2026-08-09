@@ -10,24 +10,24 @@ instead.
 
 ## The problem
 
-Ordinary Bayesian inference needs a likelihood $`p(x | \theta)`$, a
-formula for how probable the data are at each parameter value. For the
-SIR model we cannot write one down.
+Ordinary Bayesian inference needs a likelihood p(x \| \theta), a formula
+for how probable the data are at each parameter value. For the SIR model
+we cannot write one down.
 
 The reason is the part of the model we never see. The simulator steps
 through 84 days, drawing new infections and new recoveries as binomial
-variables, and reports a thinned weekly total. To compute
-$`p(x | \theta)`$ for an observed case curve we would have to add up the
-probability of every unobserved epidemic path that could have produced
-it. That means every combination of daily infections and recoveries over
-twelve weeks that ends in the twelve numbers we saw. There are
-astronomically many of them, and no closed form for the sum.
+variables, and reports a thinned weekly total. To compute p(x \| \theta)
+for an observed case curve we would have to add up the probability of
+every unobserved epidemic path that could have produced it. That means
+every combination of daily infections and recoveries over twelve weeks
+that ends in the twelve numbers we saw. There are astronomically many of
+them, and no closed form for the sum.
 
 Simulating is the part we can do. One call to the simulator gives one
-$`(\theta, x)`$ pair, and we can have as many as we are willing to wait
-for. Simulation-based inference is the family of methods that replaces
+(\theta, x) pair, and we can have as many as we are willing to wait for.
+Simulation-based inference is the family of methods that replaces
 likelihood evaluation with simulation. Neural posterior estimation,
-which is what `neuralsbi` implements, learns $`p(\theta | x)`$ directly
+which is what `neuralsbi` implements, learns p(\theta \| x) directly
 from those pairs.
 
 Other methods make other trades on the same problem. A particle filter
@@ -45,14 +45,14 @@ features matter.
 ## What NPE learns
 
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) trains a
-conditional density estimator $`q_\phi(\theta | x)`$, a flexible density
-over parameters with neural weights $`\phi`$, by maximizing
-$`\sum_i \log q_\phi(\theta_i | x_i)`$ over simulated pairs. The optimum
-of that objective is the posterior itself, so the trained network
-approximates $`p(\theta | x)`$ as well as its flexibility and the
-simulation budget allow.
+conditional density estimator q\_\phi(\theta \| x), a flexible density
+over parameters with neural weights \phi, by maximizing \sum_i \log
+q\_\phi(\theta_i \| x_i) over simulated pairs. The optimum of that
+objective is the posterior itself, so the trained network approximates
+p(\theta \| x) as well as its flexibility and the simulation budget
+allow.
 
-The default $`q_\phi`$ is a masked autoregressive flow (Papamakarios et
+The default q\_\phi is a masked autoregressive flow (Papamakarios et
 al., 2017): a standard normal pushed through a sequence of invertible
 transformations until it has the required shape. Invertible is what
 makes it useful here, because the same network can both draw samples and
@@ -69,17 +69,17 @@ observation, which is what “amortized” means, and which the rest of this
 article is about.
 
 A note on notation, especially if you come from regression. SBI writes
-the observed data as $`x`$, the role your outcome variable $`y`$ usually
-plays. Covariates, if you have any, are arguments to the simulator.
-Expect to translate for a while.
+the observed data as x, the role your outcome variable y usually plays.
+Covariates, if you have any, are arguments to the simulator. Expect to
+translate for a while.
 
 ## The model
 
 The simulator and prior are the ones from
 [`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md).
 A binomial SIR epidemic runs day by day for twelve weeks, and we observe
-a fraction $`\rho`$ of the new infections as weekly case counts on the
-$`\log(1 + \text{cases})`$ scale.
+a fraction \rho of the new infections as weekly case counts on the
+\log(1 + \text{cases}) scale.
 
 ``` r
 
@@ -130,8 +130,8 @@ is a non-generic alias if the masking gets in the way in a script.
 
 ## What amortization buys you
 
-Twelve outbreaks, each with a different $`R_0`$, each conditioned on the
-fit we already have. There is no simulation and no training in the loop
+Twelve outbreaks, each with a different R_0, each conditioned on the fit
+we already have. There is no simulation and no training in the loop
 below, only a forward pass per outbreak.
 
 ``` r
@@ -175,8 +175,8 @@ simulated outbreaks.](figures/intro-to-sbi-amortized-1.svg)
 
 plot of chunk amortized
 
-All twelve intervals cover the $`R_0`$ that generated their outbreak,
-and every one of those posteriors came from the same network. A
+All twelve intervals cover the R_0 that generated their outbreak, and
+every one of those posteriors came from the same network. A
 likelihood-based sampler would have run twelve times; here the cost of
 the thirteenth outbreak, and the thousandth, is another forward pass.
 That is the trade neural posterior estimation makes: pay the simulation
@@ -186,19 +186,19 @@ arriving, and it does not pay off when you have one observation and a
 cheap likelihood.
 
 The intervals also stay inside the prior, which is why the grid stops at
-$`R_0 = 4`$. At $`\gamma = 1/7`$ that is a contact rate of 0.57, near
-the top of the prior’s range for $`\beta`$. Push the truth past the
-prior and the posterior has nowhere to go.
+R_0 = 4. At \gamma = 1/7 that is a contact rate of 0.57, near the top of
+the prior’s range for \beta. Push the truth past the prior and the
+posterior has nowhere to go.
 
 ## What the data can and cannot tell you
 
 The pairplot in
 [`vignette("neuralsbi")`](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md)
-shows $`\beta`$ and $`\gamma`$ lying along a ridge rather than in a
-blob. That is a statement about the data, not about the estimator. An
-epidemic curve is shaped mostly by $`R_0 = \beta/\gamma`$, so many pairs
-of rates fit it about equally well, and the posterior says so by
-spreading along the ridge.
+shows \beta and \gamma lying along a ridge rather than in a blob. That
+is a statement about the data, not about the estimator. An epidemic
+curve is shaped mostly by R_0 = \beta/\gamma, so many pairs of rates fit
+it about equally well, and the posterior says so by spreading along the
+ridge.
 
 Derived quantities come out of the posterior draws directly, and the
 relative widths show the contrast:
@@ -220,22 +220,22 @@ round(quantile(R0, c(0.05, 0.5, 0.95)), 2)
 #> 1.79 2.10 2.61
 ```
 
-Twelve weekly counts pin $`\beta`$ down to about 8% of its own mean and
-leave $`\gamma`$ at 19%. $`R_0`$, built from both, lands in between at
-12%, tighter than the recovery rate it divides by. The epidemic’s growth
-constrains the combination better than it constrains $`\gamma`$ on its
-own, and no amount of training changes that: it is what the data carry.
-In a real application this is where external information belongs. Fix
-the recovery rate from what is known about the disease, or put a tight
-prior on it, and $`R_0`$ tightens with it.
+Twelve weekly counts pin \beta down to about 8% of its own mean and
+leave \gamma at 19%. R_0, built from both, lands in between at 12%,
+tighter than the recovery rate it divides by. The epidemic’s growth
+constrains the combination better than it constrains \gamma on its own,
+and no amount of training changes that: it is what the data carry. In a
+real application this is where external information belongs. Fix the
+recovery rate from what is known about the disease, or put a tight prior
+on it, and R_0 tightens with it.
 
 ## Trusting the answer
 
 A trained estimator always returns something, so checking is part of the
-workflow. Simulation-based calibration is the first check: draw
-$`\theta`$ from the prior, simulate $`x`$, and rank the true $`\theta`$
-among posterior draws given $`x`$. Calibrated posteriors give uniform
-ranks and coverage on the diagonal.
+workflow. Simulation-based calibration is the first check: draw \theta
+from the prior, simulate x, and rank the true \theta among posterior
+draws given x. Calibrated posteriors give uniform ranks and coverage on
+the diagonal.
 
 ``` r
 
@@ -253,11 +253,11 @@ nominal.](figures/intro-to-sbi-sbc-1.svg)
 
 plot of chunk sbc
 
-$`\beta`$ passes comfortably at 0.31. $`\gamma`$ (0.040) and $`\rho`$
-(0.086) are borderline, and the coverage curve runs a little under the
-diagonal, so the intervals are mildly too narrow. Nothing here says the
-fit is broken. Quote $`\gamma`$’s interval with care, and add
-simulations if you need it sharper.
+\beta passes comfortably at 0.31. \gamma (0.040) and \rho (0.086) are
+borderline, and the coverage curve runs a little under the diagonal, so
+the intervals are mildly too narrow. Nothing here says the fit is
+broken. Quote \gamma’s interval with care, and add simulations if you
+need it sharper.
 
 SBC averages over the prior and never looks at the observation you
 actually have. A posterior predictive check does, and it is the one that

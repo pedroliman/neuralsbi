@@ -11,7 +11,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
@@ -77,7 +78,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,8 +133,7 @@
     
     
 <p><code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code> fits a stochastic SIR outbreak
-with a constant contact rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>.
+with a constant contact rate <span class="math inline">\beta</span>.
 Real epidemics do not hold still, and the interesting question is why
 they move.</p>
 <p>Here we fit three competing models of that mechanism to daily
@@ -142,15 +142,13 @@ the first 120 days of the SARS-CoV-2 pandemic, 2020-01-21 to 2020-05-19.
 Two of the models are behavioral-feedback models from <a href="https://doi.org/10.1073/pnas.2421993122" class="external-link">Gozzi, Perra and
 Vespignani (2025, <em>PNAS</em> 122(24) e2421993122)</a>, where
 transmission responds to what people see happening around them. The
-third is a phenomenological baseline that lets
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>
-take a different constant value in each of a few time regimes.</p>
+third is a phenomenological baseline that lets <span class="math inline">\beta</span> take a different constant value in each
+of a few time regimes.</p>
 <p>We train each model once, over its whole prior, and then condition it
 on 51 state curves for the price of a forward pass each. That is what
 makes a three-model, 51-jurisdiction comparison affordable.</p>
-<p>Along the way we recover the effective reproduction number
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mi>e</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>N</mi><mi>γ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">R_e(t) = \beta(t) S(t) / (N \gamma)</annotation></semantics></math>.
-Two pieces of <code>neuralsbi</code> machinery matter for time-series
+<p>Along the way we recover the effective reproduction number <span class="math inline">R_e(t) = \beta(t) S(t) / (N \gamma)</span>. Two
+pieces of <code>neuralsbi</code> machinery matter for time-series
 inference, and both appear below. One is an <code><a href="../reference/embedding_mlp.html">embedding_mlp()</a></code>
 summary network. The other is a prior predictive check that catches
 model error no amount of training will fix.</p>
@@ -204,12 +202,9 @@ cases and clip the revision artifacts at zero.</p>
 <span><span class="co">#&gt; [1]   577737 39557045</span></span></code></pre></div>
 <p>Daily counts carry a strong weekday cycle that no SIR model
 generates. We take a centred 7-day mean as the summary statistic, and we
-apply the same smoother to simulated data. The network then learns
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>s</mi><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | s(x))</annotation></semantics></math>
-for a summary
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>s</mi><annotation encoding="application/x-tex">s</annotation></semantics></math>
-that means the same thing on both sides. Smoothing only the observation
-would make simulated and observed data incomparable.</p>
+apply the same smoother to simulated data. The network then learns <span class="math inline">p(\theta | s(x))</span> for a summary <span class="math inline">s</span> that means the same thing on both sides.
+Smoothing only the observation would make simulated and observed data
+incomparable.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">smooth7</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">m</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">is.matrix</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span> <span class="va">m</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">m</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -255,54 +250,31 @@ SIR core from <code><a href="../articles/sir-epidemic.html">vignette("sir-epidem
 <code><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom()</a></code>, so the process is genuinely stochastic and there
 is no tractable likelihood. Three modeling choices are shared by all
 three, and they are worth stating before the mechanisms that differ.</p>
-<p>The epidemic starts when it starts. We infer the arrival day
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>t</mi><mn>0</mn></msub><annotation encoding="application/x-tex">t_0</annotation></semantics></math>
-and the seed size
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>I</mi><mn>0</mn></msub><annotation encoding="application/x-tex">I_0</annotation></semantics></math>
-rather than fixing them. Seeding every state on 2020-01-21 is wrong
-about the world: Washington was seeded in January, and West Virginia
-reported nothing until March 17.</p>
+<p>The epidemic starts when it starts. We infer the arrival day <span class="math inline">t_0</span> and the seed size <span class="math inline">I_0</span> rather than fixing them. Seeding every
+state on 2020-01-21 is wrong about the world: Washington was seeded in
+January, and West Virginia reported nothing until March 17.</p>
 <p>It is also wrong about the simulation. A supercritical branching
 process from two individuals has a large extinction probability, and
 conditional on survival its takeoff time wanders by weeks. Replicate
-simulations at a fixed
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-then differ by a factor of several thousand at the peak. Inferring
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>t</mi><mn>0</mn></msub><annotation encoding="application/x-tex">t_0</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>I</mi><mn>0</mn></msub><annotation encoding="application/x-tex">I_0</annotation></semantics></math>
+simulations at a fixed <span class="math inline">\theta</span> then
+differ by a factor of several thousand at the peak. Inferring <span class="math inline">t_0</span> and <span class="math inline">I_0</span>
 pins the phase with a parameter instead of leaving it to luck.</p>
 <p>Ascertainment is pinned by seroprevalence. Reported cases identify
-the product
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi><mo>×</mo><mtext mathvariant="normal">incidence</mtext></mrow><annotation encoding="application/x-tex">\rho \times \text{incidence}</annotation></semantics></math>,
-not either factor: a small well-ascertained epidemic and an enormous
-barely-ascertained one give the same curve. Left free, the fit takes the
-second branch, driving
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-into the low thousandths and the attack rate toward 1. Serology settles
-it from outside the case data.</p>
+the product <span class="math inline">\rho \times
+\text{incidence}</span>, not either factor: a small well-ascertained
+epidemic and an enormous barely-ascertained one give the same curve.
+Left free, the fit takes the second branch, driving <span class="math inline">\rho</span> into the low thousandths and the attack
+rate toward 1. Serology settles it from outside the case data.</p>
 <p>CDC’s commercial-lab study put spring-2020 infections at 6 to 24
 times reported cases (<a href="https://doi.org/10.1001/jamainternmed.2020.4130" class="external-link">Havers et
-al. 2020, <em>JAMA Internal Medicine</em></a>), which puts
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-between about 0.04 and 0.17. We encode a logit-normal prior centered at
-0.10 with 95% mass in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0.05</mn><mo>,</mo><mn>0.19</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0.05, 0.19]</annotation></semantics></math>.</p>
-<p>Population size
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
-is a known covariate. The simulator draws
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
-across real US state sizes during training and the estimator conditions
-on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">\log N</annotation></semantics></math>,
-so one network generalizes from Wyoming to California. The recovery rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-is fixed: with only case counts the generation interval is not
-identifiable from
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta(t)</annotation></semantics></math>,
-so we set
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><mi>γ</mi><mo>=</mo><mn>7</mn></mrow><annotation encoding="application/x-tex">1/\gamma = 7</annotation></semantics></math>
-days (<a href="https://doi.org/10.1056/NEJMoa2001316" class="external-link">Li et al. 2020,
+al. 2020, <em>JAMA Internal Medicine</em></a>), which puts <span class="math inline">\rho</span> between about 0.04 and 0.17. We encode a
+logit-normal prior centered at 0.10 with 95% mass in <span class="math inline">[0.05, 0.19]</span>.</p>
+<p>Population size <span class="math inline">N</span> is a known
+covariate. The simulator draws <span class="math inline">N</span> across
+real US state sizes during training and the estimator conditions on
+<span class="math inline">\log N</span>, so one network generalizes from
+Wyoming to California. The recovery rate <span class="math inline">\gamma</span> is fixed: with only case counts the
+generation interval is not identifiable from <span class="math inline">\beta(t)</span>, so we set <span class="math inline">1/\gamma = 7</span> days (<a href="https://doi.org/10.1056/NEJMoa2001316" class="external-link">Li et al. 2020,
 <em>NEJM</em></a>).</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
@@ -316,15 +288,12 @@ days (<a href="https://doi.org/10.1056/NEJMoa2001316" class="external-link">Li e
 <span><span class="va">t_grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">days</span><span class="op">)</span></span>
 <span><span class="va">PER</span> <span class="op">&lt;-</span> <span class="fl">1e5</span>                      <span class="co"># behavioral drivers are per 100,000 people</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="model-1-piecewise-constant-betat-the-phenomenological-baseline">Model 1: piecewise-constant
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta(t)</annotation></semantics></math>,
-the phenomenological baseline<a class="anchor" aria-label="anchor" href="#model-1-piecewise-constant-betat-the-phenomenological-baseline"></a>
+<h3 id="model-1-piecewise-constant-betat-the-phenomenological-baseline">Model 1: piecewise-constant <span class="math inline">\beta(t)</span>, the phenomenological baseline<a class="anchor" aria-label="anchor" href="#model-1-piecewise-constant-betat-the-phenomenological-baseline"></a>
 </h3>
-<p>This model makes no claim about why transmission changed.
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\log\beta</annotation></semantics></math>
-takes a different constant value in each of a few time regimes, blending
-over a roughly one-week logistic transition. It is a flexible curve fit,
-and it is the arm the other two have to beat.</p>
+<p>This model makes no claim about why transmission changed. <span class="math inline">\log\beta</span> takes a different constant value in
+each of a few time regimes, blending over a roughly one-week logistic
+transition. It is a flexible curve fit, and it is the arm the other two
+have to beat.</p>
 <p>How many regimes, and where? We answer from the national curve,
 fitting a continuous piecewise-linear regression to
 <code>log(new7)</code> and selecting breakpoints by BIC.</p>
@@ -387,10 +356,9 @@ on each regime’s duration and take breakpoints as cumulative sums, so
 regimes tile the window in order for every draw and cannot cross. Only 3
 of the 4 durations are free (the simulator rescales them to span the
 window), and parameterizing the free directions directly keeps every
-coordinate of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-identified. An unidentified coordinate would return its prior and look
-perfectly calibrated under SBC, so this matters.</p>
+coordinate of <span class="math inline">\theta</span> identified. An
+unidentified coordinate would return its prior and look perfectly
+calibrated under SBC, so this matters.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">beta_piecewise</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">log_beta_segments</span>, <span class="va">log_dur_ratio</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">log_beta_segments</span><span class="op">)</span></span>
@@ -416,34 +384,26 @@ responds to the epidemic’s own reported output, which makes each one a
 self-contained simulator, exactly what SBI wants.</p>
 <p>EFB, the effective force of infection, divides the force of infection
 by a factor that grows with recent and cumulative case experience:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>β</mi><mn>0</mn></msub><mfrac><mrow><mi>I</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>N</mi></mfrac><mo>⋅</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>ξ</mi><mspace width="0.167em"></mspace><mi>c</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>ψ</mi><munder><mo>∑</mo><mrow><msup><mi>t</mi><mo>′</mo></msup><mo>&lt;</mo><mi>t</mi></mrow></munder><mi>c</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>t</mi><mo>′</mo></msup><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mi>.</mi></mrow><annotation encoding="application/x-tex">\lambda(t) = \beta_0 \frac{I(t)}{N} \cdot \frac{1}{1 + \xi\, c(t-1) + \psi \sum_{t' &lt; t} c(t')}.</annotation></semantics></math></p>
-<p>Here
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-is reactivity to current news and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ψ</mi><annotation encoding="application/x-tex">\psi</annotation></semantics></math>
-is reactivity to accumulated experience. Six parameters.</p>
+<p><span class="math display">\lambda(t) = \beta_0 \frac{I(t)}{N} \cdot
+\frac{1}{1 + \xi\, c(t-1) + \psi \sum_{t' &lt; t}
+c(t')}.</span></p>
+<p>Here <span class="math inline">\xi</span> is reactivity to current
+news and <span class="math inline">\psi</span> is reactivity to
+accumulated experience. Six parameters.</p>
 <p>CBF, compartmental behavioral feedback, moves susceptibles into a
-risk-averse compartment
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>S</mi><mi>B</mi></msub><annotation encoding="application/x-tex">S_B</annotation></semantics></math>
-at rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>β</mi><mi>B</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>g</mi><mspace width="0.167em"></mspace><mi>c</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta_B (1 - e^{-g\,c(t-1)})</annotation></semantics></math>.
-They drift back at rate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>B</mi></msub><annotation encoding="application/x-tex">\mu_B</annotation></semantics></math>,
-and while they are in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>S</mi><mi>B</mi></msub><annotation encoding="application/x-tex">S_B</annotation></semantics></math>
-their force of infection is scaled by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">r &lt; 1</annotation></semantics></math>.
+risk-averse compartment <span class="math inline">S_B</span> at rate
+<span class="math inline">\beta_B (1 - e^{-g\,c(t-1)})</span>. They
+drift back at rate <span class="math inline">\mu_B</span>, and while
+they are in <span class="math inline">S_B</span> their force of
+infection is scaled by <span class="math inline">r &lt; 1</span>.
 Behavior is a state that takes time to build and to decay rather than an
 instantaneous function of the news. Eight parameters.</p>
 <p>We adapt the paper in two ways. It drives behavior off reported
 deaths, and we drive it off reported cases, the only outcome this model
-generates. We also express the driver
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">c(t)</annotation></semantics></math>
-per 100,000 people rather than as a raw count. One amortized posterior
-serves both Wyoming and California, and behavior responds to per-capita
-risk. With a raw-count driver no single
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ξ</mi><annotation encoding="application/x-tex">\xi</annotation></semantics></math>
-could fit both.</p>
+generates. We also express the driver <span class="math inline">c(t)</span> per 100,000 people rather than as a raw
+count. One amortized posterior serves both Wyoming and California, and
+behavior responds to per-capita risk. With a raw-count driver no single
+<span class="math inline">\xi</span> could fit both.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">draw_N</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">N_fixed</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">N_fixed</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">5e5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">4e7</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">N_fixed</span>, <span class="va">n</span><span class="op">)</span></span>
@@ -596,20 +556,17 @@ same function run a whole matrix of draws in one call. That is how the
 diagnostics below use them. <code><a href="../reference/sbc.html">sbc()</a></code> and <code><a href="../reference/npe.html">npe()</a></code> go
 through the per-parameter-set path, while the predictive checks call the
 simulators directly on a block of posterior draws.</p>
-<p>Every parameter is unconstrained on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ℝ</mi><annotation encoding="application/x-tex">\mathbb{R}</annotation></semantics></math>.
-The log and logit transforms mean a single Gaussian prior with no
-truncated support, so the posterior needs no rejection sampling for
-leakage. Naming each <code>mean</code> vector carries the names through
-every posterior draw, SBC result and plot.</p>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mn>0</mn></msub><annotation encoding="application/x-tex">\beta_0</annotation></semantics></math>
-means different things across families. In the piecewise model it is an
-effective rate per regime, centred on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">R = 2</annotation></semantics></math>.
-In the behavioral models it is the intrinsic transmission rate, centred
-on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mn>0</mn></msub><mo>=</mo><mn>3</mn></mrow><annotation encoding="application/x-tex">R_0 = 3</annotation></semantics></math>,
-with the decline explained mechanistically.</p>
+<p>Every parameter is unconstrained on <span class="math inline">\mathbb{R}</span>. The log and logit transforms mean
+a single Gaussian prior with no truncated support, so the posterior
+needs no rejection sampling for leakage. Naming each <code>mean</code>
+vector carries the names through every posterior draw, SBC result and
+plot.</p>
+<p><span class="math inline">\beta_0</span> means different things
+across families. In the piecewise model it is an effective rate per
+regime, centred on <span class="math inline">R = 2</span>. In the
+behavioral models it is the intrinsic transmission rate, centred on
+<span class="math inline">R_0 = 3</span>, with the decline explained
+mechanistically.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">prior_pw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_normal.html">prior_normal</a></span><span class="op">(</span></span>
 <span>  mean <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span></span>
@@ -638,18 +595,15 @@ with the decline explained mechanistically.</p>
 <div class="section level2">
 <h2 id="summarizing-120-days-with-an-embedding-network">Summarizing 120 days with an embedding network<a class="anchor" aria-label="anchor" href="#summarizing-120-days-with-an-embedding-network"></a>
 </h2>
-<p>The observation is 121 numbers:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">\log N</annotation></semantics></math>
-plus a 120-day case curve. Passing that straight into the flow wastes
-capacity, and choosing summary statistics by hand throws away whatever
-the chosen set missed. <code><a href="../reference/embedding_mlp.html">embedding_mlp()</a></code> learns the
+<p>The observation is 121 numbers: <span class="math inline">\log
+N</span> plus a 120-day case curve. Passing that straight into the flow
+wastes capacity, and choosing summary statistics by hand throws away
+whatever the chosen set missed. <code><a href="../reference/embedding_mlp.html">embedding_mlp()</a></code> learns the
 compression instead. A small MLP maps the standardized 121-dimensional
 observation to <code>output_dim</code> features, trained jointly with
 the density estimator, so the features are optimized for one thing:
-predicting
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>.
-The estimator then conditions on those features rather than on the raw
-curve.</p>
+predicting <span class="math inline">\theta</span>. The estimator then
+conditions on those features rather than on the raw curve.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">embed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/embedding_mlp.html">embedding_mlp</a></span><span class="op">(</span>output_dim <span class="op">=</span> <span class="fl">12L</span>, hidden <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">64L</span>, <span class="fl">64L</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">embed</span></span>
@@ -668,14 +622,12 @@ curve.</p>
 <div class="section level2">
 <h2 id="check-the-prior-predictive-before-training-anything">Check the prior predictive before training anything<a class="anchor" aria-label="anchor" href="#check-the-prior-predictive-before-training-anything"></a>
 </h2>
-<p>Amortized NPE learns
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | x)</annotation></semantics></math>
-over the prior predictive distribution of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
-Data the prior predictive essentially never produces fall where the
-network is extrapolating, and its posterior there cannot be trusted. So
-before spending a simulation budget, we check that each model can
-produce curves like the ones we mean to condition on.</p>
+<p>Amortized NPE learns <span class="math inline">p(\theta | x)</span>
+over the prior predictive distribution of <span class="math inline">x</span>. Data the prior predictive essentially
+never produces fall where the network is extrapolating, and its
+posterior there cannot be trusted. So before spending a simulation
+budget, we check that each model can produce curves like the ones we
+mean to condition on.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">11</span><span class="op">)</span></span>
 <span><span class="va">n_pp</span> <span class="op">&lt;-</span> <span class="fl">1500</span></span>
@@ -696,14 +648,13 @@ produce curves like the ones we mean to condition on.</p>
 <span><span class="co">#&gt; Michigan      0.0320 0.2373 0.0927</span></span>
 <span><span class="co">#&gt; West Virginia 0.1187 0.2233 0.1760</span></span></code></pre></div>
 <p>The number to watch is the fraction of prior draws landing within a
-factor of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>e</mi><annotation encoding="application/x-tex">e</annotation></semantics></math>
-of the observed curve. It is small, because the priors are deliberately
-vague, but it is not a rounding error, so the observations land inside
-the bulk of each prior predictive. Fixing the seeding day at day 1 fails
-this check. West Virginia’s seven empty weeks could then only come from
-a sub-threshold contact rate, which usually goes extinct and drops the
-observed curve out of the band.</p>
+factor of <span class="math inline">e</span> of the observed curve. It
+is small, because the priors are deliberately vague, but it is not a
+rounding error, so the observations land inside the bulk of each prior
+predictive. Fixing the seeding day at day 1 fails this check. West
+Virginia’s seven empty weeks could then only come from a sub-threshold
+contact rate, which usually goes extinct and drops the observed curve
+out of the band.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">theta_pp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample_prior.html">sample_prior</a></span><span class="op">(</span><span class="va">prior_cbf</span>, <span class="va">n_pp</span><span class="op">)</span></span>
 <span><span class="va">mi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">expm1</a></span><span class="op">(</span><span class="fu">sim_cbf</span><span class="op">(</span><span class="va">theta_pp</span>, N_fixed <span class="op">=</span> <span class="va">pop</span><span class="op">[[</span><span class="st">"Michigan"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span>, <span class="op">-</span><span class="fl">1</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span></span>
@@ -856,8 +807,7 @@ slightly, and the alternative is a single <code>NA</code> turning every
 median and quantile into <code>NA</code>.</p>
 <p>The three bands differ strikingly in width: the piecewise band is an
 order of magnitude wider at New York’s peak than either behavioral band.
-That is not overconfidence. Hold
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
+That is not overconfidence. Hold <span class="math inline">\theta</span>
 fixed and re-simulate, and whatever spread survives is the simulator’s
 own process noise, with no posterior uncertainty in it.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
@@ -880,8 +830,7 @@ own process noise, with no posterior uncertainty in it.</p>
 <span><span class="co">#&gt; EFB  0.0054      0.8309</span></span>
 <span><span class="co">#&gt; CBF  0.0144      0.6861</span></span></code></pre></div>
 <p>The open-loop piecewise model has roughly an order of magnitude more
-peak-height variability at fixed
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
+peak-height variability at fixed <span class="math inline">\theta</span>
 than either behavioral model. Feedback damps the demographic noise an
 open-loop model lets through. A behavioral model is therefore
 intrinsically more predictable at the same parameter values, and most of
@@ -889,9 +838,7 @@ the narrow band is mechanism rather than posterior. Whether the
 remaining width is honest is what the SBC histograms above answer, which
 is why they come first.</p>
 <p>Here is a quantitative score across all 51 states: root-mean-square
-error of the predictive median against the observed curve, on the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\log(1+x)</annotation></semantics></math>
-scale the estimator works in.</p>
+error of the predictive median against the observed curve, on the <span class="math inline">\log(1+x)</span> scale the estimator works in.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">score_state</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">nm</span>, <span class="va">state</span>, <span class="va">n_draws</span> <span class="op">=</span> <span class="fl">300</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">post</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fits</span><span class="op">[[</span><span class="va">nm</span><span class="op">]</span><span class="op">]</span>, x_obs <span class="op">=</span> <span class="fu">obs_for</span><span class="op">(</span><span class="va">state</span><span class="op">)</span><span class="op">)</span></span>
@@ -3920,23 +3867,20 @@ scale the estimator works in.</p>
 <h2 id="rt-for-every-state">R(t) for every state<a class="anchor" aria-label="anchor" href="#rt-for-every-state"></a>
 </h2>
 <p>The effective reproduction number is</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mi>e</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>γ</mi></mfrac><mo>⋅</mo><mfrac><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>N</mi></mfrac><mo>,</mo></mrow><annotation encoding="application/x-tex">R_e(t) = \frac{\beta(t)}{\gamma} \cdot \frac{S(t)}{N},</annotation></semantics></math></p>
+<p><span class="math display">R_e(t) = \frac{\beta(t)}{\gamma} \cdot
+\frac{S(t)}{N},</span></p>
 <p>secondary cases per infection given the susceptibles still available.
-The
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>N</mi></mrow><annotation encoding="application/x-tex">S(t)/N</annotation></semantics></math>
-factor is not decoration. In New York a substantial share of the
-population had been infected by mid-May, so
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mi>e</mi></msub><annotation encoding="application/x-tex">R_e</annotation></semantics></math>
-ends the window well below what the transmission rate alone suggests. We
-compute both factors from the simulator’s own state trajectories rather
-than re-deriving
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta(t)</annotation></semantics></math>,
-so the reported quantity and the fitted model cannot drift apart.</p>
-<p>Highlight panels overlay all three models so their
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mi>e</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">R_e(t)</annotation></semantics></math>
-trajectories can be compared directly. The heatmap uses whichever model
-scored best, and that is not a fixed choice. All three are close enough
-that the winner can move with the simulation budget.</p>
+The <span class="math inline">S(t)/N</span> factor is not decoration. In
+New York a substantial share of the population had been infected by
+mid-May, so <span class="math inline">R_e</span> ends the window well
+below what the transmission rate alone suggests. We compute both factors
+from the simulator’s own state trajectories rather than re-deriving
+<span class="math inline">\beta(t)</span>, so the reported quantity and
+the fitted model cannot drift apart.</p>
+<p>Highlight panels overlay all three models so their <span class="math inline">R_e(t)</span> trajectories can be compared directly.
+The heatmap uses whichever model scored best, and that is not a fixed
+choice. All three are close enough that the winner can move with the
+simulation budget.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">best</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">scores</span><span class="op">$</span><span class="va">model</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">scores</span><span class="op">$</span><span class="va">rmse_med</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">best</span></span>
@@ -6361,10 +6305,9 @@ that the winner can move with the simulation budget.</p>
 <span><span class="va">rt_all</span><span class="op">$</span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">rt_all</span><span class="op">$</span><span class="va">model</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PW"</span>, <span class="st">"EFB"</span>, <span class="st">"CBF"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">rt_best</span> <span class="op">&lt;-</span> <span class="va">rt_all</span><span class="op">[</span><span class="va">rt_all</span><span class="op">$</span><span class="va">model</span> <span class="op">==</span> <span class="va">best</span>, <span class="op">]</span></span></code></pre></div>
 <p>The inferred attack rates are the sanity check on the ascertainment
-prior. Together,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-and the case counts imply how much of each state had been infected by
-2020-05-19, and we read that off the best-scoring model.</p>
+prior. Together, <span class="math inline">\rho</span> and the case
+counts imply how much of each state had been infected by 2020-05-19, and
+we read that off the best-scoring model.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">attack_by_state</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tapply.html" class="external-link">tapply</a></span><span class="op">(</span><span class="va">rt_best</span><span class="op">$</span><span class="va">attack</span>, <span class="va">rt_best</span><span class="op">$</span><span class="va">state</span>, <span class="va">`[`</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">attack_by_state</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
@@ -6419,12 +6362,12 @@ best-scoring model.</p>
 plot of chunk rt-heatmap
 </p>
 </div>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>R</mi><mi>e</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">R_e(t)</annotation></semantics></math>
-is flat before a state’s inferred introduction, where there is no
-epidemic and nothing to constrain transmission, so the posterior stays
-near the prior. It climbs through early-to-mid March and comes back
-toward and below 1 by mid-to-late April. Timing and magnitude vary by
-state in a way a single national estimate would hide.</p>
+<p><span class="math inline">R_e(t)</span> is flat before a state’s
+inferred introduction, where there is no epidemic and nothing to
+constrain transmission, so the posterior stays near the prior. It climbs
+through early-to-mid March and comes back toward and below 1 by
+mid-to-late April. Timing and magnitude vary by state in a way a single
+national estimate would hide.</p>
 </div>
 <div class="section level2">
 <h2 id="what-this-comparison-bought">What this comparison bought<a class="anchor" aria-label="anchor" href="#what-this-comparison-bought"></a>
@@ -6438,48 +6381,33 @@ set.</p>
 <p>Do not leave the epidemic’s phase to demographic noise. A branching
 process from a couple of infections, run for four months, has a final
 size spread across orders of magnitude. Its takeoff time wanders by
-weeks. Inferring
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>t</mi><mn>0</mn></msub><annotation encoding="application/x-tex">t_0</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>I</mi><mn>0</mn></msub><annotation encoding="application/x-tex">I_0</annotation></semantics></math>
-absorbs that, and the recovered introduction days are a free check. The
-posterior puts New York’s near March 1 and West Virginia’s in mid-March,
-matching when those states reported their first cases.</p>
+weeks. Inferring <span class="math inline">t_0</span> and <span class="math inline">I_0</span> absorbs that, and the recovered
+introduction days are a free check. The posterior puts New York’s near
+March 1 and West Virginia’s in mid-March, matching when those states
+reported their first cases.</p>
 <p>Do not let case counts alone set the epidemic’s scale. They identify
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi><mo>×</mo><mtext mathvariant="normal">incidence</mtext></mrow><annotation encoding="application/x-tex">\rho \times \text{incidence}</annotation></semantics></math>,
-and without external information on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
+<span class="math inline">\rho \times \text{incidence}</span>, and
+without external information on <span class="math inline">\rho</span>
 the fit slides toward vast, barely-ascertained epidemics. Seroprevalence
 breaks the tie, and it belongs in the prior.</p>
 <p>A mechanism can be cheaper than a curve fit. The piecewise model
-needs 10 parameters to bend
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta(t)</annotation></semantics></math>
+needs 10 parameters to bend <span class="math inline">\beta(t)</span>
 into shape and, having no mechanism, reports transmission rates for
 regimes that ended before the state’s epidemic began. The behavioral
 models get comparable fits from 6 and 8 parameters and give a physical
 meaning to each one.</p>
 <p>One structural difference between the behavioral models is invisible
 in a first-wave window and decisive outside one. EFB’s denominator
-contains the cumulative case count, which only grows, so its
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\beta(t)</annotation></semantics></math>
-is monotone non-increasing: it can bend an epidemic down but never let
-it come back. CBF can, because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>μ</mi><mi>B</mi></msub><annotation encoding="application/x-tex">\mu_B</annotation></semantics></math>
-lets risk-averse individuals drift back into the susceptible pool once
-incidence falls. This is the likeliest reason the original study found
-CBF the better forecaster.</p>
-<p>The models carry real simplifications.
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
-is fixed, so <code><a href="../reference/sbc.html">sbc()</a></code> is calibrated conditional on that
-choice. A single
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
-stands in for testing capacity that grew steeply over exactly this
-window. A time-varying
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ρ</mi><mo stretchy="false" form="prefix">(</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\rho(t)</annotation></semantics></math>
-is the obvious next refinement, at the cost of confounding with
-transmission. Each state gets one introduction, whereas states with
-large international airports saw imported cases for weeks first, which
-is why California fits worst.</p>
+contains the cumulative case count, which only grows, so its <span class="math inline">\beta(t)</span> is monotone non-increasing: it can
+bend an epidemic down but never let it come back. CBF can, because <span class="math inline">\mu_B</span> lets risk-averse individuals drift back
+into the susceptible pool once incidence falls. This is the likeliest
+reason the original study found CBF the better forecaster.</p>
+<p>The models carry real simplifications. <span class="math inline">\gamma</span> is fixed, so <code><a href="../reference/sbc.html">sbc()</a></code> is
+calibrated conditional on that choice. A single <span class="math inline">\rho</span> stands in for testing capacity that grew
+steeply over exactly this window. A time-varying <span class="math inline">\rho(t)</span> is the obvious next refinement, at
+the cost of confounding with transmission. Each state gets one
+introduction, whereas states with large international airports saw
+imported cases for weeks first, which is why California fits worst.</p>
 <p>Louisiana’s Mardi Gras superspreading produced a spike no smooth
 behavioral response can reproduce. Loosening any of these
 simplifications is a change to the simulator, not to the inference

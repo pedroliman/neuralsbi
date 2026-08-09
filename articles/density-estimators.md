@@ -2,7 +2,7 @@
 
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
 approximates the posterior with a conditional density estimator: a model
-of $`p(\theta | x)`$ trained on simulated $`(\theta, x)`$ pairs. The
+of p(\theta \| x) trained on simulated (\theta, x) pairs. The
 `density_estimator` argument picks which one. The choice matters most
 when the posterior is far from Gaussian, so that is the case we use
 here.
@@ -14,8 +14,8 @@ regression. No neural network and no `torch`. It is exact when the
 posterior is Gaussian in the parameters, which makes it both a fast
 baseline and a way to check that the neural estimators are behaving.
 
-`"mdn"` is a mixture density network. A small neural network maps $`x`$
-to the weights, means and covariances of a Gaussian mixture. Mixtures
+`"mdn"` is a mixture density network. A small neural network maps x to
+the weights, means and covariances of a Gaussian mixture. Mixtures
 represent several modes and a good deal of skew, and they train quickly.
 
 `"maf"`, the package default, is a masked autoregressive flow

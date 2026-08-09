@@ -15,25 +15,24 @@ posterior directly. That is the right default, and most of this
 package’s documentation is about it. This article is about the case
 where it is the wrong default.
 
-Suppose your data are $`n`$ independent measurements of the same
-underlying parameter: 200 assay readings, 500 trial outcomes, a month of
-daily counts. An NPE fit takes a fixed-length $`x`$ and returns
-$`p(\theta | x)`$, and that length is decided when the network is
-trained. Collect 300 measurements instead of 200 and the fit no longer
-applies. You retrain, or you compress the data into a few summary
-statistics and accept whatever they throw away.
+Suppose your data are n independent measurements of the same underlying
+parameter: 200 assay readings, 500 trial outcomes, a month of daily
+counts. An NPE fit takes a fixed-length x and returns p(\theta \| x),
+and that length is decided when the network is trained. Collect 300
+measurements instead of 200 and the fit no longer applies. You retrain,
+or you compress the data into a few summary statistics and accept
+whatever they throw away.
 
 [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) learns the
-likelihood of a single observation, $`q_\phi(x | \theta)`$. Independent
+likelihood of a single observation, q\_\phi(x \| \theta). Independent
 observations multiply, so their log-likelihoods add:
 
-``` math
-\log p(x_1, \ldots, x_n | \theta) = \sum_{i=1}^{n} \log q_\phi(x_i | \theta).
-```
+\log p(x_1, \ldots, x_n \| \theta) = \sum\_{i=1}^{n} \log q\_\phi(x_i \|
+\theta).
 
 Train once, then condition on however many observations you happen to
 have. The price is that the posterior is no longer a forward pass:
-$`q_\phi(x | \theta)`$ is a likelihood, and turning it into a posterior
+q\_\phi(x \| \theta) is a likelihood, and turning it into a posterior
 takes MCMC.
 
 ## A model whose likelihood you cannot write down
@@ -42,16 +41,16 @@ The g-and-k distribution is the standard test case for this situation,
 and a good one, because the awkwardness is real rather than contrived.
 It is defined by its quantile function:
 
-``` math
-Q(u) = A + B\left(1 + c\,\frac{1 - e^{-g z(u)}}{1 + e^{-g z(u)}}\right)\left(1 + z(u)^2\right)^{k} z(u), \qquad z(u) = \Phi^{-1}(u).
-```
+Q(u) = A + B\left(1 + c\\\frac{1 - e^{-g z(u)}}{1 + e^{-g
+z(u)}}\right)\left(1 + z(u)^2\right)^{k} z(u), \qquad z(u) =
+\Phi^{-1}(u).
 
-$`A`$ and $`B`$ set location and scale, $`g`$ controls skewness, $`k`$
-controls tail weight, and $`c`$ is conventionally fixed at 0.8.
-Simulating takes one line: draw a uniform and push it through $`Q`$.
-Writing down the density is another matter, because $`Q`$ has no
-closed-form inverse. So the model simulates freely and resists ordinary
-maximum likelihood, which is exactly the situation SBI is for.
+A and B set location and scale, g controls skewness, k controls tail
+weight, and c is conventionally fixed at 0.8. Simulating takes one line:
+draw a uniform and push it through Q. Writing down the density is
+another matter, because Q has no closed-form inverse. So the model
+simulates freely and resists ordinary maximum likelihood, which is
+exactly the situation SBI is for.
 
 ``` r
 
@@ -72,9 +71,9 @@ prior <- prior_uniform(low  = c(A = 0, B = 0, g = 0, k = 0),
 
 ## Look at the prior predictive first
 
-The ABC literature usually puts $`g`$ and $`k`$ on $`[0, 10]`$ along
-with the other two. Both are bad ideas here, and simulating from the
-prior says so before any training happens. Start with $`k`$:
+The ABC literature usually puts g and k on \[0, 10\] along with the
+other two. Both are bad ideas here, and simulating from the prior says
+so before any training happens. Start with k:
 
 ``` r
 
@@ -91,18 +90,16 @@ quantile(abs(simulate_for_sbi(simulator, prior, 5000, seed = 1)$x),
 #>   6.040338  78.061778 379.911342
 ```
 
-$`k`$ is the tail-weight parameter and it enters as $`(1 + z^2)^k`$, so
-$`k = 10`$ puts simulated values around $`10^{12}`$ while $`k = 0.5`$
-puts them around 10. A density estimator standardizes its training data
-once, and no single scale covers twelve orders of magnitude. The fit
-would be dominated by a handful of enormous draws and useless everywhere
-else. Restricting $`k`$ to $`[0, 1]`$ keeps the tails interesting and
-the problem well posed.
+k is the tail-weight parameter and it enters as (1 + z^2)^k, so k = 10
+puts simulated values around 10^{12} while k = 0.5 puts them around 10.
+A density estimator standardizes its training data once, and no single
+scale covers twelve orders of magnitude. The fit would be dominated by a
+handful of enormous draws and useless everywhere else. Restricting k to
+\[0, 1\] keeps the tails interesting and the problem well posed.
 
-$`g`$ fails the opposite way. It enters through
-$`(1 - e^{-gz}) / (1 + e^{-gz})`$, which is a tanh in disguise and
-saturates. Once $`g`$ is past about 4 the simulated distribution stops
-changing.
+g fails the opposite way. It enters through (1 - e^{-gz}) / (1 +
+e^{-gz}), which is a tanh in disguise and saturates. Once g is past
+about 4 the simulated distribution stops changing.
 
 ``` r
 
@@ -118,14 +115,14 @@ round(shift, 3)
 #> 90% 6.007 6.491 6.660 6.710 6.729 6.730
 ```
 
-The quantiles move by 0.7 per unit of $`g`$ between 1 and 2, and by
-0.005 per unit between 6 and 10. A prior of $`[0, 10]`$ therefore spends
-more than half its range on values the data cannot tell apart, and the
+The quantiles move by 0.7 per unit of g between 1 and 2, and by 0.005
+per unit between 6 and 10. A prior of \[0, 10\] therefore spends more
+than half its range on values the data cannot tell apart, and the
 estimator spends its capacity learning that nothing happens there.
 Worse, a likelihood that is flat in a parameter over most of its prior
 has a surrogate that is only nearly flat. The difference between the two
-is noise, and the sampler will chase it. Putting $`g`$ on $`[0, 4]`$
-keeps the part that is identified.
+is noise, and the sampler will chase it. Putting g on \[0, 4\] keeps the
+part that is identified.
 
 This is worth doing before every fit, not just this one. A prior
 predictive check costs a few seconds of simulation. It catches the class
@@ -137,7 +134,7 @@ as chains that will not mix.
 [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) takes the
 same prior and simulator
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) would, and
-trains $`q_\phi(x | \theta)`$ in place of $`q_\phi(\theta | x)`$.
+trains q\_\phi(x \| \theta) in place of q\_\phi(\theta \| x).
 
 ``` r
 
@@ -161,11 +158,11 @@ further here than it would for NPE. The target is a one-dimensional
 conditional density rather than a four-dimensional posterior.
 
 The estimator is an MDN rather than the package default MAF, and the
-reason is worth knowing. An MDN maps $`\theta`$ to the parameters of a
-Gaussian mixture over $`x`$, and the network never sees $`x`$ at all. So
-for $`n`$ independent observations the network runs once and all $`n`$
-densities are read off the same mixture. A flow’s transforms depend on
-$`x`$ as well as $`\theta`$, so it has to run $`n`$ times.
+reason is worth knowing. An MDN maps \theta to the parameters of a
+Gaussian mixture over x, and the network never sees x at all. So for n
+independent observations the network runs once and all n densities are
+read off the same mixture. A flow’s transforms depend on x as well as
+\theta, so it has to run n times.
 
 On this model at 5000 observations a slice step costs about seven times
 more with a MAF than with the MDN. That is the difference between a
@@ -203,7 +200,7 @@ plot of chunk loglik
 Those 500 observations give a log-likelihood of -783 at the true
 parameters. `loglik` is an ordinary R function from here on, which is
 why the profile above is a plain
-[`sapply()`](https://rdrr.io/r/base/lapply.html) over a grid of $`A`$.
+[`sapply()`](https://rdrr.io/r/base/lapply.html) over a grid of A.
 
 ## One fit, any number of observations
 
@@ -234,7 +231,7 @@ t(sapply(draws, function(d) apply(d, 2, sd)))
 ```
 
 The posterior contracts as the observations accumulate, which is what it
-should do and what an NPE fit trained at one $`n`$ cannot show you.
+should do and what an NPE fit trained at one n cannot show you.
 
 ``` r
 
@@ -283,38 +280,37 @@ round(z_score, 1)
 
 The absolute errors are small and mostly getting smaller. The numbers
 above are not, because the posterior narrows faster than the error does.
-By $`n = 5000`$ every parameter lands several standard deviations from
-the truth, and says so with complete confidence.
+By n = 5000 every parameter lands several standard deviations from the
+truth, and says so with complete confidence.
 
 This is not a bug and it is not the sampler. Stan’s NUTS, further down,
 lands on the same posterior from an entirely different algorithm. It is
 the arithmetic of the sum this whole article is built on.
 
-Suppose the surrogate is wrong by an average of $`\epsilon`$ nats per
+Suppose the surrogate is wrong by an average of \epsilon nats per
 observation in some direction of parameter space. The log-likelihood of
-$`n`$ observations is off by $`n\epsilon`$, while the information the
-data carry about the parameter also grows like $`n`$. The two race each
-other, and which one wins is set by how good the surrogate is, not by
-how much data you have. Past some $`n`$, more observations buy you a
-tighter posterior around the surrogate’s error rather than around the
-truth.
+n observations is off by n\epsilon, while the information the data carry
+about the parameter also grows like n. The two race each other, and
+which one wins is set by how good the surrogate is, not by how much data
+you have. Past some n, more observations buy you a tighter posterior
+around the surrogate’s error rather than around the truth.
 
-There is no $`n`$ at which this becomes visible on its own: at every one
-of them the posterior looks like a perfectly ordinary posterior. What
-gives it away is the comparison across $`n`$. An interval that keeps
-shrinking without ever moving toward anything is an interval converging
-on the estimator rather than on the parameter. The fix is a better
-surrogate, not more data: more simulations, a more flexible estimator,
-or a narrower prior that lets the estimator spend its capacity where the
-data are.
+There is no n at which this becomes visible on its own: at every one of
+them the posterior looks like a perfectly ordinary posterior. What gives
+it away is the comparison across n. An interval that keeps shrinking
+without ever moving toward anything is an interval converging on the
+estimator rather than on the parameter. The fix is a better surrogate,
+not more data: more simulations, a more flexible estimator, or a
+narrower prior that lets the estimator spend its capacity where the data
+are.
 
 Simulation-based calibration, below, sees only half of this. Each SBC
-trial draws a single observation, so it validates the estimator at
-$`n = 1`$. It can tell you the surrogate is already miscalibrated there,
-and further down it does exactly that for $`k`$. What it cannot tell you
-is how far that error travels once it is summed over five thousand
+trial draws a single observation, so it validates the estimator at n =
+1. It can tell you the surrogate is already miscalibrated there, and
+further down it does exactly that for k. What it cannot tell you is how
+far that error travels once it is summed over five thousand
 observations, because it never sums anything. Comparing posteriors
-across $`n`$, as we just did, is the check that sees the second half.
+across n, as we just did, is the check that sees the second half.
 
 ## What the sampler did
 
@@ -357,8 +353,8 @@ chains are moving but slowly. Each of those on this model takes the run
 from seconds to minutes, not minutes to hours.
 
 The fourth lever is the model, and it is the one that matters most. The
-$`g`$ we did not narrow, back at the start, gave chains that never mixed
-at all. A flat direction in the likelihood is not a sampling problem you
+g we did not narrow, back at the start, gave chains that never mixed at
+all. A flat direction in the likelihood is not a sampling problem you
 can spend your way out of. And when `rhat` lands where it does here
 rather than at 1.5, the useful question is whether an independent
 sampler agrees. NUTS on the same likelihood, below, lands on the same
@@ -576,7 +572,7 @@ not the other.
 
 Because `nsbi_log_lik_sum_lpdf` is now an ordinary Stan function, and
 the model around it is yours to write. Suppose the 500 measurements came
-from 10 laboratories, each with its own $`A`$, drawn from a shared
+from 10 laboratories, each with its own A, drawn from a shared
 population distribution. That is a hierarchical model, and no posterior
 estimator can give it to you: NPE learns one conditional, and a
 hierarchy is a different one. Here it is a few lines around the same
@@ -649,31 +645,31 @@ sbc](figures/neural-likelihood-sbc-4.svg)
 par(op)
 ```
 
-Read the p-values, not the fact that the check ran. $`A`$, $`B`$ and
-$`g`$ come back consistent with uniform ranks. $`k`$ does not, and at 60
-trials that is not a borderline call. The surrogate’s conditional
-density is miscalibrated in the tail-weight parameter, which is the same
-$`k`$ whose posterior drifted furthest from the truth in the table
-above. The two diagnostics are pointing at one thing.
+Read the p-values, not the fact that the check ran. A, B and g come back
+consistent with uniform ranks. k does not, and at 60 trials that is not
+a borderline call. The surrogate’s conditional density is miscalibrated
+in the tail-weight parameter, which is the same k whose posterior
+drifted furthest from the truth in the table above. The two diagnostics
+are pointing at one thing.
 
-That is worth pausing on, because SBC here is running at $`n = 1`$:
-every trial draws a single observation. So the miscalibration it found
-is present in the surrogate before any i.i.d. summing amplifies it, and
-the amplification section above was too generous in saying SBC cannot
-see this class of problem. It sees what is wrong at $`n = 1`$; what it
-cannot see is how much worse that gets at $`n = 5000`$. Both checks are
-worth running, and neither substitutes for the other.
+That is worth pausing on, because SBC here is running at n = 1: every
+trial draws a single observation. So the miscalibration it found is
+present in the surrogate before any i.i.d. summing amplifies it, and the
+amplification section above was too generous in saying SBC cannot see
+this class of problem. It sees what is wrong at n = 1; what it cannot
+see is how much worse that gets at n = 5000. Both checks are worth
+running, and neither substitutes for the other.
 
 Sixty trials against roughly ten rank bins is thin enough that R warns
 the chi-squared approximation may be off, and those warnings are
 suppressed in the chunk above. Take the large p-values as “nothing
 detected at this sample size” rather than as evidence of calibration,
-and raise `n_sbc` before believing either direction too hard. The $`k`$
+and raise `n_sbc` before believing either direction too hard. The k
 failure is not the marginal case: its p-value rounds to zero.
 
 A posterior predictive check is the only diagnostic that looks at the
 observation you actually have. Read the panel below as one question:
-does the observed $`y`$ look like a typical draw from the predictive?
+does the observed y look like a typical draw from the predictive?
 
 ``` r
 

@@ -3,7 +3,7 @@
 `neuralsbi` needs two things from you: a prior over the parameters you
 want to learn, and a simulator that turns one parameter set into one
 data set. It trains a neural network on simulated pairs and hands back
-the Bayesian posterior $`p(\theta | x)`$. You never write a likelihood.
+the Bayesian posterior p(\theta \| x). You never write a likelihood.
 
 We use a stochastic SIR epidemic here, a close relative of the model in
 the package README. It is small enough to read in one screen, and it has
@@ -11,12 +11,11 @@ no likelihood you would want to write down.
 
 ## Define your simulator
 
-A population of size $`N`$ splits into susceptible, infected and
-recovered. The contact rate $`\beta`$ drives new infections, the
-recovery rate $`\gamma`$ drives recoveries, and we see a fraction
-$`\rho`$ of the new infections as reported cases, totalled by week.
-Infections and recoveries are binomial draws, so two runs at the same
-parameters give different curves.
+A population of size N splits into susceptible, infected and recovered.
+The contact rate \beta drives new infections, the recovery rate \gamma
+drives recoveries, and we see a fraction \rho of the new infections as
+reported cases, totalled by week. Infections and recoveries are binomial
+draws, so two runs at the same parameters give different curves.
 
 ``` r
 
@@ -41,10 +40,10 @@ sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
 ```
 
 That is the whole model specification. Note what is missing: nowhere do
-we write down how probable a case curve is at a given
-$`(\beta, \gamma, \rho)`$. `neuralsbi` only ever calls the simulator.
+we write down how probable a case curve is at a given (\beta, \gamma,
+\rho). `neuralsbi` only ever calls the simulator.
 
-The simulator returns $`\log(1 + \text{cases})`$ rather than raw counts.
+The simulator returns \log(1 + \text{cases}) rather than raw counts.
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
 standardizes whatever the simulator gives it. Across this prior the
 weekly counts run from a handful to tens of thousands, which is a wide
@@ -100,7 +99,7 @@ fit
 That is the whole fit.
 [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) drew 8000
 parameter sets from the prior, ran the simulator on each, and trained a
-masked autoregressive flow on the resulting $`(\theta, x)`$ pairs.
+masked autoregressive flow on the resulting (\theta, x) pairs.
 `best val loss` is the average negative log density on held-out
 simulations. It is useful for comparing fits on the same problem and
 means nothing across problems.
@@ -145,11 +144,11 @@ values marked.](figures/neuralsbi-posterior-1.svg)
 plot of chunk posterior
 
 The posterior covers the values that generated `x_obs`. It also shows
-the ridge every SIR fit runs into: $`\beta`$ and $`\gamma`$ trade off
-against each other, because a case curve pins down their ratio
-$`R_0 = \beta/\gamma`$ much better than either rate alone.
+the ridge every SIR fit runs into: \beta and \gamma trade off against
+each other, because a case curve pins down their ratio R_0 =
+\beta/\gamma much better than either rate alone.
 [`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md)
-picks that up and reads $`R_0`$ off the draws.
+picks that up and reads R_0 off the draws.
 
 ## One fit, any number of outbreaks
 
@@ -182,11 +181,11 @@ outbreaks as you have.
 
 A trained estimator always returns something. Draws, means, intervals,
 all of it, whether or not the fit is any good. Simulation-based
-calibration tells you whether to believe the widths: draw $`\theta`$
-from the prior, simulate $`x`$ from it, and rank that known $`\theta`$
-among posterior draws conditioned on $`x`$. A calibrated posterior puts
-the truth anywhere in the ranking with equal probability, so the ranks
-come out uniform.
+calibration tells you whether to believe the widths: draw \theta from
+the prior, simulate x from it, and rank that known \theta among
+posterior draws conditioned on x. A calibrated posterior puts the truth
+anywhere in the ranking with equal probability, so the ranks come out
+uniform.
 
 ``` r
 
@@ -214,9 +213,9 @@ posterior.](figures/neuralsbi-sbc-2.svg)
 
 plot of chunk sbc
 
-Read the p-values, not the fact that the check ran. $`\beta`$ comes back
-clean at 0.19. $`\gamma`$ (0.023) and $`\rho`$ (0.040) fall just under
-the conventional 0.05, and the coverage curve runs slightly below the
+Read the p-values, not the fact that the check ran. \beta comes back
+clean at 0.19. \gamma (0.023) and \rho (0.040) fall just under the
+conventional 0.05, and the coverage curve runs slightly below the
 diagonal. That is mild overconfidence: the intervals are a little too
 narrow rather than in the wrong place.
 
@@ -230,7 +229,7 @@ covers how to read these plots and what to do when a fit does not pass.
 - [`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md)
   explains what the method is doing with the same model. It covers why a
   simulator replaces the likelihood, what amortization buys across many
-  outbreaks, and how to read $`R_0`$ off the posterior draws.
+  outbreaks, and how to read R_0 off the posterior draws.
 - [`vignette("density-estimators")`](https://neuralsbi.pedrodelima.com/articles/density-estimators.md)
   compares the estimators behind
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and says

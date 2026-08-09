@@ -30,10 +30,10 @@ fit <- npe(task$prior, task$simulator, n_simulations = 3000,
 
 Simulation-based calibration (SBC) checks the posterior on average over
 the prior, and it needs no reference posterior to compare against. Draw
-$`\theta`$ from the prior, simulate $`x`$ from it, then rank that known
-$`\theta`$ among posterior draws given $`x`$. A calibrated posterior
-puts the truth anywhere in the ranking with equal probability, so the
-ranks come out uniform.
+\theta from the prior, simulate x from it, then rank that known \theta
+among posterior draws given x. A calibrated posterior puts the truth
+anywhere in the ranking with equal probability, so the ranks come out
+uniform.
 
 ``` r
 
@@ -67,7 +67,7 @@ Read the rank histogram like this:
 
 ## Expected coverage
 
-The same ranks give a coverage curve. How often does the $`p`$% credible
+The same ranks give a coverage curve. How often does the p% credible
 interval actually contain the truth?
 
 ``` r
@@ -176,9 +176,9 @@ marked.](figures/diagnostics-unnamed-chunk-6-1.png)
 plot of chunk unnamed-chunk-6
 
 If the observation falls in the tails of the predictive distribution,
-either the fit is poor for this $`x`$ or the simulator cannot reproduce
-the data at any parameter value. The second is model misspecification,
-and no calibration check will tell you about it.
+either the fit is poor for this x or the simulator cannot reproduce the
+data at any parameter value. The second is model misspecification, and
+no calibration check will tell you about it.
 
 ## Comparing against a reference posterior
 

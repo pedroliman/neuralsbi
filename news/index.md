@@ -1,5 +1,45 @@
 # Changelog
 
+## neuralsbi 0.5.13
+
+- **Reference/help-topic pages on the pkgdown site now render their
+  equations.** `\eqn`/`\deqn` markup in `man/*.Rd` reaches
+  `reference/*.html` through a different pkgdown code path than
+  vignettes and `README` do: reference pages are built straight from Rd
+  XML (`as_html.tag_eqn`/`as_html.tag_deqn`) and never go through
+  pandoc, so the LaTeX landed on the page as literal `\(...\)`/`$$...$$`
+  text with nothing to render it, while vignettes (built from actual
+  Markdown, through pandoc) rendered correctly under pkgdown’s `mathml`
+  default. `_pkgdown.yml` now sets `template: math-rendering: katex`,
+  which works client-side by scanning the whole rendered page for math
+  delimiters regardless of which pipeline produced the surrounding HTML
+  – fixing reference pages without changing how vignettes already render
+  ([\#107](https://github.com/pedroliman/neuralsbi/issues/107))
+  ([\#136](https://github.com/pedroliman/neuralsbi/issues/136)).
+- **[`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md)’s
+  truth markers are grey and dashed instead of a solid saturated red,
+  and its panels now share a consistent axis range per parameter.** The
+  reference-value lines and cross marker used `colour = "firebrick"`;
+  they’re now `"grey30"`, thinner, and dashed, so they read as an
+  overlay rather than competing with the density fill. Separately, when
+  `limits` isn’t supplied, `lower_fn`/`diag_fn` each built an
+  independent
+  [`ggplot()`](https://ggplot2.tidyverse.org/reference/ggplot.html)
+  object per panel, and
+  [`ggdensity::geom_hdr()`](https://jamesotto852.github.io/ggdensity/reference/geom_hdr.html)/[`ggplot2::geom_density()`](https://ggplot2.tidyverse.org/reference/geom_density.html)
+  estimate their density grid per panel, so a parameter’s drawn range
+  could disagree between its diagonal panel and its off-diagonal panels,
+  or between panels in the same row/column.
+  [`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md)
+  now defaults `limits` to each parameter’s own data range (padded 5%,
+  matching ggplot2’s own default scale expansion) and applies it through
+  the same
+  [`coord_cartesian()`](https://ggplot2.tidyverse.org/reference/coord_cartesian.html)
+  path the explicit-`limits` argument already used, so every panel for a
+  given parameter agrees
+  ([\#107](https://github.com/pedroliman/neuralsbi/issues/107))
+  ([\#136](https://github.com/pedroliman/neuralsbi/issues/136)).
+
 ## neuralsbi 0.5.12
 
 - [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) no

@@ -11,7 +11,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
@@ -77,7 +78,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,13 +133,11 @@
     
     
 <p><code><a href="../reference/npe.html">npe()</a></code> approximates the posterior with a conditional
-density estimator: a model of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | x)</annotation></semantics></math>
-trained on simulated
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo>,</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\theta, x)</annotation></semantics></math>
-pairs. The <code>density_estimator</code> argument picks which one. The
-choice matters most when the posterior is far from Gaussian, so that is
-the case we use here.</p>
+density estimator: a model of <span class="math inline">p(\theta |
+x)</span> trained on simulated <span class="math inline">(\theta,
+x)</span> pairs. The <code>density_estimator</code> argument picks which
+one. The choice matters most when the posterior is far from Gaussian, so
+that is the case we use here.</p>
 <div class="section level2">
 <h2 id="the-four-estimators">The four estimators<a class="anchor" aria-label="anchor" href="#the-four-estimators"></a>
 </h2>
@@ -148,11 +147,9 @@ It is exact when the posterior is Gaussian in the parameters, which
 makes it both a fast baseline and a way to check that the neural
 estimators are behaving.</p>
 <p><code>"mdn"</code> is a mixture density network. A small neural
-network maps
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-to the weights, means and covariances of a Gaussian mixture. Mixtures
-represent several modes and a good deal of skew, and they train
-quickly.</p>
+network maps <span class="math inline">x</span> to the weights, means
+and covariances of a Gaussian mixture. Mixtures represent several modes
+and a good deal of skew, and they train quickly.</p>
 <p><code>"maf"</code>, the package default, is a masked autoregressive
 flow (<a href="https://doi.org/10.48550/arXiv.1705.07057" class="external-link">Papamakarios
 et al., 2017</a>). It builds the density from a sequence of invertible

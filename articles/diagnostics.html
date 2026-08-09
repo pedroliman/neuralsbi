@@ -11,7 +11,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
@@ -77,7 +78,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -157,16 +158,10 @@ an analytic posterior we can compare against at the end.</p>
 </h2>
 <p>Simulation-based calibration (SBC) checks the posterior on average
 over the prior, and it needs no reference posterior to compare against.
-Draw
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-from the prior, simulate
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-from it, then rank that known
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-among posterior draws given
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>.
-A calibrated posterior puts the truth anywhere in the ranking with equal
-probability, so the ranks come out uniform.</p>
+Draw <span class="math inline">\theta</span> from the prior, simulate
+<span class="math inline">x</span> from it, then rank that known <span class="math inline">\theta</span> among posterior draws given <span class="math inline">x</span>. A calibrated posterior puts the truth
+anywhere in the ranking with equal probability, so the ranks come out
+uniform.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">task</span><span class="op">$</span><span class="va">simulator</span>, n_sbc <span class="op">=</span> <span class="fl">100</span>, n_posterior_samples <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>           seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -197,9 +192,8 @@ fix it.</li>
 <div class="section level2">
 <h2 id="expected-coverage">Expected coverage<a class="anchor" aria-label="anchor" href="#expected-coverage"></a>
 </h2>
-<p>The same ranks give a coverage curve. How often does the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>%
-credible interval actually contain the truth?</p>
+<p>The same ranks give a coverage curve. How often does the <span class="math inline">p</span>% credible interval actually contain the
+truth?</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/expected_coverage.html">expected_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    nominal param1 param2 param3 param4 param5 param6 param7 param8 param9</span></span>
@@ -296,9 +290,8 @@ plot of chunk unnamed-chunk-6
 </p>
 </div>
 <p>If the observation falls in the tails of the predictive distribution,
-either the fit is poor for this
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-or the simulator cannot reproduce the data at any parameter value. The
+either the fit is poor for this <span class="math inline">x</span> or
+the simulator cannot reproduce the data at any parameter value. The
 second is model misspecification, and no calibration check will tell you
 about it.</p>
 </div>

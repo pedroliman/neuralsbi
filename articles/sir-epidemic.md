@@ -10,16 +10,15 @@ spirit as `neuralsbi`. The two packages differ in what they do next, and
 here we put them on the same problem to see whether their posteriors
 agree.
 
-The problem is a stochastic SIR epidemic. A population of size $`N`$
-splits into Susceptible, Infected and Recovered. The contact rate
-$`\beta`$ drives new infections, and the recovery rate $`\gamma`$ drives
-recoveries. We infer $`\beta`$ and $`\gamma`$ from a single noisy
-incidence curve. Infections and recoveries are random events rather than
-a smooth ODE, so there is no tractable likelihood for the observed
-curve.
+The problem is a stochastic SIR epidemic. A population of size N splits
+into Susceptible, Infected and Recovered. The contact rate \beta drives
+new infections, and the recovery rate \gamma drives recoveries. We infer
+\beta and \gamma from a single noisy incidence curve. Infections and
+recoveries are random events rather than a smooth ODE, so there is no
+tractable likelihood for the observed curve.
 
-A note on notation: SBI writes the observed data as $`x`$, the role
-regression gives to $`y`$. Here $`x`$ is the reported-case time series.
+A note on notation: SBI writes the observed data as x, the role
+regression gives to y. Here x is the reported-case time series.
 
 ## The model, written twice
 
@@ -131,9 +130,9 @@ this one outbreak: a different curve means running the sampler again.
 
 `neuralsbi` never evaluates a measurement density. It only needs to draw
 from the model, so we write the same dynamics as a simulator: one pair
-$`(\beta, \gamma)`$ in, one reported incidence curve of length 20 out.
-The prior names the two parameters after the simulator’s arguments, so
-each one arrives by name.
+(\beta, \gamma) in, one reported incidence curve of length 20 out. The
+prior names the two parameters after the simulator’s arguments, so each
+one arrives by name.
 
 ``` r
 
@@ -161,10 +160,10 @@ sir_simulator <- function(Beta, gamma) {
 ```
 
 Neural posterior estimation trains a conditional density estimator
-$`q_\phi(\theta | x)`$ on simulated $`(\theta, x)`$ pairs, then
-conditions it on the observed curve. Training is amortized: one fit
-works for any incidence curve, not just this one. A mixture density
-network suits this smooth, single-mode posterior.
+q\_\phi(\theta \| x) on simulated (\theta, x) pairs, then conditions it
+on the observed curve. Training is amortized: one fit works for any
+incidence curve, not just this one. A mixture density network suits this
+smooth, single-mode posterior.
 
 ``` r
 
@@ -223,10 +222,10 @@ c2st(as.matrix(draws_npe), as.matrix(post_pomp), seed = 1)$accuracy
 #> [1] 0.7270909
 ```
 
-Both clouds lie along the same $`\beta`$ and $`\gamma`$ ridge. The two
-rates trade off because the data mostly pin down their ratio
-$`R_0 = \beta/\gamma`$, the same ridge the package README runs into on a
-different SIR model.
+Both clouds lie along the same \beta and \gamma ridge. The two rates
+trade off because the data mostly pin down their ratio R_0 =
+\beta/\gamma, the same ridge the package README runs into on a different
+SIR model.
 
 At 0.73 the C2ST is well above 0.5, and the plot shows why: the
 `neuralsbi` cloud is a little broader. `pomp`’s particle filter uses the
@@ -236,9 +235,9 @@ this data set supports. NPE gets only simulations, and at an
 tighten it toward `pomp`.
 
 Is that extra width honest or a bug? Simulation-based calibration
-answers that without a reference posterior. Draw $`\theta`$ from the
-prior, simulate, and rank the truth among the posterior draws.
-Calibrated posteriors give uniform ranks.
+answers that without a reference posterior. Draw \theta from the prior,
+simulate, and rank the truth among the posterior draws. Calibrated
+posteriors give uniform ranks.
 
 ``` r
 

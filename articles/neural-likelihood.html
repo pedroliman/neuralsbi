@@ -11,7 +11,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
-<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
@@ -77,7 +78,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -141,50 +142,35 @@
 <p><code><a href="../reference/npe.html">npe()</a></code> learns the posterior directly. That is the right
 default, and most of this package’s documentation is about it. This
 article is about the case where it is the wrong default.</p>
-<p>Suppose your data are
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-independent measurements of the same underlying parameter: 200 assay
-readings, 500 trial outcomes, a month of daily counts. An NPE fit takes
-a fixed-length
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-and returns
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">p(\theta | x)</annotation></semantics></math>,
-and that length is decided when the network is trained. Collect 300
-measurements instead of 200 and the fit no longer applies. You retrain,
-or you compress the data into a few summary statistics and accept
-whatever they throw away.</p>
+<p>Suppose your data are <span class="math inline">n</span> independent
+measurements of the same underlying parameter: 200 assay readings, 500
+trial outcomes, a month of daily counts. An NPE fit takes a fixed-length
+<span class="math inline">x</span> and returns <span class="math inline">p(\theta | x)</span>, and that length is decided
+when the network is trained. Collect 300 measurements instead of 200 and
+the fit no longer applies. You retrain, or you compress the data into a
+few summary statistics and accept whatever they throw away.</p>
 <p><code><a href="../reference/nle.html">nle()</a></code> learns the likelihood of a single observation,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(x | \theta)</annotation></semantics></math>.
-Independent observations multiply, so their log-likelihoods add:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><mi>p</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>x</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mrow><mi mathvariant="normal">log</mi><mo>⁡</mo></mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">\log p(x_1, \ldots, x_n | \theta) = \sum_{i=1}^{n} \log q_\phi(x_i | \theta).</annotation></semantics></math></p>
+<span class="math inline">q_\phi(x | \theta)</span>. Independent
+observations multiply, so their log-likelihoods add:</p>
+<p><span class="math display">\log p(x_1, \ldots, x_n | \theta) =
+\sum_{i=1}^{n} \log q_\phi(x_i | \theta).</span></p>
 <p>Train once, then condition on however many observations you happen to
-have. The price is that the posterior is no longer a forward pass:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(x | \theta)</annotation></semantics></math>
-is a likelihood, and turning it into a posterior takes MCMC.</p>
+have. The price is that the posterior is no longer a forward pass: <span class="math inline">q_\phi(x | \theta)</span> is a likelihood, and
+turning it into a posterior takes MCMC.</p>
 <div class="section level2">
 <h2 id="a-model-whose-likelihood-you-cannot-write-down">A model whose likelihood you cannot write down<a class="anchor" aria-label="anchor" href="#a-model-whose-likelihood-you-cannot-write-down"></a>
 </h2>
 <p>The g-and-k distribution is the standard test case for this
 situation, and a good one, because the awkwardness is real rather than
 contrived. It is defined by its quantile function:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Q</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>A</mi><mo>+</mo><mi>B</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>+</mo><mi>c</mi><mspace width="0.167em"></mspace><mfrac><mrow><mn>1</mn><mo>−</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>g</mi><mi>z</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup></mrow><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>g</mi><mi>z</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo></mrow></msup></mrow></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><msup><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>+</mo><mi>z</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><msup><mo stretchy="false" form="postfix">)</mo><mn>2</mn></msup><mo stretchy="true" form="postfix">)</mo></mrow><mi>k</mi></msup><mi>z</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><mi>z</mi><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msup><mi mathvariant="normal">Φ</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">Q(u) = A + B\left(1 + c\,\frac{1 - e^{-g z(u)}}{1 + e^{-g z(u)}}\right)\left(1 + z(u)^2\right)^{k} z(u), \qquad z(u) = \Phi^{-1}(u).</annotation></semantics></math></p>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>
-set location and scale,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-controls skewness,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-controls tail weight, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
-is conventionally fixed at 0.8. Simulating takes one line: draw a
-uniform and push it through
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Q</mi><annotation encoding="application/x-tex">Q</annotation></semantics></math>.
-Writing down the density is another matter, because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Q</mi><annotation encoding="application/x-tex">Q</annotation></semantics></math>
-has no closed-form inverse. So the model simulates freely and resists
-ordinary maximum likelihood, which is exactly the situation SBI is
-for.</p>
+<p><span class="math display">Q(u) = A + B\left(1 + c\,\frac{1 - e^{-g
+z(u)}}{1 + e^{-g z(u)}}\right)\left(1 + z(u)^2\right)^{k} z(u), \qquad
+z(u) = \Phi^{-1}(u).</span></p>
+<p><span class="math inline">A</span> and <span class="math inline">B</span> set location and scale, <span class="math inline">g</span> controls skewness, <span class="math inline">k</span> controls tail weight, and <span class="math inline">c</span> is conventionally fixed at 0.8. Simulating
+takes one line: draw a uniform and push it through <span class="math inline">Q</span>. Writing down the density is another
+matter, because <span class="math inline">Q</span> has no closed-form
+inverse. So the model simulates freely and resists ordinary maximum
+likelihood, which is exactly the situation SBI is for.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rgk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">u</span>, <span class="va">A</span>, <span class="va">B</span>, <span class="va">g</span>, <span class="va">k</span>, <span class="va">c</span> <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="va">u</span><span class="op">)</span></span>
@@ -203,15 +189,11 @@ for.</p>
 <div class="section level2">
 <h2 id="look-at-the-prior-predictive-first">Look at the prior predictive first<a class="anchor" aria-label="anchor" href="#look-at-the-prior-predictive-first"></a>
 </h2>
-<p>The ABC literature usually puts
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>10</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 10]</annotation></semantics></math>
-along with the other two. Both are bad ideas here, and simulating from
-the prior says so before any training happens. Start with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>:</p>
+<p>The ABC literature usually puts <span class="math inline">g</span>
+and <span class="math inline">k</span> on <span class="math inline">[0,
+10]</span> along with the other two. Both are bad ideas here, and
+simulating from the prior says so before any training happens. Start
+with <span class="math inline">k</span>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">0</span>, B <span class="op">=</span> <span class="fl">0</span>, g <span class="op">=</span> <span class="fl">0</span>, k <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>                      high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>A <span class="op">=</span> <span class="fl">10</span>, B <span class="op">=</span> <span class="fl">10</span>, g <span class="op">=</span> <span class="fl">10</span>, k <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
@@ -224,29 +206,18 @@ the prior says so before any training happens. Start with
 <span>         <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.99</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        50%        99%       100% </span></span>
 <span><span class="co">#&gt;   6.040338  78.061778 379.911342</span></span></code></pre></div>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-is the tail-weight parameter and it enters as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msup><mi>z</mi><mn>2</mn></msup><msup><mo stretchy="false" form="postfix">)</mo><mi>k</mi></msup></mrow><annotation encoding="application/x-tex">(1 + z^2)^k</annotation></semantics></math>,
-so
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>=</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">k = 10</annotation></semantics></math>
-puts simulated values around
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mn>10</mn><mn>12</mn></msup><annotation encoding="application/x-tex">10^{12}</annotation></semantics></math>
-while
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">k = 0.5</annotation></semantics></math>
-puts them around 10. A density estimator standardizes its training data
-once, and no single scale covers twelve orders of magnitude. The fit
-would be dominated by a handful of enormous draws and useless everywhere
-else. Restricting
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-to
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>
-keeps the tails interesting and the problem well posed.</p>
-<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-fails the opposite way. It enters through
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>g</mi><mi>z</mi></mrow></msup><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mi>−</mi><mi>g</mi><mi>z</mi></mrow></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(1 - e^{-gz}) / (1 + e^{-gz})</annotation></semantics></math>,
-which is a tanh in disguise and saturates. Once
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-is past about 4 the simulated distribution stops changing.</p>
+<p><span class="math inline">k</span> is the tail-weight parameter and
+it enters as <span class="math inline">(1 + z^2)^k</span>, so <span class="math inline">k = 10</span> puts simulated values around <span class="math inline">10^{12}</span> while <span class="math inline">k =
+0.5</span> puts them around 10. A density estimator standardizes its
+training data once, and no single scale covers twelve orders of
+magnitude. The fit would be dominated by a handful of enormous draws and
+useless everywhere else. Restricting <span class="math inline">k</span>
+to <span class="math inline">[0, 1]</span> keeps the tails interesting
+and the problem well posed.</p>
+<p><span class="math inline">g</span> fails the opposite way. It enters
+through <span class="math inline">(1 - e^{-gz}) / (1 + e^{-gz})</span>,
+which is a tanh in disguise and saturates. Once <span class="math inline">g</span> is past about 4 the simulated distribution
+stops changing.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">u</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200000</span><span class="op">)</span></span>
 <span><span class="va">shift</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">6</span>, <span class="fl">10</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">g</span><span class="op">)</span></span>
@@ -258,18 +229,13 @@ is past about 4 the simulated distribution stops changing.</p>
 <span><span class="co">#&gt; 25% 2.396 2.568 2.685 2.755 2.814 2.835</span></span>
 <span><span class="co">#&gt; 75% 4.023 4.194 4.310 4.380 4.440 4.461</span></span>
 <span><span class="co">#&gt; 90% 6.007 6.491 6.660 6.710 6.729 6.730</span></span></code></pre></div>
-<p>The quantiles move by 0.7 per unit of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-between 1 and 2, and by 0.005 per unit between 6 and 10. A prior of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>10</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 10]</annotation></semantics></math>
+<p>The quantiles move by 0.7 per unit of <span class="math inline">g</span> between 1 and 2, and by 0.005 per unit
+between 6 and 10. A prior of <span class="math inline">[0, 10]</span>
 therefore spends more than half its range on values the data cannot tell
 apart, and the estimator spends its capacity learning that nothing
 happens there. Worse, a likelihood that is flat in a parameter over most
 of its prior has a surrogate that is only nearly flat. The difference
-between the two is noise, and the sampler will chase it. Putting
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>4</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 4]</annotation></semantics></math>
+between the two is noise, and the sampler will chase it. Putting <span class="math inline">g</span> on <span class="math inline">[0, 4]</span>
 keeps the part that is identified.</p>
 <p>This is worth doing before every fit, not just this one. A prior
 predictive check costs a few seconds of simulation. It catches the class
@@ -280,10 +246,9 @@ as chains that will not mix.</p>
 <h2 id="train-the-surrogate-likelihood">Train the surrogate likelihood<a class="anchor" aria-label="anchor" href="#train-the-surrogate-likelihood"></a>
 </h2>
 <p><code><a href="../reference/nle.html">nle()</a></code> takes the same prior and simulator
-<code><a href="../reference/npe.html">npe()</a></code> would, and trains
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="prefix">|</mo><mi>θ</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(x | \theta)</annotation></semantics></math>
-in place of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>ϕ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>θ</mi><mo stretchy="false" form="prefix">|</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">q_\phi(\theta | x)</annotation></semantics></math>.</p>
+<code><a href="../reference/npe.html">npe()</a></code> would, and trains <span class="math inline">q_\phi(x
+| \theta)</span> in place of <span class="math inline">q_\phi(\theta |
+x)</span>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/nle.html">nle</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">simulator</span>, n_simulations <span class="op">=</span> <span class="fl">50000</span>,</span>
 <span>           density_estimator <span class="op">=</span> <span class="st">"mdn"</span>, n_components <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -302,23 +267,11 @@ a single scalar. That is a modest budget by SBI standards, and it goes
 further here than it would for NPE. The target is a one-dimensional
 conditional density rather than a four-dimensional posterior.</p>
 <p>The estimator is an MDN rather than the package default MAF, and the
-reason is worth knowing. An MDN maps
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>
-to the parameters of a Gaussian mixture over
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>,
-and the network never sees
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-at all. So for
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-independent observations the network runs once and all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-densities are read off the same mixture. A flow’s transforms depend on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-as well as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>θ</mi><annotation encoding="application/x-tex">\theta</annotation></semantics></math>,
-so it has to run
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-times.</p>
+reason is worth knowing. An MDN maps <span class="math inline">\theta</span> to the parameters of a Gaussian
+mixture over <span class="math inline">x</span>, and the network never
+sees <span class="math inline">x</span> at all. So for <span class="math inline">n</span> independent observations the network runs
+once and all <span class="math inline">n</span> densities are read off
+the same mixture. A flow’s transforms depend on <span class="math inline">x</span> as well as <span class="math inline">\theta</span>, so it has to run <span class="math inline">n</span> times.</p>
 <p>On this model at 5000 observations a slice step costs about seven
 times more with a MAF than with the MDN. That is the difference between
 a posterior that takes a minute and one that takes ten.
@@ -349,8 +302,7 @@ the passes.</p>
 <p>Those 500 observations give a log-likelihood of -783 at the true
 parameters. <code>loglik</code> is an ordinary R function from here on,
 which is why the profile above is a plain <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply()</a></code> over a
-grid of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>.</p>
+grid of <span class="math inline">A</span>.</p>
 </div>
 <div class="section level2">
 <h2 id="one-fit-any-number-of-observations">One fit, any number of observations<a class="anchor" aria-label="anchor" href="#one-fit-any-number-of-observations"></a>
@@ -378,9 +330,7 @@ observations, 500, or 5000, with no retraining:</p>
 <span><span class="co">#&gt; n = 500  0.07774668 0.08218999 0.34056131 0.04239406</span></span>
 <span><span class="co">#&gt; n = 5000 0.01988842 0.02115621 0.06665379 0.01171446</span></span></code></pre></div>
 <p>The posterior contracts as the observations accumulate, which is what
-it should do and what an NPE fit trained at one
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-cannot show you.</p>
+it should do and what an NPE fit trained at one <span class="math inline">n</span> cannot show you.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"grey60"</span>, <span class="st">"steelblue"</span>, <span class="st">"firebrick"</span><span class="op">)</span></span>
 <span></span>
@@ -416,49 +366,35 @@ posterior itself is quoting, its own standard deviations:</p>
 <span><span class="co">#&gt; n = 5000 3.4 3.5 -4.6  9.0</span></span></code></pre></div>
 <p>The absolute errors are small and mostly getting smaller. The numbers
 above are not, because the posterior narrows faster than the error does.
-By
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>5000</mn></mrow><annotation encoding="application/x-tex">n = 5000</annotation></semantics></math>
-every parameter lands several standard deviations from the truth, and
-says so with complete confidence.</p>
+By <span class="math inline">n = 5000</span> every parameter lands
+several standard deviations from the truth, and says so with complete
+confidence.</p>
 <p>This is not a bug and it is not the sampler. Stan’s NUTS, further
 down, lands on the same posterior from an entirely different algorithm.
 It is the arithmetic of the sum this whole article is built on.</p>
-<p>Suppose the surrogate is wrong by an average of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>
-nats per observation in some direction of parameter space. The
-log-likelihood of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-observations is off by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>ϵ</mi></mrow><annotation encoding="application/x-tex">n\epsilon</annotation></semantics></math>,
-while the information the data carry about the parameter also grows like
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>.
-The two race each other, and which one wins is set by how good the
-surrogate is, not by how much data you have. Past some
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>,
-more observations buy you a tighter posterior around the surrogate’s
-error rather than around the truth.</p>
-<p>There is no
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-at which this becomes visible on its own: at every one of them the
-posterior looks like a perfectly ordinary posterior. What gives it away
-is the comparison across
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>.
-An interval that keeps shrinking without ever moving toward anything is
-an interval converging on the estimator rather than on the parameter.
-The fix is a better surrogate, not more data: more simulations, a more
-flexible estimator, or a narrower prior that lets the estimator spend
-its capacity where the data are.</p>
+<p>Suppose the surrogate is wrong by an average of <span class="math inline">\epsilon</span> nats per observation in some
+direction of parameter space. The log-likelihood of <span class="math inline">n</span> observations is off by <span class="math inline">n\epsilon</span>, while the information the data
+carry about the parameter also grows like <span class="math inline">n</span>. The two race each other, and which one
+wins is set by how good the surrogate is, not by how much data you have.
+Past some <span class="math inline">n</span>, more observations buy you
+a tighter posterior around the surrogate’s error rather than around the
+truth.</p>
+<p>There is no <span class="math inline">n</span> at which this becomes
+visible on its own: at every one of them the posterior looks like a
+perfectly ordinary posterior. What gives it away is the comparison
+across <span class="math inline">n</span>. An interval that keeps
+shrinking without ever moving toward anything is an interval converging
+on the estimator rather than on the parameter. The fix is a better
+surrogate, not more data: more simulations, a more flexible estimator,
+or a narrower prior that lets the estimator spend its capacity where the
+data are.</p>
 <p>Simulation-based calibration, below, sees only half of this. Each SBC
-trial draws a single observation, so it validates the estimator at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">n = 1</annotation></semantics></math>.
-It can tell you the surrogate is already miscalibrated there, and
-further down it does exactly that for
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>.
-What it cannot tell you is how far that error travels once it is summed
-over five thousand observations, because it never sums anything.
-Comparing posteriors across
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>,
-as we just did, is the check that sees the second half.</p>
+trial draws a single observation, so it validates the estimator at <span class="math inline">n = 1</span>. It can tell you the surrogate is
+already miscalibrated there, and further down it does exactly that for
+<span class="math inline">k</span>. What it cannot tell you is how far
+that error travels once it is summed over five thousand observations,
+because it never sums anything. Comparing posteriors across <span class="math inline">n</span>, as we just did, is the check that sees the
+second half.</p>
 </div>
 </div>
 <div class="section level2">
@@ -497,16 +433,14 @@ proportionally and buys <code>rhat</code> directly. Raise
 are moving but slowly. Each of those on this model takes the run from
 seconds to minutes, not minutes to hours.</p>
 <p>The fourth lever is the model, and it is the one that matters most.
-The
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-we did not narrow, back at the start, gave chains that never mixed at
-all. A flat direction in the likelihood is not a sampling problem you
-can spend your way out of. And when <code>rhat</code> lands where it
-does here rather than at 1.5, the useful question is whether an
-independent sampler agrees. NUTS on the same likelihood, below, lands on
-the same posterior, which says the remaining <code>rhat</code> is a
-chain too short to prove itself rather than chains in different
-places.</p>
+The <span class="math inline">g</span> we did not narrow, back at the
+start, gave chains that never mixed at all. A flat direction in the
+likelihood is not a sampling problem you can spend your way out of. And
+when <code>rhat</code> lands where it does here rather than at 1.5, the
+useful question is whether an independent sampler agrees. NUTS on the
+same likelihood, below, lands on the same posterior, which says the
+remaining <code>rhat</code> is a chain too short to prove itself rather
+than chains in different places.</p>
 </div>
 <div class="section level2">
 <h2 id="handing-the-likelihood-to-stan">Handing the likelihood to Stan<a class="anchor" aria-label="anchor" href="#handing-the-likelihood-to-stan"></a>
@@ -704,12 +638,11 @@ move this posterior and not the other.</p>
 </h3>
 <p>Because <code>nsbi_log_lik_sum_lpdf</code> is now an ordinary Stan
 function, and the model around it is yours to write. Suppose the 500
-measurements came from 10 laboratories, each with its own
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>,
-drawn from a shared population distribution. That is a hierarchical
-model, and no posterior estimator can give it to you: NPE learns one
-conditional, and a hierarchy is a different one. Here it is a few lines
-around the same generated function.</p>
+measurements came from 10 laboratories, each with its own <span class="math inline">A</span>, drawn from a shared population
+distribution. That is a hierarchical model, and no posterior estimator
+can give it to you: NPE learns one conditional, and a hierarchy is a
+different one. Here it is a few lines around the same generated
+function.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode stan"><code class="sourceCode stan"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="kw">functions</span> {</span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="co">#include nsbi_log_lik.stan     // written by write_stan_model(fit, ..., model = FALSE)</span></span>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>}</span>
@@ -765,43 +698,32 @@ costs real time and the trial count stays modest.</p>
 <p><img src="figures/neural-likelihood-sbc-1.svg" alt="plot of chunk sbc"><img src="figures/neural-likelihood-sbc-2.svg" alt="plot of chunk sbc"><img src="figures/neural-likelihood-sbc-3.svg" alt="plot of chunk sbc"><img src="figures/neural-likelihood-sbc-4.svg" alt="plot of chunk sbc"></p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
-<p>Read the p-values, not the fact that the check ran.
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>B</mi><annotation encoding="application/x-tex">B</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-come back consistent with uniform ranks.
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-does not, and at 60 trials that is not a borderline call. The
-surrogate’s conditional density is miscalibrated in the tail-weight
-parameter, which is the same
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-whose posterior drifted furthest from the truth in the table above. The
-two diagnostics are pointing at one thing.</p>
-<p>That is worth pausing on, because SBC here is running at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">n = 1</annotation></semantics></math>:
-every trial draws a single observation. So the miscalibration it found
-is present in the surrogate before any i.i.d. summing amplifies it, and
-the amplification section above was too generous in saying SBC cannot
-see this class of problem. It sees what is wrong at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">n = 1</annotation></semantics></math>;
-what it cannot see is how much worse that gets at
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>5000</mn></mrow><annotation encoding="application/x-tex">n = 5000</annotation></semantics></math>.
-Both checks are worth running, and neither substitutes for the
-other.</p>
+<p>Read the p-values, not the fact that the check ran. <span class="math inline">A</span>, <span class="math inline">B</span> and
+<span class="math inline">g</span> come back consistent with uniform
+ranks. <span class="math inline">k</span> does not, and at 60 trials
+that is not a borderline call. The surrogate’s conditional density is
+miscalibrated in the tail-weight parameter, which is the same <span class="math inline">k</span> whose posterior drifted furthest from the
+truth in the table above. The two diagnostics are pointing at one
+thing.</p>
+<p>That is worth pausing on, because SBC here is running at <span class="math inline">n = 1</span>: every trial draws a single
+observation. So the miscalibration it found is present in the surrogate
+before any i.i.d. summing amplifies it, and the amplification section
+above was too generous in saying SBC cannot see this class of problem.
+It sees what is wrong at <span class="math inline">n = 1</span>; what it
+cannot see is how much worse that gets at <span class="math inline">n =
+5000</span>. Both checks are worth running, and neither substitutes for
+the other.</p>
 <p>Sixty trials against roughly ten rank bins is thin enough that R
 warns the chi-squared approximation may be off, and those warnings are
 suppressed in the chunk above. Take the large p-values as “nothing
 detected at this sample size” rather than as evidence of calibration,
 and raise <code>n_sbc</code> before believing either direction too hard.
-The
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
-failure is not the marginal case: its p-value rounds to zero.</p>
+The <span class="math inline">k</span> failure is not the marginal case:
+its p-value rounds to zero.</p>
 <p>A posterior predictive check is the only diagnostic that looks at the
 observation you actually have. Read the panel below as one question:
-does the observed
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
-look like a typical draw from the predictive?</p>
+does the observed <span class="math inline">y</span> look like a typical
+draw from the predictive?</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior_predictive.html">posterior_predictive</a></span><span class="op">(</span><span class="va">post_500</span>, <span class="va">simulator</span>, n <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_posterior_predictive.html">plot_posterior_predictive</a></span><span class="op">(</span><span class="va">pred</span>, <span class="va">x_all</span><span class="op">[</span><span class="fl">1</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>

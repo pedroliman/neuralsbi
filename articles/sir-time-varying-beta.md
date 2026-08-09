@@ -1,9 +1,9 @@
 # Amortized R(t): behavioral SIR models across all US states
 
 [`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md)
-fits a stochastic SIR outbreak with a constant contact rate $`\beta`$.
-Real epidemics do not hold still, and the interesting question is why
-they move.
+fits a stochastic SIR outbreak with a constant contact rate \beta. Real
+epidemics do not hold still, and the interesting question is why they
+move.
 
 Here we fit three competing models of that mechanism to daily reported
 cases in all 50 US states plus Washington, DC. The window is the first
@@ -12,17 +12,16 @@ the models are behavioral-feedback models from [Gozzi, Perra and
 Vespignani (2025, *PNAS* 122(24)
 e2421993122)](https://doi.org/10.1073/pnas.2421993122), where
 transmission responds to what people see happening around them. The
-third is a phenomenological baseline that lets $`\beta`$ take a
-different constant value in each of a few time regimes.
+third is a phenomenological baseline that lets \beta take a different
+constant value in each of a few time regimes.
 
 We train each model once, over its whole prior, and then condition it on
 51 state curves for the price of a forward pass each. That is what makes
 a three-model, 51-jurisdiction comparison affordable.
 
-Along the way we recover the effective reproduction number
-$`R_e(t) = \beta(t) S(t) / (N \gamma)`$. Two pieces of `neuralsbi`
-machinery matter for time-series inference, and both appear below. One
-is an
+Along the way we recover the effective reproduction number R_e(t) =
+\beta(t) S(t) / (N \gamma). Two pieces of `neuralsbi` machinery matter
+for time-series inference, and both appear below. One is an
 [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
 summary network. The other is a prior predictive check that catches
 model error no amount of training will fix.
@@ -84,10 +83,10 @@ range(pop)
 
 Daily counts carry a strong weekday cycle that no SIR model generates.
 We take a centred 7-day mean as the summary statistic, and we apply the
-same smoother to simulated data. The network then learns
-$`p(\theta | s(x))`$ for a summary $`s`$ that means the same thing on
-both sides. Smoothing only the observation would make simulated and
-observed data incomparable.
+same smoother to simulated data. The network then learns p(\theta \|
+s(x)) for a summary s that means the same thing on both sides. Smoothing
+only the observation would make simulated and observed data
+incomparable.
 
 ``` r
 
@@ -143,38 +142,37 @@ so the process is genuinely stochastic and there is no tractable
 likelihood. Three modeling choices are shared by all three, and they are
 worth stating before the mechanisms that differ.
 
-The epidemic starts when it starts. We infer the arrival day $`t_0`$ and
-the seed size $`I_0`$ rather than fixing them. Seeding every state on
-2020-01-21 is wrong about the world: Washington was seeded in January,
-and West Virginia reported nothing until March 17.
+The epidemic starts when it starts. We infer the arrival day t_0 and the
+seed size I_0 rather than fixing them. Seeding every state on 2020-01-21
+is wrong about the world: Washington was seeded in January, and West
+Virginia reported nothing until March 17.
 
 It is also wrong about the simulation. A supercritical branching process
 from two individuals has a large extinction probability, and conditional
 on survival its takeoff time wanders by weeks. Replicate simulations at
-a fixed $`\theta`$ then differ by a factor of several thousand at the
-peak. Inferring $`t_0`$ and $`I_0`$ pins the phase with a parameter
-instead of leaving it to luck.
+a fixed \theta then differ by a factor of several thousand at the peak.
+Inferring t_0 and I_0 pins the phase with a parameter instead of leaving
+it to luck.
 
 Ascertainment is pinned by seroprevalence. Reported cases identify the
-product $`\rho \times \text{incidence}`$, not either factor: a small
+product \rho \times \text{incidence}, not either factor: a small
 well-ascertained epidemic and an enormous barely-ascertained one give
-the same curve. Left free, the fit takes the second branch, driving
-$`\rho`$ into the low thousandths and the attack rate toward 1. Serology
-settles it from outside the case data.
+the same curve. Left free, the fit takes the second branch, driving \rho
+into the low thousandths and the attack rate toward 1. Serology settles
+it from outside the case data.
 
 CDC’s commercial-lab study put spring-2020 infections at 6 to 24 times
 reported cases ([Havers et al. 2020, *JAMA Internal
 Medicine*](https://doi.org/10.1001/jamainternmed.2020.4130)), which puts
-$`\rho`$ between about 0.04 and 0.17. We encode a logit-normal prior
-centered at 0.10 with 95% mass in $`[0.05, 0.19]`$.
+\rho between about 0.04 and 0.17. We encode a logit-normal prior
+centered at 0.10 with 95% mass in \[0.05, 0.19\].
 
-Population size $`N`$ is a known covariate. The simulator draws $`N`$
-across real US state sizes during training and the estimator conditions
-on $`\log N`$, so one network generalizes from Wyoming to California.
-The recovery rate $`\gamma`$ is fixed: with only case counts the
-generation interval is not identifiable from $`\beta(t)`$, so we set
-$`1/\gamma = 7`$ days ([Li et al. 2020,
-*NEJM*](https://doi.org/10.1056/NEJMoa2001316)).
+Population size N is a known covariate. The simulator draws N across
+real US state sizes during training and the estimator conditions on \log
+N, so one network generalizes from Wyoming to California. The recovery
+rate \gamma is fixed: with only case counts the generation interval is
+not identifiable from \beta(t), so we set 1/\gamma = 7 days ([Li et
+al. 2020, *NEJM*](https://doi.org/10.1056/NEJMoa2001316)).
 
 ``` r
 
@@ -190,9 +188,9 @@ t_grid <- seq_len(days)
 PER <- 1e5                      # behavioral drivers are per 100,000 people
 ```
 
-### Model 1: piecewise-constant $`\beta(t)`$, the phenomenological baseline
+### Model 1: piecewise-constant \beta(t), the phenomenological baseline
 
-This model makes no claim about why transmission changed. $`\log\beta`$
+This model makes no claim about why transmission changed. \log\beta
 takes a different constant value in each of a few time regimes, blending
 over a roughly one-week logistic transition. It is a flexible curve fit,
 and it is the arm the other two have to beat.
@@ -268,8 +266,8 @@ regime’s duration and take breakpoints as cumulative sums, so regimes
 tile the window in order for every draw and cannot cross. Only 3 of the
 4 durations are free (the simulator rescales them to span the window),
 and parameterizing the free directions directly keeps every coordinate
-of $`\theta`$ identified. An unidentified coordinate would return its
-prior and look perfectly calibrated under SBC, so this matters.
+of \theta identified. An unidentified coordinate would return its prior
+and look perfectly calibrated under SBC, so this matters.
 
 ``` r
 
@@ -300,26 +298,25 @@ SBI wants.
 EFB, the effective force of infection, divides the force of infection by
 a factor that grows with recent and cumulative case experience:
 
-``` math
-\lambda(t) = \beta_0 \frac{I(t)}{N} \cdot \frac{1}{1 + \xi\, c(t-1) + \psi \sum_{t' < t} c(t')}.
-```
+\lambda(t) = \beta_0 \frac{I(t)}{N} \cdot \frac{1}{1 + \xi\\ c(t-1) +
+\psi \sum\_{t' \< t} c(t')}.
 
-Here $`\xi`$ is reactivity to current news and $`\psi`$ is reactivity to
+Here \xi is reactivity to current news and \psi is reactivity to
 accumulated experience. Six parameters.
 
 CBF, compartmental behavioral feedback, moves susceptibles into a
-risk-averse compartment $`S_B`$ at rate
-$`\beta_B (1 - e^{-g\,c(t-1)})`$. They drift back at rate $`\mu_B`$, and
-while they are in $`S_B`$ their force of infection is scaled by
-$`r < 1`$. Behavior is a state that takes time to build and to decay
-rather than an instantaneous function of the news. Eight parameters.
+risk-averse compartment S_B at rate \beta_B (1 - e^{-g\\c(t-1)}). They
+drift back at rate \mu_B, and while they are in S_B their force of
+infection is scaled by r \< 1. Behavior is a state that takes time to
+build and to decay rather than an instantaneous function of the news.
+Eight parameters.
 
 We adapt the paper in two ways. It drives behavior off reported deaths,
 and we drive it off reported cases, the only outcome this model
-generates. We also express the driver $`c(t)`$ per 100,000 people rather
+generates. We also express the driver c(t) per 100,000 people rather
 than as a raw count. One amortized posterior serves both Wyoming and
 California, and behavior responds to per-capita risk. With a raw-count
-driver no single $`\xi`$ could fit both.
+driver no single \xi could fit both.
 
 ``` r
 
@@ -483,16 +480,16 @@ diagnostics below use them.
 the per-parameter-set path, while the predictive checks call the
 simulators directly on a block of posterior draws.
 
-Every parameter is unconstrained on $`\mathbb{R}`$. The log and logit
+Every parameter is unconstrained on \mathbb{R}. The log and logit
 transforms mean a single Gaussian prior with no truncated support, so
 the posterior needs no rejection sampling for leakage. Naming each
 `mean` vector carries the names through every posterior draw, SBC result
 and plot.
 
-$`\beta_0`$ means different things across families. In the piecewise
-model it is an effective rate per regime, centred on $`R = 2`$. In the
-behavioral models it is the intrinsic transmission rate, centred on
-$`R_0 = 3`$, with the decline explained mechanistically.
+\beta_0 means different things across families. In the piecewise model
+it is an effective rate per regime, centred on R = 2. In the behavioral
+models it is the intrinsic transmission rate, centred on R_0 = 3, with
+the decline explained mechanistically.
 
 ``` r
 
@@ -522,14 +519,14 @@ prior_cbf <- prior_normal(
 
 ## Summarizing 120 days with an embedding network
 
-The observation is 121 numbers: $`\log N`$ plus a 120-day case curve.
+The observation is 121 numbers: \log N plus a 120-day case curve.
 Passing that straight into the flow wastes capacity, and choosing
 summary statistics by hand throws away whatever the chosen set missed.
 [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
 learns the compression instead. A small MLP maps the standardized
 121-dimensional observation to `output_dim` features, trained jointly
 with the density estimator, so the features are optimized for one thing:
-predicting $`\theta`$. The estimator then conditions on those features
+predicting \theta. The estimator then conditions on those features
 rather than on the raw curve.
 
 ``` r
@@ -551,12 +548,11 @@ embed
 
 ## Check the prior predictive before training anything
 
-Amortized NPE learns $`p(\theta | x)`$ over the prior predictive
-distribution of $`x`$. Data the prior predictive essentially never
-produces fall where the network is extrapolating, and its posterior
-there cannot be trusted. So before spending a simulation budget, we
-check that each model can produce curves like the ones we mean to
-condition on.
+Amortized NPE learns p(\theta \| x) over the prior predictive
+distribution of x. Data the prior predictive essentially never produces
+fall where the network is extrapolating, and its posterior there cannot
+be trusted. So before spending a simulation budget, we check that each
+model can produce curves like the ones we mean to condition on.
 
 ``` r
 
@@ -581,12 +577,12 @@ round(sapply(sims, function(m) sapply(c("New York", "Michigan", "West Virginia")
 ```
 
 The number to watch is the fraction of prior draws landing within a
-factor of $`e`$ of the observed curve. It is small, because the priors
-are deliberately vague, but it is not a rounding error, so the
-observations land inside the bulk of each prior predictive. Fixing the
-seeding day at day 1 fails this check. West Virginia’s seven empty weeks
-could then only come from a sub-threshold contact rate, which usually
-goes extinct and drops the observed curve out of the band.
+factor of e of the observed curve. It is small, because the priors are
+deliberately vague, but it is not a rounding error, so the observations
+land inside the bulk of each prior predictive. Fixing the seeding day at
+day 1 fails this check. West Virginia’s seven empty weeks could then
+only come from a sub-threshold contact rate, which usually goes extinct
+and drops the observed curve out of the band.
 
 ``` r
 
@@ -763,7 +759,7 @@ into `NA`.
 
 The three bands differ strikingly in width: the piecewise band is an
 order of magnitude wider at New York’s peak than either behavioral band.
-That is not overconfidence. Hold $`\theta`$ fixed and re-simulate, and
+That is not overconfidence. Hold \theta fixed and re-simulate, and
 whatever spread survives is the simulator’s own process noise, with no
 posterior uncertainty in it.
 
@@ -790,16 +786,16 @@ round(t(sapply(names(fits), noise_at_fixed_theta)), 4)
 ```
 
 The open-loop piecewise model has roughly an order of magnitude more
-peak-height variability at fixed $`\theta`$ than either behavioral
-model. Feedback damps the demographic noise an open-loop model lets
-through. A behavioral model is therefore intrinsically more predictable
-at the same parameter values, and most of the narrow band is mechanism
-rather than posterior. Whether the remaining width is honest is what the
-SBC histograms above answer, which is why they come first.
+peak-height variability at fixed \theta than either behavioral model.
+Feedback damps the demographic noise an open-loop model lets through. A
+behavioral model is therefore intrinsically more predictable at the same
+parameter values, and most of the narrow band is mechanism rather than
+posterior. Whether the remaining width is honest is what the SBC
+histograms above answer, which is why they come first.
 
 Here is a quantitative score across all 51 states: root-mean-square
 error of the predictive median against the observed curve, on the
-$`\log(1+x)`$ scale the estimator works in.
+\log(1+x) scale the estimator works in.
 
 ``` r
 
@@ -3831,22 +3827,20 @@ scores
 
 The effective reproduction number is
 
-``` math
 R_e(t) = \frac{\beta(t)}{\gamma} \cdot \frac{S(t)}{N},
-```
 
 secondary cases per infection given the susceptibles still available.
-The $`S(t)/N`$ factor is not decoration. In New York a substantial share
-of the population had been infected by mid-May, so $`R_e`$ ends the
-window well below what the transmission rate alone suggests. We compute
-both factors from the simulator’s own state trajectories rather than
-re-deriving $`\beta(t)`$, so the reported quantity and the fitted model
-cannot drift apart.
+The S(t)/N factor is not decoration. In New York a substantial share of
+the population had been infected by mid-May, so R_e ends the window well
+below what the transmission rate alone suggests. We compute both factors
+from the simulator’s own state trajectories rather than re-deriving
+\beta(t), so the reported quantity and the fitted model cannot drift
+apart.
 
-Highlight panels overlay all three models so their $`R_e(t)`$
-trajectories can be compared directly. The heatmap uses whichever model
-scored best, and that is not a fixed choice. All three are close enough
-that the winner can move with the simulation budget.
+Highlight panels overlay all three models so their R_e(t) trajectories
+can be compared directly. The heatmap uses whichever model scored best,
+and that is not a fixed choice. All three are close enough that the
+winner can move with the simulation budget.
 
 ``` r
 
@@ -6275,9 +6269,9 @@ rt_best <- rt_all[rt_all$model == best, ]
 ```
 
 The inferred attack rates are the sanity check on the ascertainment
-prior. Together, $`\rho`$ and the case counts imply how much of each
-state had been infected by 2020-05-19, and we read that off the
-best-scoring model.
+prior. Together, \rho and the case counts imply how much of each state
+had been infected by 2020-05-19, and we read that off the best-scoring
+model.
 
 ``` r
 
@@ -6345,11 +6339,11 @@ US states over the first 120 days.](figures/sir-rt-rt-heatmap-1.png)
 
 plot of chunk rt-heatmap
 
-$`R_e(t)`$ is flat before a state’s inferred introduction, where there
-is no epidemic and nothing to constrain transmission, so the posterior
-stays near the prior. It climbs through early-to-mid March and comes
-back toward and below 1 by mid-to-late April. Timing and magnitude vary
-by state in a way a single national estimate would hide.
+R_e(t) is flat before a state’s inferred introduction, where there is no
+epidemic and nothing to constrain transmission, so the posterior stays
+near the prior. It climbs through early-to-mid March and comes back
+toward and below 1 by mid-to-late April. Timing and magnitude vary by
+state in a way a single national estimate would hide.
 
 ## What this comparison bought
 
@@ -6362,35 +6356,35 @@ cost a forward pass. Three lessons generalize past this data set.
 Do not leave the epidemic’s phase to demographic noise. A branching
 process from a couple of infections, run for four months, has a final
 size spread across orders of magnitude. Its takeoff time wanders by
-weeks. Inferring $`t_0`$ and $`I_0`$ absorbs that, and the recovered
+weeks. Inferring t_0 and I_0 absorbs that, and the recovered
 introduction days are a free check. The posterior puts New York’s near
 March 1 and West Virginia’s in mid-March, matching when those states
 reported their first cases.
 
 Do not let case counts alone set the epidemic’s scale. They identify
-$`\rho \times \text{incidence}`$, and without external information on
-$`\rho`$ the fit slides toward vast, barely-ascertained epidemics.
-Seroprevalence breaks the tie, and it belongs in the prior.
+\rho \times \text{incidence}, and without external information on \rho
+the fit slides toward vast, barely-ascertained epidemics. Seroprevalence
+breaks the tie, and it belongs in the prior.
 
 A mechanism can be cheaper than a curve fit. The piecewise model needs
-10 parameters to bend $`\beta(t)`$ into shape and, having no mechanism,
+10 parameters to bend \beta(t) into shape and, having no mechanism,
 reports transmission rates for regimes that ended before the state’s
 epidemic began. The behavioral models get comparable fits from 6 and 8
 parameters and give a physical meaning to each one.
 
 One structural difference between the behavioral models is invisible in
 a first-wave window and decisive outside one. EFB’s denominator contains
-the cumulative case count, which only grows, so its $`\beta(t)`$ is
-monotone non-increasing: it can bend an epidemic down but never let it
-come back. CBF can, because $`\mu_B`$ lets risk-averse individuals drift
-back into the susceptible pool once incidence falls. This is the
-likeliest reason the original study found CBF the better forecaster.
+the cumulative case count, which only grows, so its \beta(t) is monotone
+non-increasing: it can bend an epidemic down but never let it come back.
+CBF can, because \mu_B lets risk-averse individuals drift back into the
+susceptible pool once incidence falls. This is the likeliest reason the
+original study found CBF the better forecaster.
 
-The models carry real simplifications. $`\gamma`$ is fixed, so
+The models carry real simplifications. \gamma is fixed, so
 [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) is
-calibrated conditional on that choice. A single $`\rho`$ stands in for
+calibrated conditional on that choice. A single \rho stands in for
 testing capacity that grew steeply over exactly this window. A
-time-varying $`\rho(t)`$ is the obvious next refinement, at the cost of
+time-varying \rho(t) is the obvious next refinement, at the cost of
 confounding with transmission. Each state gets one introduction, whereas
 states with large international airports saw imported cases for weeks
 first, which is why California fits worst.
