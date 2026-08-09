@@ -119,7 +119,8 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       batch <- 0L
       while (nrow(theta_new) < budgets[r] && batch < max_proposal_batches) {
         batch <- batch + 1L
-        cand <- sample_prior(prior, budgets[r])
+        n_needed <- budgets[r] - nrow(theta_new)
+        cand <- sample_prior(prior, n_needed)
         tried <- tried + nrow(cand)
         keep <- log_prob(post, cand, normalize = FALSE) >= threshold
         theta_new <- rbind(theta_new, cand[keep, , drop = FALSE])

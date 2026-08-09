@@ -161,6 +161,38 @@ test_that("truncation works with a bounded prior", {
   expect_true(all(within_support(prior, draws)))
 })
 
+test_that("npe_sequential's proposal loop requests the shortfall each batch, not the full round budget", {
+  set.seed(60)
+  requested <- integer(0)
+  real_sample_prior <- sample_prior
+  local_mocked_bindings(
+    sample_prior = function(prior, n) {
+      requested[[length(requested) + 1L]] <<- n
+      real_sample_prior(prior, n)
+    }
+  )
+  # a prior much wider than the likelihood, so round 2's truncated proposal
+  # region is narrow enough to need several batches, not exhausting the
+  # default max_proposal_batches
+  prior <- prior_normal(mean = 0, sd = 3)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.3)
+  fit <- npe_sequential(prior, simulator, x_obs = 1.5, n_rounds = 2,
+                        n_simulations = 300, epsilon = 0.3,
+                        density_estimator = "linear_gaussian", seed = 61)
+  expect_equal(fit$rounds[[2]]$n_new, 300L)
+
+  # requested[1] is round 1's single call (no truncation, draws straight from
+  # the prior); requested[2] is round 2's first batch, which still has to ask
+  # for the full budget since nothing has been collected yet
+  expect_gt(length(requested), 2L)   # round 2 needed more than one batch here
+  expect_equal(requested[1:2], c(300L, 300L))
+  # every batch after round 2's first asks only for the still-missing draws,
+  # never the full 300 again, and the shortfall never grows batch to batch
+  round2_later <- requested[-(1:2)]
+  expect_true(all(round2_later < 300L))
+  expect_true(all(diff(requested[-1]) <= 0))
+})
+
 test_that("npe_sequential checks its counts before the first round", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
