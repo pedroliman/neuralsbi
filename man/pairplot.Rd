@@ -27,7 +27,12 @@ Labels that parse as R syntax (\code{"beta[1]"}, \code{"rho"}) render as their
 plotmath symbol.}
 
 \item{limits}{Optional list (one \code{c(lo, hi)} per parameter, in column
-order) or matrix of per-parameter axis limits.}
+order) or matrix of per-parameter axis limits. Defaults to each
+parameter's own data range (padded 5\%), applied consistently across every
+panel that plots it -- without this, the lower-triangle and diagonal
+panels for the same parameter can each draw a different range, since
+\code{\link[ggdensity:geom_hdr]{ggdensity::geom_hdr()}} and \code{\link[ggplot2:geom_density]{ggplot2::geom_density()}} estimate their
+density grid independently per panel.}
 
 \item{col}{Density-region and marginal-density fill colour.}
 

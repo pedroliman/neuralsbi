@@ -1,3 +1,22 @@
+#' Data range, padded like a default ggplot2 continuous scale
+#'
+#' [pairplot()]'s default axis limits (when the caller does not pass
+#' `limits`) come from this: the raw `range()` of a column, expanded 5% on
+#' each side, matching ggplot2's own default continuous-scale expansion so
+#' the shared range still leaves a little air around the extreme draws. A
+#' constant column (`diff(r) == 0`) would otherwise pad by nothing, so that
+#' case gets a small absolute pad instead.
+#'
+#' @param x Numeric vector.
+#' @return `c(lo, hi)`.
+#' @keywords internal
+pad_range <- function(x) {
+  r <- range(x)
+  pad <- diff(r) * 0.05
+  if (pad == 0) pad <- 0.5
+  c(r[1] - pad, r[2] + pad)
+}
+
 #' Visualize posterior samples
 #'
 #' A pair plot built on [GGally::ggpairs()]: 1-D marginal densities on the
@@ -14,7 +33,12 @@
 #'   Labels that parse as R syntax (`"beta[1]"`, `"rho"`) render as their
 #'   plotmath symbol.
 #' @param limits Optional list (one `c(lo, hi)` per parameter, in column
-#'   order) or matrix of per-parameter axis limits.
+#'   order) or matrix of per-parameter axis limits. Defaults to each
+#'   parameter's own data range (padded 5%), applied consistently across every
+#'   panel that plots it -- without this, the lower-triangle and diagonal
+#'   panels for the same parameter can each draw a different range, since
+#'   [ggdensity::geom_hdr()] and [ggplot2::geom_density()] estimate their
+#'   density grid independently per panel.
 #' @param col Density-region and marginal-density fill colour.
 #' @param alpha Marginal-density fill transparency. The lower-triangle
 #'   highest-density regions shade themselves by probability level (99/95/80/50%)
@@ -35,7 +59,17 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
   df <- as.data.frame(X, check.names = FALSE)
 
   lims <- NULL
-  if (!is.null(limits)) {
+  if (is.null(limits)) {
+    # ggdensity::geom_hdr() and geom_density() each estimate their own 2-D/1-D
+    # density grid per panel, so without an explicit shared range the drawn
+    # extent (and hence the rendered axis limits) can differ panel to panel
+    # even though every panel in a column shares the same underlying
+    # parameter. Default to a per-parameter range from the data itself, with
+    # a 5% pad on each side (ggplot2's own default continuous-scale
+    # expansion), and feed it through the same `lims` machinery the
+    # explicit-`limits` argument already uses below.
+    lims <- stats::setNames(lapply(seq_len(d), function(j) pad_range(X[, j])), labels)
+  } else {
     # One c(lo, hi) per parameter, in column order. A list or matrix of the
     # wrong length used to index past its end and report "subscript out of
     # bounds", which says nothing about the argument or about how many
@@ -74,10 +108,10 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
       ggdensity::geom_hdr(fill = col, ...)
     if (!is.null(truth_df)) {
       p <- p +
-        ggplot2::geom_vline(xintercept = truth_df[[xn]], colour = "firebrick", linewidth = 0.6) +
-        ggplot2::geom_hline(yintercept = truth_df[[yn]], colour = "firebrick", linewidth = 0.6) +
+        ggplot2::geom_vline(xintercept = truth_df[[xn]], colour = "grey30", linewidth = 0.4, linetype = "dashed") +
+        ggplot2::geom_hline(yintercept = truth_df[[yn]], colour = "grey30", linewidth = 0.4, linetype = "dashed") +
         ggplot2::geom_point(data = truth_df, mapping = ggplot2::aes(x = .data[[xn]], y = .data[[yn]]),
-                            colour = "firebrick", shape = 4, size = 2.5, stroke = 1,
+                            colour = "grey30", shape = 4, size = 2, stroke = 1,
                             inherit.aes = FALSE)
     }
     if (!is.null(lims)) p <- p + ggplot2::coord_cartesian(xlim = lims[[xn]], ylim = lims[[yn]])
@@ -88,7 +122,7 @@ pairplot <- function(samples, truth = NULL, labels = NULL, limits = NULL,
     p <- ggplot2::ggplot(data, mapping) +
       ggplot2::geom_density(colour = col, fill = col, alpha = alpha)
     if (!is.null(truth_df)) {
-      p <- p + ggplot2::geom_vline(xintercept = truth_df[[xn]], colour = "firebrick", linewidth = 0.6)
+      p <- p + ggplot2::geom_vline(xintercept = truth_df[[xn]], colour = "grey30", linewidth = 0.4, linetype = "dashed")
     }
     if (!is.null(lims)) p <- p + ggplot2::coord_cartesian(xlim = lims[[xn]])
     p
