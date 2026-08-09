@@ -121,18 +121,8 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
-  theta <- prep$theta
-  x <- prep$x
-  n_dropped <- prep$n_dropped
-  param_names <- prep$param_names
-  x_names <- prep$x_names
-  std_theta <- prep$std_theta
-  std_x <- prep$std_x
-  theta_z <- prep$theta_z
-  x_z <- prep$x_z
-
   de <- fit_density_estimator(
-    density_estimator, theta_z, x_z,
+    density_estimator, prep$theta_z, prep$x_z,
     n_components = n_components, n_transforms = n_transforms,
     hidden = hidden, n_bins = n_bins, tail_bound = tail_bound,
     embedding_net = embedding_net, max_epochs = max_epochs,
@@ -142,24 +132,54 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
     device = device
   )
 
+  new_nsbi_fit(de, prior, prep, "nsbi_npe",
+               list(density_estimator = estimator_label(density_estimator)))
+}
+
+#' Assemble the object an [npe()], [nle()] or [nre()] call returns
+#'
+#' The three differ in the estimator they fit, the class they carry and a field
+#' or two naming the architecture. Everything else -- the fitted estimator, the
+#' prior, the two standardizers, the dimensions, the names, the simulation
+#' counts, the device -- is the same list in the same order, and every consumer
+#' downstream (`save_npe()`, `check_fit_alive()`, `cat_fit_common()`,
+#' `summary()`) reads it by name from all three.
+#'
+#' @param de The fitted estimator. A ratio estimator travels in the same slot
+#'   as a density estimator, since nothing downstream cares which it is until
+#'   it comes time to score a `(theta, x)` pair.
+#' @param prior The prior the simulations were drawn from.
+#' @param prep The list from [prepare_simulations()].
+#' @param class The class to stamp on the result.
+#' @param extra Named list of fields specific to this fit type, inserted before
+#'   `device`.
+#' @keywords internal
+new_nsbi_fit <- function(de, prior, prep, class, extra = list()) {
   structure(
-    list(
+    c(list(
       de = de,
       prior = prior,
-      std_theta = std_theta,
-      std_x = std_x,
+      std_theta = prep$std_theta,
+      std_x = prep$std_x,
       dim_theta = prior$dim,
-      dim_x = ncol(x),
-      param_names = param_names,
-      x_names = x_names,
-      n_simulations = nrow(theta),
-      n_dropped = n_dropped,
-      density_estimator = if (is.character(density_estimator))
-        density_estimator[1] else "custom",
-      device = de$device %||% "cpu"
-    ),
-    class = "nsbi_npe"
+      dim_x = ncol(prep$x),
+      param_names = prep$param_names,
+      x_names = prep$x_names,
+      n_simulations = nrow(prep$theta),
+      n_dropped = prep$n_dropped
+    ), extra, list(device = de$device %||% "cpu")),
+    class = class
   )
+}
+
+#' The name to record for an estimator the caller chose by string
+#'
+#' A caller can also pass their own fitting function, which has no name worth
+#' printing.
+#' @param estimator The `density_estimator` or `classifier` argument.
+#' @keywords internal
+estimator_label <- function(estimator) {
+  if (is.character(estimator)) estimator[1] else "custom"
 }
 
 #' Everything both [npe()] and [nle()] do before touching a density estimator

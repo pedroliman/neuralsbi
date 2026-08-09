@@ -128,14 +128,6 @@ stan_data <- function(fit, x_obs = NULL) {
   out
 }
 
-# ---- weight packing -------------------------------------------------------
-
-#' Flatten the trained weights into one vector, recording where each block sits
-#'
-#' Stan has no closures and no struct types, so everything the generated
-#' function needs arrives as a single `vector w` and is sliced back out inside.
-#' Matrices are flattened column-major, which is exactly what Stan's
-#' `to_matrix()` expects, so the two sides agree without any transposition.
 #' Only an [nle()] fit has something to export
 #'
 #' The generated Stan code is a transpiled *density*: [nle()]'s
@@ -155,6 +147,14 @@ check_exportable_fit <- function(fit) {
        paste(class(fit), collapse = "/"), ".", call. = FALSE)
 }
 
+# ---- weight packing -------------------------------------------------------
+
+#' Flatten the trained weights into one vector, recording where each block sits
+#'
+#' Stan has no closures and no struct types, so everything the generated
+#' function needs arrives as a single `vector w` and is sliced back out inside.
+#' Matrices are flattened column-major, which is exactly what Stan's
+#' `to_matrix()` expects, so the two sides agree without any transposition.
 #' @keywords internal
 stan_pack <- function(fit) {
   p <- new.env(parent = emptyenv())

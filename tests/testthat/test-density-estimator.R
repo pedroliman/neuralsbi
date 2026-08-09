@@ -33,8 +33,11 @@ test_that("fit_linear_gaussian() recovers the coefficients of a noiseless model"
   de <- fit_linear_gaussian(theta, x, ridge = 1e-10)
 
   expect_lt(max(abs(unname(de$B) - B_true)), 1e-6)
-  # Nothing is left over, so the ridge is all that keeps Sigma positive definite.
-  expect_equal(diag(de$Sigma), rep(1e-10, 2), tolerance = 1e-4)
+  # Nothing is left over, so the ridge is all that keeps Sigma positive
+  # definite. It is measured against each target column's own variance, since
+  # the residuals have no scale left to measure against.
+  expect_equal(diag(de$Sigma), 1e-10 * apply(theta, 2, stats::var),
+               tolerance = 1e-4)
   expect_true(all(is.finite(de$chol)))
 })
 
@@ -62,9 +65,33 @@ test_that("the residual covariance divides by the residual degrees of freedom", 
 
   X <- cbind(1, x)
   resid <- theta - X %*% de$B
-  expect_equal(de$Sigma, crossprod(resid) / (n - ncol(X)) + ridge)
+  # The ridge is relative to the target's variance, not an absolute constant.
+  bump <- ridge * apply(theta, 2, stats::var)
+  expect_equal(de$Sigma, crossprod(resid) / (n - ncol(X)) + bump)
   # n is the maximum-likelihood denominator, and at n = 30 the two differ.
-  expect_false(isTRUE(all.equal(de$Sigma, crossprod(resid) / n + ridge)))
+  expect_false(isTRUE(all.equal(de$Sigma, crossprod(resid) / n + bump)))
+})
+
+test_that("the ridge does not depend on the scale of the data", {
+  # An absolute ridge is only negligible when the data happen to be O(1). This
+  # target has variance 2.5e-07, four orders below the 1e-06 default, and used
+  # to come back five times too wide -- which is what nle(standardize = FALSE)
+  # on a simulator reporting small numbers was getting.
+  set.seed(24)
+  n <- 4000
+  x <- matrix(stats::rnorm(n * 2), ncol = 2)
+  clean <- cbind(x[, 1] - 0.5 * x[, 2])
+
+  for (scale in c(1e-3, 1, 1e3)) {
+    theta <- (clean + stats::rnorm(n, sd = 0.5)) * scale
+    de <- fit_linear_gaussian(theta, x)
+    # The truth is 0.25 * scale^2; the tolerance is the sampling error in a
+    # variance from n draws, which is what is left once the ridge is scale-free.
+    expect_equal(as.numeric(de$Sigma) / scale^2, 0.25, tolerance = 0.05,
+                 label = paste("scale", scale))
+    expect_equal(as.numeric(de$B[2, 1]) / scale, 1, tolerance = 0.05,
+                 label = paste("scale", scale))
+  }
 })
 
 test_that("the denominator floors at 1 when the design is wider than it is tall", {

@@ -41,6 +41,34 @@ log_lik <- function(fit, theta, x, ...) UseMethod("log_lik")
 #' @export
 log_lik.nsbi_nle <- function(fit, theta, x, sum_iid = TRUE,
                              max_batch = 1e5, ...) {
+  # de_log_prob() works in standardized x space; the Jacobian puts it back in
+  # the units the simulator returned.
+  surrogate_score(fit, theta, x, sum_iid, max_batch,
+                  matrix_fn = de_log_lik_iid, evaluator = de_iid_evaluator,
+                  log_jac = TRUE)
+}
+
+#' The body [log_lik()] and [log_ratio()] share
+#'
+#' Both take a `theta` and an `x` whose rows are independent observations,
+#' check them, standardize them, and either return the `n_theta x n_obs` matrix
+#' or its row sums. The two differ in the same two places
+#' [surrogate_potential()] does: which pair of functions scores the estimator,
+#' and whether the standardization of `x` needs a change-of-variables term. A
+#' density reported in the simulator's units needs one; a ratio does not, since
+#' the Jacobian cancels between its numerator and denominator.
+#'
+#' @param fit An `nsbi_nle` or `nsbi_nre` fit.
+#' @param theta,x,sum_iid,max_batch As in [log_lik()].
+#' @param matrix_fn `function(de, x_z, theta_z, max_batch)` giving the
+#'   `n_theta x n_obs` matrix in standardized space.
+#' @param evaluator `function(de, x_z, max_batch)` returning a `function(theta)`
+#'   giving that matrix's row sums without building it.
+#' @param log_jac Apply the `x` standardizer's log-Jacobian, once per
+#'   observation.
+#' @keywords internal
+surrogate_score <- function(fit, theta, x, sum_iid, max_batch,
+                            matrix_fn, evaluator, log_jac) {
   check_fit_alive(fit)
   # Both arguments are matrices with a required width, so a bare "expected 2
   # columns" would leave the user guessing which one is wrong.
@@ -51,15 +79,14 @@ log_lik.nsbi_nle <- function(fit, theta, x, sum_iid = TRUE,
   theta_z <- apply_standardizer(fit$std_theta, theta)
   x_z <- apply_standardizer(fit$std_x, x)
 
-  # de_log_prob works in standardized x space; the Jacobian puts it back in the
-  # units the simulator returned. It is constant, so the sum over observations
-  # picks it up once per observation.
-  jac <- standardizer_log_jac(fit$std_x)
+  # The Jacobian is constant, so the sum over observations picks it up once per
+  # observation and the per-observation matrix picks it up in every cell.
+  jac <- if (isTRUE(log_jac)) standardizer_log_jac(fit$std_x) else 0
 
   if (!isTRUE(sum_iid)) {
-    return(de_log_lik_iid(fit$de, x_z, theta_z, max_batch = max_batch) + jac)
+    return(matrix_fn(fit$de, x_z, theta_z, max_batch = max_batch) + jac)
   }
-  ev <- de_iid_evaluator(fit$de, x_z, max_batch = max_batch)
+  ev <- evaluator(fit$de, x_z, max_batch = max_batch)
   stats::setNames(ev(theta_z) + nrow(x_z) * jac, rownames(theta))
 }
 

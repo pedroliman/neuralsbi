@@ -142,27 +142,13 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
     device = device
   )
 
-  structure(
-    list(
-      # `de` rather than `re`: everything that carries a fitted estimator
-      # around -- save_npe(), check_fit_alive(), cat_fit_common(), summary() --
-      # reads fit$de, and a ratio estimator travels exactly the same way.
-      de = re,
-      prior = prior,
-      std_theta = prep$std_theta,
-      std_x = prep$std_x,
-      dim_theta = prior$dim,
-      dim_x = ncol(prep$x),
-      param_names = prep$param_names,
-      x_names = prep$x_names,
-      n_simulations = nrow(prep$theta),
-      n_dropped = prep$n_dropped,
-      classifier = if (is.character(classifier)) classifier[1] else "custom",
-      num_atoms = num_atoms,
-      device = re$device %||% "cpu"
-    ),
-    class = "nsbi_nre"
-  )
+  # The fitted classifier goes in the `de` slot: everything that carries a
+  # fitted estimator around -- save_npe(), check_fit_alive(), cat_fit_common(),
+  # summary() -- reads fit$de, and a ratio estimator travels exactly the same
+  # way.
+  new_nsbi_fit(re, prior, prep, "nsbi_nre",
+               list(classifier = estimator_label(classifier),
+                    num_atoms = num_atoms))
 }
 
 #' @export
@@ -238,6 +224,18 @@ nre_iid_evaluator <- function(de, x, max_batch = 1e5) {
   iid_evaluator(de, x, max_batch, nre_score)
 }
 
+#' The `n_theta x n_obs` matrix of log ratios
+#'
+#' [de_log_lik_iid()]'s counterpart for a ratio estimator, and like
+#' [nre_iid_evaluator()] a plain function rather than a generic: there is no
+#' fast path for any classifier to specialize.
+#' @inheritParams de_log_lik_iid
+#' @return An `n_theta x n_obs` matrix of log ratios.
+#' @keywords internal
+nre_log_ratio_iid <- function(de, x, theta, max_batch = 1e5) {
+  iid_matrix(de, x, theta, max_batch, nre_score)
+}
+
 #' @export
 surrogate_potential.nsbi_nre <- function(fit, x_obs, max_batch = 1e5) {
   # log_jac = FALSE: the standardization Jacobian cancels between the two
@@ -292,21 +290,11 @@ log_ratio <- function(fit, theta, x, ...) UseMethod("log_ratio")
 #' @export
 log_ratio.nsbi_nre <- function(fit, theta, x, sum_iid = TRUE,
                                max_batch = 1e5, ...) {
-  check_fit_alive(fit)
-  # Both arguments are matrices with a required width, so a bare "expected 1
-  # column" would leave the user guessing which one is wrong.
-  theta <- check_matrix(theta, fit$dim_theta, "theta",
-                        "one parameter per column")
-  x <- check_matrix(x, fit$dim_x, "x", "one row per independent observation")
-
-  theta_z <- apply_standardizer(fit$std_theta, theta)
-  x_z <- apply_standardizer(fit$std_x, x)
-
-  if (!isTRUE(sum_iid)) {
-    return(iid_matrix(fit$de, x_z, theta_z, max_batch, nre_score))
-  }
-  ev <- nre_iid_evaluator(fit$de, x_z, max_batch = max_batch)
-  stats::setNames(ev(theta_z), rownames(theta))
+  # log_jac = FALSE: the standardization Jacobian cancels between the two
+  # densities in the ratio. See ?nre.
+  surrogate_score(fit, theta, x, sum_iid, max_batch,
+                  matrix_fn = nre_log_ratio_iid, evaluator = nre_iid_evaluator,
+                  log_jac = FALSE)
 }
 
 # ---- neural classifiers ----------------------------------------------------
