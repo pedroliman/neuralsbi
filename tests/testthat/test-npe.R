@@ -80,6 +80,29 @@ test_that("npe() checks architecture arguments", {
                "`tail_bound` must be a single positive number")
 })
 
+test_that("npe() rejects n_bins = 1 before touching torch (#137)", {
+  # nsf_made_module()'s forward splits a K-bin parameter tensor into K widths,
+  # K heights and K - 1 interior derivatives; K = 1 leaves nothing for the
+  # last block and used to reach an out-of-bounds torch index on the first
+  # forward pass instead of a clean argument error. check_architecture() runs
+  # before any network is built, so this is exercised with the torch-free
+  # linear_gaussian estimator and needs no torch install to catch a
+  # regression.
+  expect_error(npe(toy_prior(), toy_simulator, n_simulations = 100,
+                   density_estimator = "linear_gaussian", n_bins = 1),
+               "`n_bins` must be a single whole number of at least 2")
+})
+
+test_that("check_architecture() requires n_bins >= 2, the NSF minimum", {
+  expect_error(check_architecture(n_components = 10L, n_transforms = 5L,
+                                  hidden = c(50L, 50L), n_bins = 1L,
+                                  tail_bound = 3),
+               "`n_bins` must be")
+  expect_true(check_architecture(n_components = 10L, n_transforms = 5L,
+                                 hidden = c(50L, 50L), n_bins = 2L,
+                                 tail_bound = 3))
+})
+
 test_that("npe() names the prior when it is not one", {
   expect_error(npe(list(dim = 1), toy_simulator, n_simulations = 100,
                    density_estimator = "linear_gaussian"),
