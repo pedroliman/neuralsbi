@@ -299,9 +299,9 @@ mcmc_diagnostics <- function(chains) {
 #' A partially scored run is reported from the parameters that did get a
 #' number, with a count of the ones that did not.
 #'
-#' When `d` carries an `n_evals` attribute -- `slice_sample_nle()` sets one,
-#' since it is the cost of the run the adapted slice width is trying to keep
-#' down (see [nsbi_mcmc]) -- it is appended to the summary. A `"stan"`
+#' When `d` carries an `n_evals` attribute -- [slice_sample_surrogate()] sets
+#' one, since it is the cost of the run the adapted slice width is trying to
+#' keep down (see [nsbi_mcmc]) -- it is appended to the summary. A `"stan"`
 #' sampler's diagnostics have no such concept and print without it.
 #'
 #' @param d The data frame from [mcmc_diagnostics()].

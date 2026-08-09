@@ -28,4 +28,14 @@ train_restarts(
 Split out so \code{train_conditional_de()} can wrap the whole loop -- all
 restarts, one progress bar -- in a progress-reporting context.
 }
+\details{
+\code{device} here is still the raw, unresolved keyword \code{train_conditional_de()}
+was given (\code{"cpu"}, \code{"cuda"}, \code{"mps"}, \code{"gpu"} or \code{"auto"}); resolving it to
+an actual, available device needs \code{torch} loaded (see \code{resolve_device()}),
+and this is the first point that is guaranteed true -- \code{require_torch()} is
+the line above. Doing it here rather than earlier in
+\code{train_conditional_de()} keeps \code{\link[=check_train_controls]{check_train_controls()}} (which needs no
+torch at all) running first, so a bad \code{batch_size} is still reported before
+an unavailable device is.
+}
 \keyword{internal}

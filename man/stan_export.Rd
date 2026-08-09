@@ -86,6 +86,10 @@ them against \code{\link[=log_lik]{log_lik()}}.
 \code{"mdn"}, \code{"maf"} and \code{"linear_gaussian"}. \code{"nsf"} is not exported -- its
 rational-quadratic spline transform would be a large and fragile block of
 generated Stan. Refit with \code{"maf"} if you need a flow.
+
+\code{\link[=nre]{nre()}} fits are not exported at all. What gets transpiled here is a
+density; a ratio estimator holds a classifier instead, and there is no
+\code{p(x | theta)} in it to write out.
 }
 
 \examples{

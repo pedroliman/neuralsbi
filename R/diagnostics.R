@@ -10,13 +10,14 @@
 #' @name diagnostics
 NULL
 
-#' Accept either kind of fit, and say which ones exist when neither matches
+#' Accept any kind of fit, and say which ones exist when none matches
 #' @keywords internal
 check_inference_fit <- function(fit) {
-  if (inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle")) {
+  if (inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle") ||
+      inherits(fit, "nsbi_nre")) {
     return(invisible(TRUE))
   }
-  stop("Expected a fit from npe() or nle(), not an object of class ",
+  stop("Expected a fit from npe(), nle() or nre(), not an object of class ",
        paste(class(fit), collapse = "/"), ".", call. = FALSE)
 }
 
@@ -53,7 +54,7 @@ diagnostic_draws <- function(post, n, trial) {
 #' place: `prior` exists to be overridden (see their docs), and a prior of the
 #' wrong width would otherwise reach `sweep()`/z-scoring downstream and
 #' silently recycle against the fit's width.
-#' @param fit An `nsbi_npe` or `nsbi_nle` fit.
+#' @param fit An `nsbi_npe`, `nsbi_nle` or `nsbi_nre` fit.
 #' @param simulator The simulator used for inference.
 #' @param prior The prior to draw true parameters from.
 #' @param n Number of trials to draw.
@@ -91,7 +92,7 @@ sbc_draws <- function(fit, simulator, prior, n, sim_args, what) {
 #' `progressr::with_progress()`, so `on.exit()` would attach to the promise's
 #' forcing frame and close the bar before the loop starts (see
 #' `run_simulator()` in R/parallel.R).
-#' @param fit An `nsbi_npe` or `nsbi_nle` fit.
+#' @param fit An `nsbi_npe`, `nsbi_nle` or `nsbi_nre` fit.
 #' @param x_all Matrix of simulated data, one row (one trial) per observation.
 #' @param n_posterior_samples Posterior draws requested per trial.
 #' @param label Progress-bar label.
@@ -133,9 +134,10 @@ for_each_trial <- function(fit, x_all, n_posterior_samples, label, f, ...) {
 #' `n_posterior_samples`, so a short draw would be scored on a scale it was
 #' never drawn on and would read as miscalibration.
 #'
-#' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
-#'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
-#'   with a small `n_sbc` and raise it once the cost is known.
+#' @param fit An `nsbi_npe` fit from [npe()], an `nsbi_nle` fit from [nle()],
+#'   or an `nsbi_nre` fit from [nre()]. With an NLE or NRE fit every trial is a
+#'   separate MCMC run, so start with a small `n_sbc` and raise it once the
+#'   cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior to draw the true parameters from (defaults to
@@ -150,7 +152,7 @@ for_each_trial <- function(fit, x_all, n_posterior_samples, label, f, ...) {
 #'   call; see [nsbi_simulator].
 #' @param seed Optional seed.
 #' @param ... Passed to [posterior()], which is how the MCMC controls
-#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
+#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE or NRE fit.
 #' @details The `n_sbc` simulations run across `future` workers when a plan is
 #'   set (see [nsbi_parallel]); the ranking loop that follows calls the trained
 #'   network and always runs locally.
@@ -268,9 +270,10 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #' `n_posterior_samples` draws is an error, for the same reason as in [sbc()]:
 #' a trial scored on a different number of draws is not comparable to the rest.
 #'
-#' @param fit An `nsbi_npe` fit from [npe()], or an `nsbi_nle` fit from
-#'   [nle()]. With an NLE fit every trial is a separate MCMC run, so start
-#'   with a small `n_tarp` and raise it once the cost is known.
+#' @param fit An `nsbi_npe` fit from [npe()], an `nsbi_nle` fit from [nle()],
+#'   or an `nsbi_nre` fit from [nre()]. With an NLE or NRE fit every trial is a
+#'   separate MCMC run, so start with a small `n_tarp` and raise it once the
+#'   cost is known.
 #' @param simulator The simulator used for inference; called once per trial
 #'   (see [nsbi_simulator]).
 #' @param prior The prior to draw the true parameters from, and the reference
@@ -280,7 +283,7 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #'   parameters it was not calibrated against. It must cover the same
 #'   parameters as the fit.
 #' @param ... Passed to [posterior()], which is how the MCMC controls
-#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE fit.
+#'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE or NRE fit.
 #' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
 #' @param n_posterior_samples Posterior draws per trial.
 #' @param references How to draw reference points: `"uniform"` (default, uniform

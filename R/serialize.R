@@ -23,9 +23,9 @@
 #' into a later one as long as the estimator's architecture has not changed;
 #' `load_npe()` reports the version that wrote the file when the rebuild fails.
 #'
-#' `save_nle()` and `load_nle()` are aliases; both pairs handle either kind of
-#' fit, and the two names exist only so calling code reads the way the fit was
-#' made.
+#' `save_nle()`/`load_nle()` and `save_nre()`/`load_nre()` are aliases; every
+#' pair handles every kind of fit, and the extra names exist only so calling
+#' code reads the way the fit was made.
 #'
 #' A fit trained with `device = "cuda"`/`"mps"` (see [npe()]/[nle()]) always
 #' reloads onto CPU, never onto the original device: `torch::torch_load()`
@@ -34,8 +34,8 @@
 #' `torch::with_device()` in effect. Move it back with
 #' `fit2$de$net$to(device = "cuda")` if you want the reloaded fit on a GPU.
 #'
-#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], or an
-#'   `nsbi_nle` object from [nle()].
+#' @param fit An `nsbi_npe` object from [npe()] or [npe_sequential()], an
+#'   `nsbi_nle` object from [nle()], or an `nsbi_nre` object from [nre()].
 #' @param path File to write to (or read from). The convention is `.rds`.
 #'   `load_npe()` says so when there is no such file.
 #' @return `save_npe()` returns `path` invisibly. `load_npe()` returns the fit.
@@ -58,7 +58,8 @@ NULL
 #' @rdname save_npe
 #' @export
 save_npe <- function(fit, path) {
-  stopifnot(inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle"))
+  stopifnot(inherits(fit, "nsbi_npe") || inherits(fit, "nsbi_nle") ||
+              inherits(fit, "nsbi_nre"))
   check_path(path)
   net <- fit$de$net
   weights <- NULL
@@ -141,6 +142,14 @@ save_nle <- function(fit, path) save_npe(fit, path)
 #' @export
 load_nle <- function(path) load_npe(path)
 
+#' @rdname save_npe
+#' @export
+save_nre <- function(fit, path) save_npe(fit, path)
+
+#' @rdname save_npe
+#' @export
+load_nre <- function(path) load_npe(path)
+
 #' The fit without its torch module, for R-level serialization
 #' @keywords internal
 de_drop_net <- function(fit) {
@@ -165,6 +174,8 @@ de_rebuild_net <- function(de) {
     nsbi_de_nsf = nsf_module(de$dim_x, de$dim_theta, de$n_transforms,
                              de$hidden, de$n_bins, de$tail_bound,
                              de$embedding)(),
+    nsbi_re_net = nre_module(de$dim_x, de$dim_theta, de$classifier, de$hidden,
+                             de$n_blocks, de$embedding)(),
     stop(sprintf("Cannot rebuild a network for estimator class '%s'.", kind),
          call. = FALSE)
   )

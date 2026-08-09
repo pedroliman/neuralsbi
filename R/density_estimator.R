@@ -157,14 +157,23 @@ fit_linear_gaussian <- function(theta, x, ridge = 1e-6, verbose = FALSE) {
   n <- nrow(theta)
   p <- ncol(theta)
   X <- cbind(1, x)                       # design matrix with intercept
-  # Ridge-regularized least squares: B = (X'X + rI)^-1 X'theta
+  # Ridge-regularized least squares: B = (X'X + rI)^-1 X'theta. The ridge is
+  # relative to each column's own scale rather than an absolute 1e-6. On
+  # standardized data the two are the same thing, but this estimator also runs
+  # under standardize = FALSE, and there an absolute ridge is only small if the
+  # data happen to be O(1): a target column with variance 2.5e-07 had 1e-06
+  # added to it and came back five times too wide.
   XtX <- crossprod(X)
-  diag(XtX) <- diag(XtX) + ridge
+  diag(XtX) <- diag(XtX) + ridge * ridge_scale(diag(XtX))
   B <- solve(XtX, crossprod(X, theta))   # (q+1) x p
   mu <- X %*% B
   resid <- theta - mu
   Sigma <- crossprod(resid) / max(n - ncol(X), 1)
-  diag(Sigma) <- diag(Sigma) + ridge
+  # The target's own variance, not the residual's, is what sets the scale here.
+  # A noiseless model leaves no residual at all, and that is exactly when the
+  # ridge has to supply a positive diagonal for chol() to work with.
+  diag(Sigma) <- diag(Sigma) +
+    ridge * ridge_scale(apply(theta, 2, stats::var))
   verbose_cat(verbose, sprintf(
     "[linear_gaussian] fitted on %d sims, %d params, %d data dims\n",
     n, p, ncol(x)))
@@ -173,6 +182,29 @@ fit_linear_gaussian <- function(theta, x, ridge = 1e-6, verbose = FALSE) {
          dim_x = ncol(x)),
     class = c("nsbi_de_lingauss", "nsbi_de")
   )
+}
+
+#' Per-column scale a relative ridge is measured against
+#'
+#' One scale per column, so a matrix whose columns span several orders of
+#' magnitude is regularized by the same *relative* amount everywhere. A single
+#' shared scale -- the mean or the maximum of the diagonal -- is no better than
+#' an absolute ridge here: it is set by the largest column and swamps the
+#' smallest.
+#'
+#' A column with no scale of its own borrows the largest one that has any, and
+#' if nothing does the scale is 1 and the ridge acts absolutely. That is the
+#' degenerate case the ridge exists for, and it is the only one where the
+#' answer is arbitrary.
+#'
+#' @param scale Per-column scales, in the units of the matrix diagonal.
+#' @keywords internal
+ridge_scale <- function(scale) {
+  s <- as.numeric(scale)
+  bad <- !is.finite(s) | s <= 0
+  if (all(bad)) return(rep(1, length(s)))
+  s[bad] <- max(s[!bad])
+  s
 }
 
 #' Conditional mean of the linear-Gaussian estimator

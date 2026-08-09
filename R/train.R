@@ -163,11 +163,8 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
 
     for (epoch in seq_len(max_epochs)) {
       net$train()
-      order <- sample.int(n_tr)
-      starts <- seq(1L, n_tr, by = batch_size)
       epoch_loss <- 0
-      for (s in starts) {
-        idx <- order[s:min(s + batch_size - 1L, n_tr)]
+      for (idx in minibatches(sample.int(n_tr), batch_size)) {
         opt$zero_grad()
         lp <- log_prob_fn(net, theta_tr[idx, , drop = FALSE],
                           x_tr[idx, , drop = FALSE])
@@ -229,6 +226,34 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
   }
   list(net = best$net, best_val_loss = best$val, history = best$history,
        device = device)
+}
+
+#' Split a shuffled row order into minibatches
+#'
+#' Stepping through the rows by `batch_size` leaves a short final batch, and a
+#' final batch of *one* row is worse than short. [nre()]'s atomic loss has no
+#' contrast to score a single simulation against, so it returns a constant that
+#' torch did not build and `backward()` errors with "element 0 of tensors does
+#' not require grad"; every other estimator takes a gradient step from one
+#' sample. Those rows join the previous batch instead. It costs one batch of
+#' `batch_size + 1` once an epoch and removes a failure that depends on nothing
+#' but `n_simulations` modulo `batch_size`.
+#'
+#' @param order Row indices, already shuffled.
+#' @param batch_size Rows per batch.
+#' @return A list of index vectors covering `order` in order.
+#' @keywords internal
+minibatches <- function(order, batch_size) {
+  n <- length(order)
+  starts <- seq(1L, n, by = batch_size)
+  ends <- pmin(starts + batch_size - 1L, n)
+  last <- length(starts)
+  if (last > 1L && starts[last] == ends[last]) {
+    ends[last - 1L] <- ends[last]
+    starts <- starts[-last]
+    ends <- ends[-last]
+  }
+  Map(function(s, e) order[s:e], starts, ends)
 }
 
 #' Projected epoch count for the training progress bar

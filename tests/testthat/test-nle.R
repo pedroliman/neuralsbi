@@ -118,6 +118,32 @@ test_that("blocking does not change the answer", {
                log_lik(fit, theta, x, max_batch = 1e5))
 })
 
+test_that("the blocked cross product visits every (theta, x) pair once", {
+  # The check above cannot see a blocking bug: linear_gaussian has its own
+  # de_log_lik_iid() and de_iid_evaluator() methods that score the whole
+  # observation set per parameter and ignore max_batch entirely. cross_iid() is
+  # the path every flow takes, and without torch nothing else in the suite
+  # reaches it. A scorer that encodes which pair it was handed pins the layout
+  # exactly, rather than letting a transposition hide inside a row sum.
+  score <- function(de, x, theta) x[, 1] * 1000 + theta[, 1]
+  n_obs <- 13L
+  n_theta <- 37L
+  x <- matrix(seq_len(n_obs), ncol = 1)
+  theta <- matrix(seq_len(n_theta), ncol = 1)
+  expected <- outer(seq_len(n_theta), seq_len(n_obs),
+                    function(i, j) j * 1000 + i)
+
+  # Batch sizes either side of one observation set, of two, and of the whole
+  # cross product, so the short final block and the single-row block both run.
+  for (max_batch in c(1, 2, 5, 13, 14, 26, 40, 1e5)) {
+    label <- paste("max_batch", max_batch)
+    expect_equal(iid_matrix(NULL, x, theta, max_batch, score), expected,
+                 label = label)
+    ev <- iid_evaluator(NULL, x, max_batch, score)
+    expect_equal(ev(theta), rowSums(expected), label = label)
+  }
+})
+
 test_that("blocking does not change a neural estimator's answer either", {
   # The MDN chunks over observations and the flow over parameters, and both
   # reuse a constant block that a short final block has to truncate. A batch

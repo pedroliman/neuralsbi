@@ -101,24 +101,8 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
     device = device
   )
 
-  structure(
-    list(
-      de = de,
-      prior = prior,
-      std_theta = prep$std_theta,
-      std_x = prep$std_x,
-      dim_theta = prior$dim,
-      dim_x = ncol(prep$x),
-      param_names = prep$param_names,
-      x_names = prep$x_names,
-      n_simulations = nrow(prep$theta),
-      n_dropped = prep$n_dropped,
-      density_estimator = if (is.character(density_estimator))
-        density_estimator[1] else "custom",
-      device = de$device %||% "cpu"
-    ),
-    class = "nsbi_nle"
-  )
+  new_nsbi_fit(de, prior, prep, "nsbi_nle",
+               list(density_estimator = estimator_label(density_estimator)))
 }
 
 #' @export

@@ -49,6 +49,10 @@
 #' rational-quadratic spline transform would be a large and fragile block of
 #' generated Stan. Refit with `"maf"` if you need a flow.
 #'
+#' [nre()] fits are not exported at all. What gets transpiled here is a
+#' density; a ratio estimator holds a classifier instead, and there is no
+#' `p(x | theta)` in it to write out.
+#'
 #' @param fit An `nsbi_nle` object from [nle()].
 #' @param name Prefix for the generated functions.
 #' @param model Generate a complete, runnable model (the default) or only the
@@ -74,7 +78,7 @@ NULL
 #' @rdname stan_export
 #' @export
 stan_code <- function(fit, name = "nsbi_log_lik", model = TRUE) {
-  stopifnot(inherits(fit, "nsbi_nle"))
+  check_exportable_fit(fit)
   check_fit_alive(fit)
   if (!grepl("^[A-Za-z][A-Za-z0-9_]*$", name)) {
     stop("`name` must be a valid Stan identifier.", call. = FALSE)
@@ -99,7 +103,7 @@ write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
 #' @rdname stan_export
 #' @export
 stan_data <- function(fit, x_obs = NULL) {
-  stopifnot(inherits(fit, "nsbi_nle"))
+  check_exportable_fit(fit)
   # Both halves of the export read the weights, so both need a live network.
   # Without this, a fit restored by readRDS() gets the "save with save_npe()"
   # message from stan_code() and a dangling-pointer error from net_param()
@@ -122,6 +126,25 @@ stan_data <- function(fit, x_obs = NULL) {
     out$nsbi_prior_sd <- as.numeric(prior$params$sd)
   }
   out
+}
+
+#' Only an [nle()] fit has something to export
+#'
+#' The generated Stan code is a transpiled *density*: [nle()]'s
+#' \eqn{q_\phi(x \mid \theta)} written out term by term. An [nre()] fit holds a
+#' classifier, not a density, and nothing in `R/stan.R` knows how to write one
+#' out, so the two ways a user reaches this code say so by name rather than
+#' failing on a bare `stopifnot()`.
+#' @keywords internal
+check_exportable_fit <- function(fit) {
+  if (inherits(fit, "nsbi_nle")) return(invisible(TRUE))
+  if (inherits(fit, "nsbi_nre")) {
+    stop("There is no Stan export for a ratio estimator: stan_code() writes ",
+         "out a learned density, and nre() learns a classifier.\nRefit with ",
+         "nle() if you need the surrogate inside a Stan model.", call. = FALSE)
+  }
+  stop("stan_code() needs a fit from nle(), not an object of class ",
+       paste(class(fit), collapse = "/"), ".", call. = FALSE)
 }
 
 # ---- weight packing -------------------------------------------------------

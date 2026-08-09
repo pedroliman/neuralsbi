@@ -1,8 +1,8 @@
-test_that("sbc() rejects an object that is not an npe/nle fit, naming its class", {
+test_that("sbc() rejects an object that is not an npe/nle/nre fit, naming its class", {
   expect_error(
     sbc(structure(list(), class = "lm"), function(theta) theta,
         prior_normal(mean = 0, sd = 1)),
-    "Expected a fit from npe\\(\\) or nle\\(\\), not an object of class lm"
+    "Expected a fit from npe\\(\\), nle\\(\\) or nre\\(\\), not an object of class lm"
   )
 })
 

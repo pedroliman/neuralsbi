@@ -132,7 +132,14 @@ test_that("stan_data() points a dead fit at save_npe(), as stan_code() does", {
 test_that("stan_code() refuses an NPE fit", {
   fit <- npe(stan_prior(), stan_sim, n_simulations = 400,
              density_estimator = "linear_gaussian", seed = 5)
-  expect_error(stan_code(fit), "nsbi_nle")
+  expect_error(stan_code(fit), "needs a fit from nle\\(\\)")
+})
+
+test_that("stan_code() refuses an NRE fit and says why", {
+  fit <- nre(stan_prior(), stan_sim, n_simulations = 400,
+             classifier = "logistic", seed = 5)
+  expect_error(stan_code(fit), "no Stan export for a ratio estimator")
+  expect_error(stan_data(fit), "no Stan export for a ratio estimator")
 })
 
 test_that("the generated Stan agrees with log_lik() for linear_gaussian", {

@@ -7,7 +7,7 @@
 sbc_draws(fit, simulator, prior, n, sim_args, what)
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} or \code{nsbi_nle} fit.}
+\item{fit}{An \code{nsbi_npe}, \code{nsbi_nle} or \code{nsbi_nre} fit.}
 
 \item{simulator}{The simulator used for inference.}
 

@@ -5,6 +5,8 @@
 \alias{load_npe}
 \alias{save_nle}
 \alias{load_nle}
+\alias{save_nre}
+\alias{load_nre}
 \title{Save and reload a fitted model}
 \usage{
 save_npe(fit, path)
@@ -14,10 +16,14 @@ load_npe(path)
 save_nle(fit, path)
 
 load_nle(path)
+
+save_nre(fit, path)
+
+load_nre(path)
 }
 \arguments{
-\item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}, or an
-\code{nsbi_nle} object from \code{\link[=nle]{nle()}}.}
+\item{fit}{An \code{nsbi_npe} object from \code{\link[=npe]{npe()}} or \code{\link[=npe_sequential]{npe_sequential()}}, an
+\code{nsbi_nle} object from \code{\link[=nle]{nle()}}, or an \code{nsbi_nre} object from \code{\link[=nre]{nre()}}.}
 
 \item{path}{File to write to (or read from). The convention is \code{.rds}.
 \code{load_npe()} says so when there is no such file.}
@@ -50,9 +56,9 @@ Weights are saved, not code. A fit saved by one version of \code{neuralsbi} load
 into a later one as long as the estimator's architecture has not changed;
 \code{load_npe()} reports the version that wrote the file when the rebuild fails.
 
-\code{save_nle()} and \code{load_nle()} are aliases; both pairs handle either kind of
-fit, and the two names exist only so calling code reads the way the fit was
-made.
+\code{save_nle()}/\code{load_nle()} and \code{save_nre()}/\code{load_nre()} are aliases; every
+pair handles every kind of fit, and the extra names exist only so calling
+code reads the way the fit was made.
 
 A fit trained with \code{device = "cuda"}/\code{"mps"} (see \code{\link[=npe]{npe()}}/\code{\link[=nle]{nle()}}) always
 reloads onto CPU, never onto the original device: \code{torch::torch_load()}
