@@ -430,8 +430,12 @@ test_that("the logistic ratio does not care what scale the data arrive on", {
 
   expect_equal(centred(log_ratio(raw, theta, x)), centred(truth),
                tolerance = 0.05)
-  expect_equal(log_ratio(raw, theta, x), log_ratio(scaled, theta, x),
-               tolerance = 1e-6)
+  # Up to the offset, and only up to it: the features that depend on `x` alone
+  # difference away during the fit, so their coefficients are whatever the
+  # ridge leaves them and they do not survive a change of units. That is the
+  # part of the log ratio the atomic objective never pins down anyway.
+  expect_equal(centred(log_ratio(raw, theta, x)),
+               centred(log_ratio(scaled, theta, x)), tolerance = 1e-6)
 })
 
 test_that("a final minibatch of one row does not break training", {
@@ -447,4 +451,44 @@ test_that("a final minibatch of one row does not break training", {
              max_epochs = 2L, seed = 1)
 
   expect_true(is.finite(fit$de$best_val_loss))
+})
+
+test_that("the resnet classifier reproduces nflows' ResidualNet exactly", {
+  # `sbi`'s "resnet" classifier is nflows' `ResidualNet`, which is what
+  # nre_module() reimplements. Both were filled with the same deterministic
+  # weights -- w[i, j] = sin(i + 2j + 1) / 3 for a matrix, b[i] = cos(i + 1) / 5
+  # for a bias, zero-indexed -- and evaluated on the same three rows. The
+  # reference below came out of
+  # nflows.nn.nets.ResidualNet(in_features = 4, out_features = 1,
+  #                            hidden_features = 6, num_blocks = 2,
+  #                            activation = relu, dropout_probability = 0,
+  #                            use_batch_norm = False)
+  # under nflows 0.14. Anything that changes the block's shape -- where the
+  # activations sit, which linear layer is zero-initialized, whether the final
+  # layer sees an activation -- moves these numbers.
+  skip_if_no_torch()
+  net <- nre_module(2L, 2L, "resnet", hidden = 6L, n_blocks = 2L)()
+  fill <- function(t) {
+    d <- dim(t)
+    torch::with_no_grad(t$copy_(torch::torch_tensor(
+      if (length(d) == 2L) {
+        sin(matrix(seq_len(d[1]) - 1L, d[1], d[2]) +
+              2 * matrix(rep(seq_len(d[2]) - 1L, each = d[1]), d[1], d[2]) + 1) / 3
+      } else {
+        cos(seq_len(d[1])) / 5
+      },
+      dtype = torch::torch_float())))
+  }
+  for (p in net$parameters) fill(p)
+  net$eval()
+
+  z <- matrix(c(0.3, -0.4, 1.1, 0.0,
+                -1.2, 0.7, 0.2, -0.9,
+                2.0, 2.0, -2.0, 0.5), nrow = 3L, byrow = TRUE)
+  got <- torch::with_no_grad(as.numeric(nre_logit_tensor(
+    net,
+    torch::torch_tensor(z[, 1:2], dtype = torch::torch_float()),
+    torch::torch_tensor(z[, 3:4], dtype = torch::torch_float()))))
+
+  expect_equal(got, c(0.108866699, 0.098798081, 0.180982038), tolerance = 1e-6)
 })
