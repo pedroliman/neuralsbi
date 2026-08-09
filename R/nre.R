@@ -67,9 +67,11 @@
 #'   minibatch size, as in `sbi`.
 #' @param hidden Width of the classifier's hidden layers. One number, not a
 #'   per-layer vector as in [npe()]: `sbi`'s classifiers use a single width
-#'   throughout and the depth is set by `n_blocks`.
+#'   throughout, and `n_blocks` is what sets the depth.
 #' @param n_blocks Depth of the classifier: residual blocks for `"resnet"`,
 #'   hidden layers for `"mlp"`. Ignored by `"linear"` and `"logistic"`.
+#'   `sbi` fixes its MLP at two hidden layers and only lets `num_blocks` reach
+#'   the residual net; here the one argument sets both.
 #' @param embedding_net Optional summary network built with [embedding_mlp()].
 #'   The classifier then sees \eqn{(\theta, f_\psi(x))}, with the embedding
 #'   trained jointly. Ignored (with a warning) by `"logistic"`.
@@ -237,11 +239,11 @@ nre_log_ratio_iid <- function(de, x, theta, max_batch = 1e5) {
 }
 
 #' @export
-surrogate_potential.nsbi_nre <- function(fit, x_obs, max_batch = 1e5) {
+surrogate_ops.nsbi_nre <- function(fit) {
   # log_jac = FALSE: the standardization Jacobian cancels between the two
   # densities in the ratio, so there is nothing to correct for. See ?nre.
-  make_potential(fit, x_obs, nre_iid_evaluator, log_jac = FALSE,
-                 max_batch = max_batch)
+  list(matrix_fn = nre_log_ratio_iid, evaluator = nre_iid_evaluator,
+       log_jac = FALSE)
 }
 
 #' Evaluate a learned likelihood-to-evidence ratio
@@ -290,11 +292,7 @@ log_ratio <- function(fit, theta, x, ...) UseMethod("log_ratio")
 #' @export
 log_ratio.nsbi_nre <- function(fit, theta, x, sum_iid = TRUE,
                                max_batch = 1e5, ...) {
-  # log_jac = FALSE: the standardization Jacobian cancels between the two
-  # densities in the ratio. See ?nre.
-  surrogate_score(fit, theta, x, sum_iid, max_batch,
-                  matrix_fn = nre_log_ratio_iid, evaluator = nre_iid_evaluator,
-                  log_jac = FALSE)
+  surrogate_score(fit, theta, x, sum_iid, max_batch)
 }
 
 # ---- neural classifiers ----------------------------------------------------
@@ -325,10 +323,10 @@ nre_residual_block <- function(features) {
 #' Build the classifier torch module: `(theta, x)` -> one logit
 #'
 #' Three architectures behind one module, matching `sbi`'s `"resnet"`,
-#' `"mlp"` and `"linear"` classifiers. `sbi` puts batch normalization in its
-#' MLP; this one does not, keeping the trunk the same plain
-#' `linear/relu` stack every other estimator in the package uses
-#' ([mlp_layers()]).
+#' `"mlp"` and `"linear"` classifiers. `sbi` normalizes between the hidden
+#' layers of its MLP (`nn.LayerNorm` by default); this one does not, keeping
+#' the trunk the same plain `linear/relu` stack every other estimator in the
+#' package uses ([mlp_layers()]).
 #' @keywords internal
 nre_module <- function(dim_x, dim_theta, classifier, hidden, n_blocks,
                        embedding = NULL) {
@@ -426,14 +424,17 @@ with_fixed_seed <- function(seed, expr) {
 #' `num_atoms` is clamped to the batch size, as `sbi` does, so a short final
 #' minibatch or a small validation split does not ask for more contrasts than
 #' the batch can supply. A batch of one has no contrast at all and contributes
-#' nothing.
+#' nothing, but it still has to contribute a tensor torch built: a constant of
+#' its own making has no graph for `backward()` to walk. [minibatches()] keeps
+#' single-row batches out of training; a validation split of one row still
+#' arrives here.
 #' @keywords internal
 nre_atomic_log_prob <- function(num_atoms) {
   force(num_atoms)
   function(net, theta, x) {
     b <- theta$shape[1]
     k <- min(num_atoms, b)
-    if (k < 2L) return(torch::torch_zeros(b, device = theta$device))
+    if (k < 2L) return(nre_logit_tensor(net, theta, x) * 0)
     rows <- nre_atom_rows(b, k, deterministic = !net$training)
     logits <- net(theta[rows, , drop = FALSE],
                   x[rep(seq_len(b), each = k), , drop = FALSE])$view(c(b, k))
@@ -497,7 +498,12 @@ nre_features <- function(theta, x) {
 #' `stats::glm.fit()` would do this, but it warns and wanders off when the two
 #' classes are separable, which a sharp ratio makes easy to hit. The ridge term
 #' keeps the normal equations solvable and the coefficients finite, the same
-#' role it plays in `fit_linear_gaussian()`.
+#' role it plays in `fit_linear_gaussian()`, and it is measured against each
+#' column's own scale for the same reason: under `standardize = FALSE` the
+#' quadratic features carry the fourth power of the data's units, so an
+#' absolute 1e-6 is either nothing at all or the only thing left. On a
+#' simulator whose output has sd 5e-4 the absolute version shrank the fit to
+#' noise; the relative one leaves it alone.
 #' @keywords internal
 irls_logistic <- function(X, y, ridge = 1e-6, max_iter = 100L, tol = 1e-8) {
   beta <- rep(0, ncol(X))
@@ -507,7 +513,7 @@ irls_logistic <- function(X, y, ridge = 1e-6, max_iter = 100L, tol = 1e-8) {
     w <- pmax(mu * (1 - mu), 1e-8)
     z <- eta + (y - mu) / w
     XtWX <- crossprod(X * w, X)
-    diag(XtWX) <- diag(XtWX) + ridge
+    diag(XtWX) <- diag(XtWX) + ridge * ridge_scale(diag(XtWX))
     step <- as.numeric(solve(XtWX, crossprod(X * w, z)))
     delta <- max(abs(step - beta))
     beta <- step

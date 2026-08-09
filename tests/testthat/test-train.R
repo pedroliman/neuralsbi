@@ -56,3 +56,15 @@ test_that("train_conditional_de() says how many rows the split would need", {
                          theta = one, x = one, validation_fraction = 0.5),
     "holds out 1 row of 1, leaving nothing to train on\\. At this fraction the estimator needs at least 2 rows")
 })
+
+test_that("minibatches() covers every row and never leaves one on its own", {
+  order <- seq_len(21L)
+
+  expect_identical(unlist(minibatches(order, 5L)), order)
+  expect_identical(lengths(minibatches(order, 5L)), c(5L, 5L, 5L, 6L))
+  expect_identical(lengths(minibatches(seq_len(20L), 5L)), rep(5L, 4L))
+  # A short-but-not-single final batch is left alone.
+  expect_identical(lengths(minibatches(seq_len(23L), 5L)), c(5L, 5L, 5L, 5L, 3L))
+  # One batch in total is the one case that cannot be folded anywhere.
+  expect_identical(minibatches(1L, 5L), list(1L))
+})

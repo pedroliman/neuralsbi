@@ -25,7 +25,6 @@ row.
 \eqn{\log q_\phi(x \mid \theta) + \log p(\theta)} for an \code{\link[=nle]{nle()}} fit and
 \eqn{\log r_\phi(\theta, x) + \log p(\theta)} for an \code{\link[=nre]{nre()}} fit, returning
 \code{-Inf} outside the prior support. This is the potential the MCMC samplers
-target, and the two fits differ only in which surrogate contributes the
-first term.
+target, and the two fits differ only in what \code{\link[=surrogate_ops]{surrogate_ops()}} hands back.
 }
 \keyword{internal}

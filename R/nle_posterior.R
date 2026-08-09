@@ -57,30 +57,20 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
                                n_chains = NULL, warmup = 200L, thin = 2L,
                                init_strategy = c("resample", "proposal"),
                                seed = NULL, ...) {
-  check_fit_alive(fit)
   sampler <- match.arg(sampler)
-  init_strategy <- match.arg(init_strategy)
-  if (!is.null(x_obs)) {
-    x_obs <- check_numeric(x_obs, "x_obs")
-    check_finite(x_obs, "x_obs")
-    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
-  }
-  n_chains <- n_chains %||% if (sampler == "stan") 4L else 20L
-  n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
-                               "so convergence can be diagnosed")
-  warmup <- check_mcmc_count(warmup, "warmup", 0L)
-  thin <- check_mcmc_count(thin, "thin", 1L,
-                           "since one draw in `thin` is kept")
-
-  mcmc_posterior(fit, x_obs, sampler, n_chains, warmup, thin, init_strategy,
-                 seed, list(...), "nsbi_nle_posterior")
+  mcmc_posterior(fit, x_obs, sampler,
+                 n_chains %||% if (sampler == "stan") 4L else 20L,
+                 warmup, thin, match.arg(init_strategy), seed, list(...),
+                 "nsbi_nle_posterior")
 }
 
-#' Assemble an MCMC-sampled posterior object
+#' Check the arguments of an MCMC-sampled posterior and assemble it
 #'
 #' Shared by [posterior.nsbi_nle()] and [posterior.nsbi_nre()]. Both wrap a fit
-#' and a sampler configuration around a draw cache; only the class they carry
-#' and the samplers they allow differ.
+#' and a sampler configuration around a draw cache, and every argument except
+#' the sampler is checked the same way; only the class they carry and the
+#' samplers they allow differ, and both of those are settled by the caller
+#' before it gets here.
 #'
 #' @inheritParams posterior.nsbi_nle
 #' @param dots The sampler arguments the caller collected from `...`.
@@ -88,6 +78,17 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
 #' @keywords internal
 mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
                            init_strategy, seed, dots, class) {
+  check_fit_alive(fit)
+  if (!is.null(x_obs)) {
+    x_obs <- check_numeric(x_obs, "x_obs")
+    check_finite(x_obs, "x_obs")
+    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  }
+  n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
+                               "so convergence can be diagnosed")
+  warmup <- check_mcmc_count(warmup, "warmup", 0L)
+  thin <- check_mcmc_count(thin, "thin", 1L,
+                           "since one draw in `thin` is kept")
   structure(
     list(
       fit = fit,
@@ -222,7 +223,7 @@ finish_draws <- function(draws, diagnostics, fit) {
 #' Slice-sample the unnormalized posterior of an [nle()] or [nre()] fit
 #'
 #' The sampler does not care which surrogate produced the potential, so
-#' [surrogate_potential()] is the only line that dispatches on the fit.
+#' [surrogate_potential()] is the only line that looks at which fit it has.
 #' @keywords internal
 slice_sample_surrogate <- function(fit, x_obs, ctl, n, verbose = FALSE) {
   dots <- ctl$dots

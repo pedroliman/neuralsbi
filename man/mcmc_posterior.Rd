@@ -2,7 +2,7 @@
 % Please edit documentation in R/nle_posterior.R
 \name{mcmc_posterior}
 \alias{mcmc_posterior}
-\title{Assemble an MCMC-sampled posterior object}
+\title{Check the arguments of an MCMC-sampled posterior and assemble it}
 \usage{
 mcmc_posterior(
   fit,
@@ -55,7 +55,9 @@ over thousands of observations is a large bill before the first MCMC step.}
 }
 \description{
 Shared by \code{\link[=posterior.nsbi_nle]{posterior.nsbi_nle()}} and \code{\link[=posterior.nsbi_nre]{posterior.nsbi_nre()}}. Both wrap a fit
-and a sampler configuration around a draw cache; only the class they carry
-and the samplers they allow differ.
+and a sampler configuration around a draw cache, and every argument except
+the sampler is checked the same way; only the class they carry and the
+samplers they allow differ, and both of those are settled by the caller
+before it gets here.
 }
 \keyword{internal}

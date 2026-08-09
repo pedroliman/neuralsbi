@@ -8,9 +8,9 @@ nre_module(dim_x, dim_theta, classifier, hidden, n_blocks, embedding = NULL)
 }
 \description{
 Three architectures behind one module, matching \code{sbi}'s \code{"resnet"},
-\code{"mlp"} and \code{"linear"} classifiers. \code{sbi} puts batch normalization in its
-MLP; this one does not, keeping the trunk the same plain
-\code{linear/relu} stack every other estimator in the package uses
-(\code{\link[=mlp_layers]{mlp_layers()}}).
+\code{"mlp"} and \code{"linear"} classifiers. \code{sbi} normalizes between the hidden
+layers of its MLP (\code{nn.LayerNorm} by default); this one does not, keeping
+the trunk the same plain \code{linear/relu} stack every other estimator in the
+package uses (\code{\link[=mlp_layers]{mlp_layers()}}).
 }
 \keyword{internal}

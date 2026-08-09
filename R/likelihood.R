@@ -41,35 +41,52 @@ log_lik <- function(fit, theta, x, ...) UseMethod("log_lik")
 #' @export
 log_lik.nsbi_nle <- function(fit, theta, x, sum_iid = TRUE,
                              max_batch = 1e5, ...) {
+  surrogate_score(fit, theta, x, sum_iid, max_batch)
+}
+
+#' How a surrogate fit is scored
+#'
+#' [nle()] and [nre()] fits are interchangeable everywhere downstream of the
+#' estimator, and they differ in exactly three things: which function produces
+#' the `n_theta x n_obs` matrix of scores, which one produces its row sums
+#' without building it, and whether standardizing `x` needs a
+#' change-of-variables term. A density reported in the simulator's units needs
+#' one; a ratio does not, since the Jacobian cancels between its numerator and
+#' denominator (see [nre()]).
+#'
+#' Keeping the three together in one table is what lets [surrogate_score()] and
+#' [surrogate_potential()] be plain functions rather than a generic each. It
+#' also means the fact that a ratio has no Jacobian is written down once.
+#'
+#' @param fit An `nsbi_nle` or `nsbi_nre` fit.
+#' @return A list with `matrix_fn`, `evaluator` and `log_jac`.
+#' @keywords internal
+surrogate_ops <- function(fit) UseMethod("surrogate_ops")
+
+#' @export
+surrogate_ops.nsbi_nle <- function(fit) {
   # de_log_prob() works in standardized x space; the Jacobian puts it back in
   # the units the simulator returned.
-  surrogate_score(fit, theta, x, sum_iid, max_batch,
-                  matrix_fn = de_log_lik_iid, evaluator = de_iid_evaluator,
-                  log_jac = TRUE)
+  list(matrix_fn = de_log_lik_iid, evaluator = de_iid_evaluator,
+       log_jac = TRUE)
 }
 
 #' The body [log_lik()] and [log_ratio()] share
 #'
 #' Both take a `theta` and an `x` whose rows are independent observations,
 #' check them, standardize them, and either return the `n_theta x n_obs` matrix
-#' or its row sums. The two differ in the same two places
-#' [surrogate_potential()] does: which pair of functions scores the estimator,
-#' and whether the standardization of `x` needs a change-of-variables term. A
-#' density reported in the simulator's units needs one; a ratio does not, since
-#' the Jacobian cancels between its numerator and denominator.
+#' or its row sums. Which functions do the scoring, and whether the Jacobian
+#' comes with them, is [surrogate_ops()]'s business.
 #'
 #' @param fit An `nsbi_nle` or `nsbi_nre` fit.
 #' @param theta,x,sum_iid,max_batch As in [log_lik()].
-#' @param matrix_fn `function(de, x_z, theta_z, max_batch)` giving the
-#'   `n_theta x n_obs` matrix in standardized space.
-#' @param evaluator `function(de, x_z, max_batch)` returning a `function(theta)`
-#'   giving that matrix's row sums without building it.
-#' @param log_jac Apply the `x` standardizer's log-Jacobian, once per
-#'   observation.
 #' @keywords internal
-surrogate_score <- function(fit, theta, x, sum_iid, max_batch,
-                            matrix_fn, evaluator, log_jac) {
+surrogate_score <- function(fit, theta, x, sum_iid, max_batch) {
   check_fit_alive(fit)
+  ops <- surrogate_ops(fit)
+  matrix_fn <- ops$matrix_fn
+  evaluator <- ops$evaluator
+  log_jac <- ops$log_jac
   # Both arguments are matrices with a required width, so a bare "expected 2
   # columns" would leave the user guessing which one is wrong.
   theta <- check_matrix(theta, fit$dim_theta, "theta",
@@ -486,8 +503,7 @@ likelihood_fn <- function(fit, x_obs, ...) {
 #' \eqn{\log q_\phi(x \mid \theta) + \log p(\theta)} for an [nle()] fit and
 #' \eqn{\log r_\phi(\theta, x) + \log p(\theta)} for an [nre()] fit, returning
 #' `-Inf` outside the prior support. This is the potential the MCMC samplers
-#' target, and the two fits differ only in which surrogate contributes the
-#' first term.
+#' target, and the two fits differ only in what [surrogate_ops()] hands back.
 #'
 #' @param fit An `nsbi_nle` or `nsbi_nre` fit.
 #' @param x_obs The observation to condition on. Rows are independent
@@ -500,31 +516,9 @@ likelihood_fn <- function(fit, x_obs, ...) {
 #'   row.
 #' @keywords internal
 surrogate_potential <- function(fit, x_obs, max_batch = 1e5) {
-  UseMethod("surrogate_potential")
-}
-
-#' @export
-surrogate_potential.nsbi_nle <- function(fit, x_obs, max_batch = 1e5) {
-  make_potential(fit, x_obs, de_iid_evaluator, log_jac = TRUE,
-                 max_batch = max_batch)
-}
-
-#' The body every `surrogate_potential()` method shares
-#'
-#' `evaluator` is what turns the fitted estimator and the observation into a
-#' `function(theta)`: [de_iid_evaluator()] for a learned density,
-#' [nre_iid_evaluator()] for a learned ratio. `log_jac` says whether the
-#' standardization of `x` needs a change-of-variables correction -- a density
-#' reported in the simulator's units does, a ratio does not, since the Jacobian
-#' cancels between its numerator and denominator.
-#'
-#' @inheritParams surrogate_potential
-#' @param evaluator `function(de, x_z, max_batch)` returning the summed
-#'   per-observation score as a function of standardized parameters.
-#' @param log_jac Apply the `x` standardizer's log-Jacobian, once per
-#'   observation.
-#' @keywords internal
-make_potential <- function(fit, x_obs, evaluator, log_jac, max_batch = 1e5) {
+  ops <- surrogate_ops(fit)
+  evaluator <- ops$evaluator
+  log_jac <- ops$log_jac
   prior <- fit$prior
   # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
   # only way to find out is to ask it. Better here than as a puzzling

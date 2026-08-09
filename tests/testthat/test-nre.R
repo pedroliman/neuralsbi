@@ -410,3 +410,41 @@ test_that("an embedding net trains jointly with the classifier", {
   expect_true(all(is.finite(log_ratio(fit, rbind(c(0, 0), c(1, 1)),
                                       matrix(c(0.2, -0.1), nrow = 1)))))
 })
+
+test_that("the logistic ratio does not care what scale the data arrive on", {
+  # The ridge is relative to each feature's own scale, so the fit is the same
+  # whether or not the pipeline standardized first. Without that, a simulator
+  # whose output has sd 5e-4 fits an absolute 1e-6 ridge against quadratic
+  # features of order 1e-13 and the coefficients collapse to nothing.
+  prior <- prior_uniform(c(mu = -3e-3), c(mu = 3e-3))
+  sims <- simulate_for_sbi(function(mu) c(y = stats::rnorm(1, mu, 5e-4)),
+                           prior, n = 3000, seed = 3)
+  theta <- matrix(seq(-2e-3, 2e-3, length.out = 9), ncol = 1)
+  x <- matrix(1e-3, nrow = 1)
+  truth <- stats::dnorm(1e-3, theta[, 1], 5e-4, log = TRUE)
+
+  raw <- nre(prior, theta = sims$theta, x = sims$x, classifier = "logistic",
+             standardize = FALSE)
+  scaled <- nre(prior, theta = sims$theta, x = sims$x, classifier = "logistic",
+                standardize = TRUE)
+
+  expect_equal(centred(log_ratio(raw, theta, x)), centred(truth),
+               tolerance = 0.05)
+  expect_equal(log_ratio(raw, theta, x), log_ratio(scaled, theta, x),
+               tolerance = 1e-6)
+})
+
+test_that("a final minibatch of one row does not break training", {
+  # 1801 training rows in batches of 200 leaves a single row over, and one
+  # simulation has no contrasting parameter to be scored against. Before
+  # minibatches() folded it in, backward() had no graph to walk and the fit
+  # died with "element 0 of tensors does not require grad".
+  skip_if_no_torch()
+  sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 2001L, seed = 1)
+  expect_identical((2001L - 200L) %% 200L, 1L)
+
+  fit <- nre(gauss_prior(), theta = sims$theta, x = sims$x, hidden = 8L,
+             max_epochs = 2L, seed = 1)
+
+  expect_true(is.finite(fit$de$best_val_loss))
+})

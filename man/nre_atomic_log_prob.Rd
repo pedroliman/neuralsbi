@@ -17,6 +17,9 @@ minimizing the cross-entropy of picking the true parameter out of the
 \code{num_atoms} is clamped to the batch size, as \code{sbi} does, so a short final
 minibatch or a small validation split does not ask for more contrasts than
 the batch can supply. A batch of one has no contrast at all and contributes
-nothing.
+nothing, but it still has to contribute a tensor torch built: a constant of
+its own making has no graph for \code{backward()} to walk. \code{\link[=minibatches]{minibatches()}} keeps
+single-row batches out of training; a validation split of one row still
+arrives here.
 }
 \keyword{internal}

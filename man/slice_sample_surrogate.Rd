@@ -8,6 +8,6 @@ slice_sample_surrogate(fit, x_obs, ctl, n, verbose = FALSE)
 }
 \description{
 The sampler does not care which surrogate produced the potential, so
-\code{\link[=surrogate_potential]{surrogate_potential()}} is the only line that dispatches on the fit.
+\code{\link[=surrogate_potential]{surrogate_potential()}} is the only line that looks at which fit it has.
 }
 \keyword{internal}

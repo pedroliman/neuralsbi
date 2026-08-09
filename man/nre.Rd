@@ -65,10 +65,12 @@ minibatch size, as in \code{sbi}.}
 
 \item{hidden}{Width of the classifier's hidden layers. One number, not a
 per-layer vector as in \code{\link[=npe]{npe()}}: \code{sbi}'s classifiers use a single width
-throughout and the depth is set by \code{n_blocks}.}
+throughout, and \code{n_blocks} is what sets the depth.}
 
 \item{n_blocks}{Depth of the classifier: residual blocks for \code{"resnet"},
-hidden layers for \code{"mlp"}. Ignored by \code{"linear"} and \code{"logistic"}.}
+hidden layers for \code{"mlp"}. Ignored by \code{"linear"} and \code{"logistic"}.
+\code{sbi} fixes its MLP at two hidden layers and only lets \code{num_blocks} reach
+the residual net; here the one argument sets both.}
 
 \item{embedding_net}{Optional summary network built with \code{\link[=embedding_mlp]{embedding_mlp()}}.
 The classifier then sees \eqn{(\theta, f_\psi(x))}, with the embedding

@@ -10,6 +10,11 @@ irls_logistic(X, y, ridge = 1e-06, max_iter = 100L, tol = 1e-08)
 \code{stats::glm.fit()} would do this, but it warns and wanders off when the two
 classes are separable, which a sharp ratio makes easy to hit. The ridge term
 keeps the normal equations solvable and the coefficients finite, the same
-role it plays in \code{fit_linear_gaussian()}.
+role it plays in \code{fit_linear_gaussian()}, and it is measured against each
+column's own scale for the same reason: under \code{standardize = FALSE} the
+quadratic features carry the fourth power of the data's units, so an
+absolute 1e-6 is either nothing at all or the only thing left. On a
+simulator whose output has sd 5e-4 the absolute version shrank the fit to
+noise; the relative one leaves it alone.
 }
 \keyword{internal}

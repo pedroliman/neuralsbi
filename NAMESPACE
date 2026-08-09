@@ -73,8 +73,8 @@ S3method(log_prob, nsbi_nre_posterior)
 S3method(log_lik, nsbi_nle)
 S3method(log_ratio, nsbi_nre)
 
-S3method(surrogate_potential, nsbi_nle)
-S3method(surrogate_potential, nsbi_nre)
+S3method(surrogate_ops, nsbi_nle)
+S3method(surrogate_ops, nsbi_nre)
 
 S3method(de_log_lik_iid, default)
 S3method(de_log_lik_iid, nsbi_de_lingauss)

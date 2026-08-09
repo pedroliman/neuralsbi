@@ -196,7 +196,7 @@ leakage handling) and documented.
 
 ### v0.6+ — Breadth
 
-- Other families: NRE landed in 0.5.14 (`nre()`, `R/nre.R`), NLE in 0.4.3.
+- Other families: NRE landed in 0.5.16 (`nre()`, `R/nre.R`), NLE in 0.4.3.
   What is left of the family is the sequential variants (SNRE) and NRE-C's
   calibrated multi-class loss.
 - NSF in the Stan exporter, which means generating the rational-quadratic
@@ -234,7 +234,7 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.5.14 neural-ratio pass (branch
+pick up the work. Last updated for the 0.5.16 neural-ratio pass (branch
 `claude/neural-likelihood-ratio-estimator-8mot0m`, August 2026): the package
 now carries all three factorizations. `nre()` (`R/nre.R`) trains a classifier
 on the atomic (NRE-B) loss that `sbi`'s `NRE` uses, `log_ratio()` evaluates
@@ -245,7 +245,19 @@ per-row `log_prob_fn` so `train_conditional_de()` runs it unchanged, and the
 potential, the i.i.d. blocking, the draw cache and the posterior printing are
 now shared between the two MCMC fit types rather than duplicated. The
 torch-free `"logistic"` classifier is the analytic oracle that keeps the whole
-path testable in CI. Before that, the 0.4.3 neural-likelihood pass (branches
+path testable in CI.
+
+`nre()` has been run head to head against Python `sbi`'s `NRE` (its alias for
+`NRE_B`) on a 2-dimensional linear-Gaussian task, 8000 simulations, both at
+their own defaults. Scored against the analytic log ratio on an 11x11 grid
+whose own spread is 13.9 nats, `sbi`'s resnet reached a correlation of 0.947
+(centred RMSE 8.4) and this one 0.960 (7.6); `"mlp"` reached 0.956 and the
+closed-form `"logistic"` 1.000 (0.11). Both packages' posteriors recovered the
+conjugate mean and sd at 1 and at 20 i.i.d. observations. `"linear"` cannot
+represent a quadratic log ratio and is not expected to fit this task in either
+package. The scripts are not checked in; `inst/benchmarks/` is where a
+repeatable version belongs, and a C2ST comparison of the two posteriors is
+still the open piece (M3). Before that, the 0.4.3 neural-likelihood pass (branches
 `claude/neural-likelihood-estimation-stan-x6jwxa` then
 `claude/nle-implementation-performance-lvfp92`, July 2026): the package is
 no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood

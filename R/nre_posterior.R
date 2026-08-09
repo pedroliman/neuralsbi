@@ -43,21 +43,9 @@ posterior.nsbi_nre <- function(fit, x_obs = NULL, n_chains = 20L,
                                warmup = 200L, thin = 2L,
                                init_strategy = c("resample", "proposal"),
                                seed = NULL, ...) {
-  check_fit_alive(fit)
-  init_strategy <- match.arg(init_strategy)
-  if (!is.null(x_obs)) {
-    x_obs <- check_numeric(x_obs, "x_obs")
-    check_finite(x_obs, "x_obs")
-    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
-  }
-  n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
-                               "so convergence can be diagnosed")
-  warmup <- check_mcmc_count(warmup, "warmup", 0L)
-  thin <- check_mcmc_count(thin, "thin", 1L,
-                           "since one draw in `thin` is kept")
-
-  mcmc_posterior(fit, x_obs, "slice", n_chains, warmup, thin, init_strategy,
-                 seed, list(...), "nsbi_nre_posterior")
+  mcmc_posterior(fit, x_obs, "slice", n_chains, warmup, thin,
+                 match.arg(init_strategy), seed, list(...),
+                 "nsbi_nre_posterior")
 }
 
 #' Sample an NRE posterior with MCMC
