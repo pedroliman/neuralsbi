@@ -65,7 +65,8 @@ vector of hidden-layer widths.}
 \item{n_transforms}{MAF/NSF setting: number of stacked autoregressive
 transforms.}
 
-\item{n_bins, tail_bound}{NSF settings.}
+\item{n_bins, tail_bound}{NSF settings: number of spline bins per transform
+(at least 2) and the tail bound. See \code{\link[=npe]{npe()}}.}
 
 \item{max_epochs, batch_size, lr, validation_fraction, patience}{Neural training
 controls (Adam optimizer, early stopping on validation loss). The defaults
