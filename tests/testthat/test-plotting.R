@@ -146,3 +146,8 @@ test_that("pairplot() draws truth markers as a subdued grey, not a saturated red
   expect_true(all(point_colour == "grey30"))
   expect_false(any(c(vline_colour, point_colour) == "firebrick"))
 })
+
+test_that("pad_range() pads a non-constant range by 5% and a constant one by a fixed amount", {
+  expect_equal(pad_range(c(0, 10)), c(-0.5, 10.5))
+  expect_equal(pad_range(rep(3, 5)), c(2.5, 3.5))
+})
