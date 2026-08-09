@@ -219,7 +219,7 @@ leakage handling) and documented.
       (`inst/benchmarks/two_moons_calibration.R` → `docs/figures/`). Remaining:
       fold the figures into a short write-up / README section.
 - [~] M3 `sbi` head-to-head harness scripted (`inst/benchmarks/`); running it
-      and recording C2ST ≤ 0.60 still open.
+      and recording C2ST ≤ 0.60 still open (#146).
 - [~] M4 MAF and NSF estimators implemented + analytic parity tests; SLCP
       parity with `sbi` still open.
 - [~] M5 MLP embedding net implemented (`embedding_mlp()`, `embedding_net`
@@ -257,7 +257,12 @@ conjugate mean and sd at 1 and at 20 i.i.d. observations. `"linear"` cannot
 represent a quadratic log ratio and is not expected to fit this task in either
 package. The scripts are not checked in; `inst/benchmarks/` is where a
 repeatable version belongs, and a C2ST comparison of the two posteriors is
-still the open piece (M3). Before that, the 0.4.3 neural-likelihood pass (branches
+still the open piece (M3, #146). Two cleanups the same review turned up and
+left alone: a shared `nsbi_mcmc_posterior` parent class for the two MCMC
+posteriors (#144) and a vectorized `nre_atom_rows()`, which is about a fifth
+of NRE training time but only pays above the default batch size (#145).
+
+Before that, the 0.4.3 neural-likelihood pass (branches
 `claude/neural-likelihood-estimation-stan-x6jwxa` then
 `claude/nle-implementation-performance-lvfp92`, July 2026): the package is
 no longer NPE-only. `nle()` (`R/nle.R`) learns a surrogate likelihood
