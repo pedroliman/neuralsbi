@@ -158,9 +158,10 @@ sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
   batch <- 0L
   while (nrow(collected) < n && batch < max_sampling_batches) {
     batch <- batch + 1L
-    draw_std <- de_sample(fit$de, xo_std, n)
+    n_needed <- n - nrow(collected)
+    draw_std <- de_sample(fit$de, xo_std, n_needed)
     draw <- invert_standardizer(fit$std_theta, draw_std)
-    n_tried <- n_tried + n
+    n_tried <- n_tried + n_needed
     if (bounded) {
       draw <- draw[within_support(prior, draw), , drop = FALSE]
     }
