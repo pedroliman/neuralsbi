@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,12 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.12" id="neuralsbi-0512">neuralsbi 0.5.12<a class="anchor" aria-label="anchor" href="#neuralsbi-0512"></a></h2>
+<ul><li>
+<code><a href="../reference/sbc.html">sbc()</a></code> no longer emits “Chi-squared approximation may be incorrect” during ordinary use. Its per-parameter uniformity test called <code>stats::chisq.test(tab)</code> on the binned ranks, and R warns whenever a cell’s expected count is low, which happens routinely at the small <code>n_sbc</code> a test suite uses to keep runtime down. Switching to <code>chisq.test(tab, simulate.p.value = TRUE)</code> computes a Monte Carlo p-value instead of relying on the asymptotic approximation, so the warning never fires; the p-value keeps the same “large = calibrated” interpretation <code><a href="../reference/expected_coverage.html">expected_coverage()</a></code> and existing tests rely on (<a href="https://github.com/pedroliman/neuralsbi/issues/109" class="external-link">#109</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/135" class="external-link">#135</a>).</li>
+<li>Test coverage: added targeted tests for previously untested error paths and edge cases across <code>R/utils.R</code>, <code>R/progress.R</code>, <code>R/simulator.R</code>, <code>R/parallel.R</code>, <code>R/mcmc.R</code>, <code>R/sequential.R</code>, <code>R/tasks.R</code>, <code>R/diagnostics.R</code> and <code>R/check.R</code> – mocked <code><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace()</a></code>/<code>torch_available()</code> branches for the torch/ggplot2/GGally/ggdensity/cli “package not installed” error messages (these only ever ran in an environment that actually lacked the package, which the coverage CI job never is), zero-row and zero-draw edge cases in the simulator pipeline, <code><a href="../reference/mcmc_init.html">mcmc_init()</a></code>’s two failure-to-start branches and <code>split_rhat()</code>/<code>bulk_ess()</code>’s degenerate-run guards, and <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code>’s proposal-batch-cap warning and <code>x_obs</code> validation branches. <code>.github/workflows/test-coverage.yaml</code> now sets <code>NOT_CRAN: "true"</code>, since a few tests (the <code>future</code>-multisession path in <code>R/parallel.R</code>, the slower two-moons NPE fit) <code>skip_on_cran()</code> to stay off CRAN’s check machine, a concern that does not apply to this internal coverage job (<a href="https://github.com/pedroliman/neuralsbi/issues/109" class="external-link">#109</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/135" class="external-link">#135</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.11" id="neuralsbi-0511">neuralsbi 0.5.11<a class="anchor" aria-label="anchor" href="#neuralsbi-0511"></a></h2>
 <ul><li>

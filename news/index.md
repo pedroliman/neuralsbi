@@ -1,5 +1,42 @@
 # Changelog
 
+## neuralsbi 0.5.12
+
+- [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) no
+  longer emits “Chi-squared approximation may be incorrect” during
+  ordinary use. Its per-parameter uniformity test called
+  `stats::chisq.test(tab)` on the binned ranks, and R warns whenever a
+  cell’s expected count is low, which happens routinely at the small
+  `n_sbc` a test suite uses to keep runtime down. Switching to
+  `chisq.test(tab, simulate.p.value = TRUE)` computes a Monte Carlo
+  p-value instead of relying on the asymptotic approximation, so the
+  warning never fires; the p-value keeps the same “large = calibrated”
+  interpretation
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  and existing tests rely on
+  ([\#109](https://github.com/pedroliman/neuralsbi/issues/109))
+  ([\#135](https://github.com/pedroliman/neuralsbi/issues/135)).
+- Test coverage: added targeted tests for previously untested error
+  paths and edge cases across `R/utils.R`, `R/progress.R`,
+  `R/simulator.R`, `R/parallel.R`, `R/mcmc.R`, `R/sequential.R`,
+  `R/tasks.R`, `R/diagnostics.R` and `R/check.R` – mocked
+  [`requireNamespace()`](https://rdrr.io/r/base/ns-load.html)/`torch_available()`
+  branches for the torch/ggplot2/GGally/ggdensity/cli “package not
+  installed” error messages (these only ever ran in an environment that
+  actually lacked the package, which the coverage CI job never is),
+  zero-row and zero-draw edge cases in the simulator pipeline,
+  [`mcmc_init()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init.md)’s
+  two failure-to-start branches and `split_rhat()`/`bulk_ess()`’s
+  degenerate-run guards, and
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)’s
+  proposal-batch-cap warning and `x_obs` validation branches.
+  `.github/workflows/test-coverage.yaml` now sets `NOT_CRAN: "true"`,
+  since a few tests (the `future`-multisession path in `R/parallel.R`,
+  the slower two-moons NPE fit) `skip_on_cran()` to stay off CRAN’s
+  check machine, a concern that does not apply to this internal coverage
+  job ([\#109](https://github.com/pedroliman/neuralsbi/issues/109))
+  ([\#135](https://github.com/pedroliman/neuralsbi/issues/135)).
+
 ## neuralsbi 0.5.11
 
 - **The built-in training progress bar’s ETA now tracks a short rolling
