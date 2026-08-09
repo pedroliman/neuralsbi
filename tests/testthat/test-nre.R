@@ -492,3 +492,22 @@ test_that("the resnet classifier reproduces nflows' ResidualNet exactly", {
 
   expect_equal(got, c(0.108866699, 0.098798081, 0.180982038), tolerance = 1e-6)
 })
+
+test_that("a one-row batch scores zero through the graph, not around it", {
+  # The guard the "final minibatch of one row" fix leans on. One simulation has
+  # no contrast, so its atomic loss is zero -- but a zero torch did not build
+  # carries no graph, and that is what made backward() fail. Returning it
+  # through the classifier keeps the graph, and the gradient it produces is the
+  # zero the batch is worth.
+  skip_if_no_torch()
+  net <- nre_module(1L, 1L, "mlp", hidden = 4L, n_blocks = 1L)()
+  loss_fn <- nre_atomic_log_prob(10L)
+  one <- torch::torch_tensor(matrix(0.5), dtype = torch::torch_float())
+
+  lp <- loss_fn(net, one, one)
+
+  expect_equal(as.numeric(lp), 0)
+  expect_false(is.null(lp$grad_fn))
+  expect_silent((-lp$mean())$backward())
+  expect_true(all(as.numeric(net$parameters[[1]]$grad) == 0))
+})
