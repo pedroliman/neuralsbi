@@ -58,7 +58,7 @@ x_obs <- c(0, 0)
 
 The linear-Gaussian estimator has no way to represent two modes. It returns one wide Gaussian spread across both of them:
 
-```{r fig.alt = "Pairs plot of a unimodal Gaussian posterior spanning both moons."}
+```{r fig.alt = "Pairs plot of a unimodal Gaussian posterior spanning both moons.", dev = "ragg_png", dpi = 200}
 fit_lg <- npe(task$prior, task$simulator, n_simulations = 2000,
               density_estimator = "linear_gaussian", seed = 1)
 draws_lg <- sample(posterior(fit_lg, x_obs = x_obs), 3000)
@@ -67,7 +67,7 @@ pairplot(draws_lg)
 
 The MDN has mixture components to spend, and it finds both moons:
 
-```{r fig.alt = "Pairs plot showing two separated posterior modes recovered by the MDN."}
+```{r fig.alt = "Pairs plot showing two separated posterior modes recovered by the MDN.", dev = "ragg_png", dpi = 200}
 fit_mdn <- npe(task$prior, task$simulator, n_simulations = 2000,
                density_estimator = "mdn", n_components = 10,
                max_epochs = 200, seed = 1)
@@ -77,7 +77,7 @@ pairplot(draws_mdn)
 
 Now the spline flow, on the same 2000 simulations:
 
-```{r fig.alt = "Pairs plot of the two-moons posterior captured by a neural spline flow."}
+```{r fig.alt = "Pairs plot of the two-moons posterior captured by a neural spline flow.", dev = "ragg_png", dpi = 200}
 fit_nsf <- npe(task$prior, task$simulator, n_simulations = 2000,
                density_estimator = "nsf", max_epochs = 150, seed = 1)
 draws_nsf <- sample(posterior(fit_nsf, x_obs = x_obs), 3000)

@@ -108,7 +108,7 @@ Each simulation draws from its own random-number stream, so a given `set.seed()`
 
 `posterior()` conditions the trained estimator on an observation. It is a forward pass through the network, so it returns immediately, and `sample()` draws from it.
 
-```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked."}
+```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked.", dev = "ragg_png", dpi = 200}
 post  <- posterior(fit, x_obs = x_obs)
 draws <- sample(post, 4000)
 
@@ -122,7 +122,7 @@ The posterior covers the values that generated `x_obs`. It also shows the ridge 
 
 The fit is amortized. It was trained over the whole prior, not around one observation, so a second outbreak costs a forward pass and nothing else. No re-simulating and no retraining.
 
-```{r second, fig.alt = "Pairs plot of the posterior for a second, faster outbreak from the same fit."}
+```{r second, fig.alt = "Pairs plot of the posterior for a second, faster outbreak from the same fit.", dev = "ragg_png", dpi = 200}
 theta_2 <- c(beta = 0.5, gamma = 0.1, rho = 0.3)          # R0 = 5, poorly reported
 x_obs_2 <- sir_simulator(theta_2[["beta"]], theta_2[["gamma"]], theta_2[["rho"]])
 
