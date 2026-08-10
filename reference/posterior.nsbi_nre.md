@@ -71,7 +71,8 @@ posterior(
 
 ## Value
 
-An object of class `c("nsbi_nre_posterior", "nsbi_posterior")`.
+An object of class
+`c("nsbi_nre_posterior", "nsbi_mcmc_posterior", "nsbi_posterior")`.
 
 ## Details
 

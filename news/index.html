@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.17" id="neuralsbi-0517">neuralsbi 0.5.17<a class="anchor" aria-label="anchor" href="#neuralsbi-0517"></a></h2>
+<ul><li>Internal cleanup, no user-visible behavior change: <code><a href="../reference/sample.html">sample()</a></code>, <code><a href="../reference/log_prob.html">log_prob()</a></code> and <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> each had a byte-identical method for <code>nsbi_nle_posterior</code> and one for <code>nsbi_nre_posterior</code>, differing only in the class name they printed and, for <code><a href="../reference/log_prob.html">log_prob()</a></code>, the <code>"NLE"</code>/<code>"NRE"</code> label in its unnormalized-posterior warning. <code><a href="../reference/mcmc_posterior.html">mcmc_posterior()</a></code> (<code>R/nle_posterior.R</code>) now stamps a shared <code>nsbi_mcmc_posterior</code> class into the middle of the class vector – ahead of <code>nsbi_posterior</code>, behind the specific <code>nsbi_nle_posterior</code>/<code>nsbi_nre_posterior</code> that <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> output and <code>expect_s3_class()</code> checks still key off – so the three pairs collapse into <code><a href="../reference/sample.nsbi_mcmc_posterior.html">sample.nsbi_mcmc_posterior()</a></code>, <code><a href="../reference/log_prob.html">log_prob.nsbi_mcmc_posterior()</a></code> and <code>print.nsbi_mcmc_posterior()</code>. <code><a href="../reference/log_prob.html">log_prob.nsbi_mcmc_posterior()</a></code> reads the <code>"NLE"</code>/<code>"NRE"</code> label off <code>inherits(post$fit, "nsbi_nle")</code> instead of taking it from the caller, and <code>print.nsbi_mcmc_posterior()</code> gates its closing <code><a href="../reference/stan_export.html">stan_code()</a></code> line the same way. <code><a href="../reference/posterior.nsbi_nle.html">posterior.nsbi_nle()</a></code> and <code><a href="../reference/posterior.nsbi_nre.html">posterior.nsbi_nre()</a></code> are unchanged (<a href="https://github.com/pedroliman/neuralsbi/issues/144" class="external-link">#144</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/147" class="external-link">#147</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.16" id="neuralsbi-0516">neuralsbi 0.5.16<a class="anchor" aria-label="anchor" href="#neuralsbi-0516"></a></h2>
 <ul><li>

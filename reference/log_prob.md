@@ -5,10 +5,7 @@ Posterior log-density
 ## Usage
 
 ``` r
-# S3 method for class 'nsbi_nle_posterior'
-log_prob(post, theta, x = NULL, normalize = TRUE, ...)
-
-# S3 method for class 'nsbi_nre_posterior'
+# S3 method for class 'nsbi_mcmc_posterior'
 log_prob(post, theta, x = NULL, normalize = TRUE, ...)
 
 log_prob(post, theta, x = NULL, ...)

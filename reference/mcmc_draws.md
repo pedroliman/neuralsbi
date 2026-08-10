@@ -1,11 +1,12 @@
 # Run (or reuse) the chain behind an MCMC posterior's [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md) method
 
 The body
-[`sample.nsbi_nle_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.md)
-and
-[`sample.nsbi_nre_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nre_posterior.md)
-share. Which sampler runs is read off the posterior object, so nothing
-here needs to know which kind of fit produced it.
+[`sample.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.md)
+runs regardless of whether the underlying fit is an
+[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) or
+[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md). Which
+sampler runs is read off the posterior object, so nothing here needs to
+know which kind of fit produced it.
 
 ## Usage
 

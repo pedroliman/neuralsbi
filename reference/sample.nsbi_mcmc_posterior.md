@@ -1,14 +1,19 @@
-# Sample an NRE posterior with MCMC
+# Sample an MCMC posterior
 
-Identical in behavior to
-[`sample.nsbi_nle_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.md),
-including the draw cache: asking for the same or fewer draws from the
-same observation returns the cached run instead of starting a new chain.
+Runs the sampler chosen by
+[`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
+or
+[`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md).
+Draws are cached on the posterior object, so asking for the same or
+fewer draws from the same observation returns immediately instead of
+re-running a chain – which is what makes
+[`summary()`](https://rdrr.io/r/base/summary.html) and repeated calls
+tolerable.
 
 ## Usage
 
 ``` r
-# S3 method for class 'nsbi_nre_posterior'
+# S3 method for class 'nsbi_mcmc_posterior'
 sample(
   x,
   size = 1000,
@@ -24,7 +29,7 @@ sample(
 
 - x:
 
-  An `nsbi_nre_posterior` object (named `x` to satisfy the
+  An `nsbi_mcmc_posterior` object (named `x` to satisfy the
   [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
   generic).
 

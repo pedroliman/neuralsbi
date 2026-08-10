@@ -16,7 +16,7 @@ resolve_x_iid(post, x, arg = "obs")
 
 - post:
 
-  An `nsbi_nle_posterior` object.
+  An `nsbi_mcmc_posterior` object.
 
 - x:
 

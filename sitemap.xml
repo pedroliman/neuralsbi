@@ -182,8 +182,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/rq_spline.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/run_simulator.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample.html</loc></url>
-<url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.html</loc></url>
-<url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nre_posterior.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_posterior.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample_prior.html</loc></url>

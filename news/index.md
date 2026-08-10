@@ -1,5 +1,39 @@
 # Changelog
 
+## neuralsbi 0.5.17
+
+- Internal cleanup, no user-visible behavior change:
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  and [`print()`](https://rdrr.io/r/base/print.html) each had a
+  byte-identical method for `nsbi_nle_posterior` and one for
+  `nsbi_nre_posterior`, differing only in the class name they printed
+  and, for
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  the `"NLE"`/`"NRE"` label in its unnormalized-posterior warning.
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
+  (`R/nle_posterior.R`) now stamps a shared `nsbi_mcmc_posterior` class
+  into the middle of the class vector – ahead of `nsbi_posterior`,
+  behind the specific `nsbi_nle_posterior`/`nsbi_nre_posterior` that
+  [`print()`](https://rdrr.io/r/base/print.html) output and
+  `expect_s3_class()` checks still key off – so the three pairs collapse
+  into
+  [`sample.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.md),
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  and `print.nsbi_mcmc_posterior()`.
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  reads the `"NLE"`/`"NRE"` label off `inherits(post$fit, "nsbi_nle")`
+  instead of taking it from the caller, and
+  `print.nsbi_mcmc_posterior()` gates its closing
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  line the same way.
+  [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
+  and
+  [`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
+  are unchanged
+  ([\#144](https://github.com/pedroliman/neuralsbi/issues/144))
+  ([\#147](https://github.com/pedroliman/neuralsbi/issues/147)).
+
 ## neuralsbi 0.5.16
 
 - **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) adds

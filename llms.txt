@@ -296,8 +296,8 @@ Stan.
   : A surrogate likelihood as a plain R function
 - [`posterior(`*`<nsbi_nle>`*`)`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
   : Posterior from a neural likelihood
-- [`sample(`*`<nsbi_nle_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nle_posterior.md)
-  : Sample an NLE posterior with MCMC
+- [`sample(`*`<nsbi_mcmc_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.md)
+  : Sample an MCMC posterior
 - [`nsbi_mcmc`](https://neuralsbi.pedrodelima.com/reference/nsbi_mcmc.md)
   : MCMC over a learned likelihood
 - [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
@@ -314,8 +314,6 @@ with MCMC.
   : Evaluate a learned likelihood-to-evidence ratio
 - [`posterior(`*`<nsbi_nre>`*`)`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
   : Posterior from a neural ratio
-- [`sample(`*`<nsbi_nre_posterior>`*`)`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_nre_posterior.md)
-  : Sample an NRE posterior with MCMC
 
 ## Running the simulator
 
