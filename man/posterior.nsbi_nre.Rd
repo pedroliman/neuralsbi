@@ -39,7 +39,8 @@ from it; \code{"proposal"} starts from plain prior draws.}
 \code{n_pool}.}
 }
 \value{
-An object of class \code{c("nsbi_nre_posterior", "nsbi_posterior")}.
+An object of class
+\code{c("nsbi_nre_posterior", "nsbi_mcmc_posterior", "nsbi_posterior")}.
 }
 \description{
 Bayes' rule turns an \code{\link[=nre]{nre()}} fit into a posterior,

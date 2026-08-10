@@ -18,8 +18,9 @@ mcmc_draws(post, n, obs, refresh, verbose)
 \item{verbose}{Report sampling progress.}
 }
 \description{
-The body \code{\link[=sample.nsbi_nle_posterior]{sample.nsbi_nle_posterior()}} and \code{\link[=sample.nsbi_nre_posterior]{sample.nsbi_nre_posterior()}}
-share. Which sampler runs is read off the posterior object, so nothing here
-needs to know which kind of fit produced it.
+The body \code{\link[=sample.nsbi_mcmc_posterior]{sample.nsbi_mcmc_posterior()}} runs regardless of whether the
+underlying fit is an \code{\link[=nle]{nle()}} or \code{\link[=nre]{nre()}}. Which sampler runs is read off the
+posterior object, so nothing here needs to know which kind of fit produced
+it.
 }
 \keyword{internal}
