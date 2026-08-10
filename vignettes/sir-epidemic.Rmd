@@ -72,12 +72,16 @@ pars  <- c(theta_true, rho = rho, N = N, I0 = I0)
 x_obs <- as.numeric(obs(simulate(sir, params = pars, seed = 12345)))
 sir@data <- matrix(x_obs, nrow = 1, dimnames = list("reports", NULL))
 
-plot(1:Tobs, x_obs, type = "b", pch = 16,
-     xlab = "week", ylab = "reported cases", main = "Observed outbreak")
+ggplot2::ggplot(data.frame(week = 1:Tobs, reports = x_obs),
+                ggplot2::aes(x = week, y = reports)) +
+  ggplot2::geom_line(colour = "steelblue") +
+  ggplot2::geom_point(colour = "steelblue", size = 2) +
+  ggplot2::labs(x = "week", y = "reported cases", title = "Observed outbreak") +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
-<img src="figures/sir-epidemic-unnamed-chunk-4-1.png" alt="Observed weekly reported cases from the simulated SIR outbreak."  />
+<img src="figures/sir-epidemic-unnamed-chunk-4-1.svg" alt="Observed weekly reported cases from the simulated SIR outbreak."  />
 <p class="caption">plot of chunk unnamed-chunk-4</p>
 </div>
 
@@ -124,11 +128,6 @@ The chain concentrates around the true rates. This posterior belongs to this one
 
 ``` r
 library(neuralsbi)
-#> 
-#> Attaching package: 'neuralsbi'
-#> The following object is masked from 'package:base':
-#> 
-#>     sample
 
 sir_simulator <- function(Beta, gamma) {
   S <- N - I0; I <- I0; R <- 0
@@ -166,7 +165,7 @@ round(colMeans(draws_npe), 3)
 #> 2.059 0.832
 round(apply(draws_npe, 2, sd), 3)
 #>  Beta gamma 
-#> 0.257 0.202
+#> 0.256 0.202
 ```
 
 Both posterior means land within 0.02 of `pomp`'s, and the standard deviations come out 15 to 20% larger.
@@ -179,26 +178,38 @@ We overlay the two posterior clouds and score them with a classifier two-sample 
 ``` r
 # thin the NPE draws to pomp's count so neither cloud simply outnumbers the other
 npe_thin <- draws_npe[sample(nrow(draws_npe), nrow(post_pomp)), ]
-plot(npe_thin[, 1], npe_thin[, 2], pch = 16, cex = 0.5,
-     col = adjustcolor("steelblue", 0.35),
-     xlab = expression(beta), ylab = expression(gamma),
-     xlim = c(1, 3.5), ylim = c(0.3, 1.6))
-points(post_pomp$Beta, post_pomp$gamma, pch = 16, cex = 0.5,
-       col = adjustcolor("firebrick", 0.4))
-points(2, 1, pch = 3, cex = 2, lwd = 2)
-legend("topright", c("pomp (pMCMC)", "neuralsbi (NPE)", "truth"),
-       col = c("firebrick", "steelblue", "black"), pch = c(16, 16, 3), bty = "n")
+overlay_df <- rbind(
+  data.frame(beta = npe_thin[, 1], gamma = npe_thin[, 2], method = "neuralsbi (NPE)"),
+  data.frame(beta = post_pomp$Beta, gamma = post_pomp$gamma, method = "pomp (pMCMC)"),
+  data.frame(beta = 2, gamma = 1, method = "truth")
+)
+overlay_df$method <- factor(overlay_df$method,
+                            levels = c("pomp (pMCMC)", "neuralsbi (NPE)", "truth"))
+
+ggplot2::ggplot(overlay_df, ggplot2::aes(x = beta, y = gamma, colour = method,
+                                         shape = method, size = method, alpha = method)) +
+  ggplot2::geom_point() +
+  ggplot2::scale_colour_manual(values = c("pomp (pMCMC)" = "firebrick",
+                                          "neuralsbi (NPE)" = "steelblue",
+                                          "truth" = "grey20")) +
+  ggplot2::scale_shape_manual(values = c("pomp (pMCMC)" = 16, "neuralsbi (NPE)" = 16, "truth" = 3)) +
+  ggplot2::scale_size_manual(values = c("pomp (pMCMC)" = 1, "neuralsbi (NPE)" = 1, "truth" = 3)) +
+  ggplot2::scale_alpha_manual(values = c("pomp (pMCMC)" = 0.4, "neuralsbi (NPE)" = 0.4, "truth" = 1)) +
+  ggplot2::coord_cartesian(xlim = c(1, 3.5), ylim = c(0.3, 1.6)) +
+  ggplot2::labs(x = expression(beta), y = expression(gamma),
+               colour = NULL, shape = NULL, size = NULL, alpha = NULL) +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
-<img src="figures/sir-epidemic-unnamed-chunk-9-1.png" alt="Overlaid pomp and neuralsbi posteriors on the beta-gamma plane."  />
+<img src="figures/sir-epidemic-unnamed-chunk-9-1.svg" alt="Overlaid pomp and neuralsbi posteriors on the beta-gamma plane."  />
 <p class="caption">plot of chunk unnamed-chunk-9</p>
 </div>
 
 ``` r
 
 c2st(as.matrix(draws_npe), as.matrix(post_pomp), seed = 1)$accuracy
-#> [1] 0.7270909
+#> [1] 0.5103333
 ```
 
 Both clouds lie along the same $\beta$ and $\gamma$ ridge. The two rates trade off because the data mostly pin down their ratio $R_0 = \beta/\gamma$, the same ridge the package README runs into on a different SIR model.
@@ -214,12 +225,12 @@ sbc_res <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300,
 sbc_res                    # large p-values = calibrated
 #> <nsbi_sbc> 150 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     Beta=0.419  gamma=0.223
+#>     Beta=0.517  gamma=0.092
 plot_sbc(sbc_res, param = 1)
 ```
 
 <div class="figure">
-<img src="figures/sir-epidemic-unnamed-chunk-10-1.png" alt="SBC rank histogram for beta; a flat histogram indicates calibration."  />
+<img src="figures/sir-epidemic-unnamed-chunk-10-1.svg" alt="SBC rank histogram for beta; a flat histogram indicates calibration."  />
 <p class="caption">plot of chunk unnamed-chunk-10</p>
 </div>
 

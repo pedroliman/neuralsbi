@@ -170,7 +170,7 @@ Both posterior means land within 0.02 of `pomp`'s, and the standard deviations c
 
 We overlay the two posterior clouds and score them with a classifier two-sample test. An accuracy near 0.5 means a classifier cannot tell the two sets of draws apart.
 
-```{r fig.alt = "Overlaid pomp and neuralsbi posteriors on the beta-gamma plane."}
+```{r fig.alt = "Overlaid pomp and neuralsbi posteriors on the beta-gamma plane.", dev = "ragg_png", dpi = 200}
 # thin the NPE draws to pomp's count so neither cloud simply outnumbers the other
 npe_thin <- draws_npe[sample(nrow(draws_npe), nrow(post_pomp)), ]
 overlay_df <- rbind(
