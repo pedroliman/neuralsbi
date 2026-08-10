@@ -105,11 +105,14 @@ summary_for <- function(R0) {
 res <- t(sapply(R0_grid, summary_for))
 round(res, 2)
 
-plot(res[, "truth"], res[, "median"], pch = 16, ylim = range(res[, 3:4]),
-     xlab = expression(true ~ R[0]), ylab = expression(posterior ~ R[0]))
-arrows(res[, "truth"], res[, "5%"], res[, "truth"], res[, "95%"],
-       code = 3, angle = 90, length = 0.03)
-abline(0, 1, lty = 2)
+res_df <- as.data.frame(res, check.names = FALSE)
+ggplot2::ggplot(res_df, ggplot2::aes(x = truth, y = median)) +
+  ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey50") +
+  ggplot2::geom_linerange(ggplot2::aes(ymin = .data[["5%"]], ymax = .data[["95%"]]),
+                          colour = "grey40") +
+  ggplot2::geom_point(colour = "steelblue", size = 2) +
+  ggplot2::labs(x = expression(true ~ R[0]), y = expression(posterior ~ R[0])) +
+  ggplot2::theme_minimal()
 ```
 
 All twelve intervals cover the $R_0$ that generated their outbreak, and every one of those posteriors came from the same network. A likelihood-based sampler would have run twelve times; here the cost of the thirteenth outbreak, and the thousandth, is another forward pass. That is the trade neural posterior estimation makes: pay the simulation and training cost once, up front, and then condition on data for free. It pays off whenever you have many data sets to fit, or new data arriving, and it does not pay off when you have one observation and a cheap likelihood.

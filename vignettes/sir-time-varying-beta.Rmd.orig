@@ -106,9 +106,11 @@ national$new <- pmax(c(national$cases[1], diff(national$cases)), 0)
 national$new7 <- as.numeric(smooth7(national$new))
 national$day <- as.numeric(national$date - start_date) + 1
 
-plot(national$date, national$new7, type = "l", lwd = 2,
-     xlab = "date", ylab = "new cases/day (7-day average)",
-     main = "US reported cases, first 120 days")
+ggplot2::ggplot(national, ggplot2::aes(x = date, y = new7)) +
+  ggplot2::geom_line(colour = "steelblue", linewidth = 0.8) +
+  ggplot2::labs(x = "date", y = "new cases/day (7-day average)",
+               title = "US reported cases, first 120 days") +
+  ggplot2::theme_minimal()
 ```
 
 Notice the shape: a steep rise through March, then a broad flat top from early April to the end of the window. That plateau is what the three models have to explain, and it is a real discriminator. A plain SIR epidemic with a fixed contact rate produces a sharp peak, not a shoulder.
@@ -436,14 +438,24 @@ mi <- expm1(sim_cbf(theta_pp, N_fixed = pop[["Michigan"]])[, -1, drop = FALSE])
 env <- apply(log1p(mi), 2, stats::quantile, c(0.05, 0.5, 0.95))
 dates <- start_date + t_grid - 1
 
-plot(dates, env[2, ], type = "n", ylim = range(env), xlab = "date (2020)",
-     ylab = "log(1 + cases/day)", main = "CBF prior predictive, Michigan-sized population")
-polygon(c(dates, rev(dates)), c(env[1, ], rev(env[3, ])), col = "grey85", border = NA)
-lines(dates, env[2, ], lwd = 2, col = "grey40")
-lines(dates, log1p(case_daily_s["Michigan", ]), lwd = 2, col = "firebrick")
-lines(dates, log1p(case_daily_s["West Virginia", ]), lwd = 2, col = "steelblue")
-legend("topleft", bty = "n", lwd = 2, col = c("grey40", "firebrick", "steelblue"),
-       legend = c("prior predictive median (90% band)", "Michigan", "West Virginia"))
+env_df <- data.frame(date = dates, lo = env[1, ], median = env[2, ], hi = env[3, ])
+obs_df <- rbind(
+  data.frame(date = dates, value = log1p(case_daily_s["Michigan", ]), state = "Michigan"),
+  data.frame(date = dates, value = log1p(case_daily_s["West Virginia", ]), state = "West Virginia")
+)
+
+ggplot2::ggplot() +
+  ggplot2::geom_ribbon(data = env_df, ggplot2::aes(x = date, ymin = lo, ymax = hi),
+                       fill = "grey85") +
+  ggplot2::geom_line(data = env_df, ggplot2::aes(x = date, y = median),
+                     colour = "grey40", linewidth = 0.8) +
+  ggplot2::geom_line(data = obs_df, ggplot2::aes(x = date, y = value, colour = state),
+                     linewidth = 0.8) +
+  ggplot2::scale_colour_manual(values = c("Michigan" = "firebrick", "West Virginia" = "steelblue")) +
+  ggplot2::labs(x = "date (2020)", y = "log(1 + cases/day)", colour = NULL,
+               title = "CBF prior predictive, Michigan-sized population",
+               subtitle = "grey band: prior predictive median and 90% interval") +
+  ggplot2::theme_minimal()
 ```
 
 ## Train all three
