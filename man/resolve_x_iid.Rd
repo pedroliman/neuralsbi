@@ -7,7 +7,7 @@
 resolve_x_iid(post, x, arg = "obs")
 }
 \arguments{
-\item{post}{An \code{nsbi_nle_posterior} object.}
+\item{post}{An \code{nsbi_mcmc_posterior} object.}
 
 \item{x}{Observation to condition on, or \code{NULL} to use the posterior's
 \code{x_obs}.}

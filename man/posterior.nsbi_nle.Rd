@@ -53,7 +53,8 @@ over thousands of observations is a large bill before the first MCMC step.}
 for \code{"stan"}.}
 }
 \value{
-An object of class \code{c("nsbi_nle_posterior", "nsbi_posterior")}.
+An object of class
+\code{c("nsbi_nle_posterior", "nsbi_mcmc_posterior", "nsbi_posterior")}.
 }
 \description{
 Bayes' rule turns an \code{\link[=nle]{nle()}} fit into a posterior,
