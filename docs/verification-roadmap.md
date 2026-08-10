@@ -234,7 +234,25 @@ leakage handling) and documented.
 ## Part E — Handoff: current state & next actions
 
 *Everything below is written so an agent (or human) with no other context can
-pick up the work. Last updated for the 0.5.16 neural-ratio pass (branch
+pick up the work. Last updated for the 0.5.19 documentation pass (branch
+`claude/vignette-issue-ctjtot`, August 2026), which closed #29 and changed what
+the package ships. `vignettes/neuralsbi.Rmd` is now the only vignette in the
+tarball; the other six live in `vignettes/articles/`, which `.Rbuildignore`
+excludes from the build and pkgdown renders for the website at the same
+`articles/*.html` URLs as before. Vignette figures shipped twice, raw under
+`vignettes/figures/` and base64-embedded in the HTML under `inst/doc`, which
+had the installed package at 4.7 MB against the 5 MB that earns an R CMD check
+note; it is 1.7 MB now, and the tarball went from 2.35 MB to 687 KB. Figures
+bake to SVG by default, with `dev = "ragg_png"` set chunk by chunk on the
+panels that draw one mark per posterior draw, where SVG runs 5 to 17 times the
+size of the PNG. The R(t) heatmap is not one of them, contrary to what #29
+assumed: it uses `geom_raster()`, which svglite embeds as a single bitmap
+rather than 6,120 rectangles. `precompute.R` now bakes each article in its own
+R process, because `knit()` calls sharing a session share attached packages,
+and an article whose `library(neuralsbi)` ran second lost the note that
+`sample()` masks the base function.*
+
+*Before that, the 0.5.16 neural-ratio pass (branch
 `claude/neural-likelihood-ratio-estimator-8mot0m`, August 2026): the package
 now carries all three factorizations. `nre()` (`R/nre.R`) trains a classifier
 on the atomic (NRE-B) loss that `sbi`'s `NRE` uses, `log_ratio()` evaluates
@@ -485,7 +503,7 @@ it carries no defaults of its own. When changing a default, update the
 | CI | `.github/workflows/R-CMD-check.yaml` | fixed (codoc drift, donttest example, TORCH_HOME); green on `main` |
 | NAMESPACE / man | hand-maintained | new exports have hand-written `.Rd`s |
 | Website | `_pkgdown.yml`, `.github/workflows/pkgdown.yaml` | pkgdown site deployed to gh-pages; builds locally into `site/` (gitignored, `docs/` stays for these design docs); `pkgdown/strip-internal.R` removes CLAUDE.md from the output. GitHub Pages must be set to serve from the `gh-pages` branch once. |
-| Vignettes | `vignettes/*.Rmd` (7) + `*.Rmd.orig` sources | intro-to-sbi → neuralsbi → density-estimators → diagnostics → neural-likelihood → sir-epidemic → sir-time-varying-beta. `sir-epidemic` is a `neuralsbi`-vs-`pomp` comparison, so regenerating it needs `pomp` installed in addition to torch (baked output ships static, so building/checking the package does not). `sir-time-varying-beta` fits three competing SIR models to state-level COVID-19 case data and builds on `sir-epidemic`. **Precomputed**: the evaluated source is `vignettes/<name>.Rmd.orig`; `vignettes/precompute.R` bakes it (with a working torch install) into a static `vignettes/<name>.Rmd` (results + figures inlined, figures under `vignettes/figures/`). CI and pkgdown re-render that static Markdown with no torch. Re-run `Rscript vignettes/precompute.R` after editing any `.Rmd.orig`; `.Rbuildignore` keeps the sources and the script out of the tarball. |
+| Vignettes & articles | `vignettes/neuralsbi.Rmd` (ships) + `vignettes/articles/*.Rmd` (6, website only) + `*.Rmd.orig` sources | intro-to-sbi → neuralsbi → density-estimators → diagnostics → neural-likelihood → sir-epidemic → sir-time-varying-beta. `sir-epidemic` is a `neuralsbi`-vs-`pomp` comparison, so regenerating it needs `pomp` installed in addition to torch (baked output ships static, so building/checking the package does not). `sir-time-varying-beta` fits three competing SIR models to state-level COVID-19 case data and builds on `sir-epidemic`. **Precomputed**: the evaluated source is `<name>.Rmd.orig`; `vignettes/precompute.R` bakes it (with a working torch install) into a static `<name>.Rmd` (results + figures inlined, figures under that source's own `figures/`), one R process per article. CI and pkgdown re-render that static Markdown with no torch. Re-run `Rscript vignettes/precompute.R` after editing any `.Rmd.orig`, optionally filtered by name (`Rscript vignettes/precompute.R sir-time-varying`). `.Rbuildignore` keeps the sources, the script and all of `vignettes/articles/` out of the tarball, so only the getting-started vignette installs; the six articles are reachable on the website at `articles/<name>.html`. Baking needs `svglite` and `ragg` as well as torch, plus `pomp` for `sir-epidemic` and internet access for `sir-time-varying-beta`. |
 | Two-moons calibration | `inst/benchmarks/two_moons_calibration.R` | SBC + expected coverage + TARP on a two-moons NSF fit; figures in `docs/figures/two_moons_{sbc,coverage,tarp}.png` (M2) |
 
 Key contract: every estimator implements `de_log_prob(de, theta, x)` and
