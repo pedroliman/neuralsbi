@@ -1,10 +1,17 @@
-# Precompute (cache) the package vignettes.
+# Precompute (cache) the package's vignette and its pkgdown articles.
 #
-# The neural estimators shown in these vignettes need `torch`/libtorch and take
+# `vignettes/neuralsbi.Rmd` is the one article that ships in the tarball. The
+# rest live in `vignettes/articles/`, which .Rbuildignore keeps out of the
+# build: pkgdown renders them for the website, and someone installing the
+# package to fit a model does not download six long-form articles and their
+# figures to get there. This script bakes both, since they are written the
+# same way and both need torch.
+#
+# The neural estimators shown in these articles need `torch`/libtorch and take
 # too long to train on CI (which usually has neither libtorch nor a GPU). So we
 # evaluate the expensive `*.Rmd.orig` sources *here*, once, and commit the
 # resulting `*.Rmd` -- with output and figures already baked in -- together with
-# the figures under `vignettes/figures/`.
+# the figures under each source's own `figures/`.
 #
 # On CI, in `R CMD check`, and in the pkgdown build, the committed `.Rmd` files
 # are plain Markdown: every chunk has already been turned into a static code
@@ -62,8 +69,14 @@ vign_dir <- if (basename(getwd()) == "vignettes") getwd() else file.path(getwd()
 old_wd <- setwd(vign_dir)
 on.exit(setwd(old_wd), add = TRUE)
 
-origs <- sort(list.files(".", pattern = "\\.Rmd\\.orig$"))
-if (length(origs) == 0) stop("No *.Rmd.orig sources found in vignettes/.")
+dirs <- c(".", "articles")
+dirs <- dirs[dir.exists(dirs)]
+sources <- do.call(rbind, lapply(dirs, function(d) {
+  f <- sort(list.files(d, pattern = "\\.Rmd\\.orig$"))
+  if (!length(f)) NULL else data.frame(dir = d, file = f)
+}))
+if (is.null(sources)) stop("No *.Rmd.orig sources found in vignettes/.")
+origs <- sources$file
 
 # Optional: bake only the vignettes named on the command line, matched as
 # substrings of the file name. Baking one article beats baking all six when
@@ -76,15 +89,17 @@ if (length(selected)) {
     stop("No *.Rmd.orig matched ", paste(selected, collapse = ", "), ". Available: ",
          paste(origs, collapse = ", "), call. = FALSE)
   }
-  origs <- origs[keep]
-  message("Baking only: ", paste(origs, collapse = ", "))
+  sources <- sources[keep, , drop = FALSE]
+  message("Baking only: ", paste(sources$file, collapse = ", "))
 }
 
 rscript <- file.path(R.home("bin"), "Rscript")
 
-for (orig in origs) {
+for (i in seq_len(nrow(sources))) {
+  src_dir <- sources$dir[i]
+  orig <- sources$file[i]
   out <- sub("\\.orig$", "", orig)
-  message("Baking ", orig, " -> ", out)
+  message("Baking ", file.path(src_dir, orig), " -> ", file.path(src_dir, out))
 
   # One R process per article, rather than one knit() call after another in
   # this session. A fresh `envir` isolates the objects a chunk creates but not
@@ -95,7 +110,12 @@ for (orig in origs) {
   code <- sprintf(
     'options(neuralsbi.progress = "builtin"); knitr::knit(%s, output = %s, envir = new.env(parent = globalenv()), quiet = FALSE)',
     encodeString(orig, quote = '"'), encodeString(out, quote = '"'))
-  status <- system2(rscript, c("-e", shQuote(code)))
+  # Bake from the source's own directory, so a chunk's "figures/<name>-1.svg"
+  # lands next to the article that draws it and resolves the same way under
+  # R CMD build and pkgdown.
+  bake_wd <- setwd(src_dir)
+  status <- tryCatch(system2(rscript, c("-e", shQuote(code))),
+                     finally = setwd(bake_wd))
   if (status != 0) {
     stop(sprintf("Baking %s failed (Rscript exited %d).", orig, status),
          call. = FALSE)
@@ -105,11 +125,11 @@ for (orig in origs) {
   # As a backstop, refuse to leave a baked vignette that carries an error
   # trace (e.g. a torch chunk that silently degraded) -- better to fail here
   # than to commit a broken article.
-  baked <- readLines(out, warn = FALSE)
+  baked <- readLines(file.path(src_dir, out), warn = FALSE)
   bad <- grep("^#> Error|libtorch is not installed|not found$", baked)
   if (length(bad)) {
     stop(sprintf("%s still contains error output at line(s) %s. Fix the ",
-                 out, paste(head(bad, 5), collapse = ", ")),
+                 file.path(src_dir, out), paste(head(bad, 5), collapse = ", ")),
          "environment (torch installed? package up to date?) and re-run.",
          call. = FALSE)
   }

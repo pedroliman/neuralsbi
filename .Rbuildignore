@@ -23,3 +23,6 @@
 ^vignettes/.*\.Rmd\.orig$
 ^vignettes/precompute\.R$
 ^junit\.xml$
+# pkgdown articles: rendered for the website, not shipped in the tarball.
+# Only vignettes/neuralsbi.Rmd installs with the package.
+^vignettes/articles$
