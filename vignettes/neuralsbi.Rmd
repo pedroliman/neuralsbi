@@ -57,8 +57,12 @@ set.seed(1)
 x_obs <- sir_simulator(theta_true[["beta"]], theta_true[["gamma"]],
                        theta_true[["rho"]])
 
-plot(1:12, expm1(x_obs), type = "b", pch = 16,
-     xlab = "week", ylab = "reported cases", main = "One simulated outbreak")
+ggplot2::ggplot(data.frame(week = 1:12, cases = expm1(x_obs)),
+                ggplot2::aes(x = week, y = cases)) +
+  ggplot2::geom_line(colour = "steelblue") +
+  ggplot2::geom_point(colour = "steelblue", size = 2) +
+  ggplot2::labs(x = "week", y = "reported cases", title = "One simulated outbreak") +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
@@ -116,7 +120,7 @@ pairplot(draws, truth = theta_true)
 ```
 
 <div class="figure">
-<img src="figures/neuralsbi-posterior-1.svg" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."  />
+<img src="figures/neuralsbi-posterior-1.png" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."  />
 <p class="caption">plot of chunk posterior</p>
 </div>
 
@@ -139,7 +143,7 @@ pairplot(draws_2, truth = theta_2)
 ```
 
 <div class="figure">
-<img src="figures/neuralsbi-second-1.svg" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."  />
+<img src="figures/neuralsbi-second-1.png" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."  />
 <p class="caption">plot of chunk second</p>
 </div>
 
@@ -155,7 +159,7 @@ res <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
 res
 #> <nsbi_sbc> 150 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     beta=0.191  gamma=0.023  rho=0.040
+#>     beta=0.070  gamma=0.249  rho=0.042
 
 plot_sbc(res, param = 1)
 ```
