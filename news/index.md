@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.5.18
+
+- **Vignette figures are now all ggplot2, with a consistent theme and
+  palette.** `#136` fixed the parts of
+  [\#107](https://github.com/pedroliman/neuralsbi/issues/107) that don’t
+  need libtorch to verify (pkgdown’s equation rendering and
+  [`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md)’s
+  truth-marker/axis-range styling); this closes the remaining part,
+  converting every
+  base-[`plot()`](https://rdrr.io/r/graphics/plot.default.html) call
+  across `vignettes/*.Rmd.orig` (`intro-to-sbi`, `neural-likelihood`,
+  `neuralsbi`, `sir-epidemic`, `sir-time-varying-beta`) to `ggplot2`,
+  matching the
+  [`theme_minimal()`](https://ggplot2.tidyverse.org/reference/ggtheme.html)
+  and steelblue/firebrick/grey palette the package’s own `plot_*()`
+  functions already use. `neural-likelihood.Rmd.orig`’s SBC panel loop
+  also drops a `par(mfrow = c(2, 2))` wrapper around four calls to
+  [`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md),
+  which is grid graphics and was never affected by
+  [`par()`](https://rdrr.io/r/graphics/par.html); the baked figures
+  already rendered as four separate images, so removing the dead wrapper
+  changes nothing about the output. These vignettes are precomputed
+  under libtorch (see `vignettes/precompute.R`) and this environment has
+  no libtorch, so the committed figures under `vignettes/figures/` are
+  not yet regenerated from the new code – that rebake is tracked in
+  [\#29](https://github.com/pedroliman/neuralsbi/issues/29)
+  ([\#107](https://github.com/pedroliman/neuralsbi/issues/107))
+  ([\#148](https://github.com/pedroliman/neuralsbi/issues/148)).
+
 ## neuralsbi 0.5.17
 
 - Internal cleanup, no user-visible behavior change:
