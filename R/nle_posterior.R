@@ -40,7 +40,8 @@
 #'   `n_pool` for `"slice"`, or `iter_warmup`, `iter_sampling` and `refresh`
 #'   for `"stan"`.
 #'
-#' @return An object of class `c("nsbi_nle_posterior", "nsbi_posterior")`.
+#' @return An object of class
+#'   `c("nsbi_nle_posterior", "nsbi_mcmc_posterior", "nsbi_posterior")`.
 #'
 #' @examples
 #' prior <- prior_uniform(c(mu = -3), c(mu = 3))
@@ -102,7 +103,7 @@ mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
                      dots = dots),
       cache = new.env(parent = emptyenv())
     ),
-    class = c(class, "nsbi_posterior")
+    class = c(class, "nsbi_mcmc_posterior", "nsbi_posterior")
   )
 }
 
@@ -136,7 +137,7 @@ check_mcmc_count <- function(value, name, min, why = NULL) {
 #' the rationale shared with [resolve_x()], including why a non-finite entry
 #' stops here rather than warns.
 #'
-#' @param post An `nsbi_nle_posterior` object.
+#' @param post An `nsbi_mcmc_posterior` object.
 #' @param x Observation to condition on, or `NULL` to use the posterior's
 #'   `x_obs`.
 #' @param arg Name the caller's argument goes by, for the error message.
@@ -146,15 +147,15 @@ resolve_x_iid <- function(post, x, arg = "obs") {
   resolve_obs(post, x, first_row = FALSE, arg = arg)
 }
 
-#' Sample an NLE posterior with MCMC
+#' Sample an MCMC posterior
 #'
-#' Runs the sampler chosen by [posterior.nsbi_nle()]. Draws are cached on the
-#' posterior object, so asking for the same or fewer draws from the same
-#' observation returns immediately instead of re-running a chain -- which is
-#' what makes [summary()] and repeated calls tolerable.
+#' Runs the sampler chosen by [posterior.nsbi_nle()] or [posterior.nsbi_nre()].
+#' Draws are cached on the posterior object, so asking for the same or fewer
+#' draws from the same observation returns immediately instead of re-running a
+#' chain -- which is what makes [summary()] and repeated calls tolerable.
 #'
-#' @param x An `nsbi_nle_posterior` object (named `x` to satisfy the [sample()]
-#'   generic).
+#' @param x An `nsbi_mcmc_posterior` object (named `x` to satisfy the
+#'   [sample()] generic).
 #' @param size,n Number of posterior draws (`n` is an alias for `size`).
 #' @param obs Observation to condition on (defaults to the posterior's `x_obs`).
 #' @param refresh Force a new run even when a cached one would do.
@@ -162,18 +163,19 @@ resolve_x_iid <- function(post, x, arg = "obs") {
 #' @param ... Unused.
 #' @return An `n x dim` matrix of posterior draws (class `nsbi_samples`), with
 #'   convergence diagnostics attached as attribute `diagnostics`.
-#' @method sample nsbi_nle_posterior
+#' @method sample nsbi_mcmc_posterior
 #' @export
-sample.nsbi_nle_posterior <- function(x, size = 1000, n = size, obs = NULL,
-                                      refresh = FALSE, verbose = FALSE, ...) {
+sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
+                                       refresh = FALSE, verbose = FALSE, ...) {
   mcmc_draws(x, n, obs, refresh, verbose)
 }
 
 #' Run (or reuse) the chain behind an MCMC posterior's [sample()] method
 #'
-#' The body [sample.nsbi_nle_posterior()] and [sample.nsbi_nre_posterior()]
-#' share. Which sampler runs is read off the posterior object, so nothing here
-#' needs to know which kind of fit produced it.
+#' The body [sample.nsbi_mcmc_posterior()] runs regardless of whether the
+#' underlying fit is an [nle()] or [nre()]. Which sampler runs is read off the
+#' posterior object, so nothing here needs to know which kind of fit produced
+#' it.
 #'
 #' @param post An MCMC-sampled `nsbi_posterior`.
 #' @param n Number of draws.
@@ -263,9 +265,10 @@ prior_scale <- function(prior) {
 
 #' @rdname log_prob
 #' @export
-log_prob.nsbi_nle_posterior <- function(post, theta, x = NULL,
-                                        normalize = TRUE, ...) {
-  mcmc_log_prob(post, theta, x, !missing(normalize) && isTRUE(normalize), "NLE")
+log_prob.nsbi_mcmc_posterior <- function(post, theta, x = NULL,
+                                         normalize = TRUE, ...) {
+  what <- if (inherits(post$fit, "nsbi_nle")) "NLE" else "NRE"
+  mcmc_log_prob(post, theta, x, !missing(normalize) && isTRUE(normalize), what)
 }
 
 #' The unnormalized log density behind an MCMC posterior's [log_prob()] method
@@ -292,10 +295,14 @@ mcmc_log_prob <- function(post, theta, x, warn, what) {
 }
 
 #' @export
-print.nsbi_nle_posterior <- function(x, ...) {
-  cat_mcmc_posterior(x, "nsbi_nle_posterior")
+print.nsbi_mcmc_posterior <- function(x, ...) {
+  cat_mcmc_posterior(x, class(x)[1])
   cat("  log_prob() is unnormalized: the evidence p(x) is not available.\n")
-  cat("  sample(post, n), map_estimate(post), stan_code(post$fit)\n")
+  if (inherits(x$fit, "nsbi_nle")) {
+    cat("  sample(post, n), map_estimate(post), stan_code(post$fit)\n")
+  } else {
+    cat("  sample(post, n), map_estimate(post)\n")
+  }
   invisible(x)
 }
 

@@ -27,7 +27,8 @@
 #' @param ... Further arguments to the sampler: `width`, `max_steps` and
 #'   `n_pool`.
 #'
-#' @return An object of class `c("nsbi_nre_posterior", "nsbi_posterior")`.
+#' @return An object of class
+#'   `c("nsbi_nre_posterior", "nsbi_mcmc_posterior", "nsbi_posterior")`.
 #'
 #' @examples
 #' prior <- prior_uniform(c(mu = -3), c(mu = 3))
@@ -46,41 +47,4 @@ posterior.nsbi_nre <- function(fit, x_obs = NULL, n_chains = 20L,
   mcmc_posterior(fit, x_obs, "slice", n_chains, warmup, thin,
                  match.arg(init_strategy), seed, list(...),
                  "nsbi_nre_posterior")
-}
-
-#' Sample an NRE posterior with MCMC
-#'
-#' Identical in behavior to [sample.nsbi_nle_posterior()], including the draw
-#' cache: asking for the same or fewer draws from the same observation returns
-#' the cached run instead of starting a new chain.
-#'
-#' @param x An `nsbi_nre_posterior` object (named `x` to satisfy the [sample()]
-#'   generic).
-#' @param size,n Number of posterior draws (`n` is an alias for `size`).
-#' @param obs Observation to condition on (defaults to the posterior's `x_obs`).
-#' @param refresh Force a new run even when a cached one would do.
-#' @param verbose Report sampling progress.
-#' @param ... Unused.
-#' @return An `n x dim` matrix of posterior draws (class `nsbi_samples`), with
-#'   convergence diagnostics attached as attribute `diagnostics`.
-#' @method sample nsbi_nre_posterior
-#' @export
-sample.nsbi_nre_posterior <- function(x, size = 1000, n = size, obs = NULL,
-                                      refresh = FALSE, verbose = FALSE, ...) {
-  mcmc_draws(x, n, obs, refresh, verbose)
-}
-
-#' @rdname log_prob
-#' @export
-log_prob.nsbi_nre_posterior <- function(post, theta, x = NULL,
-                                        normalize = TRUE, ...) {
-  mcmc_log_prob(post, theta, x, !missing(normalize) && isTRUE(normalize), "NRE")
-}
-
-#' @export
-print.nsbi_nre_posterior <- function(x, ...) {
-  cat_mcmc_posterior(x, "nsbi_nre_posterior")
-  cat("  log_prob() is unnormalized: the evidence p(x) is not available.\n")
-  cat("  sample(post, n), map_estimate(post)\n")
-  invisible(x)
 }
