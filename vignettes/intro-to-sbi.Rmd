@@ -44,11 +44,6 @@ The simulator and prior are the ones from `vignette("neuralsbi")`. A binomial SI
 
 ``` r
 library(neuralsbi)   # note: masks base::sample(); see below
-#> 
-#> Attaching package: 'neuralsbi'
-#> The following object is masked from 'package:base':
-#> 
-#>     sample
 
 sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
   S <- N - I0; I <- I0
@@ -104,24 +99,27 @@ summary_for <- function(R0) {
 res <- t(sapply(R0_grid, summary_for))
 round(res, 2)
 #>       truth median   5%  95%
-#>  [1,]  1.50   1.38 1.27 1.52
+#>  [1,]  1.50   1.38 1.28 1.52
 #>  [2,]  1.73   1.84 1.56 2.17
-#>  [3,]  1.95   2.00 1.70 2.50
-#>  [4,]  2.18   2.17 1.83 2.75
-#>  [5,]  2.41   2.40 2.04 3.10
+#>  [3,]  1.95   2.00 1.69 2.50
+#>  [4,]  2.18   2.18 1.84 2.82
+#>  [5,]  2.41   2.41 2.04 3.09
 #>  [6,]  2.64   2.53 2.21 3.06
-#>  [7,]  2.86   3.05 2.58 3.81
-#>  [8,]  3.09   3.36 2.85 4.16
-#>  [9,]  3.32   3.47 3.02 4.10
-#> [10,]  3.55   3.44 3.04 4.00
-#> [11,]  3.77   3.39 3.05 3.84
-#> [12,]  4.00   3.84 3.46 4.33
+#>  [7,]  2.86   3.04 2.58 3.80
+#>  [8,]  3.09   3.38 2.86 4.17
+#>  [9,]  3.32   3.46 3.02 4.12
+#> [10,]  3.55   3.44 3.03 3.97
+#> [11,]  3.77   3.39 3.06 3.85
+#> [12,]  4.00   3.84 3.46 4.34
 
-plot(res[, "truth"], res[, "median"], pch = 16, ylim = range(res[, 3:4]),
-     xlab = expression(true ~ R[0]), ylab = expression(posterior ~ R[0]))
-arrows(res[, "truth"], res[, "5%"], res[, "truth"], res[, "95%"],
-       code = 3, angle = 90, length = 0.03)
-abline(0, 1, lty = 2)
+res_df <- as.data.frame(res, check.names = FALSE)
+ggplot2::ggplot(res_df, ggplot2::aes(x = truth, y = median)) +
+  ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey50") +
+  ggplot2::geom_linerange(ggplot2::aes(ymin = .data[["5%"]], ymax = .data[["95%"]]),
+                          colour = "grey40") +
+  ggplot2::geom_point(colour = "steelblue", size = 2) +
+  ggplot2::labs(x = expression(true ~ R[0]), y = expression(posterior ~ R[0])) +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
@@ -149,11 +147,11 @@ round(c(beta = sd(draws[, "beta"]) / mean(draws[, "beta"]),
         gamma = sd(draws[, "gamma"]) / mean(draws[, "gamma"]),
         R0 = sd(R0) / mean(R0)), 3)
 #>  beta gamma    R0 
-#> 0.080 0.190 0.118
+#> 0.080 0.189 0.117
 
 round(quantile(R0, c(0.05, 0.5, 0.95)), 2)
 #>   5%  50%  95% 
-#> 1.79 2.10 2.61
+#> 1.78 2.09 2.61
 ```
 
 Twelve weekly counts pin $\beta$ down to about 8% of its own mean and leave $\gamma$ at 19%. $R_0$, built from both, lands in between at 12%, tighter than the recovery rate it divides by. The epidemic's growth constrains the combination better than it constrains $\gamma$ on its own, and no amount of training changes that: it is what the data carry. In a real application this is where external information belongs. Fix the recovery rate from what is known about the disease, or put a tight prior on it, and $R_0$ tightens with it.
@@ -169,7 +167,7 @@ res_sbc <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300,
 res_sbc
 #> <nsbi_sbc> 150 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     beta=0.312  gamma=0.040  rho=0.086
+#>     beta=0.197  gamma=0.128  rho=0.003
 plot_coverage(res_sbc)
 ```
 
