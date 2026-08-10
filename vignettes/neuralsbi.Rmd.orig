@@ -71,8 +71,12 @@ set.seed(1)
 x_obs <- sir_simulator(theta_true[["beta"]], theta_true[["gamma"]],
                        theta_true[["rho"]])
 
-plot(1:12, expm1(x_obs), type = "b", pch = 16,
-     xlab = "week", ylab = "reported cases", main = "One simulated outbreak")
+ggplot2::ggplot(data.frame(week = 1:12, cases = expm1(x_obs)),
+                ggplot2::aes(x = week, y = cases)) +
+  ggplot2::geom_line(colour = "steelblue") +
+  ggplot2::geom_point(colour = "steelblue", size = 2) +
+  ggplot2::labs(x = "week", y = "reported cases", title = "One simulated outbreak") +
+  ggplot2::theme_minimal()
 ```
 
 Reported cases climb from 34 in the first week to about 11,000 in week 8, then fall away as the susceptible pool empties. Those twelve numbers are the entire data set for everything below.
