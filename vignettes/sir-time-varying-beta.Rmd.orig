@@ -19,6 +19,10 @@ knitr::opts_chunk$set(
   fig.path = "figures/sir-rt-", fig.width = 6.5, fig.height = 4.5,
   dpi = 96, fig.retina = NULL, dev = "svglite"
 )
+# SVG by default. The R(t) heatmap stays vector even at 51 states x 120 days,
+# because geom_raster() embeds one bitmap rather than 6,120 rectangles. The
+# posterior predictive panel does not: six facets of daily observations are
+# thousands of points, so that chunk renders to PNG.
 set.seed(1)
 
 # Baked with a future plan, so the simulator runs across cores. Nothing about
@@ -503,7 +507,7 @@ plot_sbc(sbc_res$CBF, param = 8L)
 
 For each state we condition each posterior on that state's own curve and population. Then we push the draws through the simulator and compare predicted daily incidence to what was reported. We summarize by the median rather than the mean. The daily predictive is strongly right-skewed on this log-trained scale, so its mean tracks the upper tail and makes a calibrated fit look like a systematic overshoot.
 
-```{r post-pred, fig.width = 7.5, fig.height = 6.5, fig.alt = "Posterior predictive daily incidence for three models against reported cases in six representative states."}
+```{r post-pred, dev = "ragg_png", fig.width = 7.5, fig.height = 6.5, fig.alt = "Posterior predictive daily incidence for three models against reported cases in six representative states."}
 highlight <- c("Washington", "New York", "California", "Louisiana", "Michigan", "West Virginia")
 obs_for <- function(s) c(log(pop[[s]]), log1p(case_daily_s[s, ]))
 

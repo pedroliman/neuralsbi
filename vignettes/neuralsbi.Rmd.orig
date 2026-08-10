@@ -19,6 +19,9 @@ knitr::opts_chunk$set(
   fig.path = "figures/neuralsbi-", fig.width = 5, fig.height = 4,
   dpi = 96, fig.retina = NULL, dev = "svglite"
 )
+# SVG by default: lines, bars and text are a handful of path elements. The
+# pairplot chunks below override it, because one <circle> per posterior draw
+# makes an SVG several times the size of the PNG it replaces.
 set.seed(1)
 
 # Baked with a future plan, so the simulator runs across cores. Nothing about
@@ -108,7 +111,7 @@ Each simulation draws from its own random-number stream, so a given `set.seed()`
 
 `posterior()` conditions the trained estimator on an observation. It is a forward pass through the network, so it returns immediately, and `sample()` draws from it.
 
-```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked."}
+```{r posterior, dev = "ragg_png", fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked."}
 post  <- posterior(fit, x_obs = x_obs)
 draws <- sample(post, 4000)
 
@@ -122,7 +125,7 @@ The posterior covers the values that generated `x_obs`. It also shows the ridge 
 
 The fit is amortized. It was trained over the whole prior, not around one observation, so a second outbreak costs a forward pass and nothing else. No re-simulating and no retraining.
 
-```{r second, fig.alt = "Pairs plot of the posterior for a second, faster outbreak from the same fit."}
+```{r second, dev = "ragg_png", fig.alt = "Pairs plot of the posterior for a second, faster outbreak from the same fit."}
 theta_2 <- c(beta = 0.5, gamma = 0.1, rho = 0.3)          # R0 = 5, poorly reported
 x_obs_2 <- sir_simulator(theta_2[["beta"]], theta_2[["gamma"]], theta_2[["rho"]])
 

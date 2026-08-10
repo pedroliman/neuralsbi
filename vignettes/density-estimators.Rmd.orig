@@ -19,6 +19,10 @@ knitr::opts_chunk$set(
   fig.path = "figures/density-estimators-", fig.width = 4, fig.height = 4,
   dpi = 96, fig.retina = NULL, dev = "svglite"
 )
+# Axes, text and lines are a few dozen path elements, so they are crisp and
+# small as SVG. A pairplot is one <circle> per draw, which makes the same figure
+# an order of magnitude larger than a PNG of it, so those chunks set
+# `dev = "ragg_png"` one by one.
 set.seed(1)
 
 # Baked with a future plan, so the simulator runs across cores. Nothing about
@@ -58,7 +62,7 @@ x_obs <- c(0, 0)
 
 The linear-Gaussian estimator has no way to represent two modes. It returns one wide Gaussian spread across both of them:
 
-```{r fig.alt = "Pairs plot of a unimodal Gaussian posterior spanning both moons."}
+```{r dev = "ragg_png", fig.alt = "Pairs plot of a unimodal Gaussian posterior spanning both moons."}
 fit_lg <- npe(task$prior, task$simulator, n_simulations = 2000,
               density_estimator = "linear_gaussian", seed = 1)
 draws_lg <- sample(posterior(fit_lg, x_obs = x_obs), 3000)
@@ -67,7 +71,7 @@ pairplot(draws_lg)
 
 The MDN has mixture components to spend, and it finds both moons:
 
-```{r fig.alt = "Pairs plot showing two separated posterior modes recovered by the MDN."}
+```{r dev = "ragg_png", fig.alt = "Pairs plot showing two separated posterior modes recovered by the MDN."}
 fit_mdn <- npe(task$prior, task$simulator, n_simulations = 2000,
                density_estimator = "mdn", n_components = 10,
                max_epochs = 200, seed = 1)
@@ -77,7 +81,7 @@ pairplot(draws_mdn)
 
 Now the spline flow, on the same 2000 simulations:
 
-```{r fig.alt = "Pairs plot of the two-moons posterior captured by a neural spline flow."}
+```{r dev = "ragg_png", fig.alt = "Pairs plot of the two-moons posterior captured by a neural spline flow."}
 fit_nsf <- npe(task$prior, task$simulator, n_simulations = 2000,
                density_estimator = "nsf", max_epochs = 150, seed = 1)
 draws_nsf <- sample(posterior(fit_nsf, x_obs = x_obs), 3000)

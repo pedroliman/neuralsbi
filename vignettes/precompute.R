@@ -28,6 +28,12 @@ if (!requireNamespace("knitr", quietly = TRUE)) {
 if (!requireNamespace("svglite", quietly = TRUE)) {
   stop("svglite is required to bake the vignettes' figures as SVG.")
 }
+# Figures are SVG by default, except for the handful of panels that draw one
+# mark per posterior draw. Those chunks set dev = "ragg_png", because a scatter
+# of several thousand points is many times larger as SVG than as PNG.
+if (!requireNamespace("ragg", quietly = TRUE)) {
+  stop("ragg is required: the dense scatter panels bake to PNG with it.")
+}
 if (!requireNamespace("torch", quietly = TRUE) || !torch::torch_is_installed()) {
   stop("torch (libtorch) is required to bake the neural vignettes. ",
        "Install with install.packages('torch'); torch::install_torch().")
