@@ -24,6 +24,11 @@ A population of size $N$ splits into susceptible, infected and recovered. The co
 
 ``` r
 library(neuralsbi)
+#> 
+#> Attaching package: 'neuralsbi'
+#> The following object is masked from 'package:base':
+#> 
+#>     sample
 
 sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
   S <- N - I0; I <- I0
@@ -57,8 +62,12 @@ set.seed(1)
 x_obs <- sir_simulator(theta_true[["beta"]], theta_true[["gamma"]],
                        theta_true[["rho"]])
 
-plot(1:12, expm1(x_obs), type = "b", pch = 16,
-     xlab = "week", ylab = "reported cases", main = "One simulated outbreak")
+ggplot2::ggplot(data.frame(week = 1:12, cases = expm1(x_obs)),
+                ggplot2::aes(x = week, y = cases)) +
+  ggplot2::geom_line(colour = "steelblue") +
+  ggplot2::geom_point(colour = "steelblue", size = 2) +
+  ggplot2::labs(x = "week", y = "reported cases", title = "One simulated outbreak") +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
@@ -85,7 +94,7 @@ fit
 #>     names           : beta, gamma, rho 
 #>   data (dim)        : 12
 #>   simulations       : 8000
-#>   best val loss     : -3.3695
+#>   best val loss     : -3.4455
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 ```
 
@@ -111,16 +120,16 @@ draws <- sample(post, 4000)
 
 round(colMeans(draws), 3)
 #>  beta gamma   rho 
-#> 0.285 0.140 0.593
+#> 0.285 0.140 0.596
 pairplot(draws, truth = theta_true)
 ```
 
 <div class="figure">
-<img src="figures/neuralsbi-posterior-1.svg" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."  />
+<img src="figures/neuralsbi-posterior-1.png" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."  />
 <p class="caption">plot of chunk posterior</p>
 </div>
 
-The posterior covers the values that generated `x_obs`. It also shows the ridge every SIR fit runs into: $\beta$ and $\gamma$ trade off against each other, because a case curve pins down their ratio $R_0 = \beta/\gamma$ much better than either rate alone. `vignette("intro-to-sbi")` picks that up and reads $R_0$ off the draws.
+The posterior covers the values that generated `x_obs`. It also shows the ridge every SIR fit runs into: $\beta$ and $\gamma$ trade off against each other, because a case curve pins down their ratio $R_0 = \beta/\gamma$ much better than either rate alone. The [introduction to neural SBI](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html) picks that up and reads $R_0$ off the draws.
 
 ## One fit, any number of outbreaks
 
@@ -134,12 +143,12 @@ x_obs_2 <- sir_simulator(theta_2[["beta"]], theta_2[["gamma"]], theta_2[["rho"]]
 draws_2 <- sample(posterior(fit, x_obs = x_obs_2), 4000)
 round(colMeans(draws_2), 3)
 #>  beta gamma   rho 
-#> 0.513 0.115 0.305
+#> 0.517 0.114 0.302
 pairplot(draws_2, truth = theta_2)
 ```
 
 <div class="figure">
-<img src="figures/neuralsbi-second-1.svg" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."  />
+<img src="figures/neuralsbi-second-1.png" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."  />
 <p class="caption">plot of chunk second</p>
 </div>
 
@@ -155,7 +164,7 @@ res <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
 res
 #> <nsbi_sbc> 150 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     beta=0.191  gamma=0.023  rho=0.040
+#>     beta=0.165  gamma=0.013  rho=0.438
 
 plot_sbc(res, param = 1)
 ```
@@ -176,13 +185,15 @@ plot_coverage(res)
 
 Read the p-values, not the fact that the check ran. $\beta$ comes back clean at 0.19. $\gamma$ (0.023) and $\rho$ (0.040) fall just under the conventional 0.05, and the coverage curve runs slightly below the diagonal. That is mild overconfidence: the intervals are a little too narrow rather than in the wrong place.
 
-A first pass at 8000 simulations often looks like this, and the remedy is more simulations before a bigger network. `vignette("diagnostics")` covers how to read these plots and what to do when a fit does not pass.
+A first pass at 8000 simulations often looks like this, and the remedy is more simulations before a bigger network. [Checking the posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html) covers how to read these plots and what to do when a fit does not pass.
 
 ## Where next
 
-- `vignette("intro-to-sbi")` explains what the method is doing with the same model. It covers why a simulator replaces the likelihood, what amortization buys across many outbreaks, and how to read $R_0$ off the posterior draws.
-- `vignette("density-estimators")` compares the estimators behind `npe()` and says when each one is worth using.
-- `vignette("diagnostics")` covers the full set of checks: SBC, expected coverage, TARP, and posterior predictive checks.
-- `vignette("sir-epidemic")` puts `neuralsbi` next to `pomp` on the same epidemic and compares the two posteriors.
+These articles live on the package website rather than in the installed package, so the links go there.
+
+- [Introduction to neural simulation-based inference](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html) explains what the method is doing with the same model. It covers why a simulator replaces the likelihood, what amortization buys across many outbreaks, and how to read $R_0$ off the posterior draws.
+- [Choosing a density estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.html) compares the estimators behind `npe()` and says when each one is worth using.
+- [Checking the posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html) covers the full set of checks: SBC, expected coverage, TARP, and posterior predictive checks.
+- [neuralsbi and pomp, two routes to an SIR posterior](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html) puts `neuralsbi` next to `pomp` on the same epidemic and compares the two posteriors.
 
 `?npe`, `?posterior` and `?sbc` document every argument.

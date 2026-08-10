@@ -119,7 +119,7 @@ round(colMeans(draws), 3)
 pairplot(draws, truth = theta_true)
 ```
 
-The posterior covers the values that generated `x_obs`. It also shows the ridge every SIR fit runs into: $\beta$ and $\gamma$ trade off against each other, because a case curve pins down their ratio $R_0 = \beta/\gamma$ much better than either rate alone. `vignette("intro-to-sbi")` picks that up and reads $R_0$ off the draws.
+The posterior covers the values that generated `x_obs`. It also shows the ridge every SIR fit runs into: $\beta$ and $\gamma$ trade off against each other, because a case curve pins down their ratio $R_0 = \beta/\gamma$ much better than either rate alone. The [introduction to neural SBI](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html) picks that up and reads $R_0$ off the draws.
 
 ## One fit, any number of outbreaks
 
@@ -150,13 +150,15 @@ plot_coverage(res)
 
 Read the p-values, not the fact that the check ran. $\beta$ comes back clean at 0.19. $\gamma$ (0.023) and $\rho$ (0.040) fall just under the conventional 0.05, and the coverage curve runs slightly below the diagonal. That is mild overconfidence: the intervals are a little too narrow rather than in the wrong place.
 
-A first pass at 8000 simulations often looks like this, and the remedy is more simulations before a bigger network. `vignette("diagnostics")` covers how to read these plots and what to do when a fit does not pass.
+A first pass at 8000 simulations often looks like this, and the remedy is more simulations before a bigger network. [Checking the posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html) covers how to read these plots and what to do when a fit does not pass.
 
 ## Where next
 
-- `vignette("intro-to-sbi")` explains what the method is doing with the same model. It covers why a simulator replaces the likelihood, what amortization buys across many outbreaks, and how to read $R_0$ off the posterior draws.
-- `vignette("density-estimators")` compares the estimators behind `npe()` and says when each one is worth using.
-- `vignette("diagnostics")` covers the full set of checks: SBC, expected coverage, TARP, and posterior predictive checks.
-- `vignette("sir-epidemic")` puts `neuralsbi` next to `pomp` on the same epidemic and compares the two posteriors.
+These articles live on the package website rather than in the installed package, so the links go there.
+
+- [Introduction to neural simulation-based inference](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.html) explains what the method is doing with the same model. It covers why a simulator replaces the likelihood, what amortization buys across many outbreaks, and how to read $R_0$ off the posterior draws.
+- [Choosing a density estimator](https://neuralsbi.pedrodelima.com/articles/density-estimators.html) compares the estimators behind `npe()` and says when each one is worth using.
+- [Checking the posterior](https://neuralsbi.pedrodelima.com/articles/diagnostics.html) covers the full set of checks: SBC, expected coverage, TARP, and posterior predictive checks.
+- [neuralsbi and pomp, two routes to an SIR posterior](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.html) puts `neuralsbi` next to `pomp` on the same epidemic and compares the two posteriors.
 
 `?npe`, `?posterior` and `?sbc` document every argument.
