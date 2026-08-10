@@ -95,13 +95,15 @@ national$new <- pmax(c(national$cases[1], diff(national$cases)), 0)
 national$new7 <- as.numeric(smooth7(national$new))
 national$day <- as.numeric(national$date - start_date) + 1
 
-plot(national$date, national$new7, type = "l", lwd = 2,
-     xlab = "date", ylab = "new cases/day (7-day average)",
-     main = "US reported cases, first 120 days")
+ggplot2::ggplot(national, ggplot2::aes(x = date, y = new7)) +
+  ggplot2::geom_line(colour = "steelblue", linewidth = 0.8) +
+  ggplot2::labs(x = "date", y = "new cases/day (7-day average)",
+               title = "US reported cases, first 120 days") +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-national-curve-1.png" alt="National new reported cases per day, 7-day rolling average, first 120 days."  />
+<img src="figures/sir-rt-national-curve-1.svg" alt="National new reported cases per day, 7-day rolling average, first 120 days."  />
 <p class="caption">plot of chunk national-curve</p>
 </div>
 
@@ -469,18 +471,28 @@ mi <- expm1(sim_cbf(theta_pp, N_fixed = pop[["Michigan"]])[, -1, drop = FALSE])
 env <- apply(log1p(mi), 2, stats::quantile, c(0.05, 0.5, 0.95))
 dates <- start_date + t_grid - 1
 
-plot(dates, env[2, ], type = "n", ylim = range(env), xlab = "date (2020)",
-     ylab = "log(1 + cases/day)", main = "CBF prior predictive, Michigan-sized population")
-polygon(c(dates, rev(dates)), c(env[1, ], rev(env[3, ])), col = "grey85", border = NA)
-lines(dates, env[2, ], lwd = 2, col = "grey40")
-lines(dates, log1p(case_daily_s["Michigan", ]), lwd = 2, col = "firebrick")
-lines(dates, log1p(case_daily_s["West Virginia", ]), lwd = 2, col = "steelblue")
-legend("topleft", bty = "n", lwd = 2, col = c("grey40", "firebrick", "steelblue"),
-       legend = c("prior predictive median (90% band)", "Michigan", "West Virginia"))
+env_df <- data.frame(date = dates, lo = env[1, ], median = env[2, ], hi = env[3, ])
+obs_df <- rbind(
+  data.frame(date = dates, value = log1p(case_daily_s["Michigan", ]), state = "Michigan"),
+  data.frame(date = dates, value = log1p(case_daily_s["West Virginia", ]), state = "West Virginia")
+)
+
+ggplot2::ggplot() +
+  ggplot2::geom_ribbon(data = env_df, ggplot2::aes(x = date, ymin = lo, ymax = hi),
+                       fill = "grey85") +
+  ggplot2::geom_line(data = env_df, ggplot2::aes(x = date, y = median),
+                     colour = "grey40", linewidth = 0.8) +
+  ggplot2::geom_line(data = obs_df, ggplot2::aes(x = date, y = value, colour = state),
+                     linewidth = 0.8) +
+  ggplot2::scale_colour_manual(values = c("Michigan" = "firebrick", "West Virginia" = "steelblue")) +
+  ggplot2::labs(x = "date (2020)", y = "log(1 + cases/day)", colour = NULL,
+               title = "CBF prior predictive, Michigan-sized population",
+               subtitle = "grey band: prior predictive median and 90% interval") +
+  ggplot2::theme_minimal()
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-prior-pred-plot-1.png" alt="Prior predictive envelope for the CBF model on a log scale with two observed state curves inside it."  />
+<img src="figures/sir-rt-prior-pred-plot-1.svg" alt="Prior predictive envelope for the CBF model on a log scale with two observed state curves inside it."  />
 <p class="caption">plot of chunk prior-pred-plot</p>
 </div>
 
@@ -522,7 +534,7 @@ names(sbc_res) <- names(fits)
 sbc_res$CBF
 #> <nsbi_sbc> 150 trials, 300 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     beta[0]=0.768  beta[B]=0.684  g=0.326  r=0.312  mu[B]=0.487  t[0]=0.752  I[0]=0.004  rho=0.799
+#>     beta[0]=0.776  beta[B]=0.712  g=0.334  r=0.316  mu[B]=0.490  t[0]=0.766  I[0]=0.003  rho=0.821
 ```
 
 Because each prior's `mean` was a named vector, `plot_sbc()` renders each parameter's plotmath symbol in the panel title instead of a generic "parameter 3".
@@ -533,7 +545,7 @@ plot_sbc(sbc_res$CBF, param = 1L)
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-sbc-beta0-1.png" alt="SBC rank histogram for the intrinsic transmission rate in the CBF model."  />
+<img src="figures/sir-rt-sbc-beta0-1.svg" alt="SBC rank histogram for the intrinsic transmission rate in the CBF model."  />
 <p class="caption">plot of chunk sbc-beta0</p>
 </div>
 
@@ -543,7 +555,7 @@ plot_sbc(sbc_res$CBF, param = 4L)
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-sbc-r-1.png" alt="SBC rank histogram for the CBF model's risk-averse transmission reduction r."  />
+<img src="figures/sir-rt-sbc-r-1.svg" alt="SBC rank histogram for the CBF model's risk-averse transmission reduction r."  />
 <p class="caption">plot of chunk sbc-r</p>
 </div>
 
@@ -553,7 +565,7 @@ plot_sbc(sbc_res$CBF, param = 8L)
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-sbc-rho-1.png" alt="SBC rank histogram for the ascertainment rate rho in the CBF model."  />
+<img src="figures/sir-rt-sbc-rho-1.svg" alt="SBC rank histogram for the ascertainment rate rho in the CBF model."  />
 <p class="caption">plot of chunk sbc-rho</p>
 </div>
 
@@ -627,9 +639,9 @@ noise_at_fixed_theta <- function(nm, state = "New York", n_rep = 300) {
 }
 round(t(sapply(names(fits), noise_at_fixed_theta)), 4)
 #>     peak_cv peak_day_sd
-#> PW   0.2491      8.3399
-#> EFB  0.0054      0.8309
-#> CBF  0.0144      0.6861
+#> PW   0.1648      7.1279
+#> EFB  0.0047      0.8381
+#> CBF  0.0157      0.7279
 ```
 
 The open-loop piecewise model has roughly an order of magnitude more peak-height variability at fixed $\theta$ than either behavioral model. Feedback damps the demographic noise an open-loop model lets through. A behavioral model is therefore intrinsically more predictable at the same parameter values, and most of the narrow band is mechanism rather than posterior. Whether the remaining width is honest is what the SBC histograms above answer, which is why they come first.
@@ -3657,9 +3669,9 @@ scores <- do.call(rbind, lapply(names(fits), function(nm) {
 #> Warning in stats::rbinom(n, pmax(round(H), 0), rho): NAs produced
 scores
 #>   model  rmse_med  rmse_iqr attack_med n_param
-#> 1    PW 0.2500796 0.19-0.35 0.03533448      10
-#> 2   EFB 0.2039923 0.14-0.28 0.02525801       6
-#> 3   CBF 0.1896324 0.14-0.24 0.02505949       8
+#> 1    PW 0.2511231 0.22-0.33 0.02586843      10
+#> 2   EFB 0.2043374 0.14-0.27 0.02541230       6
+#> 3   CBF 0.1885368 0.14-0.25 0.02491747       8
 ```
 
 ## R(t) for every state
@@ -6105,10 +6117,10 @@ The inferred attack rates are the sanity check on the ascertainment prior. Toget
 attack_by_state <- tapply(rt_best$attack, rt_best$state, `[`, 1)
 round(quantile(attack_by_state, c(0, 0.25, 0.5, 0.75, 1)), 4)
 #>     0%    25%    50%    75%   100% 
-#> 0.0049 0.0151 0.0244 0.0559 0.3839
+#> 0.0049 0.0151 0.0247 0.0558 0.3866
 round(sort(attack_by_state, decreasing = TRUE)[1:5], 3)
 #>      New York    New Jersey  Rhode Island Massachusetts      Nebraska 
-#>         0.384         0.251         0.235         0.197         0.161
+#>         0.387         0.251         0.238         0.197         0.158
 ```
 
 
@@ -6131,7 +6143,7 @@ ggplot(rt_h, aes(date, rt_med, colour = model, fill = model)) +
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-rt-highlight-1.png" alt="Effective reproduction number trajectories from three models with 90 percent credible bands for six representative states."  />
+<img src="figures/sir-rt-rt-highlight-1.svg" alt="Effective reproduction number trajectories from three models with 90 percent credible bands for six representative states."  />
 <p class="caption">plot of chunk rt-highlight</p>
 </div>
 
@@ -6157,7 +6169,7 @@ ggplot(rt_best, aes(date, state, fill = rt_med)) +
 ```
 
 <div class="figure">
-<img src="figures/sir-rt-rt-heatmap-1.png" alt="Heatmap of posterior median effective reproduction number across all US states over the first 120 days."  />
+<img src="figures/sir-rt-rt-heatmap-1.svg" alt="Heatmap of posterior median effective reproduction number across all US states over the first 120 days."  />
 <p class="caption">plot of chunk rt-heatmap</p>
 </div>
 
