@@ -52,8 +52,8 @@ if (!requireNamespace("future", quietly = TRUE)) {
 # Show the simulation and training bars while baking. They are off under knitr
 # by default, which is right for the articles but unhelpful when you are
 # watching a run that takes hours. The bar writes to stderr, so it reaches the
-# console without landing in the baked .Rmd.
-options(neuralsbi.progress = "builtin")
+# console without landing in the baked .Rmd. Each bake runs in its own R
+# process, so the option is set again there rather than inherited.
 
 # knit each source with the working directory inside vignettes/, so the baked
 # figure paths ("figures/<name>-1.svg") are relative to the vignette itself and
@@ -80,14 +80,28 @@ if (length(selected)) {
   message("Baking only: ", paste(origs, collapse = ", "))
 }
 
+rscript <- file.path(R.home("bin"), "Rscript")
+
 for (orig in origs) {
   out <- sub("\\.orig$", "", orig)
   message("Baking ", orig, " -> ", out)
-  # Fresh knit env per vignette so seeds and `library()` calls do not leak.
-  knitr::knit(orig, output = out, envir = new.env(parent = globalenv()),
-              quiet = FALSE)
 
-  # The chunks set error = FALSE, so a genuine failure aborts knit() above.
+  # One R process per article, rather than one knit() call after another in
+  # this session. A fresh `envir` isolates the objects a chunk creates but not
+  # the packages it attaches, and an article whose `library(neuralsbi)` runs
+  # second prints no startup message, so its baked text would lose the note
+  # that `sample()` masks the base function. Baking every article has to give
+  # the same file as baking that one article alone.
+  code <- sprintf(
+    'options(neuralsbi.progress = "builtin"); knitr::knit(%s, output = %s, envir = new.env(parent = globalenv()), quiet = FALSE)',
+    encodeString(orig, quote = '"'), encodeString(out, quote = '"'))
+  status <- system2(rscript, c("-e", shQuote(code)))
+  if (status != 0) {
+    stop(sprintf("Baking %s failed (Rscript exited %d).", orig, status),
+         call. = FALSE)
+  }
+
+  # The chunks set error = FALSE, so a genuine failure aborts the knit above.
   # As a backstop, refuse to leave a baked vignette that carries an error
   # trace (e.g. a torch chunk that silently degraded) -- better to fail here
   # than to commit a broken article.
@@ -100,8 +114,5 @@ for (orig in origs) {
          call. = FALSE)
   }
 }
-
-# shut the workers down; the plan is global state and the vignettes set it
-if (requireNamespace("future", quietly = TRUE)) future::plan(future::sequential)
 
 message("Done. Review the regenerated *.Rmd and figures/, then commit them.")
