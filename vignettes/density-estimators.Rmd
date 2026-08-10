@@ -110,7 +110,7 @@ The linear-Gaussian fit is one blob where there should be two crescents, and yet
 
 ``` r
 c2st(draws_lg, draws_nsf, seed = 1)$accuracy    # also near 0.5 (see below)
-#> [1] 0.4936667
+#> [1] 0.4895
 ```
 
 That number is a trap, and it is worth knowing why. `c2st()` trains a linear classifier, so it can only separate samples by their mean and covariance. The two moons are symmetric about the origin, so they share a centre and roughly a spread with the Gaussian blob. No straight decision boundary can tell the two sets apart, and the pairplots above show exactly the difference the score misses.

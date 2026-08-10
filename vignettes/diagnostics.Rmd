@@ -20,11 +20,6 @@ We use the linear-Gaussian benchmark task throughout, because it has an analytic
 
 ``` r
 library(neuralsbi)
-#> 
-#> Attaching package: 'neuralsbi'
-#> The following object is masked from 'package:base':
-#> 
-#>     sample
 
 task <- task_gaussian_linear()
 task
@@ -45,13 +40,13 @@ res <- sbc(fit, task$simulator, n_sbc = 100, n_posterior_samples = 200,
 res
 #> <nsbi_sbc> 100 trials, 200 posterior samples each
 #>   per-parameter uniformity p-values (large = calibrated):
-#>     0.326  0.246  0.003  0.284  0.902  0.419  0.868  0.522  0.083  0.657
+#>     0.335  0.250  0.005  0.288  0.914  0.440  0.888  0.533  0.086  0.677
 
 plot_sbc(res, param = 1)
 ```
 
 <div class="figure">
-<img src="figures/diagnostics-unnamed-chunk-3-1.png" alt="SBC rank histogram for the first parameter; flat means calibrated."  />
+<img src="figures/diagnostics-unnamed-chunk-3-1.svg" alt="SBC rank histogram for the first parameter; flat means calibrated."  />
 <p class="caption">plot of chunk unnamed-chunk-3</p>
 </div>
 
@@ -115,7 +110,7 @@ plot_coverage(res)
 ```
 
 <div class="figure">
-<img src="figures/diagnostics-unnamed-chunk-4-1.png" alt="Expected-coverage curve; points on the diagonal indicate calibration."  />
+<img src="figures/diagnostics-unnamed-chunk-4-1.svg" alt="Expected-coverage curve; points on the diagonal indicate calibration."  />
 <p class="caption">plot of chunk unnamed-chunk-4</p>
 </div>
 
@@ -137,7 +132,7 @@ plot_tarp(tr)   # ECP curve on the diagonal = calibrated
 ```
 
 <div class="figure">
-<img src="figures/diagnostics-unnamed-chunk-5-1.png" alt="TARP expected-coverage-probability curve on the diagonal."  />
+<img src="figures/diagnostics-unnamed-chunk-5-1.svg" alt="TARP expected-coverage-probability curve on the diagonal."  />
 <p class="caption">plot of chunk unnamed-chunk-5</p>
 </div>
 
@@ -158,7 +153,7 @@ plot_posterior_predictive(pred, x_obs)
 ```
 
 <div class="figure">
-<img src="figures/diagnostics-unnamed-chunk-6-1.png" alt="Posterior-predictive histograms with the observed value marked."  />
+<img src="figures/diagnostics-unnamed-chunk-6-1.svg" alt="Posterior-predictive histograms with the observed value marked."  />
 <p class="caption">plot of chunk unnamed-chunk-6</p>
 </div>
 
