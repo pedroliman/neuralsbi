@@ -27,3 +27,6 @@ vignettes/*.html
 
 # Codecov test analytics (JUnit XML from the CI test run)
 junit.xml
+
+# Claude Code agent worktrees (local tooling state, not repo content)
+.claude/worktrees/
