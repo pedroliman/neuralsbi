@@ -259,9 +259,14 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
 
 #' Split-Rhat and bulk effective sample size
 #'
-#' The standard rank-free versions from Vehtari et al. (2021), computed on the
-#' split chains. Implemented here rather than taken from \pkg{posterior} to keep
-#' the dependency surface where it is; the test suite cross-checks against
+#' The standard rank-normalized versions from Vehtari et al. (2021), computed
+#' on the split chains. [split_rhat()] is `max(bulk-Rhat, tail-Rhat)`: the
+#' classical Gelman-Rubin statistic run once on the rank-normalized draws and
+#' once on the rank-normalized *folded* draws (folded around the per-parameter
+#' median, which is what makes the tail component sensitive to differences in
+#' spread rather than location). [bulk_ess()] rank-normalizes the same way.
+#' Implemented here rather than taken from \pkg{posterior} to keep the
+#' dependency surface where it is; the test suite cross-checks against
 #' \pkg{posterior} when that package happens to be installed.
 #'
 #' @param chains A `n_iter x n_chains x dim` array.
@@ -330,19 +335,70 @@ format_mcmc_diagnostics <- function(d) {
           evals_part)
 }
 
+#' Rank-normalize the entries of a chains matrix
+#'
+#' Pools every draw in `m` (all chains together), ranks them, and maps the
+#' ranks to normal scores via the inverse normal CDF. This is the
+#' rank-normalization step common to both halves of Vehtari et al. (2021)'s
+#' Rhat: [split_rhat()] applies it to the raw draws (for bulk-Rhat) and to the
+#' draws folded around the median (for tail-Rhat), and [bulk_ess()] applies it
+#' before its own Gelman-Rubin-style calculation. Bounding every draw to its
+#' rank, rather than its raw value, is what keeps a handful of extreme draws
+#' from dominating a variance estimate the way they would in the classical
+#' (1992) statistic.
+#'
+#' @param m An `n x k` matrix of draws (iterations by chains).
+#' @return An `n x k` matrix of normal scores.
+#' @keywords internal
+rank_normalize <- function(m) {
+  n <- nrow(m)
+  r <- matrix(rank(as.vector(m), ties.method = "average"), nrow = n)
+  matrix(stats::qnorm((r - 0.375) / (length(m) + 0.25)), nrow = n)
+}
+
+#' Classical Gelman-Rubin Rhat on a matrix already in the scale to score
+#'
+#' The 1992 statistic: within-chain variance `W`, between-chain variance `B`,
+#' the pooled `var_hat`, and `sqrt(var_hat / W)`. [split_rhat()] calls this
+#' once on rank-normalized draws and once on rank-normalized folded draws;
+#' neither call is rank-normalization itself, which lives in
+#' [rank_normalize()].
+#'
+#' @param m An `n x k` matrix already on the scale (raw or transformed) to
+#'   score.
+#' @return A single Rhat value, or `NA_real_` if `m` cannot be scored (a
+#'   non-finite or zero within-chain variance).
+#' @keywords internal
+gelman_rubin_rhat <- function(m) {
+  n <- nrow(m)
+  chain_means <- colMeans(m)
+  chain_vars <- apply(m, 2, stats::var)
+  if (any(!is.finite(chain_vars))) return(NA_real_)
+  W <- mean(chain_vars)
+  if (!is.finite(W) || W <= 0) return(NA_real_)
+  B <- n * stats::var(chain_means)
+  var_hat <- ((n - 1) / n) * W + B / n
+  sqrt(var_hat / W)
+}
+
 #' @keywords internal
 split_rhat <- function(m) {
   n <- nrow(m)
   k <- ncol(m)
   if (n < 2L || k < 2L) return(NA_real_)
-  chain_means <- colMeans(m)
-  chain_vars <- apply(m, 2, stats::var)
-  if (any(!is.finite(chain_vars))) return(NA_real_)
-  W <- mean(chain_vars)
-  B <- n * stats::var(chain_means)
-  if (W <= 0) return(NA_real_)
-  var_hat <- ((n - 1) / n) * W + B / n
-  sqrt(var_hat / W)
+  if (any(!is.finite(m))) return(NA_real_)
+
+  bulk_rhat <- gelman_rubin_rhat(rank_normalize(m))
+
+  # Tail-Rhat: fold around the pooled median, then rank-normalize and score
+  # the same way. This catches chains that agree in location but disagree in
+  # spread -- e.g. one chain exploring heavier tails than the others -- which
+  # bulk-Rhat alone can miss.
+  folded <- matrix(abs(m - stats::median(m)), nrow = n)
+  tail_rhat <- gelman_rubin_rhat(rank_normalize(folded))
+
+  if (!is.finite(bulk_rhat) && !is.finite(tail_rhat)) return(NA_real_)
+  max(bulk_rhat, tail_rhat, na.rm = TRUE)
 }
 
 #' @keywords internal
@@ -350,9 +406,8 @@ bulk_ess <- function(m) {
   n <- nrow(m)
   k <- ncol(m)
   if (n < 4L) return(NA_real_)
-  # Rank-normalize, which is what makes this robust to heavy tails.
-  r <- matrix(rank(as.vector(m), ties.method = "average"), nrow = n)
-  z <- stats::qnorm((r - 0.375) / (n * k + 0.25))
+  if (any(!is.finite(m))) return(NA_real_)
+  z <- rank_normalize(m)
 
   chain_vars <- apply(z, 2, stats::var)
   W <- mean(chain_vars)

@@ -168,6 +168,48 @@ test_that("split-Rhat flags chains that disagree", {
   expect_gt(mcmc_diagnostics(offset)$rhat, 1.5)
 })
 
+# GitHub #154: split_rhat() computed chain means and variances on the raw
+# split-chain values -- the classical 1992 Gelman-Rubin statistic -- despite
+# its own docstring (and bulk_ess(), right next to it) promising the
+# rank-normalized version from Vehtari et al. (2021). The two only nearly
+# coincide on near-Gaussian draws, which is all the rest of this file's
+# fixtures are. Four chains genuinely offset in location (1, 2, 3, 4, so real
+# disagreement) with a few extreme Cauchy-scale outliers mixed into each is
+# the case where they diverge: the outliers inflate the raw within-chain
+# variance so much that the real between-chain offset gets swamped, and the
+# classical formula reads "converged" when it is not. Rank-normalization
+# bounds each outlier's influence to its rank position, so it cannot hide the
+# real location offset the way an unbounded raw value can.
+test_that("split_rhat() rank-normalizes, so it is not fooled by heavy tails (#154)", {
+  set.seed(154)
+  n <- 200
+  k <- 4
+  chains <- sapply(seq_len(k), function(i) {
+    y <- stats::rnorm(n) + i
+    idx <- sample(seq_len(n), 8)
+    y[idx] <- y[idx] + stats::rcauchy(8) * 200
+    y
+  })
+
+  # What the pre-fix, non-rank-normalized formula would have computed: chain
+  # means/variances straight off the raw values.
+  classical_rhat <- function(m) {
+    nr <- nrow(m)
+    chain_means <- colMeans(m)
+    chain_vars <- apply(m, 2, stats::var)
+    W <- mean(chain_vars)
+    B <- nr * stats::var(chain_means)
+    var_hat <- ((nr - 1) / nr) * W + B / nr
+    sqrt(var_hat / W)
+  }
+
+  # The bug: despite chains that have not mixed, the classical statistic is
+  # fooled into reading "converged".
+  expect_lt(classical_rhat(chains), 1.05)
+  # The fix: rank-normalization is not fooled, and correctly flags them.
+  expect_gt(split_rhat(chains), 1.2)
+})
+
 test_that("bulk ESS falls as autocorrelation rises", {
   set.seed(7)
   ar1 <- function(rho, n = 500, k = 4) {
@@ -201,7 +243,9 @@ test_that("bulk ESS agrees with the posterior package", {
   }
   ours <- mcmc_diagnostics(chains)
 
-  expect_equal(ours$rhat, posterior::rhat(chains[, , 1]), tolerance = 0.01)
+  # Now that split_rhat() actually rank-normalizes (#154), this matches
+  # posterior::rhat() to floating-point precision rather than by coincidence.
+  expect_equal(ours$rhat, posterior::rhat(chains[, , 1]), tolerance = 1e-6)
   expect_equal(ours$ess_bulk, posterior::ess_bulk(chains[, , 1]),
                tolerance = 0.05)
 })
