@@ -100,6 +100,46 @@ test_that("a starting point with zero density is refused", {
   )
 })
 
+test_that("a non-finite or non-positive width is refused, not left to crash the stepping-out loop", {
+  # GitHub #164: width used to reach `stats::runif()` and the array indexing
+  # inside the stepping-out loop unchecked, so `width = NA` failed as "NAs are
+  # not allowed in subscripted assignments" -- several frames deep, naming
+  # neither `width` nor the sampler.
+  lp <- function(theta) rowSums(stats::dnorm(theta, log = TRUE))
+  init <- matrix(0, nrow = 4, ncol = 1)
+
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, width = NA),
+    "`width`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, width = NaN),
+    "`width`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, width = Inf),
+    "`width`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, width = 0),
+    "`width`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, width = -1),
+    "`width`"
+  )
+
+  # dim = 2: one bad entry among several should still be caught after
+  # rep_len() recycling.
+  init2 <- matrix(0, nrow = 4, ncol = 2)
+  lp2 <- function(theta) rowSums(stats::dnorm(theta, log = TRUE))
+  expect_error(
+    slice_sample(lp2, init2, n_draws = 10, warmup = 1, thin = 1,
+                 width = c(1, NA)),
+    "`width`"
+  )
+})
+
 test_that("mcmc_init puts chains where the mass is", {
   set.seed(5)
   prior <- prior_uniform(low = -10, high = 10)

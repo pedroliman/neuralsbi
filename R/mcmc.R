@@ -55,7 +55,7 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
   init <- as_theta_matrix(init)
   n_chains <- nrow(init)
   dim <- ncol(init)
-  width <- rep_len(as.numeric(width), dim)
+  width <- check_slice_width(suppressWarnings(rep_len(as.numeric(width), dim)))
 
   n_kept <- ceiling(n_draws / n_chains)
   n_iter <- warmup + n_kept * thin
@@ -204,6 +204,33 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
   draws <- matrix(aperm(kept, c(2, 1, 3)), ncol = dim)
   draws <- draws[seq_len(min(n_draws, nrow(draws))), , drop = FALSE]
   list(draws = draws, chains = kept, n_evals = n_evals)
+}
+
+#' Validate the slice sampler's width, once it has been recycled to `dim`
+#'
+#' `rep_len(as.numeric(width), dim)` accepts anything `as.numeric()` accepts,
+#' including `NA`, `NaN`, zero and negative values, and nothing downstream
+#' checks the result before using it to size the initial slice interval and,
+#' from there, to drive the stepping-out loop's array indexing. `width = NA`
+#' used to fail several frames later with "NAs are not allowed in subscripted
+#' assignments", naming neither `width` nor `slice_sample()`. Checked once,
+#' right after recycling, so the message can show the values actually used.
+#'
+#' @param width Already recycled to length `dim`.
+#' @return `width`, unchanged.
+#' @keywords internal
+check_slice_width <- function(width) {
+  bad <- !is.finite(width) | width <= 0
+  if (any(bad)) {
+    shown <- paste(vapply(width, describe_value, character(1)), collapse = ", ")
+    stop(sprintf(paste0("`width` must be finite and positive (one value per ",
+                        "parameter, recycled from what was passed), not %s. ",
+                        "slice_sample() uses it to size the initial slice ",
+                        "interval before stepping out."),
+                 shown),
+         call. = FALSE)
+  }
+  width
 }
 
 #' Starting points for the chains
