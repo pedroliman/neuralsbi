@@ -47,7 +47,7 @@ library(future)
 # Also, don't return log1p as cases reported, we shoulnd't have to do that.
 # # Also, let's just return the daily reported cases.
 # TODO: Let's replace the weeks argument with "days"
-sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 8) {
+sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
   S <- N - I0; I <- I0
   reported <- numeric(weeks)
   for (w in seq_len(weeks)) {

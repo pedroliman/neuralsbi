@@ -29,14 +29,9 @@ if (requireNamespace("future", quietly = TRUE)) {
 }
 ```
 
-An NPE posterior is an approximation, and a poor approximation gives no
-warning: it still produces samples, means, and credible intervals — they are
-just wrong. Checking the fit is part of the workflow, not an optional extra.
-This vignette works through the package's diagnostics in the order you would
-use them in practice.
+An NPE posterior is an approximation, and a bad approximation gives you no warning. It still returns draws, means and credible intervals; they are just wrong. So checking the fit is part of the workflow rather than an extra. This article walks through the package's diagnostics in the order we use them.
 
-Throughout we use the linear-Gaussian benchmark task, because it has an
-analytic posterior we can compare against at the end.
+We use the linear-Gaussian benchmark task throughout, because it has an analytic posterior we can compare against at the end.
 
 ```{r}
 library(neuralsbi)
@@ -50,10 +45,7 @@ fit <- npe(task$prior, task$simulator, n_simulations = 3000,
 
 ## Simulation-based calibration
 
-Simulation-based calibration (SBC) checks the posterior *on average over the
-prior*, with no reference posterior needed. The idea: draw `theta` from the
-prior, simulate `x`, and rank the true `theta` among posterior draws given
-`x`. If the posterior is calibrated, those ranks are uniform.
+Simulation-based calibration (SBC) checks the posterior on average over the prior, and it needs no reference posterior to compare against. Draw $\theta$ from the prior, simulate $x$ from it, then rank that known $\theta$ among posterior draws given $x$. A calibrated posterior puts the truth anywhere in the ranking with equal probability, so the ranks come out uniform.
 
 ```{r fig.alt = "SBC rank histogram for the first parameter; flat means calibrated."}
 res <- sbc(fit, task$simulator, n_sbc = 100, n_posterior_samples = 200,
@@ -63,33 +55,29 @@ res
 plot_sbc(res, param = 1)
 ```
 
+Nine of the ten parameters come back with large p-values. Parameter 3 comes back at 0.003, which is low, though one value that small out of ten tests is not yet evidence of a problem.
+
 Read the rank histogram like this:
 
-- **Flat** — calibrated.
-- **U-shaped** — the posterior is too narrow (overconfident). The most common
-  failure; usually fixed with more simulations or longer training.
-- **Hump-shaped** — too wide (underconfident).
-- **Sloped** — systematically biased in one direction.
+- Flat: calibrated.
+- U-shaped: the posterior is too narrow, so it is overconfident. This is the common failure, and more simulations or longer training usually fix it.
+- Hump-shaped: too wide, so it is underconfident.
+- Sloped: biased in one direction.
 
 ## Expected coverage
 
-The same SBC ranks yield a coverage curve: how often does the `p`% credible
-interval actually contain the truth?
+The same ranks give a coverage curve. How often does the $p$% credible interval actually contain the truth?
 
 ```{r fig.alt = "Expected-coverage curve; points on the diagonal indicate calibration."}
 expected_coverage(res)
 plot_coverage(res)
 ```
 
-A calibrated posterior hugs the diagonal. Points below the diagonal mean
-intervals are too narrow — a 90% interval that covers the truth only 70% of
-the time.
+A calibrated posterior hugs the diagonal. Points below it mean the intervals are too narrow: a 90% interval that only covers the truth 70% of the time. Here the nominal-90% row runs from 0.80 to 0.93 across the ten parameters, close enough to the diagonal to be unremarkable.
 
-## TARP: a sharper coverage test
+## TARP, a sharper coverage test
 
-SBC checks each parameter's marginal. TARP (Lemos et al., 2023) tests coverage
-of the *joint* posterior using random reference points, and can detect
-miscalibration that per-parameter ranks miss.
+SBC looks at each parameter's marginal one at a time. TARP ([Lemos et al., 2023](https://doi.org/10.48550/arXiv.2302.03026)) tests coverage of the joint posterior using random reference points, so it can catch miscalibration that per-parameter ranks miss.
 
 ```{r fig.alt = "TARP expected-coverage-probability curve on the diagonal."}
 tr <- tarp(fit, task$simulator, n_tarp = 100, n_posterior_samples = 200,
@@ -98,12 +86,11 @@ tr
 plot_tarp(tr)   # ECP curve on the diagonal = calibrated
 ```
 
+The largest gap between expected and nominal coverage is 0.05 over the whole curve, so the joint posterior is calibrated about as well as the marginals were.
+
 ## Posterior predictive checks
 
-Calibration is an average over many simulated datasets; a predictive check
-asks about the observation you actually have. Push posterior draws back
-through the simulator and see whether the observed data look typical of the
-simulations they produce.
+Calibration is an average over many simulated data sets. A predictive check asks about the observation you actually have. Push posterior draws back through the simulator and see whether the observed data look typical of what comes out.
 
 ```{r fig.alt = "Posterior-predictive histograms with the observed value marked."}
 theta_true <- sample_prior(task$prior, 1)
@@ -114,17 +101,11 @@ pred <- posterior_predictive(post, task$simulator, n = 500)
 plot_posterior_predictive(pred, x_obs)
 ```
 
-If the observation sits in the tails of the predictive distribution, either
-the posterior fit is poor for this `x` or the simulator cannot reproduce the
-data at all — a model-misspecification signal that no calibration check
-provides.
+If the observation falls in the tails of the predictive distribution, either the fit is poor for this $x$ or the simulator cannot reproduce the data at any parameter value. The second is model misspecification, and no calibration check will tell you about it.
 
 ## Comparing against a reference posterior
 
-When a reference posterior exists — analytic, MCMC, or a long-run fit you
-trust — a classifier two-sample test gives a single accuracy score. A
-classifier that cannot distinguish estimated from reference draws (accuracy
-near 0.5) means the posteriors match.
+When a reference posterior exists, whether analytic, from MCMC, or from a long-run fit you trust, a classifier two-sample test gives you one number. A classifier that cannot tell estimated draws from reference draws scores near 0.5, and that means the posteriors match.
 
 ```{r}
 draws     <- sample(post, 5000)
@@ -133,18 +114,14 @@ reference <- task$reference_posterior(x_obs, n = 5000)
 c2st(draws, reference)$accuracy   # ~0.5: indistinguishable from the exact posterior
 ```
 
-As a rule of thumb, accuracies below about 0.55–0.6 indicate a close match;
-values near 1.0 mean the estimated posterior is badly off.
+As a rule of thumb, accuracies below about 0.55 to 0.6 indicate a close match, and values near 1.0 mean the estimated posterior is badly off.
 
-## A suggested routine
+## The routine we suggest
 
-1. After every fit, run `sbc()` and look at `plot_sbc()` and
-   `plot_coverage()`. This is cheap relative to training and catches
-   overconfidence early.
-2. Before using a posterior for real conclusions, run a posterior predictive
-   check for the actual observation.
-3. When you change estimator or training settings, compare old and new draws
-   with `c2st()` to see whether the change moved the posterior at all.
+1. Run `sbc()` after every fit and look at `plot_sbc()` and `plot_coverage()`. It is cheap next to training and it catches overconfidence early.
+2. Run a posterior predictive check for the actual observation before drawing any conclusion from the posterior.
+3. When you change estimator or training settings, compare old and new draws with `c2st()` to see whether the change moved the posterior at all.
 
-The case study in `vignette("sir-epidemic")` applies this routine end to end
-on an applied problem.
+## See also
+
+`vignette("sir-epidemic")` runs this routine end to end on an applied problem, against `pomp`'s particle-filter posterior. `?sbc`, `?tarp` and `?posterior_predictive` document the arguments, and `vignette("neural-likelihood")` shows what changes when the posterior comes from MCMC instead of a forward pass.

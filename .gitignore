@@ -27,3 +27,8 @@ vignettes/*.html
 
 # Codecov test analytics (JUnit XML from the CI test run)
 junit.xml
+
+inst/notebooks/*_cache/*
+inst/notebooks/*/libs/*
+inst/notebooks/*_files/*
+inst/notebooks/*html
