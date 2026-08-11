@@ -167,6 +167,7 @@ resolve_x_iid <- function(post, x, arg = "obs") {
 #' @export
 sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
                                        refresh = FALSE, verbose = FALSE, ...) {
+  n <- check_count(n, "n", why = "since it is the number of posterior draws")
   mcmc_draws(x, n, obs, refresh, verbose)
 }
 
