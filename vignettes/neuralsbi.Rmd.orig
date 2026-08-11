@@ -79,7 +79,7 @@ ggplot2::ggplot(data.frame(day = seq_along(x_obs), cases = x_obs),
 
 ## Train your neural posterior estimator
 
-Our simulator returns 84 numbers, one per day, and we only want three parameters back. Conditioning the density estimator on all 84 days directly would spend most of its capacity learning the shape of an epidemic curve rather than the posterior we asked for. So we hand `npe()` an embedding network: `embedding_mlp()` specifies a small multilayer perceptron that compresses the daily series into 12 features, and `npe()` trains it jointly with the flow. The estimator then conditions on those 12 learned summaries instead of the raw 84 days. `npe` is the function call that will take more time to run, (in this case, about 2 minutes on my laptop).
+Our simulator returns 84 numbers, one per day, and we only want three parameters back. Conditioning the density estimator on all 84 days directly would spend most of its capacity learning the shape of an epidemic curve rather than the posterior we asked for. So we hand `npe()` an embedding network: `embedding_mlp()` specifies a small multilayer perceptron that compresses the daily series into 12 features, and `npe()` trains it jointly with the flow. The estimator then conditions on those 12 learned summaries instead of the raw 84 days. `npe()` is the slow step in this tutorial: training the embedding and the flow together takes a few minutes on a laptop, and everything after it is fast.
 
 ```{r fit}
 plan(multisession) # to run the simulator in parallel
@@ -141,3 +141,15 @@ res
 
 plot_sbc(res)
 ```
+
+Our ranks are not uniform. They pile up at both ends of the histogram, and the uniformity p-values come out small for all three parameters. Ranks that collect at the edges mean the truth falls outside the bulk of the posterior more often than it should, which is what an overconfident posterior looks like: the draws sit in roughly the right place, but they are packed too tightly around it.
+
+`expected_coverage()` puts a number on the same thing. It takes the SBC ranks and asks, for each nominal credible level, how often the truth actually landed inside that interval:
+
+```{r coverage}
+expected_coverage(res, levels = c(0.5, 0.8, 0.9, 0.95))
+```
+
+A calibrated posterior sits on the diagonal. Ours runs under it: the nominal 95% interval covers the truth closer to 85% of the time, and the 50% interval only about 30%. So the point estimates from this fit are worth more than its error bars, and we should say so rather than quote the intervals as they stand.
+
+This is an ordinary place to land on a first fit, and catching it is the whole reason to run the diagnostic. The levers from here are a larger simulation budget, a different estimator (`density_estimator = "nsf"`), a different embedding size, or `npe_sequential()`, which spends the budget near your observation instead of across the whole prior. Worth knowing before you start: on this problem, doubling `n_simulations` on its own does not close the gap, so treat the budget as one knob among several rather than the fix.
