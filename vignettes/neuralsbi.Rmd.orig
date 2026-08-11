@@ -125,7 +125,7 @@ round(colMeans(draws_2), 3)
 pairplot(draws_2, truth = theta_2)
 ```
 
-$\beta$ and $\rho$ come back close. $\gamma$ does not: the fit puts it around 0.135 against a true 0.100, which is the $\beta/\gamma$ ridge from the previous section showing up again. A single case series identifies the ratio $R_0 = \beta/\gamma$ better than either rate on its own, so $\gamma$ drifts toward the middle of its prior when the data do not pin it down. You can present as many data sets as you like this way and check what comes back.
+$\beta$ and $\rho$ come back close. $\gamma$ does not: the fit puts it around 0.14 against a true 0.100, which is the $\beta/\gamma$ ridge from the previous section showing up again. A single case series identifies the ratio $R_0 = \beta/\gamma$ better than either rate on its own, so $\gamma$ drifts toward the middle of its prior when the data do not pin it down. You can present as many data sets as you like this way and check what comes back.
 
 ## Diagnostics: Simulation based calibration
 
