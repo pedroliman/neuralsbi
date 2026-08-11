@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.24" id="neuralsbi-0524">neuralsbi 0.5.24<a class="anchor" aria-label="anchor" href="#neuralsbi-0524"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sample.html">sample()</a></code> now validates <code>n</code> (aliased <code>size</code>), matching every other draw-count argument in the package.</strong> <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> (<code>R/posterior.R</code>) already checked <code>max_sampling_batches</code> with <code><a href="../reference/check_count.html">check_count()</a></code>, but <code>n</code> – the argument that actually drives the rejection-sampling loop – reached <code>while (nrow(collected) &lt; n ...)</code> unchecked, so <code>sample(post, n = NA)</code> failed inside the loop condition, <code>sample(post, n = "10")</code> failed on <code>n - nrow(collected)</code>, and <code>sample(post, n = -5)</code> failed inside <code><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix()</a></code>, none of the messages naming <code>n</code> or <code><a href="../reference/sample.html">sample()</a></code>. <code><a href="../reference/sample.nsbi_mcmc_posterior.html">sample.nsbi_mcmc_posterior()</a></code> (<code>R/nle_posterior.R</code>, backing <code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> posteriors) had the same gap and it was worse there: <code>n</code> reached <code><a href="../reference/mcmc_draws.html">mcmc_draws()</a></code>’s <code>ceiling(n_draws / n_chains)</code> unchecked, so <code>sample(post, n = 2.5)</code> did not error at all, it silently returned 2 draws. Both methods now check <code>n</code> with <code><a href="../reference/check_count.html">check_count()</a></code> up front, before any sampling work happens, giving the same named, actionable error <code>n_init</code>, <code>n_sbc</code> and the rest of the package’s draw-count arguments already give. <code><a href="../reference/posterior_predictive.html">posterior_predictive()</a></code> (<code>R/diagnostics.R</code>), which forwards its own <code>n</code> straight into <code><a href="../reference/sample.html">sample()</a></code>, inherits the fix without any change of its own (<a href="https://github.com/pedroliman/neuralsbi/issues/162" class="external-link">#162</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/165" class="external-link">#165</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.23" id="neuralsbi-0523">neuralsbi 0.5.23<a class="anchor" aria-label="anchor" href="#neuralsbi-0523"></a></h2>
 <ul><li>

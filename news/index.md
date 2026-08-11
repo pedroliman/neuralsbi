@@ -1,5 +1,40 @@
 # Changelog
 
+## neuralsbi 0.5.24
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  now validates `n` (aliased `size`), matching every other draw-count
+  argument in the package.**
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  (`R/posterior.R`) already checked `max_sampling_batches` with
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md),
+  but `n` – the argument that actually drives the rejection-sampling
+  loop – reached `while (nrow(collected) < n ...)` unchecked, so
+  `sample(post, n = NA)` failed inside the loop condition,
+  `sample(post, n = "10")` failed on `n - nrow(collected)`, and
+  `sample(post, n = -5)` failed inside
+  [`matrix()`](https://rdrr.io/r/base/matrix.html), none of the messages
+  naming `n` or
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md).
+  [`sample.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.md)
+  (`R/nle_posterior.R`, backing
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  posteriors) had the same gap and it was worse there: `n` reached
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)’s
+  `ceiling(n_draws / n_chains)` unchecked, so `sample(post, n = 2.5)`
+  did not error at all, it silently returned 2 draws. Both methods now
+  check `n` with
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md)
+  up front, before any sampling work happens, giving the same named,
+  actionable error `n_init`, `n_sbc` and the rest of the package’s
+  draw-count arguments already give.
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  (`R/diagnostics.R`), which forwards its own `n` straight into
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  inherits the fix without any change of its own
+  ([\#162](https://github.com/pedroliman/neuralsbi/issues/162))
+  ([\#165](https://github.com/pedroliman/neuralsbi/issues/165)).
+
 ## neuralsbi 0.5.23
 
 - **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
