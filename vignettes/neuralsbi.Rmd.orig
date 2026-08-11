@@ -37,32 +37,23 @@ This tutorial provides a short introduction to neural simulation-based inference
 
 ## Define your simulator
 
-Here we write a "chain binomial" SIR model in daily time-steps, with a population of size $N$. The parameters we want to estimate are $\beta$, the recovery rate $\gamma$, and we see a fraction $\rho$ of the new infections as reported cases. In reality, we would want to inform $\gamma$ using external information, which we can do by providing an informative prior for $\gamma$.
+Here we write a "chain binomial" SIR model in daily time-steps, with a population of size $N$. The parameters we want to estimate are the transmission rate $\beta$, the recovery rate $\gamma$, and the reporting fraction $\rho$: we only see a fraction $\rho$ of the new infections as reported cases. The simulator returns one number per day, the reported cases, over 12 weeks. In reality, we would want to inform $\gamma$ using external information, which we can do by providing an informative prior for $\gamma$.
 
 ```{r simulator}
 library(neuralsbi)
 library(future)
 
-# TODO: Just write the model with a daily time-step, don't do this week and daily loops. Just aggregate weekly observations after the fect.
-# Also, don't return log1p as cases reported, we shoulnd't have to do that.
-# # Also, let's just return the daily reported cases.
-# TODO: Let's replace the weeks argument with "days"
-sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
+sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, days = 84) {
   S <- N - I0; I <- I0
-  reported <- numeric(weeks)
-  for (w in seq_len(weeks)) {
-    infections <- 0
-    for (d in seq_len(7)) {                             # a day at a time
-      new_inf <- rbinom(1, S, 1 - exp(-beta * I / N))
-      new_rec <- rbinom(1, I, 1 - exp(-gamma))
-      S <- S - new_inf
-      I <- I + new_inf - new_rec
-      infections <- infections + new_inf
-    }
-    reported[w] <- rbinom(1, infections, rho)           # only rho of them are seen
+  reported <- numeric(days)
+  for (d in seq_len(days)) {
+    new_inf <- rbinom(1, S, 1 - exp(-beta * I / N))
+    new_rec <- rbinom(1, I, 1 - exp(-gamma))
+    S <- S - new_inf
+    I <- I + new_inf - new_rec
+    reported[d] <- rbinom(1, new_inf, rho)              # only rho of them are seen
   }
-  # TODO
-  log1p(reported)
+  reported
 }
 
 # Define our priors:
@@ -70,39 +61,38 @@ prior <- prior_uniform(low  = c(beta = 0.20, gamma = 0.08, rho = 0.1),
                        high = c(beta = 0.60, gamma = 0.20, rho = 0.7))
 ```
 
-It is always a good idea to test our mode, so here we simulate an outbreak to test our model:
+It is always a good idea to test our simulator, so here we simulate one outbreak:
 
-```{r outbreak, fig.alt = "Weekly reported cases from one simulated SIR outbreak."}
+```{r outbreak, fig.alt = "Daily reported cases from one simulated SIR outbreak."}
 theta_true <- c(beta = 2 / 7, gamma = 1 / 7, rho = 0.6)   # R0 = 2, 7-day recovery
 
-#TODO: Change this to show the daily timeseries that the model outputs:
 set.seed(1)
 x_obs <- sir_simulator(theta_true[["beta"]], theta_true[["gamma"]],
                        theta_true[["rho"]])
 
-ggplot2::ggplot(data.frame(week = 1:12, cases = expm1(x_obs)),
-                ggplot2::aes(x = week, y = cases)) +
+ggplot2::ggplot(data.frame(day = seq_along(x_obs), cases = x_obs),
+                ggplot2::aes(x = day, y = cases)) +
   ggplot2::geom_line(colour = "steelblue") +
-  ggplot2::geom_point(colour = "steelblue", size = 2) +
-  ggplot2::labs(x = "week", y = "reported cases", title = "One simulated outbreak") +
+  ggplot2::labs(x = "day", y = "reported cases", title = "One simulated outbreak") +
   ggplot2::theme_minimal()
 ```
 
 ## Train your neural posterior estimator
 
-Once we have our prior and simulator, we can call the `npe` function with its default parameters. In this example, we will only use the direct output from our model, which should be okay for these data. `npe` is the function call that will take more time to run, (in this case, about 2 minutes on my laptop).
+Our simulator returns 84 numbers, one per day, and we only want three parameters back. Conditioning the density estimator on all 84 days directly would spend most of its capacity learning the shape of an epidemic curve rather than the posterior we asked for. So we hand `npe()` an embedding network: `embedding_mlp()` specifies a small multilayer perceptron that compresses the daily series into 12 features, and `npe()` trains it jointly with the flow. The estimator then conditions on those 12 learned summaries instead of the raw 84 days. `npe()` is the slow step in this tutorial: training the embedding and the flow together takes a few minutes on a laptop, and everything after it is fast.
 
 ```{r fit}
 plan(multisession) # to run the simulator in parallel
-fit <- npe(prior, sir_simulator, n_simulations = 10000)
+fit <- npe(prior, sir_simulator, n_simulations = 10000,
+           embedding_net = embedding_mlp(output_dim = 12))
 fit
 ```
 
-`npe()` drew 10000 parameter sets from the prior, ran the simulator on each, and trained a masked autoregressive flow neural network on the resulting $(\theta, x)$ pairs.
+`npe()` drew 10000 parameter sets from the prior, ran the simulator on each, and trained the embedding network and a masked autoregressive flow together on the resulting $(\theta, x)$ pairs.
 
 ## Condition on your data to get a posterior
 
-`posterior()` conditions the trained estimator on an observation. This step is quick because it only evaluates the neural network aat the observed `x` values, so it runs instantly, and our `sample()` methods draw samples from our posterior object.
+`posterior()` conditions the trained estimator on an observation. This step is quick because it only evaluates the neural network at the observed `x` values, so it runs instantly, and our `sample()` methods draw samples from our posterior object.
 
 ```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked."}
 post  <- posterior(fit, x_obs = x_obs)
@@ -112,7 +102,7 @@ round(colMeans(draws), 3)
 pairplot(draws, truth = theta_true)
 ```
 
-The posterior should cover the values that generated `x_obs`, and it does. It also shows the ridge between the parameters in the SIR model that should be familiar if you ever fitted those models: the posterior of $\beta$ and $\gamma$ are correlated because single a case case time-series better identifies their ratio $R_0 = \beta/\gamma$ than either parameter alone. That is another reason to tighten up our prior on $\gamma$.
+The posterior should cover the values that generated `x_obs`, and it does. It also shows the ridge between the parameters in the SIR model that should be familiar if you ever fitted those models: the posterior of $\beta$ and $\gamma$ are correlated because a single case time-series better identifies their ratio $R_0 = \beta/\gamma$ than either parameter alone. That is another reason to tighten up our prior on $\gamma$.
 
 ## *Amortized* Posterior Inference
 
@@ -120,9 +110,9 @@ In other estimation approaches, the computationally-expensive procedure that inf
 
 Once we have done this, all we need to do is to present it with some other data, and obtaining a posterior distribution is essentially computationally "free". For an SIR model, that means we can now fit our model to any set of data almost instantly. 
 
-If that didn't make you spill your coffe, read this again. You can present *any* new data vector and fit your model again, instantly. 
+If that didn't make you spill your coffee, read this again. You can present *any* new data vector and fit your model again, instantly.
 
-Let's try this. now we present our model with an outbreak with an R0 = 5 that is poorly reported. Can we recover those parameters?
+Let's try this. Now we present our model with an outbreak with an R0 = 5 that is poorly reported. Can we recover those parameters?
 
 Note that the model doesn't see anything other than the data produced by the simulation:
 
@@ -135,7 +125,7 @@ round(colMeans(draws_2), 3)
 pairplot(draws_2, truth = theta_2)
 ```
 
-Looks like we can reasonably recover this parameter set too. You can do this on a loop if you would like and check that you can recover your parameters.
+$\beta$ and $\rho$ come back close. $\gamma$ does not: the fit puts it around 0.14 against a true 0.100, which is the $\beta/\gamma$ ridge from the previous section showing up again. A single case series identifies the ratio $R_0 = \beta/\gamma$ better than either rate on its own, so $\gamma$ drifts toward the middle of its prior when the data do not pin it down. You can present as many data sets as you like this way and check what comes back.
 
 ## Diagnostics: Simulation based calibration
 
@@ -151,3 +141,15 @@ res
 
 plot_sbc(res)
 ```
+
+Our ranks are not uniform. They pile up at both ends of the histogram, and the uniformity p-values come out small for all three parameters. Ranks that collect at the edges mean the truth falls outside the bulk of the posterior more often than it should, which is what an overconfident posterior looks like: the draws sit in roughly the right place, but they are packed too tightly around it.
+
+`expected_coverage()` puts a number on the same thing. It takes the SBC ranks and asks, for each nominal credible level, how often the truth actually landed inside that interval:
+
+```{r coverage}
+expected_coverage(res, levels = c(0.5, 0.8, 0.9, 0.95))
+```
+
+A calibrated posterior sits on the diagonal. Ours runs under it at every level: the nominal 95% interval lands closer to 85% than to 95%, and the 50% interval covers nearer a third of the time. So the point estimates from this fit are worth more than its error bars, and we should say so rather than quote the intervals as they stand.
+
+This is an ordinary place to land on a first fit, and catching it is the whole reason to run the diagnostic. The levers from here are a larger simulation budget, a different estimator (`density_estimator = "nsf"`), a different embedding size, or `npe_sequential()`, which spends the budget near your observation instead of across the whole prior. Worth knowing before you start: on this problem, doubling `n_simulations` on its own does not close the gap, so treat the budget as one knob among several rather than the fix.

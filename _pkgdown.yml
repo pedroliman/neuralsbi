@@ -84,16 +84,16 @@ authors:
     roles: [cre]
     text: "Developed by"
 
+# The navbar is deliberately down to four things while the other articles are
+# reworked: the landing page, the get-started vignette, the reference, and the
+# changelog. `vignettes/neuralsbi.Rmd` is named after the package, so pkgdown
+# links it as the `intro` ("Get started") item. There is no `articles` entry in
+# `structure` on purpose: pkgdown still writes articles/index.html, but with one
+# vignette that page only repeats the Get started link, so nothing points at it.
 navbar:
   structure:
-    left: [intro, tutorials, reference, news]
+    left: [intro, reference, news]
     right: [search, github, lightswitch]
-  components:
-    articles:
-      text: Tutorials
-      menu:
-      - text: Getting Started with `neuralsbi`
-        href: tutorials/neuralsbi.html
 
 articles:
 - title: Learning the package
