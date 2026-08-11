@@ -340,8 +340,8 @@ format_mcmc_diagnostics <- function(d) {
 #' Pools every draw in `m` (all chains together), ranks them, and maps the
 #' ranks to normal scores via the inverse normal CDF. This is the
 #' rank-normalization step common to both halves of Vehtari et al. (2021)'s
-#' Rhat: [split_rhat()] applies it to the raw draws (for bulk-Rhat) and to the
-#' draws folded around the median (for tail-Rhat), and [bulk_ess()] applies it
+#' Rhat: `split_rhat()` applies it to the raw draws (for bulk-Rhat) and to the
+#' draws folded around the median (for tail-Rhat), and `bulk_ess()` applies it
 #' before its own Gelman-Rubin-style calculation. Bounding every draw to its
 #' rank, rather than its raw value, is what keeps a handful of extreme draws
 #' from dominating a variance estimate the way they would in the classical
@@ -359,10 +359,10 @@ rank_normalize <- function(m) {
 #' Classical Gelman-Rubin Rhat on a matrix already in the scale to score
 #'
 #' The 1992 statistic: within-chain variance `W`, between-chain variance `B`,
-#' the pooled `var_hat`, and `sqrt(var_hat / W)`. [split_rhat()] calls this
+#' the pooled `var_hat`, and `sqrt(var_hat / W)`. `split_rhat()` calls this
 #' once on rank-normalized draws and once on rank-normalized folded draws;
 #' neither call is rank-normalization itself, which lives in
-#' [rank_normalize()].
+#' `rank_normalize()`.
 #'
 #' @param m An `n x k` matrix already on the scale (raw or transformed) to
 #'   score.
