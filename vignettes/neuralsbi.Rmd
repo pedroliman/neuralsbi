@@ -2,8 +2,7 @@
 title: "Getting started with neuralsbi"
 description: >
   Train a neural posterior estimator from a prior and a simulator to perform
-  amortized, likelihood-free Bayesian inference in R, then check that the fit is
-  trustworthy.
+  amortized, likelihood-free Bayesian inference in R.
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting started with neuralsbi}
@@ -149,44 +148,4 @@ pairplot(draws_2, truth = theta_2)
 
 $\beta$ and $\rho$ come back close. $\gamma$ does not: the fit puts it around 0.14 against a true 0.100, which is the $\beta/\gamma$ ridge from the previous section showing up again. A single case series identifies the ratio $R_0 = \beta/\gamma$ better than either rate on its own, so $\gamma$ drifts toward the middle of its prior when the data do not pin it down. You can present as many data sets as you like this way and check what comes back.
 
-## Diagnostics: Simulation based calibration
-
-Seeing that our neural posterior estimator can recover some parameters is nice, but you should not trust it just yet. Because our estimation is amortized, we can more easily use diagnostic approaches such as simulation-based calibration (SBC, see [Talts et al 2018](https://arxiv.org/abs/1804.06788)), which would otherwise require us to fit our model several times with an expensive approach.
-
-In broad strokes, SBC draws $\theta$ from the prior, simulate $x$ from it, and rank that known $\theta$ among posterior draws conditioned on $x$. A calibrated posterior should have the truth parameter anywhere in the rank with equal probability, so the ranks *should* be uniform (for more details on SBC, see [Talts et al 2018](https://arxiv.org/abs/1804.06788)).
-
-We can do this with our estimator with this line of code:
-
-
-``` r
-res <- sbc(fit, sir_simulator, n_sbc = 150, n_posterior_samples = 300, seed = 2)
-res
-#> <nsbi_sbc> 150 trials, 300 posterior samples each
-#>   per-parameter uniformity p-values (large = calibrated):
-#>     beta=0.006  gamma=0.000  rho=0.004
-
-plot_sbc(res)
-```
-
-<div class="figure">
-<img src="figures/neuralsbi-sbc-1.svg" alt="SBC rank histogram and coverage curve for the fitted posterior."  />
-<p class="caption">plot of chunk sbc</p>
-</div>
-
-Our ranks are not uniform. They pile up at both ends of the histogram, and the uniformity p-values come out small for all three parameters. Ranks that collect at the edges mean the truth falls outside the bulk of the posterior more often than it should, which is what an overconfident posterior looks like: the draws sit in roughly the right place, but they are packed too tightly around it.
-
-`expected_coverage()` puts a number on the same thing. It takes the SBC ranks and asks, for each nominal credible level, how often the truth actually landed inside that interval:
-
-
-``` r
-expected_coverage(res, levels = c(0.5, 0.8, 0.9, 0.95))
-#>   nominal      beta     gamma       rho
-#> 1    0.50 0.3200000 0.3066667 0.3600000
-#> 2    0.80 0.6666667 0.6266667 0.6466667
-#> 3    0.90 0.8066667 0.7733333 0.7933333
-#> 4    0.95 0.8866667 0.8866667 0.8533333
-```
-
-A calibrated posterior sits on the diagonal. Ours runs under it at every level: the nominal 95% interval lands closer to 85% than to 95%, and the 50% interval covers nearer a third of the time. So the point estimates from this fit are worth more than its error bars, and we should say so rather than quote the intervals as they stand.
-
-This is an ordinary place to land on a first fit, and catching it is the whole reason to run the diagnostic. The levers from here are a larger simulation budget, a different estimator (`density_estimator = "nsf"`), a different embedding size, or `npe_sequential()`, which spends the budget near your observation instead of across the whole prior. Worth knowing before you start: on this problem, doubling `n_simulations` on its own does not close the gap, so treat the budget as one knob among several rather than the fix.
+Recovering the parameters that generated a couple of data sets is not the same as showing the posterior is calibrated. Before you quote intervals from a fit like this one, run the diagnostics: `sbc()` ranks the true parameter among posterior draws over many prior draws, `expected_coverage()` turns those ranks into coverage at each nominal credible level, and `posterior_predictive()` compares simulations from the posterior against the observation.
