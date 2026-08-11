@@ -14,7 +14,11 @@ map_estimate(post, x = NULL, n_init = 1000L)
 \item{n_init}{Number of initial draws used to seed the search.}
 }
 \value{
-Numeric vector: the MAP parameter estimate.
+Numeric vector: the MAP parameter estimate. For a bounded prior
+(from \code{\link[=prior_uniform]{prior_uniform()}} or a \code{\link[=prior_custom]{prior_custom()}} with \code{lower}/\code{upper}), the
+estimate always falls inside the prior's support -- the search never
+accepts a step that leaves it, the same guarantee \code{\link[=sample]{sample()}} and
+\code{\link[=log_prob]{log_prob()}} give.
 }
 \description{
 Starts from the best of a set of posterior draws and refines with a

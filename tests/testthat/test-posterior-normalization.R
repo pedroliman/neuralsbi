@@ -117,3 +117,82 @@ test_that("the posterior counts are checked before they reach de_sample()", {
                         n_normalization = -1),
                "`n_normalization` must be")
 })
+
+# GitHub #152: map_estimate() optimizes with unconstrained Nelder-Mead and
+# always calls log_prob(normalize = FALSE), so a bounded prior's -Inf mask
+# never reached the objective and the search could walk outside the box.
+test_that("map_estimate() stays inside a bounded prior's support", {
+  set.seed(14)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.05)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  # nudge the fitted conditional mean outside [0, 1] so the unconstrained
+  # optimum sits outside the prior's support
+  fit$de$B[1, ] <- fit$de$B[1, ] + 0.5
+  post <- posterior(fit, x_obs = 0.9)
+
+  map <- suppressWarnings(map_estimate(post))
+  expect_true(within_support(prior, matrix(map, nrow = 1)))
+})
+
+test_that("map_estimate() respects a one-sided (lower-only) bound", {
+  set.seed(15)
+  prior <- prior_custom(
+    sample_fn = function(n) matrix(stats::rexp(n, 1), ncol = 1),
+    log_prob_fn = function(theta) stats::dexp(theta[, 1], 1, log = TRUE),
+    dim = 1, lower = 0
+  )
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.3)
+  fit <- npe(prior, simulator, n_simulations = 2000,
+             density_estimator = "linear_gaussian")
+  # nudge the fitted conditional mean below the lower bound
+  fit$de$B[1, ] <- fit$de$B[1, ] - 1
+  post <- posterior(fit, x_obs = 0.1)
+
+  map <- suppressWarnings(map_estimate(post))
+  expect_true(within_support(prior, matrix(map, nrow = 1)))
+})
+
+test_that("map_estimate() on an unbounded prior lands between the prior mean and the observation", {
+  set.seed(13)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 1000,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  map <- suppressWarnings(map_estimate(post))
+  expect_true(is.finite(map))
+  expect_true(map > 0 && map < 0.5)
+})
+
+# GitHub #153: the acceptance estimate behind normalize = TRUE was floored at
+# 1 / n_normalization to avoid log(0), silently, even when the true
+# acceptance is 0 -- unlike sample(), which warns when rejection sampling
+# comes up empty for the same reason. log_prob() should raise the same
+# leakage warning sample() does whenever the floor is doing the work.
+test_that("log_prob() warns when the acceptance estimate hits the floor, like sample() does", {
+  set.seed(17)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.05)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  # nudge the fitted conditional mean far outside [0, 1]: essentially none of
+  # the n_normalization draws land inside the prior support
+  fit$de$B[1, ] <- fit$de$B[1, ] + 10
+  post <- posterior(fit, x_obs = 0.9)
+
+  expect_warning(
+    lp <- log_prob(post, 0.5, n_normalization = 200),
+    "leaking mass outside the prior"
+  )
+  # the warning still comes with a finite (floored) value, not an error
+  expect_true(is.finite(lp))
+
+  # sample() warns for the same underlying failure mode, so the two agree
+  expect_warning(
+    sample(post, n = 50, max_sampling_batches = 1),
+    "leaking mass outside the prior"
+  )
+})
