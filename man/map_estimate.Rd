@@ -18,7 +18,12 @@ Numeric vector: the MAP parameter estimate. For a bounded prior
 (from \code{\link[=prior_uniform]{prior_uniform()}} or a \code{\link[=prior_custom]{prior_custom()}} with \code{lower}/\code{upper}), the
 estimate always falls inside the prior's support -- the search never
 accepts a step that leaves it, the same guarantee \code{\link[=sample]{sample()}} and
-\code{\link[=log_prob]{log_prob()}} give.
+\code{\link[=log_prob]{log_prob()}} give. Errors if the seeding draw comes back short of
+\code{n_init} -- including empty -- which for a bounded prior means the
+estimator is leaking mass outside the prior support faster than
+rejection sampling can keep up; there is no starting point to search
+from in that case, so this stops rather than continuing on a shorter,
+silently misleading draw.
 }
 \description{
 Starts from the best of a set of posterior draws and refines with a

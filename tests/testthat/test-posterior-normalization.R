@@ -146,8 +146,11 @@ test_that("map_estimate() respects a one-sided (lower-only) bound", {
   simulator <- function(theta) theta + stats::rnorm(1, sd = 0.3)
   fit <- npe(prior, simulator, n_simulations = 2000,
              density_estimator = "linear_gaussian")
-  # nudge the fitted conditional mean below the lower bound
-  fit$de$B[1, ] <- fit$de$B[1, ] - 1
+  # nudge the fitted conditional mean below the lower bound -- just far
+  # enough that the unconstrained optimum sits outside the prior support
+  # (checked directly below), not so far that map_estimate()'s seeding draw
+  # comes up short of n_init and trips the #159 check this test isn't about
+  fit$de$B[1, ] <- fit$de$B[1, ] - 0.3
   post <- posterior(fit, x_obs = 0.1)
 
   map <- suppressWarnings(map_estimate(post))
@@ -165,6 +168,29 @@ test_that("map_estimate() on an unbounded prior lands between the prior mean and
   map <- suppressWarnings(map_estimate(post))
   expect_true(is.finite(map))
   expect_true(map > 0 && map < 0.5)
+})
+
+# GitHub #159: map_estimate() seeds its search with sample(post, n = n_init),
+# which can legitimately return fewer rows than n_init -- including zero --
+# when a bounded prior's rejection sampling comes up short. That short (or
+# empty) draw reached which.max()/optim() unchecked and surfaced as
+# "Error in x - mean : non-conformable arrays" out of dmvnorm_chol(), naming
+# neither map_estimate() nor the real cause. It should error clearly instead.
+test_that("map_estimate() errors clearly when the seeding draw comes up short", {
+  set.seed(18)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.05)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  # nudge the fitted conditional mean far outside [0, 1]: essentially none of
+  # the n_init draws land inside the prior support
+  fit$de$B[1, ] <- fit$de$B[1, ] + 10
+  post <- posterior(fit, x_obs = 0.9)
+
+  expect_error(
+    suppressWarnings(map_estimate(post, n_init = 100)),
+    "map_estimate\\(\\) got .* of 100 requested starting draws"
+  )
 })
 
 # GitHub #153: the acceptance estimate behind normalize = TRUE was floored at

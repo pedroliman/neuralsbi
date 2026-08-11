@@ -257,7 +257,12 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
 #'   (from [prior_uniform()] or a [prior_custom()] with `lower`/`upper`), the
 #'   estimate always falls inside the prior's support -- the search never
 #'   accepts a step that leaves it, the same guarantee [sample()] and
-#'   [log_prob()] give.
+#'   [log_prob()] give. Errors if the seeding draw comes back short of
+#'   `n_init` -- including empty -- which for a bounded prior means the
+#'   estimator is leaking mass outside the prior support faster than
+#'   rejection sampling can keep up; there is no starting point to search
+#'   from in that case, so this stops rather than continuing on a shorter,
+#'   silently misleading draw.
 #' @export
 map_estimate <- function(post, x = NULL, n_init = 1000L) {
   stopifnot(inherits(post, "nsbi_posterior"))
@@ -272,6 +277,14 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
   # about non-conformable arguments; where they happen to match it is a set of
   # starting points quietly drawn from the wrong distribution.
   draws <- sample(post, n = n_init, obs = x)
+  if (nrow(draws) < n_init) {
+    stop(sprintf(
+      paste0("map_estimate() got %d of %d requested starting draws. The ",
+             "estimator is leaking mass outside the prior support, and ",
+             "there is no way to seed the search from a short (or empty) ",
+             "draw. Train on more simulations, or check the prior."),
+      nrow(draws), n_init), call. = FALSE)
+  }
   lp <- log_prob(post, draws, x = x, normalize = FALSE)
   start <- draws[which.max(lp), ]
   # Nelder-Mead is unconstrained, and normalize = FALSE (deliberately, so the
