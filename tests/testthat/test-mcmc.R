@@ -189,7 +189,7 @@ test_that("bulk ESS falls as autocorrelation rises", {
                tolerance = 0.15)
 })
 
-test_that("bulk ESS agrees with the posterior package", {
+test_that("rhat and bulk ESS agree with the posterior package", {
   skip_if_no_posterior()
   set.seed(8)
   n <- 400
@@ -201,9 +201,42 @@ test_that("bulk ESS agrees with the posterior package", {
   }
   ours <- mcmc_diagnostics(chains)
 
-  expect_equal(ours$rhat, posterior::rhat(chains[, , 1]), tolerance = 0.01)
+  # split_rhat() rank-normalizes the same way posterior's z_scale() does, so
+  # this is now the same computation, not merely a close one: on this fixture
+  # the two agree to floating-point precision. posterior::rhat() itself is
+  # max(bulk-rhat, tail-rhat) while ours is bulk-only, which is where a real
+  # (if usually tiny) gap could come from.
+  expect_equal(ours$rhat, posterior::rhat(chains[, , 1]), tolerance = 1e-4)
   expect_equal(ours$ess_bulk, posterior::ess_bulk(chains[, , 1]),
-               tolerance = 0.05)
+               tolerance = 0.01)
+})
+
+test_that("split_rhat() catches disagreement a classical Rhat misses", {
+  # Rank-normalization is what makes Rhat robust to heavy tails: an extreme
+  # outlier moves a raw value by an unbounded amount but a rank by at most
+  # one, so a few huge draws cannot swamp a real between-chain difference the
+  # way they can when Rhat is computed on raw values. Four chains centered at
+  # 1, 2, 3, 4 with heavy Cauchy noise reproduce exactly that: the raw-value
+  # (classical, pre-fix) statistic reads as converged because a handful of
+  # huge draws inflate its within-chain variance enough to hide the offset,
+  # while the rank-normalized one still sees the chains disagree.
+  set.seed(42)
+  n <- 400
+  k <- 4
+  m <- matrix(0, n, k)
+  for (c in seq_len(k)) m[, c] <- c + stats::rcauchy(n, scale = 0.3)
+
+  classical_rhat <- function(m) {
+    chain_means <- colMeans(m)
+    chain_vars <- apply(m, 2, stats::var)
+    W <- mean(chain_vars)
+    B <- nrow(m) * stats::var(chain_means)
+    var_hat <- ((nrow(m) - 1) / nrow(m)) * W + B / nrow(m)
+    sqrt(var_hat / W)
+  }
+
+  expect_lt(classical_rhat(m), 1.01)
+  expect_gt(mcmc_diagnostics(array(m, c(n, k, 1)))$rhat, 1.2)
 })
 
 test_that("format_mcmc_diagnostics() reports a run it could not score", {
