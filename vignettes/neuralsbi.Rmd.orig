@@ -79,15 +79,16 @@ ggplot2::ggplot(data.frame(day = seq_along(x_obs), cases = x_obs),
 
 ## Train your neural posterior estimator
 
-Once we have our prior and simulator, we can call the `npe` function with its default parameters. In this example, we will only use the direct output from our model, which should be okay for these data. `npe` is the function call that will take more time to run, (in this case, about 2 minutes on my laptop).
+Our simulator returns 84 numbers, one per day, and we only want three parameters back. Conditioning the density estimator on all 84 days directly would spend most of its capacity learning the shape of an epidemic curve rather than the posterior we asked for. So we hand `npe()` an embedding network: `embedding_mlp()` specifies a small multilayer perceptron that compresses the daily series into 12 features, and `npe()` trains it jointly with the flow. The estimator then conditions on those 12 learned summaries instead of the raw 84 days. `npe` is the function call that will take more time to run, (in this case, about 2 minutes on my laptop).
 
 ```{r fit}
 plan(multisession) # to run the simulator in parallel
-fit <- npe(prior, sir_simulator, n_simulations = 10000)
+fit <- npe(prior, sir_simulator, n_simulations = 10000,
+           embedding_net = embedding_mlp(output_dim = 12))
 fit
 ```
 
-`npe()` drew 10000 parameter sets from the prior, ran the simulator on each, and trained a masked autoregressive flow neural network on the resulting $(\theta, x)$ pairs.
+`npe()` drew 10000 parameter sets from the prior, ran the simulator on each, and trained the embedding network and a masked autoregressive flow together on the resulting $(\theta, x)$ pairs.
 
 ## Condition on your data to get a posterior
 
