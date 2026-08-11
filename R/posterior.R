@@ -198,7 +198,10 @@ standardized_obs <- function(post, obs) {
 #' @param normalize For bounded priors, renormalize by the estimated acceptance
 #'   probability and return `-Inf` outside the prior support.
 #' @param n_normalization Number of draws used to estimate the normalizing
-#'   (acceptance) constant when `normalize = TRUE`.
+#'   (acceptance) constant when `normalize = TRUE`. If none of them land
+#'   inside the prior support, the estimate is floored at `1 / n_normalization`
+#'   to avoid `log(0)` and a warning says so -- the same warning [sample()]
+#'   raises when rejection sampling comes up empty.
 #' @param ... Passed to methods.
 #' @return Numeric vector of log posterior densities. For a posterior built
 #'   from an [nle()] or [nre()] fit the value is **unnormalized** -- the
@@ -224,7 +227,14 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
     draw_std <- de_sample(fit$de, xo_std, n_normalization)
     draw <- invert_standardizer(fit$std_theta, draw_std)
     acc <- mean(within_support(prior, draw))
-    acc <- max(acc, 1 / n_normalization)
+    if (acc < 1 / n_normalization) {
+      warning(sprintf(
+        "0/%d normalization draws landed inside the prior support; flooring the acceptance estimate at 1/%d to avoid log(0). ",
+        n_normalization, n_normalization),
+        "The estimator is leaking mass outside the prior; consider more simulations.",
+        call. = FALSE)
+      acc <- 1 / n_normalization
+    }
     lp <- lp - log(acc)
     lp[!within_support(prior, theta)] <- -Inf
   }
