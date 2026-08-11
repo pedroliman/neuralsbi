@@ -37,32 +37,23 @@ This tutorial provides a short introduction to neural simulation-based inference
 
 ## Define your simulator
 
-Here we write a "chain binomial" SIR model in daily time-steps, with a population of size $N$. The parameters we want to estimate are $\beta$, the recovery rate $\gamma$, and we see a fraction $\rho$ of the new infections as reported cases. In reality, we would want to inform $\gamma$ using external information, which we can do by providing an informative prior for $\gamma$.
+Here we write a "chain binomial" SIR model in daily time-steps, with a population of size $N$. The parameters we want to estimate are the transmission rate $\beta$, the recovery rate $\gamma$, and the reporting fraction $\rho$: we only see a fraction $\rho$ of the new infections as reported cases. The simulator returns one number per day, the reported cases, over 12 weeks. In reality, we would want to inform $\gamma$ using external information, which we can do by providing an informative prior for $\gamma$.
 
 ```{r simulator}
 library(neuralsbi)
 library(future)
 
-# TODO: Just write the model with a daily time-step, don't do this week and daily loops. Just aggregate weekly observations after the fect.
-# Also, don't return log1p as cases reported, we shoulnd't have to do that.
-# # Also, let's just return the daily reported cases.
-# TODO: Let's replace the weeks argument with "days"
-sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, weeks = 12) {
+sir_simulator <- function(beta, gamma, rho, N = 1e5, I0 = 20, days = 84) {
   S <- N - I0; I <- I0
-  reported <- numeric(weeks)
-  for (w in seq_len(weeks)) {
-    infections <- 0
-    for (d in seq_len(7)) {                             # a day at a time
-      new_inf <- rbinom(1, S, 1 - exp(-beta * I / N))
-      new_rec <- rbinom(1, I, 1 - exp(-gamma))
-      S <- S - new_inf
-      I <- I + new_inf - new_rec
-      infections <- infections + new_inf
-    }
-    reported[w] <- rbinom(1, infections, rho)           # only rho of them are seen
+  reported <- numeric(days)
+  for (d in seq_len(days)) {
+    new_inf <- rbinom(1, S, 1 - exp(-beta * I / N))
+    new_rec <- rbinom(1, I, 1 - exp(-gamma))
+    S <- S - new_inf
+    I <- I + new_inf - new_rec
+    reported[d] <- rbinom(1, new_inf, rho)              # only rho of them are seen
   }
-  # TODO
-  log1p(reported)
+  reported
 }
 
 # Define our priors:
@@ -70,21 +61,19 @@ prior <- prior_uniform(low  = c(beta = 0.20, gamma = 0.08, rho = 0.1),
                        high = c(beta = 0.60, gamma = 0.20, rho = 0.7))
 ```
 
-It is always a good idea to test our mode, so here we simulate an outbreak to test our model:
+It is always a good idea to test our simulator, so here we simulate one outbreak:
 
-```{r outbreak, fig.alt = "Weekly reported cases from one simulated SIR outbreak."}
+```{r outbreak, fig.alt = "Daily reported cases from one simulated SIR outbreak."}
 theta_true <- c(beta = 2 / 7, gamma = 1 / 7, rho = 0.6)   # R0 = 2, 7-day recovery
 
-#TODO: Change this to show the daily timeseries that the model outputs:
 set.seed(1)
 x_obs <- sir_simulator(theta_true[["beta"]], theta_true[["gamma"]],
                        theta_true[["rho"]])
 
-ggplot2::ggplot(data.frame(week = 1:12, cases = expm1(x_obs)),
-                ggplot2::aes(x = week, y = cases)) +
+ggplot2::ggplot(data.frame(day = seq_along(x_obs), cases = x_obs),
+                ggplot2::aes(x = day, y = cases)) +
   ggplot2::geom_line(colour = "steelblue") +
-  ggplot2::geom_point(colour = "steelblue", size = 2) +
-  ggplot2::labs(x = "week", y = "reported cases", title = "One simulated outbreak") +
+  ggplot2::labs(x = "day", y = "reported cases", title = "One simulated outbreak") +
   ggplot2::theme_minimal()
 ```
 
@@ -102,7 +91,7 @@ fit
 
 ## Condition on your data to get a posterior
 
-`posterior()` conditions the trained estimator on an observation. This step is quick because it only evaluates the neural network aat the observed `x` values, so it runs instantly, and our `sample()` methods draw samples from our posterior object.
+`posterior()` conditions the trained estimator on an observation. This step is quick because it only evaluates the neural network at the observed `x` values, so it runs instantly, and our `sample()` methods draw samples from our posterior object.
 
 ```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked."}
 post  <- posterior(fit, x_obs = x_obs)
@@ -112,7 +101,7 @@ round(colMeans(draws), 3)
 pairplot(draws, truth = theta_true)
 ```
 
-The posterior should cover the values that generated `x_obs`, and it does. It also shows the ridge between the parameters in the SIR model that should be familiar if you ever fitted those models: the posterior of $\beta$ and $\gamma$ are correlated because single a case case time-series better identifies their ratio $R_0 = \beta/\gamma$ than either parameter alone. That is another reason to tighten up our prior on $\gamma$.
+The posterior should cover the values that generated `x_obs`, and it does. It also shows the ridge between the parameters in the SIR model that should be familiar if you ever fitted those models: the posterior of $\beta$ and $\gamma$ are correlated because a single case time-series better identifies their ratio $R_0 = \beta/\gamma$ than either parameter alone. That is another reason to tighten up our prior on $\gamma$.
 
 ## *Amortized* Posterior Inference
 
@@ -120,9 +109,9 @@ In other estimation approaches, the computationally-expensive procedure that inf
 
 Once we have done this, all we need to do is to present it with some other data, and obtaining a posterior distribution is essentially computationally "free". For an SIR model, that means we can now fit our model to any set of data almost instantly. 
 
-If that didn't make you spill your coffe, read this again. You can present *any* new data vector and fit your model again, instantly. 
+If that didn't make you spill your coffee, read this again. You can present *any* new data vector and fit your model again, instantly.
 
-Let's try this. now we present our model with an outbreak with an R0 = 5 that is poorly reported. Can we recover those parameters?
+Let's try this. Now we present our model with an outbreak with an R0 = 5 that is poorly reported. Can we recover those parameters?
 
 Note that the model doesn't see anything other than the data produced by the simulation:
 
