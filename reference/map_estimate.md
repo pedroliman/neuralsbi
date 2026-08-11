@@ -25,7 +25,16 @@ map_estimate(post, x = NULL, n_init = 1000L)
 
 ## Value
 
-Numeric vector: the MAP parameter estimate.
+Numeric vector: the MAP parameter estimate. For a bounded prior (from
+[`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+or a
+[`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+with `lower`/`upper`), the estimate always falls inside the prior's
+support – the search never accepts a step that leaves it, the same
+guarantee
+[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md) and
+[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+give.
 
 ## Details
 

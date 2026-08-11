@@ -49,7 +49,7 @@ derivative-free optimizer."><meta property="og:image" content="https://neuralsbi
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -109,7 +109,11 @@ derivative-free optimizer.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Numeric vector: the MAP parameter estimate.</p>
+    <p>Numeric vector: the MAP parameter estimate. For a bounded prior
+(from <code><a href="prior_uniform.html">prior_uniform()</a></code> or a <code><a href="prior_custom.html">prior_custom()</a></code> with <code>lower</code>/<code>upper</code>), the
+estimate always falls inside the prior's support – the search never
+accepts a step that leaves it, the same guarantee <code><a href="sample.html">sample()</a></code> and
+<code><a href="log_prob.html">log_prob()</a></code> give.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

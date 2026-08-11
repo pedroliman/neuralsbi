@@ -1,5 +1,28 @@
 # Changelog
 
+## neuralsbi 0.5.19
+
+- **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  no longer returns a point outside a bounded prior’s support.** It
+  searches with unconstrained
+  `stats::optim(..., method = "Nelder-Mead")` and always calls
+  `log_prob(post, ..., normalize = FALSE)`, so the `-Inf` mask that
+  `log_prob(normalize = TRUE)` applies for a bounded prior (from
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  or a
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  with `lower`/`upper`) never reached the optimizer’s objective, and the
+  search could converge outside the box. The objective in
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  (`R/posterior.R`) now checks
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  directly and returns `Inf` for an out-of-support candidate, which is
+  the same guarantee without paying to re-estimate the acceptance
+  constant on every evaluation. Unbounded priors take the same code path
+  as before and are unaffected
+  ([\#152](https://github.com/pedroliman/neuralsbi/issues/152))
+  ([\#155](https://github.com/pedroliman/neuralsbi/issues/155)).
+
 ## neuralsbi 0.5.18
 
 - **Vignette figures are now all ggplot2, with a consistent theme and
