@@ -182,6 +182,20 @@ test_that("log_prob() on an NRE posterior is the unnormalized potential", {
   expect_equal(log_prob(post, rbind(c(9, 9))), -Inf)
 })
 
+# GitHub #163: mcmc_log_prob() is shared by NLE and NRE posteriors, so the
+# same fix that gives log_prob() a named error for a non-numeric theta on an
+# NLE fit applies here too.
+test_that("log_prob() rejects non-numeric theta by name instead of returning NA", {
+  fit <- logistic_fit(n = 2000)
+  x_obs <- matrix(stats::rnorm(10), ncol = 2)
+  post <- posterior(fit, x_obs, n_chains = 4, warmup = 20)
+
+  expect_error(
+    log_prob(post, data.frame(mu = c("x", "y"), nu = c(1, 2)),
+             normalize = FALSE),
+    "`theta` has non-numeric columns: mu")
+})
+
 test_that("wrongly shaped input is rejected by name", {
   fit <- logistic_fit(n = 500)
 
