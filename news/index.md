@@ -1,5 +1,28 @@
 # Changelog
 
+## neuralsbi 0.5.20
+
+- **`log_prob(..., normalize = TRUE)` now warns when its acceptance
+  estimate hits the zero floor, instead of staying silent.** For a
+  bounded prior,
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  (`R/posterior.R`) estimates the normalizing acceptance probability by
+  sampling `n_normalization` draws and checking
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md);
+  when none of them land inside the prior, it floors the estimate at
+  `1 / n_normalization` to avoid `log(0)` and returns a normal-looking
+  finite value with no sign that the normalizing constant is a floor
+  rather than a measurement.
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  already warns in the equivalent case, when rejection sampling comes up
+  short: “The estimator is leaking mass outside the prior; consider more
+  simulations.”
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  now raises the same warning whenever the floor is doing the work, so
+  the two functions agree about surfacing this failure mode
+  ([\#153](https://github.com/pedroliman/neuralsbi/issues/153))
+  ([\#156](https://github.com/pedroliman/neuralsbi/issues/156)).
+
 ## neuralsbi 0.5.19
 
 - **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)

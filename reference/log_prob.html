@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -128,7 +128,10 @@ probability and return <code>-Inf</code> outside the prior support.</p></dd>
 
 <dt id="arg-n-normalization">n_normalization<a class="anchor" aria-label="anchor" href="#arg-n-normalization"></a></dt>
 <dd><p>Number of draws used to estimate the normalizing
-(acceptance) constant when <code>normalize = TRUE</code>.</p></dd>
+(acceptance) constant when <code>normalize = TRUE</code>. If none of them land
+inside the prior support, the estimate is floored at <code>1 / n_normalization</code>
+to avoid <code>log(0)</code> and a warning says so – the same warning <code><a href="sample.html">sample()</a></code>
+raises when rejection sampling comes up empty.</p></dd>
 
 </dl></div>
     <div class="section level2">

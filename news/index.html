@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.20" id="neuralsbi-0520">neuralsbi 0.5.20<a class="anchor" aria-label="anchor" href="#neuralsbi-0520"></a></h2>
+<ul><li>
+<strong><code>log_prob(..., normalize = TRUE)</code> now warns when its acceptance estimate hits the zero floor, instead of staying silent.</strong> For a bounded prior, <code><a href="../reference/log_prob.html">log_prob.nsbi_posterior()</a></code> (<code>R/posterior.R</code>) estimates the normalizing acceptance probability by sampling <code>n_normalization</code> draws and checking <code><a href="../reference/within_support.html">within_support()</a></code>; when none of them land inside the prior, it floors the estimate at <code>1 / n_normalization</code> to avoid <code>log(0)</code> and returns a normal-looking finite value with no sign that the normalizing constant is a floor rather than a measurement. <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> already warns in the equivalent case, when rejection sampling comes up short: “The estimator is leaking mass outside the prior; consider more simulations.” <code><a href="../reference/log_prob.html">log_prob()</a></code> now raises the same warning whenever the floor is doing the work, so the two functions agree about surfacing this failure mode (<a href="https://github.com/pedroliman/neuralsbi/issues/153" class="external-link">#153</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/156" class="external-link">#156</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.19" id="neuralsbi-0519">neuralsbi 0.5.19<a class="anchor" aria-label="anchor" href="#neuralsbi-0519"></a></h2>
 <ul><li>

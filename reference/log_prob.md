@@ -47,7 +47,11 @@ log_prob(
 - n_normalization:
 
   Number of draws used to estimate the normalizing (acceptance) constant
-  when `normalize = TRUE`.
+  when `normalize = TRUE`. If none of them land inside the prior
+  support, the estimate is floored at `1 / n_normalization` to avoid
+  `log(0)` and a warning says so – the same warning
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  raises when rejection sampling comes up empty.
 
 ## Value
 
