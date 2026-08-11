@@ -19,9 +19,9 @@
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting started with neuralsbi">
-<meta name="description" content="Train a neural posterior estimator from a prior and a simulator to perform amortized, likelihood-free Bayesian inference in R, then check that the fit is trustworthy.
+<meta name="description" content="Train a neural posterior estimator from a prior and a simulator to perform amortized, likelihood-free Bayesian inference in R.
 ">
-<meta property="og:description" content="Train a neural posterior estimator from a prior and a simulator to perform amortized, likelihood-free Bayesian inference in R, then check that the fit is trustworthy.
+<meta property="og:description" content="Train a neural posterior estimator from a prior and a simulator to perform amortized, likelihood-free Bayesian inference in R.
 ">
 <meta property="og:image" content="https://neuralsbi.pedrodelima.com/reference/figures/logo.png">
 <meta property="og:image:alt" content="neuralsbi hex logo: a neural network feeding a posterior density">
@@ -301,68 +301,14 @@ showing up again. A single case series identifies the ratio <span class="math in
 its own, so <span class="math inline">\gamma</span> drifts toward the
 middle of its prior when the data do not pin it down. You can present as
 many data sets as you like this way and check what comes back.</p>
-</div>
-<div class="section level3">
-<h3 id="diagnostics-simulation-based-calibration">Diagnostics: Simulation based calibration<a class="anchor" aria-label="anchor" href="#diagnostics-simulation-based-calibration"></a>
-</h3>
-<p>Seeing that our neural posterior estimator can recover some
-parameters is nice, but you should not trust it just yet. Because our
-estimation is amortized, we can more easily use diagnostic approaches
-such as simulation-based calibration (SBC, see <a href="https://arxiv.org/abs/1804.06788" class="external-link">Talts et al 2018</a>), which
-would otherwise require us to fit our model several times with an
-expensive approach.</p>
-<p>In broad strokes, SBC draws <span class="math inline">\theta</span>
-from the prior, simulate <span class="math inline">x</span> from it, and
-rank that known <span class="math inline">\theta</span> among posterior
-draws conditioned on <span class="math inline">x</span>. A calibrated
-posterior should have the truth parameter anywhere in the rank with
-equal probability, so the ranks <em>should</em> be uniform (for more
-details on SBC, see <a href="https://arxiv.org/abs/1804.06788" class="external-link">Talts et
-al 2018</a>).</p>
-<p>We can do this with our estimator with this line of code:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">sir_simulator</span>, n_sbc <span class="op">=</span> <span class="fl">150</span>, n_posterior_samples <span class="op">=</span> <span class="fl">300</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">res</span></span>
-<span><span class="co">#&gt; &lt;nsbi_sbc&gt; 150 trials, 300 posterior samples each</span></span>
-<span><span class="co">#&gt;   per-parameter uniformity p-values (large = calibrated):</span></span>
-<span><span class="co">#&gt;     beta=0.006  gamma=0.000  rho=0.004</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figures/neuralsbi-sbc-1.svg" alt="SBC rank histogram and coverage curve for the fitted posterior."><p class="caption">
-plot of chunk sbc
-</p>
-</div>
-<p>Our ranks are not uniform. They pile up at both ends of the
-histogram, and the uniformity p-values come out small for all three
-parameters. Ranks that collect at the edges mean the truth falls outside
-the bulk of the posterior more often than it should, which is what an
-overconfident posterior looks like: the draws sit in roughly the right
-place, but they are packed too tightly around it.</p>
-<p><code><a href="../reference/expected_coverage.html">expected_coverage()</a></code> puts a number on the same thing. It
-takes the SBC ranks and asks, for each nominal credible level, how often
-the truth actually landed inside that interval:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/expected_coverage.html">expected_coverage</a></span><span class="op">(</span><span class="va">res</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">0.9</span>, <span class="fl">0.95</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   nominal      beta     gamma       rho</span></span>
-<span><span class="co">#&gt; 1    0.50 0.3200000 0.3066667 0.3600000</span></span>
-<span><span class="co">#&gt; 2    0.80 0.6666667 0.6266667 0.6466667</span></span>
-<span><span class="co">#&gt; 3    0.90 0.8066667 0.7733333 0.7933333</span></span>
-<span><span class="co">#&gt; 4    0.95 0.8866667 0.8866667 0.8533333</span></span></code></pre></div>
-<p>A calibrated posterior sits on the diagonal. Ours runs under it at
-every level: the nominal 95% interval lands closer to 85% than to 95%,
-and the 50% interval covers nearer a third of the time. So the point
-estimates from this fit are worth more than its error bars, and we
-should say so rather than quote the intervals as they stand.</p>
-<p>This is an ordinary place to land on a first fit, and catching it is
-the whole reason to run the diagnostic. The levers from here are a
-larger simulation budget, a different estimator
-(<code>density_estimator = "nsf"</code>), a different embedding size, or
-<code><a href="../reference/npe_sequential.html">npe_sequential()</a></code>, which spends the budget near your
-observation instead of across the whole prior. Worth knowing before you
-start: on this problem, doubling <code>n_simulations</code> on its own
-does not close the gap, so treat the budget as one knob among several
-rather than the fix.</p>
+<p>Recovering the parameters that generated a couple of data sets is not
+the same as showing the posterior is calibrated. Before you quote
+intervals from a fit like this one, run the diagnostics:
+<code><a href="../reference/sbc.html">sbc()</a></code> ranks the true parameter among posterior draws over
+many prior draws, <code><a href="../reference/expected_coverage.html">expected_coverage()</a></code> turns those ranks
+into coverage at each nominal credible level, and
+<code><a href="../reference/posterior_predictive.html">posterior_predictive()</a></code> compares simulations from the
+posterior against the observation.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

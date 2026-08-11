@@ -6,5 +6,4 @@
   neuralsbi](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md):
 
   Train a neural posterior estimator from a prior and a simulator to
-  perform amortized, likelihood-free Bayesian inference in R, then check
-  that the fit is trustworthy.
+  perform amortized, likelihood-free Bayesian inference in R.
