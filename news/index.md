@@ -1,5 +1,29 @@
 # Changelog
 
+## neuralsbi 0.5.22
+
+- **`split_rhat()` now includes the tail-Rhat component, so it matches
+  its Vehtari et al. Rhat docstring in full.**
+  [\#157](https://github.com/pedroliman/neuralsbi/issues/157) fixed the
+  missing rank-normalization but stopped at bulk-Rhat: it
+  rank-normalized the raw split-chain draws and ran the classical
+  Gelman-Rubin statistic on those, without also folding them around the
+  median for a tail component. Vehtari et al. (2021)’s Rhat – and
+  [`posterior::rhat()`](https://mc-stan.org/posterior/reference/rhat.html)’s
+  default – is `max(bulk-Rhat, tail-Rhat)`; bulk-Rhat alone tracks
+  location but not scale, so it reads chains that agree in location but
+  disagree in spread as converged. Four chains centered at 0 with two at
+  `sd = 1` and two at `sd = 4` reproduce this: bulk-Rhat alone reads
+  `Rhat < 1.01` while the complete statistic reads `Rhat > 1.2`.
+  `split_rhat()` (`R/mcmc.R`) now computes both components through a
+  shared `gelman_rubin_rhat()` helper and takes their max, and
+  `tests/testthat/test-mcmc.R`’s
+  [`posterior::rhat()`](https://mc-stan.org/posterior/reference/rhat.html)
+  cross-check tightens from `tolerance = 1e-4` back to `1e-6` now that
+  the two compute the same statistic rather than a close approximation
+  of it ([\#154](https://github.com/pedroliman/neuralsbi/issues/154))
+  ([\#160](https://github.com/pedroliman/neuralsbi/issues/160)).
+
 ## neuralsbi 0.5.21
 
 - **`split_rhat()` now actually rank-normalizes, matching what its

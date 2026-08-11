@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.22" id="neuralsbi-0522">neuralsbi 0.5.22<a class="anchor" aria-label="anchor" href="#neuralsbi-0522"></a></h2>
+<ul><li>
+<strong><code>split_rhat()</code> now includes the tail-Rhat component, so it matches its Vehtari et al. Rhat docstring in full.</strong> <a href="https://github.com/pedroliman/neuralsbi/issues/157" class="external-link">#157</a> fixed the missing rank-normalization but stopped at bulk-Rhat: it rank-normalized the raw split-chain draws and ran the classical Gelman-Rubin statistic on those, without also folding them around the median for a tail component. Vehtari et al. (2021)’s Rhat – and <code><a href="https://mc-stan.org/posterior/reference/rhat.html" class="external-link">posterior::rhat()</a></code>’s default – is <code>max(bulk-Rhat, tail-Rhat)</code>; bulk-Rhat alone tracks location but not scale, so it reads chains that agree in location but disagree in spread as converged. Four chains centered at 0 with two at <code>sd = 1</code> and two at <code>sd = 4</code> reproduce this: bulk-Rhat alone reads <code>Rhat &lt; 1.01</code> while the complete statistic reads <code>Rhat &gt; 1.2</code>. <code>split_rhat()</code> (<code>R/mcmc.R</code>) now computes both components through a shared <code>gelman_rubin_rhat()</code> helper and takes their max, and <code>tests/testthat/test-mcmc.R</code>’s <code><a href="https://mc-stan.org/posterior/reference/rhat.html" class="external-link">posterior::rhat()</a></code> cross-check tightens from <code>tolerance = 1e-4</code> back to <code>1e-6</code> now that the two compute the same statistic rather than a close approximation of it (<a href="https://github.com/pedroliman/neuralsbi/issues/154" class="external-link">#154</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/160" class="external-link">#160</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.21" id="neuralsbi-0521">neuralsbi 0.5.21<a class="anchor" aria-label="anchor" href="#neuralsbi-0521"></a></h2>
 <ul><li>

@@ -1,12 +1,15 @@
 # Split-Rhat and bulk effective sample size
 
 The standard rank-normalized versions from Vehtari et al. (2021),
-computed on the split chains: both `split_rhat()` and `bulk_ess()` run
-their input through `rank_normalize()` before anything else, which is
-what makes them robust to the heavy tails and multimodality a raw-value
-Rhat can miss. Implemented here rather than taken from posterior to keep
-the dependency surface where it is; the test suite cross-checks against
-posterior when that package happens to be installed.
+computed on the split chains. `split_rhat()` is
+`max(bulk-Rhat, tail-Rhat)`: the classical Gelman-Rubin statistic run
+once on the rank-normalized draws (bulk) and once on the rank-normalized
+draws folded around the median (tail, which catches chains that agree in
+location but disagree in spread – something bulk-Rhat alone can miss).
+`bulk_ess()` rank-normalizes the same way. Implemented here rather than
+taken from posterior to keep the dependency surface where it is; the
+test suite cross-checks against posterior when that package happens to
+be installed.
 
 ## Usage
 
