@@ -118,6 +118,27 @@ test_that("the posterior counts are checked before they reach de_sample()", {
                "`n_normalization` must be")
 })
 
+# GitHub #162: n drove the rejection-sampling loop unchecked, so a bad value
+# failed deep inside sample() (a non-conformable-arguments error, or worse, a
+# silent short read) instead of naming `n` the way every other draw-count
+# argument in the package does.
+test_that("sample() checks n before it reaches the rejection-sampling loop", {
+  set.seed(16)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.05)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  expect_error(sample(post, n = NA), "`n` must be a single whole number")
+  expect_error(sample(post, n = "10"), "`n` must be a single whole number")
+  expect_error(sample(post, n = 2.5), "`n` must be a single whole number")
+  expect_error(sample(post, n = -5), "`n` must be a single whole number")
+  expect_error(sample(post, n = 0), "`n` must be a single whole number")
+  # `size` is the same argument under sample()'s generic name
+  expect_error(sample(post, size = 2.5), "`n` must be a single whole number")
+})
+
 # GitHub #152: map_estimate() optimizes with unconstrained Nelder-Mead and
 # always calls log_prob(normalize = FALSE), so a bounded prior's -Inf mask
 # never reached the objective and the search could walk outside the box.

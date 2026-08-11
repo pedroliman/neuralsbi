@@ -147,6 +147,7 @@ resolve_x <- function(post, x) {
 sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
                                   max_sampling_batches = 100L, ...) {
   post <- x
+  n <- check_count(n, "n", why = "since it is the number of posterior draws")
   max_sampling_batches <- check_count(
     max_sampling_batches, "max_sampling_batches",
     why = "since one batch is one round of rejection sampling")

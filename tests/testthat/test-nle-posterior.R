@@ -287,3 +287,23 @@ test_that("a neural NLE posterior lands near the analytic one", {
   expect_equal(apply(draws, 2, stats::sd), apply(reference, 2, stats::sd),
                tolerance = 0.25)
 })
+
+# GitHub #162: n reached mcmc_draws() -- and from there ceiling(n / n_chains)
+# -- unchecked, so a non-integer n like 2.5 silently returned 2 draws instead
+# of erroring the way every other draw-count argument in the package does.
+test_that("sample() checks n before it reaches mcmc_draws()", {
+  set.seed(17)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 800, density_estimator = "linear_gaussian",
+             seed = 18)
+  post <- posterior(fit, matrix(0.5, nrow = 1), n_chains = 4, warmup = 20,
+                    seed = 19)
+
+  expect_error(sample(post, n = NA), "`n` must be a single whole number")
+  expect_error(sample(post, n = "10"), "`n` must be a single whole number")
+  expect_error(sample(post, n = 2.5), "`n` must be a single whole number")
+  expect_error(sample(post, n = -5), "`n` must be a single whole number")
+  expect_error(sample(post, n = 0), "`n` must be a single whole number")
+  expect_error(sample(post, size = 2.5), "`n` must be a single whole number")
+})
