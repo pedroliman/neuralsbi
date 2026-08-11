@@ -291,6 +291,16 @@ mcmc_log_prob <- function(post, theta, x, warn, what) {
                            "`normalize` is ignored and the value returned is ",
                            "unnormalized."), what), call. = FALSE)
   }
+  # surrogate_potential()'s closure only reshapes theta with
+  # as_theta_matrix(), which coerces a non-numeric column to NA rather than
+  # erroring -- so a bad theta used to come back as a silent NA log-prob
+  # instead of the same named error surrogate_score() already gives
+  # log_lik()/log_ratio() for the same fit (#163). Checked here, once, with
+  # the caller's theta in hand, rather than inside surrogate_potential()'s
+  # returned closure, which every MCMC step also calls with a theta it built
+  # internally and has no need to re-validate.
+  theta <- check_matrix(theta, post$fit$dim_theta, "theta",
+                        "one parameter per column")
   potential <- surrogate_potential(post$fit, resolve_x_iid(post, x, "x"))
   potential(theta)
 }
