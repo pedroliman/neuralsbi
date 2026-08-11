@@ -1,5 +1,44 @@
 # Changelog
 
+## neuralsbi 0.5.25
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an NLE or NRE posterior now rejects a non-numeric `theta` by name
+  instead of silently returning `NA`.**
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  (`R/nle_posterior.R`) routes `theta` through
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  into
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  closure (`R/likelihood.R`), which only reshapes it with
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
+  – no
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)/[`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  anywhere on that path.
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
+  coerces a non-numeric column to `NA` with a bare “NAs introduced by
+  coercion” warning rather than erroring, so
+  `log_prob(post, theta = data.frame(mu = c("x", "y")))` came back as
+  `NA` with nothing said about `theta` – worse than crashing, since
+  there is no signal to a caller doing `which.max(log_prob(...))`. Every
+  sibling entry point already validates:
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  for NPE posteriors, and
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  for the same NLE/NRE fits via
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md).
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  now checks `theta` with the same
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  call
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  already uses, once, before building the potential – not inside
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  returned closure, which every MCMC step also calls with a `theta` it
+  built internally and has no need to re-validate
+  ([\#163](https://github.com/pedroliman/neuralsbi/issues/163))
+  ([\#166](https://github.com/pedroliman/neuralsbi/issues/166)).
+
 ## neuralsbi 0.5.24
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)

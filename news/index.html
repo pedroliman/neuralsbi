@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.25</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.25" id="neuralsbi-0525">neuralsbi 0.5.25<a class="anchor" aria-label="anchor" href="#neuralsbi-0525"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_prob.html">log_prob()</a></code> on an NLE or NRE posterior now rejects a non-numeric <code>theta</code> by name instead of silently returning <code>NA</code>.</strong> <code><a href="../reference/log_prob.html">log_prob.nsbi_mcmc_posterior()</a></code> (<code>R/nle_posterior.R</code>) routes <code>theta</code> through <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code> into <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s closure (<code>R/likelihood.R</code>), which only reshapes it with <code><a href="../reference/as_theta_matrix.html">as_theta_matrix()</a></code> – no <code><a href="../reference/check_matrix.html">check_matrix()</a></code>/<code><a href="../reference/check_numeric.html">check_numeric()</a></code> anywhere on that path. <code><a href="../reference/as_theta_matrix.html">as_theta_matrix()</a></code> coerces a non-numeric column to <code>NA</code> with a bare “NAs introduced by coercion” warning rather than erroring, so <code>log_prob(post, theta = data.frame(mu = c("x", "y")))</code> came back as <code>NA</code> with nothing said about <code>theta</code> – worse than crashing, since there is no signal to a caller doing <code>which.max(log_prob(...))</code>. Every sibling entry point already validates: <code><a href="../reference/log_prob.html">log_prob.nsbi_posterior()</a></code> for NPE posteriors, and <code><a href="../reference/log_lik.html">log_lik()</a></code>/<code><a href="../reference/log_ratio.html">log_ratio()</a></code> for the same NLE/NRE fits via <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code>. <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code> now checks <code>theta</code> with the same <code><a href="../reference/check_matrix.html">check_matrix()</a></code> call <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code> already uses, once, before building the potential – not inside <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s returned closure, which every MCMC step also calls with a <code>theta</code> it built internally and has no need to re-validate (<a href="https://github.com/pedroliman/neuralsbi/issues/163" class="external-link">#163</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/166" class="external-link">#166</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.24" id="neuralsbi-0524">neuralsbi 0.5.24<a class="anchor" aria-label="anchor" href="#neuralsbi-0524"></a></h2>
 <ul><li>
