@@ -14,11 +14,11 @@ A data frame with one row per parameter: \code{rhat} and \code{ess_bulk}.
 }
 \description{
 The standard rank-normalized versions from Vehtari et al. (2021), computed
-on the split chains. \code{\link{split_rhat}()} is \code{max(bulk-Rhat, tail-Rhat)}: the
+on the split chains. \code{split_rhat()} is \code{max(bulk-Rhat, tail-Rhat)}: the
 classical Gelman-Rubin statistic run once on the rank-normalized draws and
 once on the rank-normalized \emph{folded} draws (folded around the per-parameter
 median, which is what makes the tail component sensitive to differences in
-spread rather than location). \code{\link{bulk_ess}()} rank-normalizes the same way.
+spread rather than location). \code{bulk_ess()} rank-normalizes the same way.
 Implemented here rather than taken from \pkg{posterior} to keep the
 dependency surface where it is; the test suite cross-checks against
 \pkg{posterior} when that package happens to be installed.
