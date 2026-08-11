@@ -95,8 +95,6 @@ navbar:
       menu:
       - text: Introduction to neural simulation-based inference in R
         href: articles/intro-to-sbi.html
-      - text: "Neural likelihood estimation, and handing it to Stan"
-        href: articles/neural-likelihood.html
 
 articles:
 - title: Learning the package
