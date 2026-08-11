@@ -201,12 +201,11 @@ test_that("rhat and bulk ESS agree with the posterior package", {
   }
   ours <- mcmc_diagnostics(chains)
 
-  # split_rhat() rank-normalizes the same way posterior's z_scale() does, so
-  # this is now the same computation, not merely a close one: on this fixture
-  # the two agree to floating-point precision. posterior::rhat() itself is
-  # max(bulk-rhat, tail-rhat) while ours is bulk-only, which is where a real
-  # (if usually tiny) gap could come from.
-  expect_equal(ours$rhat, posterior::rhat(chains[, , 1]), tolerance = 1e-4)
+  # split_rhat() is max(bulk-Rhat, tail-Rhat) computed the same way
+  # posterior::rhat() computes it by default, so this is the same
+  # computation, not merely a close one: on this fixture the two agree to
+  # floating-point precision.
+  expect_equal(ours$rhat, posterior::rhat(chains[, , 1]), tolerance = 1e-6)
   expect_equal(ours$ess_bulk, posterior::ess_bulk(chains[, , 1]),
                tolerance = 0.01)
 })
@@ -237,6 +236,31 @@ test_that("split_rhat() catches disagreement a classical Rhat misses", {
 
   expect_lt(classical_rhat(m), 1.01)
   expect_gt(mcmc_diagnostics(array(m, c(n, k, 1)))$rhat, 1.2)
+})
+
+# GitHub #154 follow-up: the first fix landed with bulk-Rhat only, rank-
+# normalizing the raw draws but never folding them, so split_rhat() still
+# missed the failure mode tail-Rhat exists for -- chains that agree in
+# location but disagree in spread. Bulk-Rhat alone reads such chains as
+# converged because rank-normalizing the raw values still tracks location,
+# not scale; folding around the median before rank-normalizing is what makes
+# the statistic sensitive to a spread mismatch.
+test_that("split_rhat() catches chains that agree in location but disagree in spread", {
+  set.seed(154)
+  n <- 400
+  k <- 4
+  m <- matrix(0, n, k)
+  m[, 1] <- stats::rnorm(n, 0, 1)
+  m[, 2] <- stats::rnorm(n, 0, 1)
+  m[, 3] <- stats::rnorm(n, 0, 4)
+  m[, 4] <- stats::rnorm(n, 0, 4)
+
+  # What bulk-Rhat alone computes: rank-normalize the raw draws, no folding.
+  bulk_only <- gelman_rubin_rhat(rank_normalize(m))
+  expect_lt(bulk_only, 1.01)
+
+  # split_rhat() adds the folded tail component and catches it.
+  expect_gt(split_rhat(m), 1.2)
 })
 
 test_that("format_mcmc_diagnostics() reports a run it could not score", {
