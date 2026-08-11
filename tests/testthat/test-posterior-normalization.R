@@ -117,3 +117,33 @@ test_that("the posterior counts are checked before they reach de_sample()", {
                         n_normalization = -1),
                "`n_normalization` must be")
 })
+
+# GitHub #153: the acceptance estimate behind normalize = TRUE was floored at
+# 1 / n_normalization to avoid log(0), silently, even when the true
+# acceptance is 0 -- unlike sample(), which warns when rejection sampling
+# comes up empty for the same reason. log_prob() should raise the same
+# leakage warning sample() does whenever the floor is doing the work.
+test_that("log_prob() warns when the acceptance estimate hits the floor, like sample() does", {
+  set.seed(17)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.05)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  # nudge the fitted conditional mean far outside [0, 1]: essentially none of
+  # the n_normalization draws land inside the prior support
+  fit$de$B[1, ] <- fit$de$B[1, ] + 10
+  post <- posterior(fit, x_obs = 0.9)
+
+  expect_warning(
+    lp <- log_prob(post, 0.5, n_normalization = 200),
+    "leaking mass outside the prior"
+  )
+  # the warning still comes with a finite (floored) value, not an error
+  expect_true(is.finite(lp))
+
+  # sample() warns for the same underlying failure mode, so the two agree
+  expect_warning(
+    sample(post, n = 50, max_sampling_batches = 1),
+    "leaking mass outside the prior"
+  )
+})

@@ -32,7 +32,10 @@ probability and return \code{-Inf} outside the prior support.}
 \item{...}{Passed to methods.}
 
 \item{n_normalization}{Number of draws used to estimate the normalizing
-(acceptance) constant when \code{normalize = TRUE}.}
+(acceptance) constant when \code{normalize = TRUE}. If none of them land
+inside the prior support, the estimate is floored at \code{1 / n_normalization}
+to avoid \code{log(0)} and a warning says so -- the same warning \code{\link[=sample]{sample()}}
+raises when rejection sampling comes up empty.}
 }
 \value{
 Numeric vector of log posterior densities. For a posterior built
