@@ -1,5 +1,33 @@
 # Changelog
 
+## neuralsbi 0.5.21
+
+- **`split_rhat()` now actually rank-normalizes, matching what its
+  docstring already claimed.**
+  [`mcmc_diagnostics()`](https://neuralsbi.pedrodelima.com/reference/mcmc_diagnostics.md)
+  documented “the standard rank-free versions from Vehtari et
+  al. (2021)” for both statistics it returns, and `bulk_ess()` did
+  rank-normalize, but `split_rhat()` computed the classical 1992
+  Gelman-Rubin statistic straight off the raw split-chain values.
+  Rank-normalization is what makes Rhat robust to heavy tails and
+  multimodality – exactly the failure mode the vectorized slice sampler
+  (`R/mcmc.R`) behind
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  posteriors is prone to – so a raw-value Rhat can read as converged
+  when the rank-normalized one would flag it: a four-chain,
+  Cauchy-noised fixture with real between-chain disagreement reads
+  `Rhat < 1.01` under the old code and `Rhat > 1.2` under the fix.
+  `split_rhat()` and `bulk_ess()` now share one `rank_normalize()`
+  helper, so there is one implementation of Vehtari et al.’s rankit
+  transform instead of the claim living in a docstring the code did not
+  follow. `tests/testthat/test-mcmc.R` gains the Cauchy regression
+  fixture and tightens its
+  [`posterior::rhat()`](https://mc-stan.org/posterior/reference/rhat.html)/[`posterior::ess_bulk()`](https://mc-stan.org/posterior/reference/ess_bulk.html)
+  comparison tolerance now that the two are computing the same thing
+  rather than merely landing close on near-Gaussian data
+  ([\#154](https://github.com/pedroliman/neuralsbi/issues/154))
+  ([\#157](https://github.com/pedroliman/neuralsbi/issues/157)).
+
 ## neuralsbi 0.5.20
 
 - **`log_prob(..., normalize = TRUE)` now warns when its acceptance
