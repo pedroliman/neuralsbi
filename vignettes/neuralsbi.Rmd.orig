@@ -125,7 +125,7 @@ round(colMeans(draws_2), 3)
 pairplot(draws_2, truth = theta_2)
 ```
 
-Looks like we can reasonably recover this parameter set too. You can do this on a loop if you would like and check that you can recover your parameters.
+$\beta$ and $\rho$ come back close. $\gamma$ does not: the fit puts it around 0.135 against a true 0.100, which is the $\beta/\gamma$ ridge from the previous section showing up again. A single case series identifies the ratio $R_0 = \beta/\gamma$ better than either rate on its own, so $\gamma$ drifts toward the middle of its prior when the data do not pin it down. You can present as many data sets as you like this way and check what comes back.
 
 ## Diagnostics: Simulation based calibration
 
@@ -150,6 +150,6 @@ Our ranks are not uniform. They pile up at both ends of the histogram, and the u
 expected_coverage(res, levels = c(0.5, 0.8, 0.9, 0.95))
 ```
 
-A calibrated posterior sits on the diagonal. Ours runs under it: the nominal 95% interval covers the truth closer to 85% of the time, and the 50% interval only about 30%. So the point estimates from this fit are worth more than its error bars, and we should say so rather than quote the intervals as they stand.
+A calibrated posterior sits on the diagonal. Ours runs under it at every level: the nominal 95% interval lands closer to 85% than to 95%, and the 50% interval covers nearer a third of the time. So the point estimates from this fit are worth more than its error bars, and we should say so rather than quote the intervals as they stand.
 
 This is an ordinary place to land on a first fit, and catching it is the whole reason to run the diagnostic. The levers from here are a larger simulation budget, a different estimator (`density_estimator = "nsf"`), a different embedding size, or `npe_sequential()`, which spends the budget near your observation instead of across the whole prior. Worth knowing before you start: on this problem, doubling `n_simulations` on its own does not close the gap, so treat the budget as one knob among several rather than the fix.
