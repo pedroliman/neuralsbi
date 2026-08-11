@@ -288,6 +288,23 @@ test_that("a neural NLE posterior lands near the analytic one", {
                tolerance = 0.25)
 })
 
+# GitHub #163: theta reached surrogate_potential()'s closure with only
+# as_theta_matrix() reshaping it, which coerces a non-numeric column to NA
+# instead of erroring -- so log_prob() on an NLE posterior returned NA with
+# no mention of theta, unlike log_lik() and log_ratio() on the same fit.
+test_that("log_prob() rejects non-numeric theta by name instead of returning NA", {
+  set.seed(19)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 800, density_estimator = "linear_gaussian",
+             seed = 20)
+  x_obs <- matrix(stats::rnorm(10, 0.5, 0.5), ncol = 1)
+  post <- posterior(fit, x_obs, n_chains = 4, warmup = 20)
+
+  expect_error(log_prob(post, data.frame(mu = c("x", "y")), normalize = FALSE),
+               "`theta` has non-numeric columns: mu")
+})
+
 # GitHub #162: n reached mcmc_draws() -- and from there ceiling(n / n_chains)
 # -- unchecked, so a non-integer n like 2.5 silently returned 2 draws instead
 # of erroring the way every other draw-count argument in the package does.
