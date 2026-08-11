@@ -259,9 +259,12 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
 
 #' Split-Rhat and bulk effective sample size
 #'
-#' The standard rank-free versions from Vehtari et al. (2021), computed on the
-#' split chains. Implemented here rather than taken from \pkg{posterior} to keep
-#' the dependency surface where it is; the test suite cross-checks against
+#' The standard rank-normalized versions from Vehtari et al. (2021), computed
+#' on the split chains: both [split_rhat()] and [bulk_ess()] run their input
+#' through [rank_normalize()] before anything else, which is what makes them
+#' robust to the heavy tails and multimodality a raw-value Rhat can miss.
+#' Implemented here rather than taken from \pkg{posterior} to keep the
+#' dependency surface where it is; the test suite cross-checks against
 #' \pkg{posterior} when that package happens to be installed.
 #'
 #' @param chains A `n_iter x n_chains x dim` array.
@@ -330,13 +333,40 @@ format_mcmc_diagnostics <- function(d) {
           evals_part)
 }
 
+#' Rank-normalize a chains matrix (Vehtari et al., 2021)
+#'
+#' Maps every draw to its normal score under the average rank taken over the
+#' whole matrix (all chains pooled), which is what makes the Rhat and ESS
+#' built on top of this robust to heavy tails and multimodality that a
+#' raw-value version can miss: a chain stuck in one mode of a bimodal target
+#' looks no different from one exploring the other, in rank space, so it no
+#' longer hides behind a coincidentally similar mean and variance.
+#'
+#' A non-finite entry (`NA`, `NaN`, `Inf`) makes the ranks of every other
+#' entry suspect, since `rank()` would otherwise place it at an endpoint as
+#' if it were a real, if extreme, draw. The whole matrix comes back `NA`
+#' rather than silently ranking around it.
+#'
+#' @param m An `n x k` matrix (iterations by chains).
+#' @return An `n x k` matrix of normal scores, or all-`NA` if `m` has a
+#'   non-finite entry.
+#' @keywords internal
+rank_normalize <- function(m) {
+  n <- nrow(m)
+  k <- ncol(m)
+  if (any(!is.finite(m))) return(matrix(NA_real_, n, k))
+  r <- matrix(rank(as.vector(m), ties.method = "average"), nrow = n)
+  matrix(stats::qnorm((r - 0.375) / (n * k + 0.25)), nrow = n)
+}
+
 #' @keywords internal
 split_rhat <- function(m) {
   n <- nrow(m)
   k <- ncol(m)
   if (n < 2L || k < 2L) return(NA_real_)
-  chain_means <- colMeans(m)
-  chain_vars <- apply(m, 2, stats::var)
+  z <- rank_normalize(m)
+  chain_means <- colMeans(z)
+  chain_vars <- apply(z, 2, stats::var)
   if (any(!is.finite(chain_vars))) return(NA_real_)
   W <- mean(chain_vars)
   B <- n * stats::var(chain_means)
@@ -350,9 +380,7 @@ bulk_ess <- function(m) {
   n <- nrow(m)
   k <- ncol(m)
   if (n < 4L) return(NA_real_)
-  # Rank-normalize, which is what makes this robust to heavy tails.
-  r <- matrix(rank(as.vector(m), ties.method = "average"), nrow = n)
-  z <- stats::qnorm((r - 0.375) / (n * k + 0.25))
+  z <- rank_normalize(m)
 
   chain_vars <- apply(z, 2, stats::var)
   W <- mean(chain_vars)

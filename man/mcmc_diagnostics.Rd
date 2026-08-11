@@ -13,9 +13,12 @@ mcmc_diagnostics(chains)
 A data frame with one row per parameter: \code{rhat} and \code{ess_bulk}.
 }
 \description{
-The standard rank-free versions from Vehtari et al. (2021), computed on the
-split chains. Implemented here rather than taken from \pkg{posterior} to keep
-the dependency surface where it is; the test suite cross-checks against
+The standard rank-normalized versions from Vehtari et al. (2021), computed
+on the split chains: both \code{split_rhat()} and \code{bulk_ess()} run their input
+through \code{rank_normalize()} before anything else, which is what makes them
+robust to the heavy tails and multimodality a raw-value Rhat can miss.
+Implemented here rather than taken from \pkg{posterior} to keep the
+dependency surface where it is; the test suite cross-checks against
 \pkg{posterior} when that package happens to be installed.
 }
 \references{
