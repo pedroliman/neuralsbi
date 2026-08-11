@@ -1,6 +1,10 @@
-# neuralsbi 0.5.19
+# neuralsbi 0.5.20
 
 * **`log_prob(..., normalize = TRUE)` now warns when its acceptance estimate hits the zero floor, instead of staying silent.** For a bounded prior, `log_prob.nsbi_posterior()` (`R/posterior.R`) estimates the normalizing acceptance probability by sampling `n_normalization` draws and checking `within_support()`; when none of them land inside the prior, it floors the estimate at `1 / n_normalization` to avoid `log(0)` and returns a normal-looking finite value with no sign that the normalizing constant is a floor rather than a measurement. `sample.nsbi_posterior()` already warns in the equivalent case, when rejection sampling comes up short: "The estimator is leaking mass outside the prior; consider more simulations." `log_prob()` now raises the same warning whenever the floor is doing the work, so the two functions agree about surfacing this failure mode (#153) (#156).
+
+# neuralsbi 0.5.19
+
+* **`map_estimate()` no longer returns a point outside a bounded prior's support.** It searches with unconstrained `stats::optim(..., method = "Nelder-Mead")` and always calls `log_prob(post, ..., normalize = FALSE)`, so the `-Inf` mask that `log_prob(normalize = TRUE)` applies for a bounded prior (from `prior_uniform()` or a `prior_custom()` with `lower`/`upper`) never reached the optimizer's objective, and the search could converge outside the box. The objective in `map_estimate()` (`R/posterior.R`) now checks `within_support()` directly and returns `Inf` for an out-of-support candidate, which is the same guarantee without paying to re-estimate the acceptance constant on every evaluation. Unbounded priors take the same code path as before and are unaffected (#152) (#155).
 
 # neuralsbi 0.5.18
 

@@ -253,13 +253,19 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
 #' @param post An `nsbi_posterior` object.
 #' @param x Observation to condition on (defaults to `x_obs`).
 #' @param n_init Number of initial draws used to seed the search.
-#' @return Numeric vector: the MAP parameter estimate.
+#' @return Numeric vector: the MAP parameter estimate. For a bounded prior
+#'   (from [prior_uniform()] or a [prior_custom()] with `lower`/`upper`), the
+#'   estimate always falls inside the prior's support -- the search never
+#'   accepts a step that leaves it, the same guarantee [sample()] and
+#'   [log_prob()] give.
 #' @export
 map_estimate <- function(post, x = NULL, n_init = 1000L) {
   stopifnot(inherits(post, "nsbi_posterior"))
   n_init <- check_count(n_init, "n_init",
                         why = "since the search starts from the best of them")
   fit <- post$fit
+  prior <- fit$prior
+  bounded <- !is.null(prior$lower) || !is.null(prior$upper)
   # Through the generic, not sample.nsbi_posterior() directly: an nle() fit's
   # estimator has the roles swapped (and an nre() fit's cannot sample at all),
   # so the NPE sampler asked to draw from it returns draws in x space. Where dim_x and dim_theta differ that is an error
@@ -268,8 +274,20 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
   draws <- sample(post, n = n_init, obs = x)
   lp <- log_prob(post, draws, x = x, normalize = FALSE)
   start <- draws[which.max(lp), ]
-  neg <- function(par) -log_prob(post, matrix(par, nrow = 1), x = x,
-                                 normalize = FALSE)
+  # Nelder-Mead is unconstrained, and normalize = FALSE (deliberately, so the
+  # objective doesn't re-estimate the acceptance constant on every call) skips
+  # the -Inf-outside-support masking that log_prob(normalize = TRUE) applies.
+  # Left alone, that lets the search wander outside a bounded prior's box --
+  # sample()'s rejection step never gets a chance to catch it, because there
+  # is no rejection step here. Mask directly instead: cheap (no de_sample
+  # call), and an additive normalizing constant wouldn't move the argmax
+  # anyway, so this is the same guarantee log_prob(normalize = TRUE) makes,
+  # without paying for it on every objective evaluation.
+  neg <- function(par) {
+    par <- matrix(par, nrow = 1)
+    if (bounded && !within_support(prior, par)) return(Inf)
+    -log_prob(post, par, x = x, normalize = FALSE)
+  }
   opt <- stats::optim(start, neg, method = "Nelder-Mead")
   out <- opt$par
   if (is.null(names(out))) names(out) <- fit$param_names
