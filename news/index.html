@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.23" id="neuralsbi-0523">neuralsbi 0.5.23<a class="anchor" aria-label="anchor" href="#neuralsbi-0523"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/map_estimate.html">map_estimate()</a></code> now errors clearly instead of crashing when its seeding draw comes up short.</strong> It seeds <code><a href="https://rdrr.io/r/stats/optim.html" class="external-link">stats::optim()</a></code> with <code>draws &lt;- sample(post, n = n_init, obs = x)</code> and then picks the best of them by <code><a href="../reference/log_prob.html">log_prob()</a></code>, but <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> can legitimately return fewer than <code>n_init</code> rows – including zero – for a bounded prior when rejection sampling never lands inside the support after <code>max_sampling_batches</code> rounds, and it only warns, it does not stop. A zero-row draw reached <code><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max()</a></code> and then <code><a href="https://rdrr.io/r/stats/optim.html" class="external-link">stats::optim()</a></code> unchecked, and the failure surfaced deep inside <code><a href="../reference/dmvnorm_chol.html">dmvnorm_chol()</a></code> (<code>R/density_estimator.R</code>) as <code>Error in x - mean : non-conformable arrays</code>, naming neither <code><a href="../reference/map_estimate.html">map_estimate()</a></code> nor the leaking prior actually responsible. <code><a href="../reference/map_estimate.html">map_estimate()</a></code> (<code>R/posterior.R</code>) now checks <code>nrow(draws)</code> right after the <code><a href="../reference/sample.html">sample()</a></code> call, matching the check <code><a href="../reference/diagnostic_draws.html">diagnostic_draws()</a></code> (<code>R/diagnostics.R</code>) already makes for the same failure mode, and stops with a message naming the function and the shortfall and suggesting more simulations or a look at the prior. A partial short draw errors too, not just an empty one – there is no way to know <code>n_init</code> points were searched from when fewer were (<a href="https://github.com/pedroliman/neuralsbi/issues/159" class="external-link">#159</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/161" class="external-link">#161</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.22" id="neuralsbi-0522">neuralsbi 0.5.22<a class="anchor" aria-label="anchor" href="#neuralsbi-0522"></a></h2>
 <ul><li>

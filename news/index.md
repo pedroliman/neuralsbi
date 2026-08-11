@@ -1,5 +1,41 @@
 # Changelog
 
+## neuralsbi 0.5.23
+
+- **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  now errors clearly instead of crashing when its seeding draw comes up
+  short.** It seeds
+  [`stats::optim()`](https://rdrr.io/r/stats/optim.html) with
+  `draws <- sample(post, n = n_init, obs = x)` and then picks the best
+  of them by
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  but
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  can legitimately return fewer than `n_init` rows – including zero –
+  for a bounded prior when rejection sampling never lands inside the
+  support after `max_sampling_batches` rounds, and it only warns, it
+  does not stop. A zero-row draw reached
+  [`which.max()`](https://rdrr.io/r/base/which.min.html) and then
+  [`stats::optim()`](https://rdrr.io/r/stats/optim.html) unchecked, and
+  the failure surfaced deep inside
+  [`dmvnorm_chol()`](https://neuralsbi.pedrodelima.com/reference/dmvnorm_chol.md)
+  (`R/density_estimator.R`) as
+  `Error in x - mean : non-conformable arrays`, naming neither
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  nor the leaking prior actually responsible.
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  (`R/posterior.R`) now checks `nrow(draws)` right after the
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  call, matching the check
+  [`diagnostic_draws()`](https://neuralsbi.pedrodelima.com/reference/diagnostic_draws.md)
+  (`R/diagnostics.R`) already makes for the same failure mode, and stops
+  with a message naming the function and the shortfall and suggesting
+  more simulations or a look at the prior. A partial short draw errors
+  too, not just an empty one – there is no way to know `n_init` points
+  were searched from when fewer were
+  ([\#159](https://github.com/pedroliman/neuralsbi/issues/159))
+  ([\#161](https://github.com/pedroliman/neuralsbi/issues/161)).
+
 ## neuralsbi 0.5.22
 
 - **`split_rhat()` now includes the tail-Rhat component, so it matches

@@ -34,7 +34,12 @@ support – the search never accepts a step that leaves it, the same
 guarantee
 [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md) and
 [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
-give.
+give. Errors if the seeding draw comes back short of `n_init` –
+including empty – which for a bounded prior means the estimator is
+leaking mass outside the prior support faster than rejection sampling
+can keep up; there is no starting point to search from in that case, so
+this stops rather than continuing on a shorter, silently misleading
+draw.
 
 ## Details
 
