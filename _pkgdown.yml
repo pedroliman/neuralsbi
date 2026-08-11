@@ -84,11 +84,12 @@ authors:
     roles: [cre]
     text: "Developed by"
 
-# The site is deliberately down to four things while the other articles are
+# The navbar is deliberately down to four things while the other articles are
 # reworked: the landing page, the get-started vignette, the reference, and the
 # changelog. `vignettes/neuralsbi.Rmd` is named after the package, so pkgdown
-# links it as the `intro` ("Get started") item; there is no articles index to
-# link because it is the only vignette that ships.
+# links it as the `intro` ("Get started") item. There is no `articles` entry in
+# `structure` on purpose: pkgdown still writes articles/index.html, but with one
+# vignette that page only repeats the Get started link, so nothing points at it.
 navbar:
   structure:
     left: [intro, reference, news]
