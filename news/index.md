@@ -1222,9 +1222,9 @@
   chunking is sized by the pair count rather than by pairs times
   components, which had been splitting a 5000-observation call ten ways
   for a 400 KB intermediate. On the four-parameter g-and-k model in
-  [`vignette("neural-likelihood")`](https://neuralsbi.pedrodelima.com/articles/neural-likelihood.md),
-  2000 draws from 20 chains went from 117s to 25s at 500 observations
-  and from 342s to 68s at 5000, with split-Rhat and bulk ESS unchanged.
+  `vignette("neural-likelihood")`, 2000 draws from 20 chains went from
+  117s to 25s at 500 observations and from 342s to 68s at 5000, with
+  split-Rhat and bulk ESS unchanged.
 - An MDN likelihood is replayed as TorchScript once a run is clearly a
   loop. Every torch operation crosses from R into libtorch, and at MCMC
   batch sizes that crossing costs more than the arithmetic behind it:
@@ -1545,23 +1545,22 @@
   the `skip_if_no_torch()` contract already used for the neural tests,
   so the suite runs everywhere.
 
-- [`vignette("sir-time-varying-beta")`](https://neuralsbi.pedrodelima.com/articles/sir-time-varying-beta.md)
-  reworks the epidemic model so that its posterior predictive tracks the
-  observed case peaks instead of overshooting them. The introduction day
-  and seed size are now inferred per state rather than fixed at two
-  infections on 2020-01-21 (which left the epidemic’s phase to
-  demographic noise: replicate simulations at one fixed parameter
-  differed by a factor of several thousand at the peak bin), the
-  ascertainment prior is pinned by spring-2020 seroprevalence (case
-  counts alone identify only the product of ascertainment and incidence,
-  and the unconstrained fit slides toward vast, barely-ascertained
-  epidemics), and the regime-duration parameterization drops a
-  coordinate that the simulator’s rescaling had left unidentified. The
-  article reports the effective reproduction number *R*_(e)(t) = beta(t)
-  S(t) / (N gamma) computed from the simulator’s own susceptible
-  trajectories, adds a prior-predictive check before training, and
-  summarizes the posterior predictive by its median rather than its
-  mean.
+- `vignette("sir-time-varying-beta")` reworks the epidemic model so that
+  its posterior predictive tracks the observed case peaks instead of
+  overshooting them. The introduction day and seed size are now inferred
+  per state rather than fixed at two infections on 2020-01-21 (which
+  left the epidemic’s phase to demographic noise: replicate simulations
+  at one fixed parameter differed by a factor of several thousand at the
+  peak bin), the ascertainment prior is pinned by spring-2020
+  seroprevalence (case counts alone identify only the product of
+  ascertainment and incidence, and the unconstrained fit slides toward
+  vast, barely-ascertained epidemics), and the regime-duration
+  parameterization drops a coordinate that the simulator’s rescaling had
+  left unidentified. The article reports the effective reproduction
+  number *R*_(e)(t) = beta(t) S(t) / (N gamma) computed from the
+  simulator’s own susceptible trajectories, adds a prior-predictive
+  check before training, and summarizes the posterior predictive by its
+  median rather than its mean.
 
 ## neuralsbi 0.3.6
 
@@ -1593,16 +1592,14 @@
 ## neuralsbi 0.3.5
 
 - The SIR case study becomes a head-to-head comparison with the `pomp`
-  package,
-  [`vignette("sir-epidemic")`](https://neuralsbi.pedrodelima.com/articles/sir-epidemic.md).
-  Both methods fit the same stochastic SIR epidemic: `pomp` via
-  particle-filter MCMC (`pmcmc`), `neuralsbi` via neural posterior
-  estimation. The vignette contrasts what each needs from the model —
-  `pomp` a measurement density, `neuralsbi` only a simulator — overlays
-  the two posteriors, scores their agreement with a C2ST, and confirms
-  the neural fit with SBC. The comparison is precomputed, so `pomp` is
-  needed only to regenerate the article, not to build or check the
-  package.
+  package, `vignette("sir-epidemic")`. Both methods fit the same
+  stochastic SIR epidemic: `pomp` via particle-filter MCMC (`pmcmc`),
+  `neuralsbi` via neural posterior estimation. The vignette contrasts
+  what each needs from the model — `pomp` a measurement density,
+  `neuralsbi` only a simulator — overlays the two posteriors, scores
+  their agreement with a C2ST, and confirms the neural fit with SBC. The
+  comparison is precomputed, so `pomp` is needed only to regenerate the
+  article, not to build or check the package.
 
 ## neuralsbi 0.3.4
 
@@ -1623,12 +1620,10 @@
   the same graceful-degradation pattern as `torch`: call any plotting
   function without them installed and you get an informative error, not
   a crash.
-- New vignette,
-  [`vignette("intro-to-sbi")`](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md):
-  a short beginner tutorial covering the three ingredients (prior,
-  simulator, observation), amortized training, and a first calibration
-  check, using a g-and-k distribution simulator whose likelihood has no
-  closed form.
+- New vignette, `vignette("intro-to-sbi")`: a short beginner tutorial
+  covering the three ingredients (prior, simulator, observation),
+  amortized training, and a first calibration check, using a g-and-k
+  distribution simulator whose likelihood has no closed form.
 
 ## neuralsbi 0.3.2
 

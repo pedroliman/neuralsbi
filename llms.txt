@@ -394,9 +394,9 @@ Reference inference problems shared by the tests and benchmarks.
 
 ### Learning the package
 
-- [Introduction to neural simulation-based inference in
-  R](https://neuralsbi.pedrodelima.com/articles/intro-to-sbi.md):
+- [Getting started with
+  neuralsbi](https://neuralsbi.pedrodelima.com/articles/neuralsbi.md):
 
-  What neural posterior estimation does, why a simulator can replace a
-  likelihood, and what amortization buys you, worked through on a
-  stochastic SIR epidemic.
+  Train a neural posterior estimator from a prior and a simulator to
+  perform amortized, likelihood-free Bayesian inference in R, then check
+  that the fit is trustworthy.

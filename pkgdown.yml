@@ -2,14 +2,8 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
-  density-estimators: density-estimators.html
-  diagnostics: diagnostics.html
-  intro-to-sbi: intro-to-sbi.html
-  neural-likelihood: neural-likelihood.html
   neuralsbi: neuralsbi.html
-  sir-epidemic: sir-epidemic.html
-  sir-time-varying-beta: sir-time-varying-beta.html
-last_built: 2026-08-10T06:49Z
+last_built: 2026-08-11T02:32Z
 urls:
   reference: https://neuralsbi.pedrodelima.com/reference
   article: https://neuralsbi.pedrodelima.com/articles

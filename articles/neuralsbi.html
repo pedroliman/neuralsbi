@@ -88,13 +88,6 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="active nav-item"><a class="nav-link" href="../articles/neuralsbi.html">Get started</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/intro-to-sbi.html">Introduction to neural simulation-based inference in R</a></li>
-    <li><a class="dropdown-item" href="../articles/neural-likelihood.html">Neural likelihood estimation, and handing it to Stan</a></li>
-  </ul>
-</li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
@@ -132,28 +125,48 @@
 
     
     
-<p><code>neuralsbi</code> needs two things from you: a prior over the
-parameters you want to learn, and a simulator that turns one parameter
-set into one data set. It trains a neural network on simulated pairs and
-hands back the Bayesian posterior <span class="math inline">p(\theta |
-x)</span>. You never write a likelihood.</p>
-<p>We use a stochastic SIR epidemic here, a close relative of the model
-in the package README. It is small enough to read in one screen, and it
-has no likelihood you would want to write down.</p>
+<p>This tutorial provides a short introduction to neural
+simulation-based inference (SBI) in R using the <code>neuralsbi</code> R
+package. Here we will focus on one of three key sets of methods in
+neural SBI: neural posterior estimation (NPE). The goal in NPE is to
+approximate the posterior distribution <span class="math inline">p(\theta | x )</span> of parameters of interest
+<span class="math inline">\theta</span>. Here we will use the example of
+stochastic SIR model.</p>
 <div class="section level2">
-<h2 id="define-your-simulator">Define your simulator<a class="anchor" aria-label="anchor" href="#define-your-simulator"></a>
+<h2 id="inputs-to-neural-posterior-estimation-a-simulator-and-a-prior-distribution">Inputs to neural posterior estimation: A simulator and a prior
+distribution<a class="anchor" aria-label="anchor" href="#inputs-to-neural-posterior-estimation-a-simulator-and-a-prior-distribution"></a>
 </h2>
-<p>A population of size <span class="math inline">N</span> splits into
-susceptible, infected and recovered. The contact rate <span class="math inline">\beta</span> drives new infections, the recovery
-rate <span class="math inline">\gamma</span> drives recoveries, and we
-see a fraction <span class="math inline">\rho</span> of the new
-infections as reported cases, totalled by week. Infections and
-recoveries are binomial draws, so two runs at the same parameters give
-different curves.</p>
+<p><code>neuralsbi</code> requires two inputs: a prior over the
+parameters you want to estimate, and a simulator that maps one parameter
+vector set into one vector of outcomes. The simulator can (and normally
+should) be stochastic, so the same parameter vector <span class="math inline">\theta</span> can result in many possible
+realizations. Variation in observed outcomes can come from both the
+underlying process (i.e., disease spreads stochastically) and
+measurement (i.e., we don’t observe all cases).</p>
+<div class="section level3">
+<h3 id="define-your-simulator">Define your simulator<a class="anchor" aria-label="anchor" href="#define-your-simulator"></a>
+</h3>
+<p>Here we write a “chain binomial” SIR model in daily time-steps, with
+a population of size <span class="math inline">N</span>. The parameters
+we want to estimate are <span class="math inline">\beta</span>, the
+recovery rate <span class="math inline">\gamma</span>, and we see a
+fraction <span class="math inline">\rho</span> of the new infections as
+reported cases. In reality, we would want to inform <span class="math inline">\gamma</span> using external information, which we
+can do by providing an informative prior for <span class="math inline">\gamma</span>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://neuralsbi.pedrodelima.com/">neuralsbi</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'neuralsbi'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:base':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     sample</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sir_simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">beta</span>, <span class="va">gamma</span>, <span class="va">rho</span>, <span class="va">N</span> <span class="op">=</span> <span class="fl">1e5</span>, <span class="va">I0</span> <span class="op">=</span> <span class="fl">20</span>, <span class="va">weeks</span> <span class="op">=</span> <span class="fl">12</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="co"># TODO: Just write the model with a daily time-step, don't do this week and daily loops. Just aggregate weekly observations after the fect.</span></span>
+<span><span class="co"># Also, don't return log1p as cases reported, we shoulnd't have to do that.</span></span>
+<span><span class="co"># # Also, let's just return the daily reported cases.</span></span>
+<span><span class="co"># TODO: Let's replace the weeks argument with "days"</span></span>
+<span><span class="va">sir_simulator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">beta</span>, <span class="va">gamma</span>, <span class="va">rho</span>, <span class="va">N</span> <span class="op">=</span> <span class="fl">1e5</span>, <span class="va">I0</span> <span class="op">=</span> <span class="fl">20</span>, <span class="va">weeks</span> <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">S</span> <span class="op">&lt;-</span> <span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>; <span class="va">I</span> <span class="op">&lt;-</span> <span class="va">I0</span></span>
 <span>  <span class="va">reported</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="va">weeks</span><span class="op">)</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">w</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">weeks</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -167,185 +180,16 @@ different curves.</p>
 <span>    <span class="op">}</span></span>
 <span>    <span class="va">reported</span><span class="op">[</span><span class="va">w</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">infections</span>, <span class="va">rho</span><span class="op">)</span>           <span class="co"># only rho of them are seen</span></span>
 <span>  <span class="op">}</span></span>
+<span>  <span class="co"># TODO</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">reported</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<p>That is the whole model specification. Note what is missing: nowhere
-do we write down how probable a case curve is at a given <span class="math inline">(\beta, \gamma, \rho)</span>. <code>neuralsbi</code>
-only ever calls the simulator.</p>
-<p>The simulator returns <span class="math inline">\log(1 +
-\text{cases})</span> rather than raw counts. <code><a href="../reference/npe.html">npe()</a></code>
-standardizes whatever the simulator gives it. Across this prior the
-weekly counts run from a handful to tens of thousands, which is a wide
-range for one scale to cover. The log keeps the small outbreaks legible
-next to the large ones.</p>
-<p>Here is one epidemic, on the natural count scale:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">theta_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">2</span> <span class="op">/</span> <span class="fl">7</span>, gamma <span class="op">=</span> <span class="fl">1</span> <span class="op">/</span> <span class="fl">7</span>, rho <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span>   <span class="co"># R0 = 2, 7-day recovery</span></span>
+<span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">x_obs</span> <span class="op">&lt;-</span> <span class="fu">sir_simulator</span><span class="op">(</span><span class="va">theta_true</span><span class="op">[[</span><span class="st">"beta"</span><span class="op">]</span><span class="op">]</span>, <span class="va">theta_true</span><span class="op">[[</span><span class="st">"gamma"</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>                       <span class="va">theta_true</span><span class="op">[[</span><span class="st">"rho"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">expm1</a></span><span class="op">(</span><span class="va">x_obs</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"b"</span>, pch <span class="op">=</span> <span class="fl">16</span>,</span>
-<span>     xlab <span class="op">=</span> <span class="st">"week"</span>, ylab <span class="op">=</span> <span class="st">"reported cases"</span>, main <span class="op">=</span> <span class="st">"One simulated outbreak"</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figures/neuralsbi-outbreak-1.svg" alt="Weekly reported cases from one simulated SIR outbreak."><p class="caption">
-plot of chunk outbreak
-</p>
+<span><span class="co"># Define our priors:</span></span>
+<span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.20</span>, gamma <span class="op">=</span> <span class="fl">0.08</span>, rho <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>                       high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.60</span>, gamma <span class="op">=</span> <span class="fl">0.20</span>, rho <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>It is always a good idea to test our mode, so here we simulate an
+outbreak to test our model:</p>
 </div>
-<p>Reported cases climb from 34 in the first week to about 11,000 in
-week 8, then fall away as the susceptible pool empties. Those twelve
-numbers are the entire data set for everything below.</p>
-</div>
-<div class="section level2">
-<h2 id="train-your-neural-posterior-estimator">Train your neural posterior estimator<a class="anchor" aria-label="anchor" href="#train-your-neural-posterior-estimator"></a>
-</h2>
-<p>The prior says where the simulator is allowed to look. We put uniform
-priors on all three parameters, wide enough to cover slow and fast
-epidemics and any reporting rate between 10% and 90%.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prior_uniform.html">prior_uniform</a></span><span class="op">(</span>low  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.20</span>, gamma <span class="op">=</span> <span class="fl">0.08</span>, rho <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
-<span>                       high <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.60</span>, gamma <span class="op">=</span> <span class="fl">0.20</span>, rho <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/npe.html">npe</a></span><span class="op">(</span><span class="va">prior</span>, <span class="va">sir_simulator</span>, n_simulations <span class="op">=</span> <span class="fl">8000</span>, seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">fit</span></span>
-<span><span class="co">#&gt; &lt;nsbi_npe&gt; Neural Posterior Estimation fit</span></span>
-<span><span class="co">#&gt;   density estimator : maf</span></span>
-<span><span class="co">#&gt;   parameters (dim)  : 3</span></span>
-<span><span class="co">#&gt;     names           : beta, gamma, rho </span></span>
-<span><span class="co">#&gt;   data (dim)        : 12</span></span>
-<span><span class="co">#&gt;   simulations       : 8000</span></span>
-<span><span class="co">#&gt;   best val loss     : -3.3695</span></span>
-<span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span></code></pre></div>
-<p>That is the whole fit. <code><a href="../reference/npe.html">npe()</a></code> drew 8000 parameter sets
-from the prior, ran the simulator on each, and trained a masked
-autoregressive flow on the resulting <span class="math inline">(\theta,
-x)</span> pairs. <code>best val loss</code> is the average negative log
-density on held-out simulations. It is useful for comparing fits on the
-same problem and means nothing across problems.</p>
-<p>Simulation is usually the expensive part, and it is embarrassingly
-parallel. Declare a <code>future</code> plan once and every
-<code>neuralsbi</code> function that calls a simulator spreads the work
-across cores:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://future.futureverse.org" class="external-link">future</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="va">multisession</span><span class="op">)</span></span></code></pre></div>
-<p>Each simulation draws from its own random-number stream, so a given
-<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> gives the same answer on one core and on 32.
-This article is built with a plan declared. See
-<code><a href="../reference/nsbi_parallel.html">?nsbi_parallel</a></code>.</p>
-</div>
-<div class="section level2">
-<h2 id="condition-on-your-data-to-get-a-posterior">Condition on your data to get a posterior<a class="anchor" aria-label="anchor" href="#condition-on-your-data-to-get-a-posterior"></a>
-</h2>
-<p><code><a href="../reference/posterior.html">posterior()</a></code> conditions the trained estimator on an
-observation. It is a forward pass through the network, so it returns
-immediately, and <code><a href="../reference/sample.html">sample()</a></code> draws from it.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">post</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs</span><span class="op">)</span></span>
-<span><span class="va">draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="va">post</span>, <span class="fl">4000</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  beta gamma   rho </span></span>
-<span><span class="co">#&gt; 0.285 0.140 0.593</span></span>
-<span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figures/neuralsbi-posterior-1.svg" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."><p class="caption">
-plot of chunk posterior
-</p>
-</div>
-<p>The posterior covers the values that generated <code>x_obs</code>. It
-also shows the ridge every SIR fit runs into: <span class="math inline">\beta</span> and <span class="math inline">\gamma</span> trade off against each other, because
-a case curve pins down their ratio <span class="math inline">R_0 =
-\beta/\gamma</span> much better than either rate alone.
-<code><a href="../articles/intro-to-sbi.html">vignette("intro-to-sbi")</a></code> picks that up and reads <span class="math inline">R_0</span> off the draws.</p>
-</div>
-<div class="section level2">
-<h2 id="one-fit-any-number-of-outbreaks">One fit, any number of outbreaks<a class="anchor" aria-label="anchor" href="#one-fit-any-number-of-outbreaks"></a>
-</h2>
-<p>The fit is amortized. It was trained over the whole prior, not around
-one observation, so a second outbreak costs a forward pass and nothing
-else. No re-simulating and no retraining.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">theta_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0.5</span>, gamma <span class="op">=</span> <span class="fl">0.1</span>, rho <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>          <span class="co"># R0 = 5, poorly reported</span></span>
-<span><span class="va">x_obs_2</span> <span class="op">&lt;-</span> <span class="fu">sir_simulator</span><span class="op">(</span><span class="va">theta_2</span><span class="op">[[</span><span class="st">"beta"</span><span class="op">]</span><span class="op">]</span>, <span class="va">theta_2</span><span class="op">[[</span><span class="st">"gamma"</span><span class="op">]</span><span class="op">]</span>, <span class="va">theta_2</span><span class="op">[[</span><span class="st">"rho"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">draws_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs_2</span><span class="op">)</span>, <span class="fl">4000</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws_2</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  beta gamma   rho </span></span>
-<span><span class="co">#&gt; 0.513 0.115 0.305</span></span>
-<span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws_2</span>, truth <span class="op">=</span> <span class="va">theta_2</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figures/neuralsbi-second-1.svg" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."><p class="caption">
-plot of chunk second
-</p>
-</div>
-<p>This is the practical difference from likelihood-based MCMC, which
-starts over for every new data set. Fit once, then condition on as many
-outbreaks as you have.</p>
-</div>
-<div class="section level2">
-<h2 id="check-the-fit-before-you-trust-it">Check the fit before you trust it<a class="anchor" aria-label="anchor" href="#check-the-fit-before-you-trust-it"></a>
-</h2>
-<p>A trained estimator always returns something. Draws, means,
-intervals, all of it, whether or not the fit is any good.
-Simulation-based calibration tells you whether to believe the widths:
-draw <span class="math inline">\theta</span> from the prior, simulate
-<span class="math inline">x</span> from it, and rank that known <span class="math inline">\theta</span> among posterior draws conditioned on
-<span class="math inline">x</span>. A calibrated posterior puts the
-truth anywhere in the ranking with equal probability, so the ranks come
-out uniform.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sbc.html">sbc</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">sir_simulator</span>, n_sbc <span class="op">=</span> <span class="fl">150</span>, n_posterior_samples <span class="op">=</span> <span class="fl">300</span>, seed <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">res</span></span>
-<span><span class="co">#&gt; &lt;nsbi_sbc&gt; 150 trials, 300 posterior samples each</span></span>
-<span><span class="co">#&gt;   per-parameter uniformity p-values (large = calibrated):</span></span>
-<span><span class="co">#&gt;     beta=0.191  gamma=0.023  rho=0.040</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/plot_sbc.html">plot_sbc</a></span><span class="op">(</span><span class="va">res</span>, param <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figures/neuralsbi-sbc-1.svg" alt="SBC rank histogram and coverage curve for the fitted posterior."><p class="caption">
-plot of chunk sbc
-</p>
-</div>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_coverage.html">plot_coverage</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="figures/neuralsbi-sbc-2.svg" alt="SBC rank histogram and coverage curve for the fitted posterior."><p class="caption">
-plot of chunk sbc
-</p>
-</div>
-<p>Read the p-values, not the fact that the check ran. <span class="math inline">\beta</span> comes back clean at 0.19. <span class="math inline">\gamma</span> (0.023) and <span class="math inline">\rho</span> (0.040) fall just under the conventional
-0.05, and the coverage curve runs slightly below the diagonal. That is
-mild overconfidence: the intervals are a little too narrow rather than
-in the wrong place.</p>
-<p>A first pass at 8000 simulations often looks like this, and the
-remedy is more simulations before a bigger network.
-<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> covers how to read these plots and
-what to do when a fit does not pass.</p>
-</div>
-<div class="section level2">
-<h2 id="where-next">Where next<a class="anchor" aria-label="anchor" href="#where-next"></a>
-</h2>
-<ul>
-<li>
-<code><a href="../articles/intro-to-sbi.html">vignette("intro-to-sbi")</a></code> explains what the method is
-doing with the same model. It covers why a simulator replaces the
-likelihood, what amortization buys across many outbreaks, and how to
-read <span class="math inline">R_0</span> off the posterior draws.</li>
-<li>
-<code><a href="../articles/density-estimators.html">vignette("density-estimators")</a></code> compares the estimators
-behind <code><a href="../reference/npe.html">npe()</a></code> and says when each one is worth using.</li>
-<li>
-<code><a href="../articles/diagnostics.html">vignette("diagnostics")</a></code> covers the full set of checks:
-SBC, expected coverage, TARP, and posterior predictive checks.</li>
-<li>
-<code><a href="../articles/sir-epidemic.html">vignette("sir-epidemic")</a></code> puts <code>neuralsbi</code>
-next to <code>pomp</code> on the same epidemic and compares the two
-posteriors.</li>
-</ul>
-<p><code><a href="../reference/npe.html">?npe</a></code>, <code><a href="../reference/posterior.html">?posterior</a></code> and <code><a href="../reference/sbc.html">?sbc</a></code>
-document every argument.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
