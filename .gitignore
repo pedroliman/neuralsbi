@@ -32,3 +32,6 @@ inst/notebooks/*_cache/*
 inst/notebooks/*/libs/*
 inst/notebooks/*_files/*
 inst/notebooks/*html
+
+# Claude Code agent worktrees (ephemeral, per-session isolation)
+.claude/worktrees/
