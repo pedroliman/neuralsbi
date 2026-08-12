@@ -335,7 +335,8 @@ cat(conditionMessage(attr(bad, "condition")), "\n")
 # 10. Prior helpers, once more
 # ---------------------------------------------------------------------------
 
-print(round(sample_prior(ss_prior, 3), 3))
-print(within_support(ss_prior, rbind(c(0.2, 3, 10), c(0.2, 3, 99))))
+print(round(sample_prior(ss_prior, 3), 4))
+# inside the box, then outside it on hr_S2
+print(within_support(ss_prior, rbind(c(0.02, 3, 10), c(0.02, 3, 99))))
 
 options(neuralsbi.progress = old_progress)
