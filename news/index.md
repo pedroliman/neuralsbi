@@ -1,5 +1,36 @@
 # Changelog
 
+## neuralsbi 0.5.26
+
+- **The slice sampler now validates `width` instead of letting a bad
+  value crash the stepping-out loop several frames later.**
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  posteriors forward a `width` argument through `...` from
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  down to
+  [`slice_sample()`](https://neuralsbi.pedrodelima.com/reference/slice_sample.md)/[`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  (`R/mcmc.R`), which coerces it with
+  `width <- rep_len(as.numeric(width), dim)` and never checked the
+  result before using it to size the initial slice interval and drive
+  the stepping-out loop’s array indexing.
+  `posterior(nle_fit, x_obs, width = NA)` followed by
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  failed with “NAs are not allowed in subscripted assignments” – a
+  generic R subscripting complaint naming neither `width` nor the
+  sampler.
+  [`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  now checks the recycled `width` with a new `check_slice_width()`
+  (`R/mcmc.R`) right after
+  [`rep_len()`](https://rdrr.io/r/base/rep.html), and stops with a
+  message naming `width`, the values that were actually wrong, and
+  [`slice_sample()`](https://neuralsbi.pedrodelima.com/reference/slice_sample.md),
+  before any of them reach
+  [`stats::runif()`](https://rdrr.io/r/stats/Uniform.html) or the
+  stepping-out loop. Negative/zero `width` and negative `max_steps`/zero
+  `n_pool` degrade silently rather than crash and are not covered by
+  this fix ([\#164](https://github.com/pedroliman/neuralsbi/issues/164))
+  ([\#167](https://github.com/pedroliman/neuralsbi/issues/167)).
+
 ## neuralsbi 0.5.25
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
