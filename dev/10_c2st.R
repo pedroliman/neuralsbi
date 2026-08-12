@@ -15,7 +15,7 @@
 #   rather than a long MCMC run, which makes it the right task for calibrating
 #   your intuition about what a given C2ST value means.
 #
-# Runtime: about 3 minutes on a laptop CPU.
+# Runtime: about 4 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -70,9 +70,13 @@ print(c2st(sample_prior(prior, 4000), ref_a, seed = 1))
 # Scoring a real fit
 # ---------------------------------------------------------------------------
 
-fit <- npe(prior, simulator, n_simulations = 4000,
-           density_estimator = if (has_torch) "maf" else "linear_gaussian",
-           seed = 1)
+# max_epochs and patience are trimmed here and in the sweeps below so the
+# script finishes in a few minutes; every fit gets the same settings.
+ctl <- list(max_epochs = 150L, patience = 10L)
+estimator <- if (has_torch) "maf" else "linear_gaussian"
+
+fit <- do.call(npe, c(list(prior, simulator, n_simulations = 4000,
+                           density_estimator = estimator, seed = 1), ctl))
 draws <- sample(posterior(fit, x_obs = x_obs), 4000)
 
 res <- c2st(draws, ref_a, seed = 1)
@@ -93,9 +97,8 @@ print(round(res$fold_accuracy, 3))
 
 budgets <- c(250, 1000, 4000)
 curve <- vapply(budgets, function(n) {
-  f <- npe(prior, simulator, n_simulations = n,
-           density_estimator = if (has_torch) "maf" else "linear_gaussian",
-           seed = 1)
+  f <- do.call(npe, c(list(prior, simulator, n_simulations = n,
+                           density_estimator = estimator, seed = 1), ctl))
   d <- sample(posterior(f, x_obs = x_obs), 4000)
   c2st(d, ref_a, seed = 1)$accuracy
 }, numeric(1))
@@ -116,8 +119,8 @@ estimators <- if (has_torch) c("linear_gaussian", "mdn", "maf", "nsf") else
   "linear_gaussian"
 
 scores <- vapply(estimators, function(de) {
-  f <- npe(prior, theta = sims$theta, x = sims$x,
-           density_estimator = de, seed = 1)
+  f <- do.call(npe, c(list(prior, theta = sims$theta, x = sims$x,
+                           density_estimator = de, seed = 1), ctl))
   d <- sample(posterior(f, x_obs = x_obs), 4000)
   c2st(d, ref_a, seed = 1)$accuracy
 }, numeric(1))
@@ -159,9 +162,8 @@ cat(conditionMessage(attr(res, "condition")), "\n")
 #    estimators trained on the same budget give distinguishable posteriors, at
 #    least one is wrong.
 
-fit_b <- npe(prior, simulator, n_simulations = 4000,
-             density_estimator = if (has_torch) "maf" else "linear_gaussian",
-             seed = 99)
+fit_b <- do.call(npe, c(list(prior, simulator, n_simulations = 4000,
+                             density_estimator = estimator, seed = 99), ctl))
 draws_b <- sample(posterior(fit_b, x_obs = x_obs), 4000)
 cat("\ntwo seeds, same budget:\n")
 print(c2st(draws, draws_b, seed = 1))

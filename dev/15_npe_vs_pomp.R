@@ -38,8 +38,8 @@
 # The pomp half of this script is skipped if pomp is not installed. Everything
 # above it runs regardless.
 #
-# Runtime: about 3 minutes without pomp, about 6 with it (pomp compiles the
-# model's C snippets on first use).
+# Runtime: about 2 minutes, plus a few seconds the first time pomp compiles the
+# model's C snippets.
 
 library(neuralsbi)
 
@@ -66,7 +66,7 @@ k_disp <- 10
 # This is the lesson's sir_step and sir_rinit written as one function of the
 # parameters, returning one 53-week outbreak.
 
-simulator <- function(Beta, mu_IR, rho, eta) {
+epidemic <- function(Beta, mu_IR, rho, eta) {
   S <- round(N * eta)
   I <- 1L
   out <- numeric(n_weeks)
@@ -81,12 +81,25 @@ simulator <- function(Beta, mu_IR, rho, eta) {
     }
     out[w] <- rnbinom(1L, size = k_disp, mu = rho * H + 1e-6)
   }
-  stats::setNames(out, paste0("wk", seq_len(n_weeks)))
+  out
 }
 
+# As in 06_embedding_networks.R, the estimator sees log(1 + reports): weekly
+# counts run from 0 to several hundred across this prior, and z-scoring a
+# series that skewed leaves the network fitting the few large weeks. The
+# particle filter below works on the raw counts, as it should, so the two
+# methods are not being handed the same numbers. They are being handed the same
+# model, which is the comparison that matters.
+simulator <- function(Beta, mu_IR, rho, eta) {
+  stats::setNames(log1p(epidemic(Beta, mu_IR, rho, eta)),
+                  paste0("wk", seq_len(n_weeks)))
+}
+
+x_obs <- stats::setNames(log1p(reports), paste0("wk", seq_len(n_weeks)))
+
 prior <- prior_uniform(
-  low  = c(Beta =  1, mu_IR = 0.2, rho = 0.05, eta = 0.005),
-  high = c(Beta = 30, mu_IR = 3.0, rho = 0.90, eta = 0.100)
+  low  = c(Beta =  1, mu_IR = 0.2, rho = 0.05, eta = 0.01),
+  high = c(Beta = 60, mu_IR = 3.0, rho = 0.90, eta = 0.20)
 )
 
 # ---------------------------------------------------------------------------
@@ -105,7 +118,7 @@ fit <- npe(prior, simulator, n_simulations = 4000,
 npe_time <- as.numeric(Sys.time() - t0, units = "secs")
 cat(sprintf("\nNPE: %.0f s for 4000 simulations plus training\n", npe_time))
 
-post <- posterior(fit, x_obs = reports)
+post <- posterior(fit, x_obs = x_obs)
 draws <- sample(post, 4000)
 print(summary(draws))
 
@@ -116,7 +129,7 @@ cat("SBIED lesson's simulation values: Beta 7.5, mu_IR 0.5, rho 0.5, eta 0.03\n"
 # Amortization, priced. Conditioning on a second, third, hundredth outbreak
 # costs a forward pass. pomp would need a full filtering run for each.
 t0 <- Sys.time()
-for (i in 1:20) invisible(sample(post, 1000, obs = reports))
+for (i in 1:20) invisible(sample(post, 1000, obs = x_obs))
 cat(sprintf("20 further conditionings: %.2f s total\n",
             as.numeric(Sys.time() - t0, units = "secs")))
 
@@ -164,7 +177,10 @@ if (!has_pomp) {
   }
 
   # A particle-filter estimate of the log-likelihood, replicated so the Monte
-  # Carlo error is visible. This is the number NPE never computes.
+  # Carlo error is visible. This is the number NPE never computes. The standard
+  # error comes back NA when the replicates disagree so badly that one of them
+  # dominates the log-mean-exp, which is itself the signal that the filter is
+  # struggling at that parameter value.
   loglik_at <- function(theta, Np = 2000, reps = 5) {
     ll <- replicate(reps, logLik(pfilter(measSIR, params = pars(theta),
                                          Np = Np)))

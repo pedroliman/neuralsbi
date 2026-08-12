@@ -23,7 +23,7 @@
 #   (outbreaks::influenza_england_1978_school), fit with an SIR ODE and a
 #   negative-binomial observation model. See 01_basic_npe_example.R.
 #
-# Runtime: about 4 minutes on a laptop CPU.
+# Runtime: about 5 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -138,13 +138,16 @@ if (has_ggplot) {
 # nothing analytic exists. It tests the fit against the prior it was trained
 # on, so leave `prior` at its default.
 
-sbc_res <- sbc(fit, simulator, n_sbc = 200L, n_posterior_samples = 500L,
+sbc_res <- sbc(fit, simulator, n_sbc = 200L, n_posterior_samples = 400L,
                seed = 1)
 print(sbc_res)
 
-# Large p-values mean the ranks look uniform. They are a screen, not a verdict:
-# with 200 trials the test is not powerful, and a p-value of 0.3 is not
-# evidence of calibration.
+# Large p-values mean the ranks look uniform. They are a screen, not a verdict.
+# The test is not powerful at a few hundred trials, and it is unstable there
+# too: on this fit the phi_inv p-value swings between under 0.01 and over 0.5
+# depending only on n_sbc and the seed. Do not report it as the headline. The
+# coverage table below is the same information on a scale that does not jump
+# around, and it is what to read.
 
 if (has_ggplot) {
   plot_sbc(sbc_res, param = "beta")
@@ -162,6 +165,13 @@ if (has_ggplot) {
 cov <- expected_coverage(sbc_res, levels = c(0.5, 0.8, 0.9, 0.95))
 print(round(cov, 3))
 
+# Expect beta and gamma to track the nominal level closely and phi_inv to sit
+# a few points below it at every level. That is the useful outcome: the two
+# parameters the epidemic curve identifies are calibrated, and the
+# negative-binomial dispersion, which it identifies only weakly, is mildly
+# overconfident. A fit can be right about what you care about and off on a
+# nuisance parameter, and this table is how you tell which is which.
+
 if (has_ggplot) plot_coverage(sbc_res)
 
 # Above the diagonal, the posterior is too wide (conservative). Below it, too
@@ -177,7 +187,7 @@ if (has_ggplot) plot_coverage(sbc_res)
 # TARP measures distances in the full parameter space against random reference
 # points, so it does.
 
-tarp_res <- tarp(fit, simulator, n_tarp = 200L, n_posterior_samples = 500L,
+tarp_res <- tarp(fit, simulator, n_tarp = 200L, n_posterior_samples = 400L,
                  seed = 1)
 print(tarp_res)
 
@@ -192,7 +202,7 @@ if (has_ggplot) plot_tarp(tarp_res)
 # independently trained estimators disagree, at least one of them is wrong.
 
 fit_b <- npe(prior, simulator, n_simulations = 4000,
-             density_estimator = estimator, seed = 99)
+             density_estimator = estimator, patience = 12L, seed = 99)
 draws_a <- sample(post, 3000)
 draws_b <- sample(posterior(fit_b, x_obs = cases), 3000)
 print(c2st(draws_a, draws_b, seed = 1))
@@ -202,6 +212,12 @@ print(c2st(draws_a, draws_b, seed = 1))
 # number alongside the moments, not instead of them.
 print(round(rbind(a = colMeans(draws_a), b = colMeans(draws_b)), 3))
 print(round(rbind(a = apply(draws_a, 2, sd), b = apply(draws_b, 2, sd)), 3))
+
+# Expect these two to be distinguishable. beta and gamma agree closely; the
+# gap is in phi_inv, the same parameter SBC flagged, and it shows up as
+# different spreads rather than different centres. Two runs disagreeing on a
+# parameter's width at a fixed budget is the honest reading of how much that
+# width is worth: report it, and raise n_simulations if it matters.
 
 # ---------------------------------------------------------------------------
 # 7. What a failing diagnostic usually means

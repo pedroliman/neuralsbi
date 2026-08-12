@@ -24,11 +24,10 @@
 #     dN_IR ~ Binomial(I, 1 - exp(-mu_IR * dt))
 #   with H accumulating dN_IR within each week and resetting at the week
 #   boundary. Initial state S = round(eta * N), I = 1, R = round((1 - eta) * N).
-#   Measurement: reports ~ NegBinomial(mu = rho * H, size = k).
-#   The lesson simulates at Beta = 7.5, mu_IR = 0.5, rho = 0.5, k = 10,
-#   eta = 0.03.
+#   Measurement: reports ~ NegBinomial(mu = rho * H, size = k). k is fixed at
+#   the lesson's 10 and the other four parameters are estimated.
 #
-# Runtime: about 4 minutes on a laptop CPU.
+# Runtime: about 5 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -52,7 +51,7 @@ k_disp <- 10        # measurement overdispersion, fixed at the lesson's value
 # The simulator
 # ---------------------------------------------------------------------------
 
-simulator <- function(Beta, mu_IR, rho, eta) {
+epidemic <- function(Beta, mu_IR, rho, eta) {
   S <- round(N * eta)
   I <- 1L
   out <- numeric(n_weeks)
@@ -67,32 +66,55 @@ simulator <- function(Beta, mu_IR, rho, eta) {
     }
     out[w] <- rnbinom(1L, size = k_disp, mu = rho * H + 1e-6)
   }
-  stats::setNames(out, paste0("wk", seq_len(n_weeks)))
+  out
 }
 
+# The simulator returns log(1 + reports). Weekly counts here run from 0 to
+# several hundred across the prior, and z-scoring a series that skewed leaves
+# the estimator fitting the few large weeks and ignoring the shape. Fitting on
+# the log scale is worth more here than any change of architecture, which is
+# the general lesson: try the transform before the bigger network.
+simulator <- function(Beta, mu_IR, rho, eta) {
+  stats::setNames(log1p(epidemic(Beta, mu_IR, rho, eta)),
+                  paste0("wk", seq_len(n_weeks)))
+}
+
+x_obs <- stats::setNames(log1p(reports), paste0("wk", seq_len(n_weeks)))
+
 prior <- prior_uniform(
-  low  = c(Beta =  1, mu_IR = 0.2, rho = 0.05, eta = 0.005),
-  high = c(Beta = 30, mu_IR = 3.0, rho = 0.90, eta = 0.100)
+  low  = c(Beta =  1, mu_IR = 0.2, rho = 0.05, eta = 0.01),
+  high = c(Beta = 60, mu_IR = 3.0, rho = 0.90, eta = 0.20)
 )
 
 # ---------------------------------------------------------------------------
-# Simulate once, train twice
+# What this model does before any inference happens
 # ---------------------------------------------------------------------------
 #
-# The comparison is only fair if both estimators see the same simulations.
+# The chain starts at I = 1, so a large share of prior draws produce no
+# outbreak at all: the index case recovers before infecting anyone. Knowing
+# that fraction changes how you read everything below, so measure it first.
 
-sims <- simulate_for_sbi(simulator, prior, n = 3000, seed = 11)
-cat("simulated", nrow(sims$x), "epidemics of", ncol(sims$x), "weeks;",
-    sims$n_dropped, "dropped\n")
+sims <- simulate_for_sbi(simulator, prior, n = 4000, seed = 11)
+peaks <- apply(expm1(sims$x), 1, max)
+cat(sprintf("prior predictive: %.0f%% of draws never exceed 2 cases in a week\n",
+            100 * mean(peaks <= 2)))
+cat(sprintf("observed peak: %d cases in week %d, %d cases in total\n",
+            max(reports), which.max(reports), sum(reports)))
 
 # ---------------------------------------------------------------------------
 # 1. No embedding: the flow conditions on all 53 weeks
 # ---------------------------------------------------------------------------
+#
+# max_epochs and patience are trimmed so the script finishes in a few minutes.
+# All three fits get the same deal and the same simulations, which is what
+# makes the comparison about the embedding.
+
+ctl <- list(max_epochs = 200L, patience = 12L)
 
 t0 <- Sys.time()
-fit_raw <- npe(prior, theta = sims$theta, x = sims$x,
-               density_estimator = "maf", seed = 1)
-cat(sprintf("no embedding: %.1f s\n",
+fit_raw <- do.call(npe, c(list(prior, theta = sims$theta, x = sims$x,
+                               density_estimator = "maf", seed = 1), ctl))
+cat(sprintf("\nno embedding: %.0f s\n",
             as.numeric(Sys.time() - t0, units = "secs")))
 info_raw <- summary(fit_raw)
 
@@ -109,9 +131,10 @@ emb <- embedding_mlp(output_dim = 8L, hidden = c(64L, 64L))
 str(emb)
 
 t0 <- Sys.time()
-fit_emb <- npe(prior, theta = sims$theta, x = sims$x,
-               density_estimator = "maf", embedding_net = emb, seed = 1)
-cat(sprintf("with embedding: %.1f s\n",
+fit_emb <- do.call(npe, c(list(prior, theta = sims$theta, x = sims$x,
+                               density_estimator = "maf",
+                               embedding_net = emb, seed = 1), ctl))
+cat(sprintf("with embedding: %.0f s\n",
             as.numeric(Sys.time() - t0, units = "secs")))
 info_emb <- summary(fit_emb)
 
@@ -120,15 +143,17 @@ info_emb <- summary(fit_emb)
 # features is left to the network.
 
 cat("\nbest validation loss (lower is better):\n")
-cat(sprintf("  no embedding  : %.3f\n", info_raw$best_val_loss))
-cat(sprintf("  with embedding: %.3f\n", info_emb$best_val_loss))
+cat(sprintf("  no embedding  : %.3f  (%d epochs)\n",
+            info_raw$best_val_loss, info_raw$epochs_trained))
+cat(sprintf("  with embedding: %.3f  (%d epochs)\n",
+            info_emb$best_val_loss, info_emb$epochs_trained))
 
 # ---------------------------------------------------------------------------
 # Posteriors, side by side
 # ---------------------------------------------------------------------------
 
-post_raw <- posterior(fit_raw, x_obs = reports)
-post_emb <- posterior(fit_emb, x_obs = reports)
+post_raw <- posterior(fit_raw, x_obs = x_obs)
+post_emb <- posterior(fit_emb, x_obs = x_obs)
 
 d_raw <- sample(post_raw, 3000)
 d_emb <- sample(post_emb, 3000)
@@ -140,26 +165,47 @@ cat("\nwith embedding:\n"); print(summary(d_emb))
 # a linear classifier cannot tell them apart.
 print(c2st(d_raw, d_emb, seed = 1))
 
+# The four parameters are not separately identified by one outbreak: Beta, eta
+# and mu_IR enter the early growth almost only through Beta * eta / mu_IR, and
+# the prior stays visible in each of them on its own. The combination is what
+# the data pin down, so that is what to compare.
+r_eff <- function(d) d[, "Beta"] * d[, "eta"] / d[, "mu_IR"]
+cat(sprintf("\ninitial R_eff = Beta * eta / mu_IR\n"))
+cat(sprintf("  prior         : %.2f [%.2f, %.2f]\n",
+            median(r_eff(sims$theta)), quantile(r_eff(sims$theta), 0.05),
+            quantile(r_eff(sims$theta), 0.95)))
+cat(sprintf("  no embedding  : %.2f [%.2f, %.2f]\n",
+            median(r_eff(d_raw)), quantile(r_eff(d_raw), 0.05),
+            quantile(r_eff(d_raw), 0.95)))
+cat(sprintf("  with embedding: %.2f [%.2f, %.2f]\n",
+            median(r_eff(d_emb)), quantile(r_eff(d_emb), 0.05),
+            quantile(r_eff(d_emb), 0.95)))
+
 # ---------------------------------------------------------------------------
 # Which one reproduces the outbreak?
 # ---------------------------------------------------------------------------
 #
-# The honest test is predictive, not internal to the estimator. Push posterior
-# draws back through the simulator and see which set of predictions contains
-# the observed series.
+# Read this one carefully. The model has a stochastic extinction mode at I = 1,
+# so even at the right parameters most predictive draws fizzle out. A raw
+# predictive band therefore looks terrible for any fit, and would be just as
+# terrible if we knew the parameters exactly. What the data condition on is an
+# outbreak having happened, so condition the check the same way and compare the
+# outbreaks with the outbreak.
 
 pp <- function(post, label) {
-  pred <- posterior_predictive(post, simulator, n = 300)
-  band <- apply(pred, 2, quantile, probs = c(0.05, 0.95))
-  inside <- mean(reports >= band[1, ] & reports <= band[2, ])
-  peak_obs <- max(reports)
-  peak_pred <- apply(pred, 1, max)
-  cat(sprintf("%-15s weeks inside 90%% band: %.0f%%   peak %d vs predicted %.0f [%.0f, %.0f]\n",
-              label, 100 * inside, peak_obs, median(peak_pred),
-              quantile(peak_pred, 0.05), quantile(peak_pred, 0.95)))
+  pred <- expm1(posterior_predictive(post, simulator, n = 400))
+  took_off <- apply(pred, 1, max) > 10
+  cat(sprintf("%-15s %.0f%% of draws take off; among those, peak %.0f [%.0f, %.0f] and total %.0f [%.0f, %.0f]\n",
+              label, 100 * mean(took_off),
+              median(apply(pred[took_off, ], 1, max)),
+              quantile(apply(pred[took_off, ], 1, max), 0.05),
+              quantile(apply(pred[took_off, ], 1, max), 0.95),
+              median(rowSums(pred[took_off, ])),
+              quantile(rowSums(pred[took_off, ]), 0.05),
+              quantile(rowSums(pred[took_off, ]), 0.95)))
   invisible(pred)
 }
-cat("\n")
+cat(sprintf("\nobserved: peak %d, total %d\n", max(reports), sum(reports)))
 pp(post_raw, "no embedding")
 pp(post_emb, "with embedding")
 
@@ -173,14 +219,16 @@ pp(post_emb, "with embedding")
 # With four parameters, an 8-feature summary is already generous. Here is what
 # a very tight one does.
 
-fit_tiny <- npe(prior, theta = sims$theta, x = sims$x,
-                density_estimator = "maf",
-                embedding_net = embedding_mlp(output_dim = 2L,
-                                              hidden = c(32L, 32L)),
-                seed = 1)
-cat(sprintf("\noutput_dim = 2: val loss %.3f\n",
-            summary(fit_tiny)$best_val_loss))
-print(summary(sample(posterior(fit_tiny, x_obs = reports), 2000)))
+fit_tiny <- do.call(npe, c(list(prior, theta = sims$theta, x = sims$x,
+                                density_estimator = "maf",
+                                embedding_net = embedding_mlp(2L, c(32L, 32L)),
+                                seed = 1), ctl))
+info_tiny <- summary(fit_tiny)
+cat(sprintf("\noutput_dim = 2: val loss %.3f (%d epochs)\n",
+            info_tiny$best_val_loss, info_tiny$epochs_trained))
+d_tiny <- sample(posterior(fit_tiny, x_obs = x_obs), 3000)
+cat(sprintf("  R_eff %.2f [%.2f, %.2f]\n", median(r_eff(d_tiny)),
+            quantile(r_eff(d_tiny), 0.05), quantile(r_eff(d_tiny), 0.95)))
 
 # ---------------------------------------------------------------------------
 # Notes
@@ -195,3 +243,7 @@ print(summary(sample(posterior(fit_tiny, x_obs = reports), 2000)))
 # you already know that the peak height and the epidemic duration are what
 # identify the parameters, passing those two numbers as x is cheaper and more
 # transparent than learning them.
+#
+# And it is not a substitute for a model whose parameters are identified. No
+# summary network can separate Beta from eta here, because the data do not.
+# 15_npe_vs_pomp.R takes the same model to a particle filter, which agrees.

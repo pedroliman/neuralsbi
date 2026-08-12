@@ -208,25 +208,48 @@ print(data.frame(outcome = names(x_obs),
 # ---------------------------------------------------------------------------
 #
 # The failure mode worth rehearsing. Here is an observation from a cohort that
-# progresses far faster than anything in the prior. The posterior still returns
-# draws, and they still look like a posterior. The predictive check is what
-# tells you not to believe them.
+# progresses far faster than the prior allows: p_AB = 0.50 against a prior
+# ceiling of 0.40, p_BC = 0.70 against a ceiling of 0.60. The posterior still
+# returns draws, and they still look like a posterior.
 
 set.seed(13)
-x_weird <- do.call(simulator, as.list(c(p_AB = 0.7, p_AC = 0.2, p_AD = 0.05,
-                                        p_BC = 0.6, p_BD = 0.05)))
-draws_weird <- sample(post, 2000, obs = x_weird)
+x_weird <- do.call(simulator, as.list(c(p_AB = 0.50, p_AC = 0.08, p_AD = 0.005,
+                                        p_BC = 0.70, p_BD = 0.005)))
+draws_weird <- suppressWarnings(sample(post, 2000, obs = x_weird))
+print(draws_weird)
 print(summary(draws_weird))
 
-pred_weird <- posterior_predictive(post, simulator, n = 500, x = x_weird)
+# Every posterior mean sits just under the prior's upper bound. A posterior
+# pinned to a boundary is a posterior saying it would go further if it were
+# allowed to, and that is the first thing to look at.
+print(round(rbind(posterior_mean = colMeans(draws_weird),
+                  prior_upper = prior$upper), 3))
+
+# The second signal is on the printed draws above: the support acceptance rate,
+# which falls from 1.00 on the real observation to well under half here. The
+# estimator is putting most of its mass outside the prior box, because that is
+# where the answer is.
+
+pred_weird <- suppressWarnings(
+  posterior_predictive(post, simulator, n = 500, x = x_weird))
 band_w <- apply(pred_weird, 2, quantile, probs = c(0.025, 0.975))
-cat(sprintf("\noutcomes inside the 95%% band: %d/%d\n",
+cat(sprintf("\noutcomes inside the 95%% predictive band: %d/%d\n",
             sum(x_weird >= band_w[1, ] & x_weird <= band_w[2, ]),
             length(x_weird)))
 
 if (has_ggplot) plot_posterior_predictive(pred_weird, x_weird)
 
-# Almost nothing should be inside. A posterior that looks confident and a
-# predictive check that misses the data is the signature of an observation
-# outside the training distribution, and the fix is the prior or the model, not
-# the estimator.
+# And here is the part worth sitting with: the predictive check passes. Nearly
+# every outcome lands inside the band. Progression this fast empties states A
+# and B within a few years whatever the exact rates, so the surveys saturate
+# and cannot tell 0.50 from the 0.34 the boundary-pinned posterior settled on.
+#
+# A posterior predictive check confirms that the fitted model can reproduce the
+# data. It does not confirm that the parameters are right, and on a saturating
+# outcome it cannot. Read it next to the acceptance rate, the distance from the
+# prior bounds, and the calibration diagnostics in 07 and 09, not instead of
+# them.
+#
+# Push the observation further out still and the rejection sampler runs out
+# entirely: sample() returns zero draws with a warning, and summary() comes
+# back all NaN.

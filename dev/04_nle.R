@@ -25,11 +25,10 @@
 #   subject (3.10 to 5.86 mg/kg), so we work with dose-normalized
 #   concentrations, which is exact for this dose-proportional model and makes
 #   the subjects exchangeable. Sampling times differ by a few minutes between
-#   subjects; we use the across-subject mean time for each of the 10 post-dose
-#   draws. Pinheiro and Bates give each random effect its own variance; we use
+#   subjects; we use the across-subject mean time for each draw. Pinheiro and Bates give each random effect its own variance; we use
 #   one shared between-subject SD, omega, so the parameter vector stays small.
 #
-# Runtime: about 3 minutes on a laptop CPU.
+# Runtime: about 4 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -44,12 +43,15 @@ theoph <- datasets::Theoph
 by_subject <- split(theoph, theoph$Subject)
 
 # Drop the pre-dose draw: the model predicts exactly 0 there, so it carries no
-# information and would give the density estimator a degenerate dimension.
-keep <- 2:11
+# information and would give the density estimator a degenerate dimension. Of
+# the ten post-dose draws we keep six, spread across absorption, peak and
+# elimination, which is a realistic sparse sampling design and keeps the
+# estimator's target six-dimensional.
+keep <- c(2, 3, 4, 6, 8, 11)
 times <- colMeans(do.call(rbind, lapply(by_subject, function(s) s$Time)))[keep]
 dose  <- vapply(by_subject, function(s) s$Dose[1], numeric(1))
 
-# 12 subjects x 10 times, dose-normalized.
+# 12 subjects x 6 times, dose-normalized.
 x_obs <- do.call(rbind, lapply(seq_along(by_subject), function(i) {
   by_subject[[i]]$conc[keep] / dose[i]
 }))
@@ -104,11 +106,15 @@ print(prior)
 
 estimator <- if (has_torch) "mdn" else "linear_gaussian"
 
+# max_epochs and patience are trimmed here so the script finishes in a few
+# minutes; the defaults (2000 and 20) train longer and fit better.
 fit <- nle(prior, simulator, n_simulations = 4000,
-           density_estimator = estimator, seed = 2024, verbose = TRUE)
+           density_estimator = estimator,
+           max_epochs = 200L, patience = 10L,
+           seed = 2024, verbose = TRUE)
 print(fit)
 
-# Note what dim_x says: 10, the width of ONE observation, not 120.
+# Note what dim_x says: 6, the width of ONE observation, not 72.
 
 # ---------------------------------------------------------------------------
 # log_lik(): the surrogate as a likelihood
@@ -164,8 +170,8 @@ cat("Pinheiro-Bates fixed effects: lKe -2.43, lKa 0.45, lCl -3.21\n")
 # batched call per step, so more chains cost almost nothing.
 
 t0 <- Sys.time()
-post <- posterior(fit, x_obs, n_chains = 10, warmup = 150, thin = 2, seed = 5)
-draws <- sample(post, 2000)
+post <- posterior(fit, x_obs, n_chains = 8, warmup = 80, thin = 2, seed = 5)
+draws <- sample(post, 1200)
 cat(sprintf("\nMCMC: %.1f s\n", as.numeric(Sys.time() - t0, units = "secs")))
 
 print(post)
@@ -179,17 +185,26 @@ print(summary(draws))
 # would need retraining for each, because its input width is fixed at training
 # time.
 
-for (n_sub in c(1, 4, 12)) {
+for (n_sub in c(1, 12)) {
   p <- posterior(fit, x_obs[seq_len(n_sub), , drop = FALSE],
-                 n_chains = 10, warmup = 150, thin = 2, seed = 5)
-  d <- sample(p, 1000)
+                 n_chains = 8, warmup = 80, thin = 2, seed = 5)
+  d <- sample(p, 800)
   cat(sprintf("%2d subject(s): lCl = %.3f (sd %.3f)\n",
               n_sub, mean(d[, "lCl"]), sd(d[, "lCl"])))
 }
 
 # The posterior should tighten roughly as 1/sqrt(n) in the parameters the data
-# speak to. If it does not move at all, the surrogate is not seeing that
-# parameter, which is worth knowing before you trust it.
+# speak to, and 12 subjects should shrink lCl by about sqrt(12) = 3.5. If it
+# does not move at all, the surrogate is not seeing that parameter, which is
+# worth knowing before you trust it.
+#
+# One thing this fit gets wrong, and it is the model's fault rather than the
+# estimator's: log_omega and log_sigma trade off against each other, and with
+# six sampling times and twelve subjects the data cannot separate
+# between-subject variation from residual error well. The posterior pushes
+# omega down and sigma up. Pinheiro and Bates give each random effect its own
+# variance and use all eleven times, which is what it takes to pin those two
+# apart.
 
 # ---------------------------------------------------------------------------
 # log_prob() on an MCMC posterior

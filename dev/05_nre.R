@@ -28,7 +28,7 @@
 #   vignette's compare function. mcstate fits this with a particle filter and
 #   pMCMC; here we fit it with a classifier instead.
 #
-# Runtime: about 3 minutes on a laptop CPU.
+# Runtime: about 4 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -42,10 +42,10 @@ has_torch <- requireNamespace("torch", quietly = TRUE) &&
 N <- 1010
 I0 <- 10
 dt <- 0.25
-n_days <- 40
+n_days <- 100
 steps_per_day <- round(1 / dt)
 
-simulator <- function(beta, gamma) {
+epidemic <- function(beta, gamma) {
   S <- N - I0
   I <- I0
   cases <- numeric(n_days)
@@ -60,7 +60,18 @@ simulator <- function(beta, gamma) {
     }
     cases[d] <- rpois(1L, inc + 1e-6)
   }
-  stats::setNames(cases, paste0("day", seq_len(n_days)))
+  cases
+}
+
+# The simulator returns log(1 + cases), not the counts. Across this prior a
+# daily count runs from 0 to a few hundred, and z-scoring a series that
+# skewed leaves the classifier fitting the handful of large days and ignoring
+# the shape. On the raw counts the fit below recovers beta = 0.12 against a
+# truth of 0.20; on the log scale it recovers 0.20. This is the kind of
+# preprocessing choice that matters more than the architecture, and it is
+# worth trying before reaching for a bigger network.
+simulator <- function(beta, gamma) {
+  stats::setNames(log1p(epidemic(beta, gamma)), paste0("day", seq_len(n_days)))
 }
 
 prior <- prior_uniform(low  = c(beta = 0.05, gamma = 0.02),
@@ -69,8 +80,10 @@ prior <- prior_uniform(low  = c(beta = 0.05, gamma = 0.02),
 # The observation: one epidemic at the vignette's parameter values.
 set.seed(2)
 theta_true <- c(beta = 0.2, gamma = 0.1)
-x_obs <- simulator(theta_true[["beta"]], theta_true[["gamma"]])
-print(x_obs)
+cases_obs <- epidemic(theta_true[["beta"]], theta_true[["gamma"]])
+x_obs <- stats::setNames(log1p(cases_obs), paste0("day", seq_len(n_days)))
+cat("total cases:", sum(cases_obs), " peak on day:", which.max(cases_obs), "\n")
+print(cases_obs)
 
 # ---------------------------------------------------------------------------
 # Fit the ratio estimator
@@ -80,8 +93,8 @@ print(x_obs)
 #   resnet    residual MLP. The default, and sbi's.
 #   mlp       plain MLP.
 #   linear    one linear layer on the raw inputs.
-#   logistic  closed-form logistic regression on quadratic features. No torch,
-#             and fast enough to be a useful baseline.
+#   logistic  closed-form logistic regression on quadratic features. No torch.
+#             Suited to low-dimensional x; see the note at the end.
 #
 # num_atoms is the training objective's contrast count: per simulation the
 # classifier scores the true parameter against num_atoms - 1 parameters
@@ -91,8 +104,15 @@ print(x_obs)
 
 classifier <- if (has_torch) "resnet" else "logistic"
 
-fit <- nre(prior, simulator, n_simulations = 4000,
+# Simulate once and reuse, so the classifiers compared below all see the same
+# epidemics. max_epochs and patience are trimmed a little for runtime; the
+# defaults are 2000 and 20.
+sims <- simulate_for_sbi(simulator, prior, n = 4000, seed = 11)
+cat("simulated", nrow(sims$x), "epidemics,", sims$n_dropped, "dropped\n")
+
+fit <- nre(prior, theta = sims$theta, x = sims$x,
            classifier = classifier, num_atoms = 10L,
+           max_epochs = 300L, patience = 15L,
            seed = 2024, verbose = TRUE)
 print(fit)
 invisible(summary(fit))
@@ -178,15 +198,29 @@ cat("\nreloaded, same ratios:",
 unlink(path)
 
 # ---------------------------------------------------------------------------
-# A cheap baseline worth running first
+# The other classifiers
 # ---------------------------------------------------------------------------
 #
-# "logistic" is a closed-form logistic regression on quadratic features. It
-# needs no torch and fits in a second. If it already recovers the parameters,
-# the problem is easy and the neural classifier is buying you little; if it
-# fails badly where the resnet succeeds, that gap is the value of the network.
+# "mlp" is a plain multilayer perceptron and "linear" is a single linear layer
+# on the raw (theta, x). The linear one is the useful control: if it already
+# recovers the parameters, the discrimination problem is easy and the residual
+# network is buying you little.
 
-fit_log <- nre(prior, simulator, n_simulations = 4000,
-               classifier = "logistic", seed = 2024)
-post_log <- posterior(fit_log, x_obs, n_chains = 20, warmup = 200, seed = 7)
-print(summary(sample(post_log, 2000)))
+if (has_torch) {
+  for (cl in c("mlp", "linear")) {
+    f <- nre(prior, theta = sims$theta, x = sims$x, classifier = cl,
+             max_epochs = 300L, patience = 15L, seed = 2024)
+    d <- sample(posterior(f, x_obs, n_chains = 20, warmup = 150, seed = 7),
+                2000)
+    cat(sprintf("%-8s beta %.3f (sd %.3f)   gamma %.3f (sd %.3f)\n",
+                cl, mean(d[, "beta"]), sd(d[, "beta"]),
+                mean(d[, "gamma"]), sd(d[, "gamma"])))
+  }
+}
+
+# The fourth option, "logistic", is a closed-form logistic regression on
+# quadratic features and needs no torch. It is the fallback when torch is
+# unavailable, and it is meant for low-dimensional x: the feature expansion is
+# quadratic in dim_theta + dim_x, so on the 100-day series here it would build
+# more than five thousand features per pair. Aggregate to weekly counts first,
+# or use it on a model with a handful of summary statistics.

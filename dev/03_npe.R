@@ -113,8 +113,14 @@ str(simulate_for_sbi(vec_simulator, prior, n = 3, seed = 1)$x)
 # them all trained on the same simulations. simulate_for_sbi() gives you the
 # (theta, x) pair to pass in directly.
 
-sims <- simulate_for_sbi(simulator, prior, n = 4000, seed = 42)
+sims <- simulate_for_sbi(simulator, prior, n = 2500, seed = 42)
 cat("simulated:", nrow(sims$x), "draws,", sims$n_dropped, "dropped\n")
+
+# Training controls shared by every fit below. These are trimmed so the script
+# finishes in a few minutes: patience 8 instead of 20, and a max_epochs cap low
+# enough to bite. Use the defaults for real work; the point here is that all
+# four estimators get the same deal.
+ctl <- list(max_epochs = 120L, patience = 8L, batch_size = 250L)
 
 # ---------------------------------------------------------------------------
 # The four density estimators
@@ -135,8 +141,8 @@ estimators <- if (has_torch) c("linear_gaussian", "mdn", "maf", "nsf") else
 fits <- lapply(estimators, function(de) {
   cat("\n---", de, "---\n")
   t0 <- Sys.time()
-  f <- npe(prior, theta = sims$theta, x = sims$x,
-           density_estimator = de, seed = 1)
+  f <- do.call(npe, c(list(prior, theta = sims$theta, x = sims$x,
+                           density_estimator = de, seed = 1), ctl))
   cat(sprintf("  %.1f s\n", as.numeric(Sys.time() - t0, units = "secs")))
   f
 })
@@ -180,11 +186,15 @@ if (has_torch) {
   quick <- npe(prior, theta = sims$theta, x = sims$x,
                density_estimator = "maf",
                n_transforms = 3L, hidden = c(30L, 30L),
-               batch_size = 500L, patience = 10L,
+               max_epochs = 120L, batch_size = 500L, patience = 8L,
                seed = 1)
-  cat("\nsmaller, faster MAF:\n")
+  cat("\nshallower MAF, larger batches:\n")
   invisible(summary(quick))
 }
+
+# Compare epochs_trained against max_epochs before reading anything into the
+# validation loss. A fit that stopped at the cap was still improving when the
+# budget ran out, and its loss is not comparable with one that early-stopped.
 
 # ---------------------------------------------------------------------------
 # What a posterior can do
@@ -262,9 +272,10 @@ unlink(path)
 # nowhere else.
 
 snpe <- npe_sequential(prior, simulator, x_obs = x_obs,
-                       n_rounds = 2L, n_simulations = 1500L,
+                       n_rounds = 2L, n_simulations = 1000L,
                        density_estimator = if (has_torch) "maf" else
                          "linear_gaussian",
+                       max_epochs = 200L, patience = 8L, batch_size = 250L,
                        seed = 3, verbose = TRUE)
 print(snpe)
 

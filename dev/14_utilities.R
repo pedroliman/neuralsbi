@@ -17,10 +17,10 @@
 #   State-Transition Models in R for Cost-Effectiveness Analysis", Medical
 #   Decision Making 43(1), 2023,
 #   https://github.com/DARTH-git/cohort-modeling-tutorial-intro/blob/main/analysis/cSTM_time_indep.R
-#   because a simulator has to be slow enough for parallelism to be worth
-#   anything, and a 75-cycle Markov trace is.
+#   run on monthly cycles, because a simulator has to be slow enough for
+#   parallelism to be worth anything and a 900-cycle Markov trace is.
 #
-# Runtime: about 3 minutes on a laptop CPU.
+# Runtime: under a minute on a laptop CPU.
 
 library(neuralsbi)
 
@@ -106,7 +106,7 @@ cat("\ndropped:", sims$n_dropped, "of 400\n")
 # worker once per batch.
 
 with_grid <- function(mu, nu, times, noise) {
-  stats::setNames(mu * exp(-nu * times) + rnorm(length(times), sd = noise),
+  stats::setNames(mu * exp(-abs(nu) * times) + rnorm(length(times), sd = noise),
                   paste0("t", times))
 }
 sims <- simulate_for_sbi(with_grid, prior, n = 5,
@@ -125,50 +125,63 @@ print(round(sims$x, 3))
 # Declare a future plan and every simulator call in the package spreads across
 # workers. There is no argument to set and no variant of the function to call.
 
-n_cycles <- 75
+# The Sick-Sicker model again, on monthly rather than annual cycles (the DARTH
+# tutorial's own alternative, cycle_length = 1/12). 900 cycles per call is slow
+# enough for the comparison to mean something.
+cycle_length <- 1 / 12
+n_cycles <- 900
 rate_to_prob <- function(r, t = 1) 1 - exp(-r * t)
 
 sick_sicker <- function(p_S1S2, hr_S1, hr_S2) {
-  p_HS1 <- rate_to_prob(0.15); p_S1H <- rate_to_prob(0.5)
-  p_HD  <- rate_to_prob(0.002)
-  p_S1D <- rate_to_prob(0.002 * hr_S1); p_S2D <- rate_to_prob(0.002 * hr_S2)
+  p_HS1 <- rate_to_prob(0.15, cycle_length)
+  p_S1H <- rate_to_prob(0.5, cycle_length)
+  p_HD  <- rate_to_prob(0.002, cycle_length)
+  p_S1D <- rate_to_prob(0.002 * hr_S1, cycle_length)
+  p_S2D <- rate_to_prob(0.002 * hr_S2, cycle_length)
   P <- rbind(c((1 - p_HD) * (1 - p_HS1), (1 - p_HD) * p_HS1, 0, p_HD),
              c((1 - p_S1D) * p_S1H, (1 - p_S1D) * (1 - p_S1H - p_S1S2),
                (1 - p_S1D) * p_S1S2, p_S1D),
              c(0, 0, 1 - p_S2D, p_S2D),
              c(0, 0, 0, 1))
   m <- c(1, 0, 0, 0)
-  keep <- c(10, 25, 40, 55)
+  keep <- c(120, 300, 480, 660)          # ages 35, 50, 65, 80
   out <- numeric(0)
   for (t in seq_len(n_cycles)) {
     m <- m %*% P
     if (t %in% keep) out <- c(out, 1 - m[4], m[2] + m[3])
   }
   stats::setNames(out, paste0(rep(c("surv", "prev"), 4),
-                              rep(25 + keep, each = 2)))
+                              rep(c(35, 50, 65, 80), each = 2)))
 }
 
-ss_prior <- prior_uniform(low  = c(p_S1S2 = 0.01, hr_S1 = 1, hr_S2 =  5),
-                          high = c(p_S1S2 = 0.50, hr_S1 = 4.5, hr_S2 = 15))
+ss_prior <- prior_uniform(low  = c(p_S1S2 = 0.001, hr_S1 = 1.0, hr_S2 =  5),
+                          high = c(p_S1S2 = 0.050, hr_S1 = 4.5, hr_S2 = 15))
 
 if (requireNamespace("future", quietly = TRUE)) {
+  n_sim <- 8000
   t_seq <- system.time(
-    simulate_for_sbi(sick_sicker, ss_prior, n = 2000, seed = 1)
+    simulate_for_sbi(sick_sicker, ss_prior, n = n_sim, seed = 1)
   )[["elapsed"]]
 
   old_plan <- future::plan()
   workers <- max(2L, min(4L, parallel::detectCores()))
   future::plan(future::multisession, workers = workers)
   t_par <- system.time(
-    simulate_for_sbi(sick_sicker, ss_prior, n = 2000, seed = 1)
+    simulate_for_sbi(sick_sicker, ss_prior, n = n_sim, seed = 1)
   )[["elapsed"]]
   future::plan(old_plan)
 
-  cat(sprintf("\n2000 simulations: %.1f s sequential, %.1f s on %d workers\n",
-              t_seq, t_par, workers))
+  cat(sprintf("\n%d simulations: %.1f s sequential, %.1f s on %d workers\n",
+              n_sim, t_seq, t_par, workers))
 } else {
   cat("\nfuture is not installed; simulation stays sequential.\n")
 }
+
+# Expect roughly a 2x speedup on four workers, not 4x. A multisession plan
+# starts fresh R processes and ships the simulator to each one, which costs a
+# couple of seconds before any simulation runs. Below about ten seconds of
+# total simulation time you will lose money on the trade; the crossover is
+# worth measuring once for your own simulator rather than assuming.
 
 # Random numbers do not depend on the plan. Each simulation gets its own
 # L'Ecuyer-CMRG stream derived from the session RNG state at the moment
@@ -223,16 +236,18 @@ f1 <- npe(task$prior, task$simulator, n_simulations = 1000,
 f2 <- npe(task$prior, task$simulator, n_simulations = 1000,
           density_estimator = "linear_gaussian", seed = 7)
 x_obs <- task$simulator(sample_prior(task$prior, 1)[1, ])
-cat("\nsame seed, same fit:",
-    isTRUE(all.equal(sample(posterior(f1, x_obs = x_obs), 100),
-                     sample(posterior(f2, x_obs = x_obs), 100),
-                     check.attributes = FALSE)), "\n")
 
-# Sampling is separately random. Set the session seed to pin draws too.
+# Sampling is separately random, so pin the session seed before each draw or
+# the comparison tests the sampler rather than the fit.
 set.seed(1); d1 <- sample(posterior(f1, x_obs = x_obs), 100)
-set.seed(1); d2 <- sample(posterior(f1, x_obs = x_obs), 100)
-cat("same session seed, same draws:",
+set.seed(1); d2 <- sample(posterior(f2, x_obs = x_obs), 100)
+cat("\nsame seed, same fit:",
     isTRUE(all.equal(d1, d2, check.attributes = FALSE)), "\n")
+
+set.seed(1); d3 <- sample(posterior(f1, x_obs = x_obs), 100)
+d4 <- sample(posterior(f1, x_obs = x_obs), 100)
+cat("no session seed, different draws from the same fit:",
+    !isTRUE(all.equal(d3, d4, check.attributes = FALSE)), "\n")
 
 # ---------------------------------------------------------------------------
 # 7. Saving and reloading

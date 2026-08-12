@@ -1,10 +1,8 @@
 # 11_tarp.R ------------------------------------------------------------------
 #
-# TARP: tests of accuracy with random points. SBC ranks each parameter on its
-# own, so a posterior with perfect marginals and the wrong dependence between
-# parameters passes it. TARP measures distances in the full parameter space
-# against random reference points, so it is a joint test and does not have that
-# blind spot.
+# TARP: tests of accuracy with random points. sbc() ranks each parameter on its
+# own. TARP measures distances in the full parameter space against random
+# reference points, so it scores the joint posterior instead of the margins.
 #
 # Method
 #   Lemos, P., Coogan, A., Hezaveh, Y. and Perreault-Levasseur, L. (2023),
@@ -16,15 +14,16 @@
 #   closer to the reference than the truth is the credibility level of the
 #   smallest distance-based credible region containing the truth. For a
 #   calibrated posterior those fractions are uniform, so the expected coverage
-#   probability at level alpha equals alpha.
+#   probability (ECP) at credibility level alpha equals alpha.
 #
 # Task source
-#   Lueckmann, J.-M. et al. "Benchmarking Simulation-Based Inference",
-#   AISTATS 2021. https://github.com/sbi-benchmark/sbibm
-#   task_two_moons() is sbibm's two_moons: uniform prior on [-1, 1]^2, and a
-#   simulator that maps parameters onto a noisy crescent. The posterior for a
-#   typical observation has two symmetric modes joined by a curved ridge, which
-#   is exactly the structure a marginal test cannot see.
+#   Lueckmann, J.-M., Boelts, J., Greenberg, D., Goncalves, P. and Macke, J.
+#   "Benchmarking Simulation-Based Inference", AISTATS 2021.
+#   https://github.com/sbi-benchmark/sbibm
+#   task_gaussian_linear() (conjugate, analytic posterior) is the case where
+#   everything should pass. task_two_moons() (uniform prior on [-1, 1]^2, a
+#   curved bimodal posterior) is the case where a conditional-Gaussian
+#   estimator cannot be right no matter how many simulations it gets.
 #
 # Runtime: about 3 minutes on a laptop CPU.
 
@@ -34,85 +33,104 @@ has_torch <- requireNamespace("torch", quietly = TRUE) &&
   torch::torch_is_installed()
 has_ggplot <- requireNamespace("ggplot2", quietly = TRUE)
 
-task <- task_two_moons()
-print(task)
-prior <- task$prior
-simulator <- task$simulator
-
 # ---------------------------------------------------------------------------
-# A fit that should do well, and one that cannot
-# ---------------------------------------------------------------------------
-#
-# A flow can represent a curved bimodal posterior. The closed-form conditional
-# Gaussian cannot: it has one mode and elliptical contours, by construction.
-# Running both makes the difference between the two diagnostics visible.
-
-fit_flow <- if (has_torch) {
-  npe(prior, simulator, n_simulations = 5000, density_estimator = "nsf",
-      seed = 1)
-} else NULL
-
-fit_gauss <- npe(prior, simulator, n_simulations = 5000,
-                 density_estimator = "linear_gaussian", seed = 1)
-
-# ---------------------------------------------------------------------------
-# What the two posteriors look like
+# A fit that should pass
 # ---------------------------------------------------------------------------
 
-set.seed(4)
-theta_true <- sample_prior(prior, 1)
-x_obs <- simulator(theta_true[1, ])
+gl <- task_gaussian_linear(dim = 3L)
+print(gl)
 
-d_gauss <- sample(posterior(fit_gauss, x_obs = x_obs), 3000)
-cat("linear_gaussian posterior:\n"); print(summary(d_gauss))
+fit_good <- npe(gl$prior, gl$simulator, n_simulations = 4000,
+                density_estimator = if (has_torch) "maf" else "linear_gaussian",
+                max_epochs = 150L, patience = 10L, seed = 1)
 
-if (!is.null(fit_flow)) {
-  d_flow <- sample(posterior(fit_flow, x_obs = x_obs), 3000)
-  cat("\nnsf posterior:\n"); print(summary(d_flow))
-  cat("\ncorrelation between the two parameters:\n")
-  cat(sprintf("  linear_gaussian %.3f   nsf %.3f\n",
-              cor(d_gauss[, 1], d_gauss[, 2]),
-              cor(d_flow[, 1], d_flow[, 2])))
-  if (has_ggplot && requireNamespace("GGally", quietly = TRUE) &&
-      requireNamespace("ggdensity", quietly = TRUE)) {
-    pairplot(d_flow, truth = theta_true[1, ])
-    pairplot(d_gauss, truth = theta_true[1, ])
-  }
-}
-
-# ---------------------------------------------------------------------------
-# TARP
-# ---------------------------------------------------------------------------
-
-tarp_gauss <- tarp(fit_gauss, simulator, n_tarp = 300L,
-                   n_posterior_samples = 500L, seed = 1)
-print(tarp_gauss)
-
-if (!is.null(fit_flow)) {
-  tarp_flow <- tarp(fit_flow, simulator, n_tarp = 300L,
-                    n_posterior_samples = 500L, seed = 1)
-  print(tarp_flow)
-}
+tarp_good <- tarp(fit_good, gl$simulator, n_tarp = 300L,
+                  n_posterior_samples = 400L, seed = 1)
+print(tarp_good)
 
 # print() reports max |ECP - nominal|, which is the single number to compare
-# fits by. Zero is perfect calibration.
+# fits by. Zero is perfect calibration, and at 300 trials the Monte-Carlo floor
+# is around 0.05, so anything under that is noise.
 
 # ---------------------------------------------------------------------------
-# Reading the curve
+# Reading the object
 # ---------------------------------------------------------------------------
 
-str(tarp_gauss[c("levels", "ecp", "n_tarp", "references")])
+str(tarp_good[c("levels", "ecp", "n_tarp", "n_posterior_samples",
+                "references")])
 
-if (has_ggplot) {
-  plot_tarp(tarp_gauss)
-  if (!is.null(fit_flow)) plot_tarp(tarp_flow)
-}
+# coverage_values holds the per-trial fractions. Under calibration they are
+# uniform on (0, 1), and the ECP curve is just their empirical CDF.
+print(round(quantile(tarp_good$coverage_values, seq(0, 1, 0.25)), 3))
+
+if (has_ggplot) plot_tarp(tarp_good)
 
 # Above the diagonal: the posterior is too wide, and reported regions contain
 # the truth more often than advertised. Below: too narrow, and they contain it
 # less often, which is the failure that costs you. The shaded band is the
 # Monte-Carlo uncertainty from a finite n_tarp, so a curve inside the band is
 # not evidence of anything.
+
+# ---------------------------------------------------------------------------
+# A fit that cannot be right
+# ---------------------------------------------------------------------------
+#
+# two_moons has a curved, bimodal posterior. "linear_gaussian" is a
+# closed-form conditional Gaussian: one mode, elliptical contours. There is no
+# simulation budget that fixes that.
+
+tm <- task_two_moons()
+fit_wrong <- npe(tm$prior, tm$simulator, n_simulations = 4000,
+                 density_estimator = "linear_gaussian", seed = 1)
+
+set.seed(4)
+theta_true <- sample_prior(tm$prior, 1)
+x_obs <- tm$simulator(theta_true[1, ])
+d_wrong <- sample(posterior(fit_wrong, x_obs = x_obs), 3000)
+print(summary(d_wrong))
+cat(sprintf("correlation between the two parameters: %.3f\n",
+            cor(d_wrong[, 1], d_wrong[, 2])))
+
+if (has_ggplot && requireNamespace("GGally", quietly = TRUE) &&
+    requireNamespace("ggdensity", quietly = TRUE)) {
+  pairplot(d_wrong, truth = theta_true[1, ])
+}
+
+tarp_wrong <- tarp(fit_wrong, tm$simulator, n_tarp = 300L,
+                   n_posterior_samples = 400L, seed = 1)
+print(tarp_wrong)
+if (has_ggplot) plot_tarp(tarp_wrong)
+
+# ---------------------------------------------------------------------------
+# Run both tests, because neither one dominates
+# ---------------------------------------------------------------------------
+#
+# TARP is motivated as the test that sees what marginal ranks cannot. That
+# motivation is real, and it does not make TARP the sharper test in every case.
+# On this fit both of them fire, and SBC makes the size of the failure much
+# more obvious.
+
+sbc_wrong <- sbc(fit_wrong, tm$simulator, n_sbc = 300L,
+                 n_posterior_samples = 400L, seed = 1)
+print(sbc_wrong)
+print(round(expected_coverage(sbc_wrong, c(0.5, 0.8, 0.9, 0.95)), 3))
+cat(sprintf("TARP max |ECP - nominal|: %.3f\n",
+            max(abs(tarp_wrong$ecp - tarp_wrong$levels))))
+
+# Expect marginal coverage far below nominal, near 0.35 where 0.50 was
+# promised, against a TARP deviation of about 0.10: detected, but only twice
+# the Monte-Carlo floor the calibrated fit sat at.
+#
+# The reason is geometric. The fitted Gaussian is a long ellipse stretched
+# along the ridge that joins the two crescents, so a distance-based region
+# around a random reference point is not far off the right size. Project that
+# same ellipse onto either axis and it is much too narrow, which is exactly
+# what a rank histogram measures.
+#
+# The lesson is not that TARP is weak. It is that a diagnostic sees the failure
+# it is shaped to see, so run both: they cost the same and they respond to
+# different things. 09_sbc.R adds a third case, a posterior that ignores the
+# data entirely and passes both.
 
 # ---------------------------------------------------------------------------
 # Reference points
@@ -124,45 +142,32 @@ if (has_ggplot) {
 #
 # They differ when the prior is far from uniform: prior references concentrate
 # where the prior does, so the test looks hardest where most of the prior mass
-# is. On this task the prior is uniform on a box, so the two should agree
-# closely, which is a useful way to see that the choice is not doing the work.
+# is. two_moons has a uniform prior on a box, so the two should agree closely
+# here, which is a useful way to see that the choice is not doing the work.
 
-tarp_prior_ref <- tarp(fit_gauss, simulator, n_tarp = 300L,
-                       n_posterior_samples = 500L, references = "prior",
+tarp_prior_ref <- tarp(fit_wrong, tm$simulator, n_tarp = 300L,
+                       n_posterior_samples = 400L, references = "prior",
                        seed = 1)
+print(data.frame(nominal = tarp_wrong$levels,
+                 uniform_refs = round(tarp_wrong$ecp, 3),
+                 prior_refs = round(tarp_prior_ref$ecp, 3)))
+
+# On the Gaussian task the prior is N(0, 0.1 I) rather than uniform, so there
+# the two choices really can differ.
 print(data.frame(
-  nominal = tarp_gauss$levels,
-  uniform_refs = round(tarp_gauss$ecp, 3),
-  prior_refs = round(tarp_prior_ref$ecp, 3)
-))
+  nominal = tarp_good$levels,
+  uniform_refs = round(tarp_good$ecp, 3),
+  prior_refs = round(tarp(fit_good, gl$simulator, n_tarp = 300L,
+                          n_posterior_samples = 400L, references = "prior",
+                          seed = 1)$ecp, 3)))
 
 # ---------------------------------------------------------------------------
-# TARP and SBC together
+# Scaling
 # ---------------------------------------------------------------------------
 #
-# Run both. They cost about the same and they fail on different things.
-# Distances in TARP are computed after z-scoring each parameter by the spread
-# of the true draws, so parameters on different scales contribute comparably;
-# nothing similar is needed in SBC because it never mixes parameters.
-
-sbc_gauss <- sbc(fit_gauss, simulator, n_sbc = 300L,
-                 n_posterior_samples = 500L, seed = 1)
-print(sbc_gauss)
-cat(sprintf("TARP max deviation, linear_gaussian: %.3f\n",
-            max(abs(tarp_gauss$ecp - tarp_gauss$levels))))
-
-if (!is.null(fit_flow)) {
-  sbc_flow <- sbc(fit_flow, simulator, n_sbc = 300L,
-                  n_posterior_samples = 500L, seed = 1)
-  print(sbc_flow)
-  cat(sprintf("TARP max deviation, nsf: %.3f\n",
-              max(abs(tarp_flow$ecp - tarp_flow$levels))))
-}
-
-# On a bimodal, curved posterior the elliptical estimator has to cover both
-# modes with one blob. That inflates the regions, so expect it to look
-# conservative rather than overconfident: ECP above the diagonal, and marginal
-# ranks that arch rather than form a U.
+# Distances are computed after z-scoring each parameter by the spread of the
+# true draws, so a parameter measured in thousands does not swamp one measured
+# in tenths. Nothing similar is needed in sbc(), which never mixes parameters.
 
 # ---------------------------------------------------------------------------
 # Cost

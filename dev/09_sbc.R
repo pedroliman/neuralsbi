@@ -18,9 +18,10 @@
 #   neuralsbi ships four of its tasks as nsbi_task objects:
 #   task_gaussian_linear(), task_two_moons(), task_slcp(), task_sir().
 #   gaussian_linear has an analytic posterior, which lets us check that a
-#   passing SBC really does correspond to a correct posterior.
+#   passing SBC really does correspond to a correct posterior. two_moons is
+#   used below as the case where a fit is structurally unable to be right.
 #
-# Runtime: about 3 minutes on a laptop CPU.
+# Runtime: about 4 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -48,7 +49,7 @@ fit <- npe(prior, simulator, n_simulations = 4000,
            density_estimator = if (has_torch) "maf" else "linear_gaussian",
            seed = 1)
 
-sbc_good <- sbc(fit, simulator, n_sbc = 300L, n_posterior_samples = 500L,
+sbc_good <- sbc(fit, simulator, n_sbc = 300L, n_posterior_samples = 400L,
                 seed = 1)
 print(sbc_good)
 
@@ -65,9 +66,9 @@ print(head(sbc_good$ranks, 3))
 
 # The p-values are a chi-square test of uniformity on binned ranks, computed by
 # Monte Carlo so the asymptotic approximation never has to hold. Large is good.
-# They are a screen, not a verdict: with 300 trials the test has modest power,
-# and one p-value below 0.05 out of three parameters is what you expect one
-# time in twenty per parameter.
+# Treat them as a screen rather than a verdict: at a few hundred trials the
+# test has modest power and is noisy, and one value under 0.05 out of three
+# parameters is what you expect one time in twenty per parameter.
 print(round(sbc_good$uniformity_pvalue, 3))
 
 if (has_ggplot) {
@@ -76,61 +77,19 @@ if (has_ggplot) {
   # band from the binomial sampling noise of a finite number of trials.
 }
 
-# ---------------------------------------------------------------------------
-# What miscalibration looks like
-# ---------------------------------------------------------------------------
-#
-# Starve the same estimator of simulations. The posterior it learns is too
-# narrow, so the true value falls outside it too often, and the ranks pile up
-# at both edges: the U shape.
-
-fit_starved <- npe(prior, simulator, n_simulations = 300,
-                   density_estimator = if (has_torch) "maf" else
-                     "linear_gaussian",
-                   seed = 1)
-sbc_bad <- sbc(fit_starved, simulator, n_sbc = 300L,
-               n_posterior_samples = 500L, seed = 1)
-print(sbc_bad)
-
-if (has_ggplot) plot_sbc(sbc_bad, param = 1L)
-
-# Read the two histograms as a pair rather than each on its own. The shape is
-# the diagnosis:
-#
-#   flat        calibrated
-#   U           posterior too narrow, the failure that matters
-#   arch        posterior too wide, conservative
-#   sloped      posterior biased in that parameter
-#   spike at 0  posterior systematically above the truth
-#
-# A U shape is almost always a simulation-budget problem before it is an
-# architecture problem. Raise n_simulations first.
-
-# ---------------------------------------------------------------------------
-# Coverage: the same ranks in units people use
-# ---------------------------------------------------------------------------
-
+# Coverage says the same thing in units people already use: of the trials, what
+# fraction had the truth inside the nominal central interval? It is steadier
+# than the p-value and it is what to report.
 levels <- c(0.5, 0.8, 0.9, 0.95)
-cat("\nwell-trained fit:\n")
 print(round(expected_coverage(sbc_good, levels), 3))
-cat("\nstarved fit:\n")
-print(round(expected_coverage(sbc_bad, levels), 3))
-
-if (has_ggplot) {
-  plot_coverage(sbc_good)
-  plot_coverage(sbc_bad)
-}
-
-# For the starved fit the empirical coverage should sit below the nominal
-# level: a "90% interval" that contains the truth less than 90% of the time.
+if (has_ggplot) plot_coverage(sbc_good)
 
 # ---------------------------------------------------------------------------
 # Does passing SBC mean the posterior is right?
 # ---------------------------------------------------------------------------
 #
-# SBC is necessary, not sufficient: it is an average over the prior, so a fit
-# can be calibrated on average and wrong at your particular observation. This
-# task has an analytic posterior, so we can check both.
+# This task has an analytic posterior, so we can check both. Here they agree,
+# which is the outcome to want.
 
 set.seed(3)
 theta_true <- sample_prior(prior, 1)
@@ -143,10 +102,83 @@ print(c2st(draws, ref, seed = 1))
 print(round(rbind(npe = colMeans(draws), exact = colMeans(ref)), 3))
 print(round(rbind(npe = apply(draws, 2, sd), exact = apply(ref, 2, sd)), 3))
 
-# Both checks agreeing is the outcome to want. When SBC passes and the
-# pointwise comparison fails, the fit is calibrated on average and poor where
-# you are standing, which usually means the observation sits in a thin part of
-# the prior predictive.
+# ---------------------------------------------------------------------------
+# What a failing SBC looks like
+# ---------------------------------------------------------------------------
+#
+# Starving a fit of simulations is the obvious way to break it, and on this
+# task it does not work: the posterior stays close to correct because the
+# model really is linear-Gaussian. To see SBC fire you need a fit that CANNOT
+# be right, and the cleanest example is an estimator whose shape is wrong for
+# the posterior it has to represent.
+#
+# two_moons has a curved, bimodal posterior. "linear_gaussian" is a
+# closed-form conditional Gaussian: one mode, elliptical contours. It has no
+# way to cover both crescents, and SBC says so.
+
+tm <- task_two_moons()
+fit_wrong <- npe(tm$prior, tm$simulator, n_simulations = 4000,
+                 density_estimator = "linear_gaussian", seed = 1)
+sbc_wrong <- sbc(fit_wrong, tm$simulator, n_sbc = 300L,
+                 n_posterior_samples = 400L, seed = 1)
+print(sbc_wrong)
+print(round(expected_coverage(sbc_wrong, levels), 3))
+
+if (has_ggplot) {
+  plot_sbc(sbc_wrong, param = 1L)
+  plot_coverage(sbc_wrong)
+}
+
+# Expect empirical coverage well below nominal at every level: a "90%
+# interval" that contains the truth about 79% of the time. In the rank
+# histogram that is the U shape, ranks piling up at both edges because the
+# truth keeps landing outside a posterior that is too narrow.
+#
+# Read the shape as a diagnosis:
+#
+#   flat        calibrated
+#   U           posterior too narrow, the failure that matters
+#   arch        posterior too wide, conservative
+#   sloped      posterior biased in that parameter
+#   spike at 0  posterior systematically above the truth
+#
+# A U shape on a model whose estimator CAN represent the posterior is usually a
+# simulation-budget problem. Raise n_simulations before touching architecture.
+
+# ---------------------------------------------------------------------------
+# The blind spot: SBC cannot see a posterior that ignores the data
+# ---------------------------------------------------------------------------
+#
+# The averaging that makes SBC work also limits it. If the "posterior" is just
+# the prior, the rank of a prior draw among prior draws is uniform, so SBC
+# passes with nothing to report. This is not a hypothetical: an estimator that
+# fails to learn anything from x lands exactly here.
+#
+# Construct it on purpose. Shuffle x against theta so no information survives,
+# and fit as usual.
+
+sims <- simulate_for_sbi(simulator, prior, n = 4000, seed = 2)
+shuffled <- sims$x[base::sample.int(nrow(sims$x)), , drop = FALSE]
+fit_blind <- npe(prior, theta = sims$theta, x = shuffled,
+                 density_estimator = "linear_gaussian", seed = 1)
+
+sbc_blind <- sbc(fit_blind, simulator, n_sbc = 300L,
+                 n_posterior_samples = 400L, seed = 1)
+print(sbc_blind)
+print(round(expected_coverage(sbc_blind, levels), 3))
+
+# Calibrated, by every SBC measure. And useless:
+d_blind <- sample(posterior(fit_blind, x_obs = x_obs), 4000)
+cat("\nposterior sd :", sprintf("%.3f", apply(d_blind, 2, sd)), "\n")
+cat("prior sd     :", sprintf("%.3f", apply(sample_prior(prior, 4000), 2, sd)),
+    "\n")
+cat("exact post sd:", sprintf("%.3f", apply(ref, 2, sd)), "\n")
+print(c2st(d_blind, ref, seed = 1))
+
+# So run SBC to rule out miscalibration, and something else to rule out
+# uselessness: a c2st() against a reference where one exists (10_c2st.R), a
+# posterior predictive check where none does (13), and always a comparison of
+# the posterior's width against the prior's.
 
 # ---------------------------------------------------------------------------
 # How many trials, how many draws
@@ -159,9 +191,8 @@ print(round(rbind(npe = apply(draws, 2, sd), exact = apply(ref, 2, sd)), 3))
 #   n_posterior_samples  the resolution of each rank. 100 is enough to see a
 #                        strong U; a few hundred to resolve a mild slope.
 #
-# Cost is n_sbc simulations and n_sbc posterior samplings. For an NPE fit the
-# sampling is a forward pass and the whole thing is cheap. For NLE and NRE
-# every trial is a separate MCMC run, so start small.
+# For an NPE fit the sampling is a forward pass and the whole thing is cheap.
+# For NLE and NRE every trial is a separate MCMC run, so start small.
 
 cheap <- sbc(fit, simulator, n_sbc = 100L, n_posterior_samples = 100L, seed = 2)
 print(cheap)
@@ -171,7 +202,7 @@ print(cheap)
 # ---------------------------------------------------------------------------
 #
 # Same call. The MCMC controls reach posterior() through ..., which is how you
-# keep 100 separate chains affordable.
+# keep 40 separate chains affordable.
 
 fit_nle <- nle(prior, simulator, n_simulations = 2000,
                density_estimator = "linear_gaussian", seed = 1)

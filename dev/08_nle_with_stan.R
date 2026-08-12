@@ -105,6 +105,12 @@ print(round(comp, 2))
 cat("\ncorrelation of the two surfaces:",
     sprintf("%.4f", cor(comp$exact, comp$surrogate)), "\n")
 
+# Expect the shape to match and individual points to wobble by a nat or two.
+# That is what a mixture density network trained on five thousand simulations
+# buys: the right curvature, not the exact number. Raise n_simulations if the
+# wobble matters, and use it as the check when there is no closed form to
+# compare against, by holding out simulations instead.
+
 # ---------------------------------------------------------------------------
 # The posterior, before Stan gets involved
 # ---------------------------------------------------------------------------
@@ -128,15 +134,16 @@ cat("\nexact-likelihood MLE: mu = -0.711, tau = 0.529 (log_tau = -0.636)\n")
 # Jacobian.
 
 code <- stan_code(fit)
-cat("\ngenerated program:", length(strsplit(code, "\n")[[1]]), "lines\n\n")
-cat(paste(head(strsplit(code, "\n")[[1]], 45), collapse = "\n"), "\n...\n")
+lines <- strsplit(code, "\n")[[1]]
+cat("\ngenerated program:", length(lines), "lines\n\n")
+cat(paste(head(lines, 40), collapse = "\n"), "\n  ...\n")
 
 # The model blocks at the end restate the prior as a Stan sampling statement,
 # which works because prior_uniform() and prior_normal() are named
 # distributions with parameters. A prior_custom() is arbitrary R code and
 # cannot be restated, so use model = FALSE and write the model block yourself.
-tail_lines <- strsplit(code, "\n")[[1]]
-cat("\n", paste(tail(tail_lines, 25), collapse = "\n"), "\n")
+data_at <- grep("^data \\{", lines)[1]
+cat("\n", paste(lines[data_at:length(lines)], collapse = "\n"), "\n")
 
 # functions only, for #include-ing into a model of your own
 fns <- stan_code(fit, model = FALSE)
@@ -166,8 +173,16 @@ cat("wrote", stan_file, "\n")
 # one-time compile. NUTS mixes better than the slice sampler on correlated
 # posteriors, which is the reason to bother.
 
-if (requireNamespace("cmdstanr", quietly = TRUE) ||
-    requireNamespace("rstan", quietly = TRUE)) {
+# Check for CmdStan itself, not just the cmdstanr R package.
+# install.packages("cmdstanr") does not install CmdStan, and a session with the
+# R package but no toolchain fails inside cmdstan_model() with "CmdStan path
+# has not been set".
+has_cmdstan <- requireNamespace("cmdstanr", quietly = TRUE) &&
+  !is.null(tryCatch(cmdstanr::cmdstan_version(error_on_NA = FALSE),
+                    error = function(e) NULL))
+has_rstan <- requireNamespace("rstan", quietly = TRUE)
+
+if (has_cmdstan || has_rstan) {
   post_stan <- posterior(fit, x_obs, sampler = "stan",
                          n_chains = 4, iter_warmup = 500, iter_sampling = 500,
                          seed = 5)
@@ -177,7 +192,7 @@ if (requireNamespace("cmdstanr", quietly = TRUE) ||
   # hard to tell apart.
   print(c2st(draws, draws_stan, seed = 1))
 } else {
-  cat("\ncmdstanr / rstan not installed: skipping the NUTS run.\n")
+  cat("\nNo working Stan back end: skipping the NUTS run.\n")
   cat("  install.packages('cmdstanr',",
       "repos = c('https://stan-dev.r-universe.dev', getOption('repos')))\n")
   cat("  cmdstanr::install_cmdstan()\n")
@@ -232,6 +247,10 @@ cat(sketch)
 #   * "nsf" does not export. Use "maf" or "mdn".
 #   * A fit restored with readRDS() has a dead network pointer, and stan_code()
 #     says so rather than failing later. Use save_nle()/load_nle().
+#   * posterior(sampler = "stan") prefers cmdstanr whenever the R package is
+#     installed. If CmdStan itself is not installed it fails there rather than
+#     falling back to rstan, so run cmdstanr::install_cmdstan() first or
+#     uninstall cmdstanr if rstan is what you have.
 #   * The generated code is source you can read and edit. That is deliberate:
 #     the package's own tests evaluate the emitted functions and compare them
 #     against log_lik().

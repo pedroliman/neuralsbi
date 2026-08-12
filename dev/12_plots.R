@@ -21,7 +21,7 @@
 #   of the infected fraction at 10 evenly spaced times. Two parameters and ten
 #   outcomes, which is a convenient size for every plot here.
 #
-# Runtime: about 3 minutes on a laptop CPU.
+# Runtime: about 5 minutes on a laptop CPU.
 
 library(neuralsbi)
 
@@ -62,7 +62,7 @@ simulator <- function(theta) {
 
 fit <- npe(prior, simulator, n_simulations = 4000,
            density_estimator = if (has_torch) "maf" else "linear_gaussian",
-           seed = 1)
+           max_epochs = 150L, patience = 10L, seed = 1)
 
 theta_true <- c(beta = 0.4, gamma = 0.125)
 set.seed(9)
@@ -124,6 +124,14 @@ q <- plot_posterior_predictive(pred, x_obs)
 print(round(q, 2))
 save_plot(ggplot2::last_plot(), "posterior_predictive.png")
 
+# Expect several of these to come back at 0.00 or 1.00. The posterior here is
+# very tight (ten binomial observations of 1000 draws each are informative), so
+# the predictive band is narrow, and a fit that is off by a fraction of a
+# posterior sd in gamma misses the observation at the ends of the time grid.
+# The SBC below says this fit is calibrated ON AVERAGE, which is not the same
+# as being right at this particular observation. Both statements are true and
+# both are worth reporting.
+
 # labels default to the simulator's output names.
 plot_posterior_predictive(pred, x_obs,
                           labels = paste0("day", round(seq(1, 160, length.out = 10))),
@@ -133,7 +141,7 @@ plot_posterior_predictive(pred, x_obs,
 # plot_sbc()
 # ---------------------------------------------------------------------------
 
-sbc_res <- sbc(fit, simulator, n_sbc = 300L, n_posterior_samples = 500L,
+sbc_res <- sbc(fit, simulator, n_sbc = 200L, n_posterior_samples = 400L,
                seed = 1)
 print(sbc_res)
 
@@ -164,7 +172,7 @@ plot_coverage(sbc_res, levels = c(0.5, 0.8, 0.9, 0.95))
 # plot_tarp()
 # ---------------------------------------------------------------------------
 
-tarp_res <- tarp(fit, simulator, n_tarp = 300L, n_posterior_samples = 500L,
+tarp_res <- tarp(fit, simulator, n_tarp = 200L, n_posterior_samples = 400L,
                  seed = 1)
 line <- plot_tarp(tarp_res)
 print(round(head(line), 3))
@@ -188,7 +196,7 @@ save_plot(gg, "coverage_titled.png")
 # And the data is always there if you would rather draw it yourself.
 df <- as.data.frame(draws)
 gg2 <- ggplot2::ggplot(df, ggplot2::aes(beta, gamma)) +
-  ggplot2::geom_hex(bins = 40) +
+  ggplot2::geom_bin2d(bins = 40) +
   ggplot2::geom_point(x = theta_true[["beta"]], y = theta_true[["gamma"]],
                       colour = "firebrick", size = 3, shape = 4, stroke = 1.5) +
   ggplot2::scale_fill_viridis_c() +
