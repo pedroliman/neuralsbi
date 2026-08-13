@@ -1,5 +1,37 @@
 # Changelog
 
+## neuralsbi 0.5.28
+
+- **`posterior(fit, sampler = "stan")` now falls back to rstan (or says
+  clearly what to run) instead of crashing when cmdstanr has no CmdStan
+  behind it.**
+  [`stan_sample_nle()`](https://neuralsbi.pedrodelima.com/reference/stan_sample_nle.md)
+  (`R/stan.R`) picked its backend with a bare
+  [`requireNamespace("cmdstanr", quietly = TRUE)`](https://rdrr.io/r/base/ns-load.html),
+  which only checks that the R package is installed.
+  `install.packages("cmdstanr")` does not install CmdStan itself – that
+  is the separate, network-dependent
+  [`cmdstanr::install_cmdstan()`](https://mc-stan.org/cmdstanr/reference/install_cmdstan.html)
+  step, which fails outright on machines that block the GitHub release
+  download it needs (many CI runners and managed environments). In that
+  state the old code always took the cmdstanr branch and failed deep
+  inside
+  [`cmdstanr::cmdstan_model()`](https://mc-stan.org/cmdstanr/reference/cmdstan_model.html)
+  with “CmdStan path has not been set yet.”, even when a working rstan
+  install was sitting right there. A new `cmdstan_ready()` helper checks
+  `cmdstanr::cmdstan_version(error_on_NA = FALSE)` as well as the
+  package, mirroring the package-vs-runtime distinction
+  [`require_torch()`](https://neuralsbi.pedrodelima.com/reference/require_torch.md)
+  already draws for the torch backend.
+  [`stan_sample_nle()`](https://neuralsbi.pedrodelima.com/reference/stan_sample_nle.md)
+  now uses it to pick the backend: it falls back to rstan (with a
+  message explaining why) when cmdstanr is installed but CmdStan is not,
+  and only errors when there is truly nothing to fall back to – with a
+  message that tells cmdstanr-without-CmdStan apart from neither package
+  being installed, since the two have different fixes
+  ([\#172](https://github.com/pedroliman/neuralsbi/issues/172))
+  ([\#176](https://github.com/pedroliman/neuralsbi/issues/176)).
+
 ## neuralsbi 0.5.27
 
 - **[`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
@@ -30,6 +62,8 @@
   of `NaN`/`NA` per parameter with no warning, and now says so
   ([\#171](https://github.com/pedroliman/neuralsbi/issues/171))
   ([\#174](https://github.com/pedroliman/neuralsbi/issues/174)).
+
+## neuralsbi 0.5.26
 
 - **The slice sampler now validates `width` instead of letting a bad
   value crash the stepping-out loop several frames later.**
