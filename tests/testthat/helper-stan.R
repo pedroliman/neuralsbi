@@ -3,8 +3,7 @@
 # everywhere, and the tests that need a toolchain say so instead of failing.
 skip_if_no_cmdstan <- function() {
   testthat::skip_if_not_installed("cmdstanr")
-  ok <- tryCatch(!is.null(cmdstanr::cmdstan_version()), error = function(e) FALSE)
-  testthat::skip_if_not(isTRUE(ok), "CmdStan not installed")
+  testthat::skip_if_not(cmdstan_ready(), "CmdStan not installed")
 }
 
 # posterior(sampler = "stan") prefers cmdstanr and falls back to rstan, so on a
