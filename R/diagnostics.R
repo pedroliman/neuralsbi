@@ -466,6 +466,15 @@ posterior_predictive <- function(post, simulator, n = 1000L, x = NULL,
                                  sim_args = list()) {
   stopifnot(inherits(post, "nsbi_posterior"))
   theta <- sample(post, n = n, obs = x)
+  if (nrow(theta) == 0L) {
+    rate <- attr(theta, "acceptance_rate") %||% 0
+    stop(sprintf(paste0(
+      "posterior_predictive(): the posterior returned no draws inside the ",
+      "prior support at this observation (acceptance rate %.2f), so there ",
+      "is nothing to push through the simulator. This usually means the ",
+      "observation is outside the range the fit was trained on."), rate),
+      call. = FALSE)
+  }
   pred <- run_simulator(simulator, theta, sim_args = sim_args,
                         label = "Predicting")
   pred <- drop_failed_sims(NULL, pred, what = "predictive draws")$x
