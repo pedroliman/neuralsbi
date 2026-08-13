@@ -103,6 +103,77 @@ test_that("write_stan_model() checks `file` before it generates any code", {
   expect_error(write_stan_model(fit, ""), "an empty string")
 })
 
+# cmdstan_ready() and the backend dispatch in stan_sample_nle() are what
+# issue #172 is about: requireNamespace("cmdstanr") alone is TRUE whenever the
+# R package is installed, even when the separate CmdStan toolchain
+# (cmdstanr::install_cmdstan()) never was. These tests mock the checks rather
+# than needing cmdstanr/CmdStan/rstan actually present, so they run in every
+# environment, including this one, which has neither.
+
+test_that("cmdstan_ready() is FALSE when the cmdstanr package itself is missing", {
+  local_mocked_bindings(requireNamespace = function(package, ...) FALSE,
+                        .package = "base")
+  expect_false(cmdstan_ready())
+})
+
+test_that("cmdstan_ready() is FALSE when cmdstanr is installed but CmdStan is not", {
+  # Only meaningful with cmdstanr actually present, so cmdstan_version() can be
+  # mocked at all; otherwise it is covered indirectly by the test above, since
+  # requireNamespace("cmdstanr") is FALSE on a machine without the package.
+  testthat::skip_if_not_installed("cmdstanr")
+  local_mocked_bindings(cmdstan_version = function(...) stop("path not set"),
+                        .package = "cmdstanr")
+  expect_false(cmdstan_ready())
+})
+
+test_that("stan_sample_nle() uses cmdstanr when cmdstan_ready() says yes", {
+  fit <- stan_lingauss_fit()
+  ctl <- list(n_chains = 2L, warmup = 10L, thin = 1L, seed = 1L, dots = list())
+  x_obs <- matrix(stats::rnorm(4), ncol = 2)
+  local_mocked_bindings(cmdstan_ready = function() TRUE)
+  local_mocked_bindings(stan_run_cmdstanr = function(...) array(0, dim = c(2L, 2L, 2L)))
+
+  out <- stan_sample_nle(fit, x_obs, ctl, n = 4)
+  expect_equal(dim(out$draws), c(4L, 2L))
+})
+
+test_that("stan_sample_nle() falls back to rstan and says why, when cmdstanr isn't usable", {
+  fit <- stan_lingauss_fit()
+  ctl <- list(n_chains = 2L, warmup = 10L, thin = 1L, seed = 1L, dots = list())
+  x_obs <- matrix(stats::rnorm(4), ncol = 2)
+  local_mocked_bindings(cmdstan_ready = function() FALSE)
+  local_mocked_bindings(requireNamespace = function(package, ...) identical(package, "rstan"),
+                        .package = "base")
+  local_mocked_bindings(stan_run_rstan = function(...) array(0, dim = c(2L, 2L, 2L)))
+
+  expect_message(out <- stan_sample_nle(fit, x_obs, ctl, n = 4),
+                 "falling back to rstan")
+  expect_equal(dim(out$draws), c(4L, 2L))
+})
+
+test_that("stan_sample_nle() names install_cmdstan() when only the cmdstanr package is present", {
+  fit <- stan_lingauss_fit()
+  ctl <- list(n_chains = 2L, warmup = 10L, thin = 1L, seed = 1L, dots = list())
+  x_obs <- matrix(stats::rnorm(4), ncol = 2)
+  local_mocked_bindings(cmdstan_ready = function() FALSE)
+  local_mocked_bindings(requireNamespace = function(package, ...) identical(package, "cmdstanr"),
+                        .package = "base")
+
+  expect_error(stan_sample_nle(fit, x_obs, ctl, n = 4), "install_cmdstan\\(\\)")
+})
+
+test_that("stan_sample_nle() names both packages when neither is present", {
+  fit <- stan_lingauss_fit()
+  ctl <- list(n_chains = 2L, warmup = 10L, thin = 1L, seed = 1L, dots = list())
+  x_obs <- matrix(stats::rnorm(4), ncol = 2)
+  local_mocked_bindings(cmdstan_ready = function() FALSE)
+  local_mocked_bindings(requireNamespace = function(package, ...) FALSE,
+                        .package = "base")
+
+  expect_error(stan_sample_nle(fit, x_obs, ctl, n = 4),
+               "needs cmdstanr or rstan installed")
+})
+
 test_that("an NSF fit is refused with the alternatives named", {
   skip_if_no_torch()
   fit <- nle(stan_prior(), stan_sim, n_simulations = 400,

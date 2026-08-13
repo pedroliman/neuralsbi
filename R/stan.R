@@ -576,6 +576,22 @@ stan_model_blocks <- function(fit, name, packed) {
 
 # ---- running it -----------------------------------------------------------
 
+#' Is a working CmdStan toolchain available?
+#'
+#' `requireNamespace("cmdstanr")` only checks that the R package is installed.
+#' `cmdstanr` itself is a thin wrapper around a separate CmdStan install
+#' (`cmdstanr::install_cmdstan()`), and having the R package without the
+#' toolchain is common -- it's the state you're left in when
+#' `install_cmdstan()` fails or was never run. `cmdstan_version(error_on_NA =
+#' FALSE)` is the documented way to ask "is there actually a CmdStan I can
+#' call" without it raising.
+#' @keywords internal
+cmdstan_ready <- function() {
+  requireNamespace("cmdstanr", quietly = TRUE) &&
+    !is.null(tryCatch(cmdstanr::cmdstan_version(error_on_NA = FALSE),
+                      error = function(e) NULL))
+}
+
 #' Sample an NLE posterior with Stan
 #'
 #' Writes the model, compiles it, and runs NUTS. Prefers \pkg{cmdstanr} and
@@ -592,10 +608,19 @@ stan_sample_nle <- function(fit, x_obs, ctl, n, verbose = FALSE) {
   iter_warmup <- dots$iter_warmup %||% max(ctl$warmup, 200L)
   refresh <- dots$refresh %||% (if (isTRUE(verbose)) 100L else 0L)
 
-  draws <- if (requireNamespace("cmdstanr", quietly = TRUE)) {
+  draws <- if (cmdstan_ready()) {
     stan_run_cmdstanr(code, data, ctl, iter_warmup, iter_sampling, refresh)
   } else if (requireNamespace("rstan", quietly = TRUE)) {
+    message("sampler = \"stan\": cmdstanr is not usable (package missing, ",
+            "or CmdStan itself is not installed -- see ",
+            "cmdstanr::install_cmdstan()); falling back to rstan.")
     stan_run_rstan(code, data, ctl, iter_warmup, iter_sampling, refresh)
+  } else if (requireNamespace("cmdstanr", quietly = TRUE)) {
+    stop("sampler = \"stan\" found the cmdstanr package but no working ",
+         "CmdStan install.\n",
+         "Run cmdstanr::install_cmdstan(), install rstan as a fallback, ",
+         "or use the built-in sampler with sampler = \"slice\".",
+         call. = FALSE)
   } else {
     stop("sampler = \"stan\" needs cmdstanr or rstan installed.\n",
          "Install one, or use the built-in sampler with sampler = \"slice\".",
