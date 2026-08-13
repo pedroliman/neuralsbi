@@ -1,6 +1,35 @@
 # Changelog
 
-## neuralsbi 0.5.26
+## neuralsbi 0.5.27
+
+- **[`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  now errors clearly when the posterior has no draws inside the prior
+  support, instead of crashing on a dimnames assignment.** For a bounded
+  prior,
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  can legitimately return zero rows when rejection sampling never lands
+  inside the support for an observation far outside anything the fit was
+  trained on – it warns, but does not stop.
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  (`R/diagnostics.R`) passed that zero-row `theta` straight to
+  [`run_simulator()`](https://neuralsbi.pedrodelima.com/reference/run_simulator.md),
+  which produced a 0x0 matrix, and the function then ran
+  `colnames(pred) <- post$fit$x_names` against it: with `dim_x > 1` that
+  failed with the generic
+  `length of 'dimnames' [2] not equal to array extent`, naming neither
+  the function nor the actual problem, and with `dim_x == 1` it silently
+  returned a useless empty matrix instead of erroring at all.
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  now checks `nrow(theta)` right after sampling and stops with a message
+  naming the function, the acceptance rate, and the likely cause (the
+  observation being outside the range the fit was trained on) before the
+  simulator or the dimnames assignment ever run.
+  [`summary.nsbi_samples()`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
+  (`R/summaries.R`) gets the same treatment for the related silent
+  failure the issue flagged: summarizing a zero-row draw returned a row
+  of `NaN`/`NA` per parameter with no warning, and now says so
+  ([\#171](https://github.com/pedroliman/neuralsbi/issues/171))
+  ([\#174](https://github.com/pedroliman/neuralsbi/issues/174)).
 
 - **The slice sampler now validates `width` instead of letting a bad
   value crash the stepping-out loop several frames later.**
