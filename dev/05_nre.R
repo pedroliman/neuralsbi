@@ -90,9 +90,12 @@ epidemic <- function(beta, gamma) {
 #
 # Two things this is NOT. It is not that z-scoring destroys the signal: a
 # k-nearest-neighbour lookup for beta in the standardized raw series does as
-# well as in the log one (RMSE 0.065 against 0.065, prior sd 0.151). And it
-# does not carry over to npe() on this model, where the transform makes no
-# difference and the fit is simply short of simulations in 100 dimensions.
+# well as in the log one (RMSE 0.065 against 0.065, prior sd 0.151). And it is
+# not a general rule. Benchmarked across six preprocessing choices on this same
+# model with npe() instead of nre(), the raw counts win and this transform is
+# the second worst option; on the measles model in 06_embedding_networks.R the
+# ordering reverses and the log scale wins. Issue #173 has the tables. Treat
+# the transform as something to try and measure, not something to assume.
 simulator <- function(beta, gamma) {
   stats::setNames(log1p(epidemic(beta, gamma)), paste0("day", seq_len(n_days)))
 }
