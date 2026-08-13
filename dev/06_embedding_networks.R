@@ -69,11 +69,18 @@ epidemic <- function(Beta, mu_IR, rho, eta) {
   out
 }
 
-# The simulator returns log(1 + reports). Weekly counts here run from 0 to
-# several hundred across the prior, and z-scoring a series that skewed leaves
-# the estimator fitting the few large weeks and ignoring the shape. Fitting on
-# the log scale is worth more here than any change of architecture, which is
-# the general lesson: try the transform before the bigger network.
+# The simulator returns log(1 + reports). Count data has noise whose scale
+# grows with its mean, so one standard deviation per column cannot be right
+# across a prior that spans "no outbreak" to "most of the town"; on the log
+# scale the noise is closer to constant. BayesFlow applies log1p to count data
+# for this reason and disables its own standardization afterwards
+# (examples/SIR_Posterior_Estimation.ipynb).
+#
+# Do not read more into it than that. 05_nre.R measures the effect on a
+# related model and finds it real but modest, and mostly a matter of the log
+# fits being wider rather than better centred. The prior box and the takeoff
+# conditioning in the predictive check below were both changed at the same
+# time as the transform here, so nothing in this script isolates it.
 simulator <- function(Beta, mu_IR, rho, eta) {
   stats::setNames(log1p(epidemic(Beta, mu_IR, rho, eta)),
                   paste0("wk", seq_len(n_weeks)))

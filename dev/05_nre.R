@@ -63,13 +63,36 @@ epidemic <- function(beta, gamma) {
   cases
 }
 
-# The simulator returns log(1 + cases), not the counts. Across this prior a
-# daily count runs from 0 to a few hundred, and z-scoring a series that
-# skewed leaves the classifier fitting the handful of large days and ignoring
-# the shape. On the raw counts the fit below recovers beta = 0.12 against a
-# truth of 0.20; on the log scale it recovers 0.20. This is the kind of
-# preprocessing choice that matters more than the architecture, and it is
-# worth trying before reaching for a bigger network.
+# The simulator returns log(1 + cases), not the counts. Two reasons, one solid
+# and one measured.
+#
+# The solid one: for a negative-binomial or Poisson count the noise scale grows
+# with the mean, so a single per-column standard deviation is right at one
+# point on the epidemic curve and wrong everywhere else. On the log scale the
+# noise is roughly constant. And in the growth phase the parameter of interest
+# is the slope of log(cases), which is an additive feature of the log series
+# and a multiplicative one of the raw series. BayesFlow applies log1p to count
+# data for the same reason and turns its own standardization off afterwards
+# (examples/SIR_Posterior_Estimation.ipynb).
+#
+# The measured one, and it is smaller than the argument above would suggest.
+# Fitting this model three times per representation, at seeds 2024, 7 and 99,
+# against a truth of beta = 0.20:
+#
+#   raw counts  beta 0.101, 0.128, 0.129   posterior sd about 0.05
+#   log1p       beta 0.141, 0.153, 0.212   posterior sd about 0.075
+#
+# The log fits are closer in all three, but mostly by being wider rather than
+# better centred: the truth falls inside the 95% interval 3 times out of 3 on
+# the log scale and 2 out of 3 on the raw one. Both are biased low. The raw
+# fits are confidently wrong, which is the worse failure of the two, and that
+# is the honest case for the transform here.
+#
+# Two things this is NOT. It is not that z-scoring destroys the signal: a
+# k-nearest-neighbour lookup for beta in the standardized raw series does as
+# well as in the log one (RMSE 0.065 against 0.065, prior sd 0.151). And it
+# does not carry over to npe() on this model, where the transform makes no
+# difference and the fit is simply short of simulations in 100 dimensions.
 simulator <- function(beta, gamma) {
   stats::setNames(log1p(epidemic(beta, gamma)), paste0("day", seq_len(n_days)))
 }

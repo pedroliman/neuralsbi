@@ -38,3 +38,7 @@ Optional packages used, none of them required by the package itself: `ggplot2`, 
 ## A note on training controls
 
 Several scripts pass `max_epochs` and `patience` below their defaults so they finish in a few minutes. Where that happens the script says so. Use the defaults for real work.
+
+## A note on the log transform
+
+`05`, `06` and `15` hand the estimator `log(1 + counts)` rather than the counts. The reasoning, the measured size of the effect (smaller than one comparison suggests), and what other packages do about it are in the header of `05_nre.R` and in issue #173. `12_plots.R` needs no such transform because `task_sir()` emits binomial proportions rather than unbounded counts, following sbibm.

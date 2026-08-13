@@ -84,12 +84,12 @@ epidemic <- function(Beta, mu_IR, rho, eta) {
   out
 }
 
-# As in 06_embedding_networks.R, the estimator sees log(1 + reports): weekly
-# counts run from 0 to several hundred across this prior, and z-scoring a
-# series that skewed leaves the network fitting the few large weeks. The
-# particle filter below works on the raw counts, as it should, so the two
-# methods are not being handed the same numbers. They are being handed the same
-# model, which is the comparison that matters.
+# As in 06_embedding_networks.R, the estimator sees log(1 + reports), because
+# count noise scales with its mean and a single per-column standard deviation
+# cannot cover a prior this wide. The particle filter below works on the raw
+# counts, as it should, so the two methods are not handed the same numbers.
+# They are handed the same model, which is the comparison that matters, and
+# the log-likelihoods it reports are therefore directly comparable.
 simulator <- function(Beta, mu_IR, rho, eta) {
   stats::setNames(log1p(epidemic(Beta, mu_IR, rho, eta)),
                   paste0("wk", seq_len(n_weeks)))
