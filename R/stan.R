@@ -576,10 +576,33 @@ stan_model_blocks <- function(fit, name, packed) {
 
 # ---- running it -----------------------------------------------------------
 
+#' Whether cmdstanr has a working CmdStan installation behind it
+#'
+#' `requireNamespace("cmdstanr")` only checks that the R package is on the
+#' library path. `install.packages("cmdstanr")` never installs CmdStan
+#' itself -- that is the separate `cmdstanr::install_cmdstan()` step, which
+#' downloads and builds a release tarball and commonly fails on machines that
+#' block that download (many CI runners and managed environments do). In that
+#' state `requireNamespace("cmdstanr")` returns `TRUE` but
+#' `cmdstanr::cmdstan_model()` fails deep inside cmdstanr with "CmdStan path
+#' has not been set yet.", which reads like a package bug rather than a
+#' missing external toolchain. `cmdstan_version(error_on_NA = FALSE)` is
+#' cmdstanr's own way of asking whether a CmdStan install is configured
+#' without erroring, so this is the check that actually answers "can
+#' `stan_sample_nle()` use cmdstanr right now?" -- mirrors [require_torch()]'s
+#' package-vs-runtime distinction for the torch backend.
+#' @keywords internal
+cmdstan_ready <- function() {
+  requireNamespace("cmdstanr", quietly = TRUE) &&
+    !is.null(tryCatch(cmdstanr::cmdstan_version(error_on_NA = FALSE),
+                      error = function(e) NULL))
+}
+
 #' Sample an NLE posterior with Stan
 #'
 #' Writes the model, compiles it, and runs NUTS. Prefers \pkg{cmdstanr} and
-#' falls back to \pkg{rstan}.
+#' falls back to \pkg{rstan}; see [cmdstan_ready()] for why "prefers
+#' cmdstanr" checks more than whether the package is installed.
 #' @keywords internal
 stan_sample_nle <- function(fit, x_obs, ctl, n, verbose = FALSE) {
   dots <- ctl$dots
@@ -592,10 +615,26 @@ stan_sample_nle <- function(fit, x_obs, ctl, n, verbose = FALSE) {
   iter_warmup <- dots$iter_warmup %||% max(ctl$warmup, 200L)
   refresh <- dots$refresh %||% (if (isTRUE(verbose)) 100L else 0L)
 
-  draws <- if (requireNamespace("cmdstanr", quietly = TRUE)) {
+  cmdstanr_installed <- requireNamespace("cmdstanr", quietly = TRUE)
+  rstan_installed <- requireNamespace("rstan", quietly = TRUE)
+
+  draws <- if (cmdstan_ready()) {
+    verbose_cat(verbose, "Sampling with cmdstanr.\n")
     stan_run_cmdstanr(code, data, ctl, iter_warmup, iter_sampling, refresh)
-  } else if (requireNamespace("rstan", quietly = TRUE)) {
+  } else if (rstan_installed) {
+    # cmdstanr with no CmdStan behind it is the common broken state (#172):
+    # falling back to a working rstan is friendlier than erroring when the
+    # other backend is right there.
+    if (cmdstanr_installed) {
+      message("cmdstanr is installed, but CmdStan itself is not set up ",
+              "(cmdstanr::cmdstan_version() found none); falling back to ",
+              "rstan.\nRun cmdstanr::install_cmdstan() to use cmdstanr instead.")
+    }
     stan_run_rstan(code, data, ctl, iter_warmup, iter_sampling, refresh)
+  } else if (cmdstanr_installed) {
+    stop("cmdstanr is installed, but CmdStan itself is not set up.\n",
+         "Run cmdstanr::install_cmdstan(), or install.packages('rstan') for ",
+         "a fallback that needs no separate toolchain install.", call. = FALSE)
   } else {
     stop("sampler = \"stan\" needs cmdstanr or rstan installed.\n",
          "Install one, or use the built-in sampler with sampler = \"slice\".",

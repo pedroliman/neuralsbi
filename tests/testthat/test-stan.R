@@ -261,3 +261,85 @@ test_that("the rstan fallback compiles, samples, and hands back the same shape",
   reference <- task$reference_posterior(x_obs, 2000)
   expect_lt(max(abs(colMeans(flat) - colMeans(reference))), 0.06)
 })
+
+# ---- cmdstan readiness / backend dispatch (#172) ---------------------------
+#
+# install.packages("cmdstanr") installs the R package but not the CmdStan
+# toolchain -- cmdstanr::install_cmdstan() is a separate, network-dependent
+# step -- so "requireNamespace('cmdstanr')" and "cmdstanr can actually compile
+# a model" are different facts. These tests exercise cmdstan_ready() and
+# stan_sample_nle()'s branch selection with mocked bindings, the same pattern
+# test-utils.R uses for require_torch()'s package-vs-runtime branches, so they
+# run whether or not cmdstanr, rstan or CmdStan itself are actually present.
+
+test_that("cmdstan_ready() is FALSE when cmdstanr is not installed", {
+  local_mocked_bindings(requireNamespace = function(package, ...) FALSE,
+                        .package = "base")
+  expect_false(cmdstan_ready())
+})
+
+test_that("cmdstan_ready() is FALSE when cmdstan_version() finds no CmdStan", {
+  skip_if_not_installed("cmdstanr")
+  local_mocked_bindings(cmdstan_version = function(...) NULL, .package = "cmdstanr")
+  expect_false(cmdstan_ready())
+})
+
+test_that("cmdstan_ready() is FALSE when cmdstan_version() errors", {
+  # cmdstan_version(error_on_NA = FALSE) is documented to return NULL rather
+  # than error, but cmdstan_ready() tolerates an error too: this is the
+  # "package installed, toolchain broken" scenario the issue asks to cover.
+  skip_if_not_installed("cmdstanr")
+  local_mocked_bindings(cmdstan_version = function(...) stop("no CmdStan path set"),
+                        .package = "cmdstanr")
+  expect_false(cmdstan_ready())
+})
+
+test_that("cmdstan_ready() is TRUE when CmdStan reports a version", {
+  skip_if_not_installed("cmdstanr")
+  local_mocked_bindings(cmdstan_version = function(...) "2.34.1", .package = "cmdstanr")
+  expect_true(cmdstan_ready())
+})
+
+test_that("stan_sample_nle() uses cmdstanr when it is actually ready", {
+  fit <- stan_lingauss_fit(n = 200)
+  local_mocked_bindings(cmdstan_ready = function() TRUE)
+  local_mocked_bindings(
+    stan_run_cmdstanr = function(...) array(0, dim = c(1, 1, fit$dim_theta)),
+    stan_run_rstan = function(...) stop("should not be called")
+  )
+  ctl <- list(n_chains = 1L, warmup = 10L, dots = list())
+  expect_no_error(stan_sample_nle(fit, matrix(0, 1, fit$dim_x), ctl, n = 1L))
+})
+
+test_that("stan_sample_nle() falls back to rstan when cmdstanr has no CmdStan", {
+  fit <- stan_lingauss_fit(n = 200)
+  local_mocked_bindings(cmdstan_ready = function() FALSE)
+  local_mocked_bindings(requireNamespace = function(package, ...) TRUE, .package = "base")
+  local_mocked_bindings(
+    stan_run_cmdstanr = function(...) stop("should not be called"),
+    stan_run_rstan = function(...) array(0, dim = c(1, 1, fit$dim_theta))
+  )
+  ctl <- list(n_chains = 1L, warmup = 10L, dots = list())
+  expect_message(stan_sample_nle(fit, matrix(0, 1, fit$dim_x), ctl, n = 1L),
+                 "falling back to rstan")
+})
+
+test_that("stan_sample_nle() points at install_cmdstan() when only cmdstanr is installed", {
+  fit <- stan_lingauss_fit(n = 200)
+  local_mocked_bindings(cmdstan_ready = function() FALSE)
+  local_mocked_bindings(
+    requireNamespace = function(package, ...) identical(package, "cmdstanr"),
+    .package = "base")
+  ctl <- list(n_chains = 1L, warmup = 10L, dots = list())
+  expect_error(stan_sample_nle(fit, matrix(0, 1, fit$dim_x), ctl, n = 1L),
+               "install_cmdstan")
+})
+
+test_that("stan_sample_nle() errors clearly when neither backend is installed", {
+  fit <- stan_lingauss_fit(n = 200)
+  local_mocked_bindings(cmdstan_ready = function() FALSE)
+  local_mocked_bindings(requireNamespace = function(package, ...) FALSE, .package = "base")
+  ctl <- list(n_chains = 1L, warmup = 10L, dots = list())
+  expect_error(stan_sample_nle(fit, matrix(0, 1, fit$dim_x), ctl, n = 1L),
+               "needs cmdstanr or rstan installed")
+})
