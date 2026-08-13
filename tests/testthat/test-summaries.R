@@ -131,6 +131,22 @@ test_that("printing samples with no acceptance rate omits that line", {
   expect_false(any(grepl("acceptance rate", lines)))
 })
 
+test_that("summary() warns on a zero-draw sample instead of silently returning NA", {
+  # Same setup as the posterior_predictive() zero-draws test (issue #171): an
+  # observation far outside the bounded prior's support empties every draw.
+  set.seed(1)
+  prior <- prior_uniform(c(mu = -1, nu = -1), c(mu = 1, nu = 1))
+  simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.05), b = nu + rnorm(1, sd = 0.05))
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 1)
+  post <- posterior(fit, x_obs = c(6, 6))
+  draws <- suppressWarnings(sample(post, 50))
+  expect_equal(nrow(draws), 0L)
+
+  expect_warning(s <- summary(draws), "0 samples")
+  expect_true(all(is.nan(s$mean) | is.na(s$mean)))
+})
+
 test_that("plot_coverage runs on an sbc result and returns coverage", {
   skip_if_no_ggplot2()
   fit <- fit_lg()

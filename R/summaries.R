@@ -35,6 +35,11 @@ summary.nsbi_samples <- function(object,
                                  probs = c(0.025, 0.25, 0.5, 0.75, 0.975),
                                  ...) {
   m <- unclass(object)
+  if (nrow(m) == 0L) {
+    warning("summary(): 0 samples, so mean/sd/quantiles are all NA. ",
+            "The posterior returned no draws inside the prior support; ",
+            "see ?sample.nsbi_posterior.", call. = FALSE)
+  }
   q <- t(apply(m, 2, stats::quantile, probs = probs))
   colnames(q) <- paste0("q", 100 * probs)
   out <- data.frame(

@@ -141,6 +141,23 @@ test_that("posterior_predictive returns simulator-shaped output", {
   expect_equal(nrow(pp), 300L)
 })
 
+test_that("posterior_predictive() errors clearly when the posterior has no draws in support", {
+  # An observation far outside anything the bounded prior can explain drives
+  # rejection sampling to zero draws (issue #171). Before the fix this hit
+  # `dimnames<-` on a 0x0 matrix and errored with a message that named neither
+  # the function nor the actual problem.
+  set.seed(1)
+  prior <- prior_uniform(c(mu = -1, nu = -1), c(mu = 1, nu = 1))
+  simulator <- function(mu, nu) c(a = mu + rnorm(1, sd = 0.05), b = nu + rnorm(1, sd = 0.05))
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 1)
+  post <- posterior(fit, x_obs = c(6, 6))
+  expect_error(
+    suppressWarnings(posterior_predictive(post, simulator, n = 50, x = c(6, 6))),
+    "posterior_predictive\\(\\): the posterior returned no draws"
+  )
+})
+
 test_that("plot_posterior_predictive runs and locates the observation", {
   skip_if_no_ggplot2()
   set.seed(2)
