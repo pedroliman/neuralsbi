@@ -19,6 +19,40 @@ test_that("sbc returns ranks of the right shape and reasonable calibration", {
   expect_true(all(res$uniformity_pvalue > 0.001))
 })
 
+test_that("sbc() is well calibrated under a bounded prior that actively truncates", {
+  # Every existing calibration test here uses an unbounded prior_normal(), so
+  # none of them exercises sample()/log_prob()'s rejection-sampling and
+  # acceptance-renormalization path in R/posterior.R, or bins ranks drawn
+  # through it in sbc(). This one does, and makes the truncation bite hard:
+  # for a uniform prior on [-1, 1]^2 and simulator x = theta + N(0, sigma^2),
+  # Bayes' rule gives an exact closed form, theta | x ~ N(x, sigma^2 I)
+  # restricted to the box, so setting linear_gaussian's B/Sigma by hand to the
+  # identity mean and sigma^2 I makes its *unbounded* de exact; the only code
+  # left to trust is the rejection sampling and renormalization sbc() drives
+  # it through. sigma = 0.5 against a box radius of 1 means over half of the
+  # unbounded draws land outside the box at a typical x (median acceptance
+  # rate here is a bit above 0.5) -- this is not truncation at the margins.
+  # If either R/posterior.R or the rank binning in sbc() itself were wrong,
+  # this would come back badly miscalibrated the same way #169's SIR fit did.
+  set.seed(1)
+  d <- 2; sigma <- 0.3; box <- 1
+  prior <- prior_uniform(low = rep(-box, d), high = rep(box, d))
+  simulator <- function(theta) theta + rnorm(length(theta), sd = sigma)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian", standardize = FALSE)
+  fit$de$B <- rbind(0, diag(d))
+  fit$de$Sigma <- diag(sigma^2, d)
+  fit$de$chol <- chol(fit$de$Sigma)
+
+  res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 200, seed = 1)
+  expect_true(all(res$uniformity_pvalue > 0.01))
+  cov <- expected_coverage(res, levels = c(0.5, 0.8, 0.9))
+  # a calibrated posterior lands close to the nominal diagonal at every level;
+  # 0.15 is a loose band for n_sbc = 100 trials, not a tight numerical pin
+  expect_true(all(abs(cov$param1 - cov$nominal) < 0.15))
+  expect_true(all(abs(cov$param2 - cov$nominal) < 0.15))
+})
+
 test_that("print.nsbi_sbc() labels each parameter's p-value when the fit is named", {
   set.seed(2)
   prior <- prior_normal(mean = c(beta = 0, rho = 0), sd = 1)
@@ -41,6 +75,33 @@ test_that("expected_coverage produces a monotone-ish curve near the diagonal", {
   expect_true(all(cov$param1 >= 0 & cov$param1 <= 1))
   # 90% interval should cover clearly more often than the 50% interval
   expect_gt(cov$param1[2], cov$param1[1])
+})
+
+test_that("expected_coverage() keeps the right shape for a single-parameter fit", {
+  # ranks has one column here, so colMeans() inside expected_coverage()'s
+  # per-level sapply() returns a length-1 result. sapply() then simplifies
+  # those to a plain length(levels) vector instead of a matrix, and the
+  # subsequent t() turned that into a 1-row matrix -- one column per nominal
+  # level, each holding the same three numbers, relabeled "param1"/"param2"/
+  # "param3" as if there were three parameters instead of one. The fix uses
+  # vapply() and restores the dropped dimension explicitly.
+  set.seed(9)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 2000,
+             density_estimator = "linear_gaussian")
+  res <- sbc(fit, simulator, n_sbc = 300, n_posterior_samples = 300, seed = 3)
+  cov <- expected_coverage(res, levels = c(0.5, 0.8, 0.9))
+  expect_equal(dim(cov), c(3L, 2L))
+  expect_named(cov, c("nominal", "param1"))
+  # a well-specified exact estimator should track the diagonal, and strictly
+  # increase with the nominal level rather than repeat one triplet of values
+  # across every row (the shape the bug produced).
+  expect_true(all(diff(cov$param1) > 0))
+  # cross-check the 50% row directly against the same ranks the sbc() result
+  # carries, independent of expected_coverage()'s own reshaping
+  u <- res$ranks / res$n_posterior_samples
+  expect_equal(cov$param1[1], mean(u > 0.25 & u < 0.75))
 })
 
 test_that("expected_coverage() refuses levels outside (0, 1)", {

@@ -238,11 +238,18 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
   levels <- check_probs(levels, "levels")
   L <- sbc_result$n_posterior_samples
   u <- sbc_result$ranks / L  # approx posterior CDF at truth ~ Uniform(0,1)
-  emp <- sapply(levels, function(a) {
+  emp <- vapply(levels, function(a) {
     lo <- (1 - a) / 2
     hi <- 1 - lo
     colMeans(u > lo & u < hi)
-  })
+  }, numeric(ncol(u)))
+  # vapply drops the params x levels matrix to a plain length(levels) vector
+  # when ncol(u) == 1 (a single-parameter fit), since each call's own return
+  # value is then also length 1. Put the dropped dimension back before
+  # transposing, or the lone parameter's per-level coverage gets read back out
+  # column-major as one row (i.e. one fake parameter) per nominal level below,
+  # each holding the same three numbers repeated across every level.
+  if (is.null(dim(emp))) dim(emp) <- c(ncol(u), length(levels))
   emp <- t(emp)
   colnames(emp) <- colnames(sbc_result$ranks) %||% paste0("param", seq_len(ncol(emp)))
   data.frame(nominal = levels, emp, row.names = NULL, check.names = FALSE)
