@@ -1,5 +1,60 @@
 # Changelog
 
+## neuralsbi 0.5.29
+
+- **[`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  now returns the right shape for a single-parameter fit.** For a fit
+  with one parameter, `sbc_result$ranks` has one column, so
+  [`colMeans()`](https://rdrr.io/r/base/colSums.html) inside
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)’s
+  (`R/diagnostics.R`) per-level
+  [`sapply()`](https://rdrr.io/r/base/lapply.html) returned a length-1
+  result at every nominal level;
+  [`sapply()`](https://rdrr.io/r/base/lapply.html) then simplified those
+  to a plain `length(levels)` vector instead of a matrix, and the
+  following [`t()`](https://rdrr.io/r/base/t.html) turned that into a
+  single-row matrix – one column per nominal level instead of one column
+  for the parameter.
+  [`colnames()`](https://rdrr.io/r/base/colnames.html) then labeled
+  those columns `param1`/`param2`/`param3` as if there were three
+  parameters, each holding the same three numbers repeated across every
+  nominal level, so the table read as flat (and wrongly shaped)
+  regardless of how well calibrated the fit actually was.
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  now uses [`vapply()`](https://rdrr.io/r/base/lapply.html) and restores
+  the dimension it drops for a one-column `ranks` matrix before
+  transposing, matching the shape it already produced correctly for two
+  or more parameters. Found while investigating
+  [\#169](https://github.com/pedroliman/neuralsbi/issues/169): a
+  one-parameter fit is not what that issue’s SIR model uses (three
+  parameters), so this bug is not the cause of the undercoverage
+  reported there, but it is a real, previously uncaught defect in any
+  single-parameter calibration check
+  ([\#169](https://github.com/pedroliman/neuralsbi/issues/169))
+  ([\#177](https://github.com/pedroliman/neuralsbi/issues/177)).
+- Test coverage: added a regression test pinning
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)’s
+  calibration under a uniform prior that actively truncates the fitted
+  density – a `linear_gaussian` fit with its `B`/`Sigma` set by hand to
+  the exact conditional (`theta | x ~ N(x, sigma^2 I)` restricted to the
+  prior box, the closed form for a flat prior and additive Gaussian
+  noise), so the only code path left to trust is the rejection-sampling
+  and acceptance-renormalization in `R/posterior.R` and the rank binning
+  in [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)
+  itself. No existing test checked SBC calibration with an *exact* fit
+  under an *actively* truncating bounded prior: the existing calibration
+  tests all use an unbounded
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md),
+  and the existing bounded-prior tests only use
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  to check the “short draw errors” behavior with a fit deliberately
+  broken to leak. This test comes back well calibrated, which rules out
+  both of [\#169](https://github.com/pedroliman/neuralsbi/issues/169)’s
+  bounded-prior-handling and rank-scoring candidates as the source of
+  that issue’s undercoverage
+  ([\#169](https://github.com/pedroliman/neuralsbi/issues/169))
+  ([\#177](https://github.com/pedroliman/neuralsbi/issues/177)).
+
 ## neuralsbi 0.5.28
 
 - **`posterior(fit, sampler = "stan")` now falls back to rstan (or says
