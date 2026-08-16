@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.31</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.32</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,10 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.32" id="neuralsbi-0532">neuralsbi 0.5.32<a class="anchor" aria-label="anchor" href="#neuralsbi-0532"></a></h2>
+<ul><li>Documentation only, no behavior change: <code><a href="../reference/standardizer_log_jac.html">standardizer_log_jac()</a></code>’s roxygen docstring (<code>R/standardize.R</code>) named the wrong transform direction. It said “inverse standardization (standardized -&gt; original)”, but the value it returns, <code>-sum(log(std$scale))</code>, is the Jacobian of the <em>forward</em> transform <code>z = (x - center) / scale</code> (original -&gt; standardized); the code was always correct, every call site already adds it to a standardized-space log-density to recover original units. The docstring and <code>man/standardizer_log_jac.Rd</code> now describe the forward direction (<a href="https://github.com/pedroliman/neuralsbi/issues/183" class="external-link">#183</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/184" class="external-link">#184</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.31" id="neuralsbi-0531">neuralsbi 0.5.31<a class="anchor" aria-label="anchor" href="#neuralsbi-0531"></a></h2>
 <ul><li>
