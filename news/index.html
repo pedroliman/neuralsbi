@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.33" id="neuralsbi-0533">neuralsbi 0.5.33<a class="anchor" aria-label="anchor" href="#neuralsbi-0533"></a></h2>
+<ul><li>
+<strong><code>mcmc_init(strategy = "resample")</code> no longer starts several chains from identical points.</strong> It drew one pool of <code>max(n_pool, n_chains)</code> prior draws and kept whichever landed inside the posterior’s support; when that left fewer than <code>n_chains</code> of them, it padded the shortfall with <code>rep_len(ok, n_chains)</code>, recycling the same indices so several slice-sampler chains began from the same point (<code>R/mcmc.R</code>). Split-Rhat and bulk ESS both assume the chains they compare started from distinct locations, so a recycled start weakens mode coverage and understates disagreement between chains. A new <code><a href="../reference/mcmc_init_resample.html">mcmc_init_resample()</a></code> draws more pools and accumulates their finite draws, the way <code><a href="../reference/mcmc_init_proposal.html">mcmc_init_proposal()</a></code> already does for <code>"proposal"</code>, until <code>n_chains</code> distinct finite draws are collected (up to 20 attempts) and only then runs the weighted resample without replacement. If the budget runs out first, the error distinguishes a genuinely degenerate surrogate (no draw at all landed in support) from a merely low acceptance rate (some did, just not enough) (<a href="https://github.com/pedroliman/neuralsbi/issues/182" class="external-link">#182</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/185" class="external-link">#185</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.32" id="neuralsbi-0532">neuralsbi 0.5.32<a class="anchor" aria-label="anchor" href="#neuralsbi-0532"></a></h2>
 <ul><li>Documentation only, no behavior change: <code><a href="../reference/standardizer_log_jac.html">standardizer_log_jac()</a></code>’s roxygen docstring (<code>R/standardize.R</code>) named the wrong transform direction. It said “inverse standardization (standardized -&gt; original)”, but the value it returns, <code>-sum(log(std$scale))</code>, is the Jacobian of the <em>forward</em> transform <code>z = (x - center) / scale</code> (original -&gt; standardized); the code was always correct, every call site already adds it to a standardized-space log-density to recover original units. The docstring and <code>man/standardizer_log_jac.Rd</code> now describe the forward direction (<a href="https://github.com/pedroliman/neuralsbi/issues/183" class="external-link">#183</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/184" class="external-link">#184</a>).</li>

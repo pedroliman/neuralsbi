@@ -4,9 +4,12 @@
 prior, weights it by the posterior density and resamples without
 replacement: a sampling-importance-resampling start that puts the chains
 where the mass is, which matters because slice sampling has no
-adaptation phase to rescue a bad start. `"proposal"` just takes prior
-draws, keeping whichever land inside the posterior's support, which is
-cheaper per draw but wastes every draw the posterior excludes – see
+adaptation phase to rescue a bad start. If one pool does not contain
+`n_chains` finite draws, more are drawn and pooled in – see
+[`mcmc_init_resample()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_resample.md).
+`"proposal"` just takes prior draws, keeping whichever land inside the
+posterior's support, which is cheaper per draw but wastes every draw the
+posterior excludes – see
 [`mcmc_init_proposal()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_proposal.md).
 
 ## Usage
