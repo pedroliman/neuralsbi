@@ -83,8 +83,9 @@ invert_standardizer <- function(std, z) {
   sweep(sweep(z, 2, std$scale, `*`), 2, std$center, `+`)
 }
 
-#' Log absolute Jacobian determinant of the *inverse* standardization
-#' (standardized -> original). Constant, so a scalar.
+#' Log absolute Jacobian determinant of the forward standardization
+#' (original -> standardized, `z = (x - center) / scale`). Constant, so a
+#' scalar, since standardization is affine.
 #' @keywords internal
 standardizer_log_jac <- function(std) {
   -sum(log(std$scale))
