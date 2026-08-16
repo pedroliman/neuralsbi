@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.30</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.31</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.31" id="neuralsbi-0531">neuralsbi 0.5.31<a class="anchor" aria-label="anchor" href="#neuralsbi-0531"></a></h2>
+<ul><li>
+<strong><code>mcmc_init(strategy = "proposal")</code> no longer fails on an ordinary, non-degenerate posterior with a modest acceptance rate.</strong> It drew one batch of <code>n_chains</code> prior draws and required all of them to be jointly finite, retried whole-batch up to 20 times (<code>R/mcmc.R</code>). If the posterior excludes even a third of the prior’s support – an entirely ordinary case, not a degenerate one – a batch is finite with probability <code>0.65^20</code>, about 3e-4, so the retries almost never succeeded, and the error claimed the surrogate likelihood “may be degenerate” regardless of why the batch failed. A new <code><a href="../reference/mcmc_init_proposal.html">mcmc_init_proposal()</a></code> pools finite draws across attempts instead, the way <code>"resample"</code> already pools its candidates, so the chance of collecting <code>n_chains</code> finite starting points grows with the total number of prior draws tried rather than with the luck of one batch. If the budget still comes up short, the error now distinguishes a truly degenerate surrogate (no draw at all landed in support) from a merely low acceptance rate (some did, just not enough), and only the former says “degenerate” (<a href="https://github.com/pedroliman/neuralsbi/issues/179" class="external-link">#179</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/181" class="external-link">#181</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.30" id="neuralsbi-0530">neuralsbi 0.5.30<a class="anchor" aria-label="anchor" href="#neuralsbi-0530"></a></h2>
 <ul><li>

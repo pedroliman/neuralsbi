@@ -68,10 +68,17 @@ mcmc_posterior(
 
   `"resample"` (default, and `sbi`'s) weights a pool of prior draws by
   the posterior density and resamples the starting points from it;
-  `"proposal"` starts from plain prior draws. The pool is 1000 draws,
-  set with `n_pool`. `sbi` uses 10,000 *per chain*, which on a surrogate
-  summed over thousands of observations is a large bill before the first
-  MCMC step.
+  `"proposal"` skips the weighting and keeps whichever prior draws land
+  inside the posterior's support, drawing more pools as needed.
+  `"proposal"` is cheaper per accepted draw, but every draw the
+  posterior excludes is wasted: if only a fraction `a` of the prior's
+  mass survives, roughly `1 / a` draws are needed per starting point, so
+  a posterior that rules out most of the prior can make `"proposal"` far
+  slower than `"resample"` to find enough starting points, and it errors
+  out once its draw budget is spent. The pool is 1000 draws, set with
+  `n_pool`. `sbi` uses 10,000 *per chain*, which on a surrogate summed
+  over thousands of observations is a large bill before the first MCMC
+  step.
 
 - seed:
 

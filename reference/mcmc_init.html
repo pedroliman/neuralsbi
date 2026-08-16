@@ -3,11 +3,15 @@
 weights it by the posterior density and resamples without replacement: a
 sampling-importance-resampling start that puts the chains where the mass is,
 which matters because slice sampling has no adaptation phase to rescue a bad
-start. &quot;proposal&quot; just takes prior draws."><meta property="og:description" content="&quot;resample&quot; (the default, and sbi's) draws a large pool from the prior,
+start. &quot;proposal&quot; just takes prior draws, keeping whichever land inside
+the posterior's support, which is cheaper per draw but wastes every draw the
+posterior excludes – see mcmc_init_proposal()."><meta property="og:description" content="&quot;resample&quot; (the default, and sbi's) draws a large pool from the prior,
 weights it by the posterior density and resamples without replacement: a
 sampling-importance-resampling start that puts the chains where the mass is,
 which matters because slice sampling has no adaptation phase to rescue a bad
-start. &quot;proposal&quot; just takes prior draws."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/reference/figures/logo.png"><meta property="og:image:alt" content="neuralsbi hex logo: a neural network feeding a posterior density"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
+start. &quot;proposal&quot; just takes prior draws, keeping whichever land inside
+the posterior's support, which is cheaper per draw but wastes every draw the
+posterior excludes – see mcmc_init_proposal()."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/reference/figures/logo.png"><meta property="og:image:alt" content="neuralsbi hex logo: a neural network feeding a posterior density"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:creator" content="@PedroNdeLima"><meta name="twitter:site" content="@PedroNdeLima"><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=G-49QZC8ZP1X"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -55,7 +59,7 @@ start. &quot;proposal&quot; just takes prior draws."><meta property="og:image" c
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.30</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.31</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -92,7 +96,9 @@ start. &quot;proposal&quot; just takes prior draws."><meta property="og:image" c
 weights it by the posterior density and resamples without replacement: a
 sampling-importance-resampling start that puts the chains where the mass is,
 which matters because slice sampling has no adaptation phase to rescue a bad
-start. <code>"proposal"</code> just takes prior draws.</p>
+start. <code>"proposal"</code> just takes prior draws, keeping whichever land inside
+the posterior's support, which is cheaper per draw but wastes every draw the
+posterior excludes – see <code><a href="mcmc_init_proposal.html">mcmc_init_proposal()</a></code>.</p>
     </div>
 
     <div class="section level2">
