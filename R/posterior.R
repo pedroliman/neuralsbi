@@ -302,7 +302,32 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
     if (bounded && !within_support(prior, par)) return(Inf)
     -log_prob(post, par, x = x, normalize = FALSE)
   }
-  opt <- stats::optim(start, neg, method = "Nelder-Mead")
+  # Nelder-Mead is a simplex search: in one dimension the simplex degenerates
+  # to a single interval, which optim() itself warns is unreliable ("use
+  # \"Brent\" or optimize() directly"). A bounded 1-D prior with both a lower
+  # and an upper limit gets Brent, which searches that exact interval. A
+  # one-sided bound can't give Brent an interval, but plain BFGS isn't safe
+  # there either: its finite-difference gradient probes both sides of the
+  # current point, and a probe that crosses the one bound that does exist
+  # lands in the Inf region `neg()` masks with, which optim() reports as a
+  # "non-finite finite-difference value" error rather than a warning.
+  # L-BFGS-B takes exactly this shape of box (Inf on the missing side) and
+  # never steps outside it. A fully unbounded prior gets plain BFGS, which
+  # needs no interval and doesn't trigger the Nelder-Mead-specific warning.
+  # Multi-dimensional posteriors are unaffected.
+  opt <- if (fit$dim_theta == 1L) {
+    if (!is.null(prior$lower) && !is.null(prior$upper)) {
+      stats::optim(start, neg, method = "Brent",
+                   lower = prior$lower, upper = prior$upper)
+    } else if (bounded) {
+      stats::optim(start, neg, method = "L-BFGS-B",
+                   lower = prior$lower %||% -Inf, upper = prior$upper %||% Inf)
+    } else {
+      stats::optim(start, neg, method = "BFGS")
+    }
+  } else {
+    stats::optim(start, neg, method = "Nelder-Mead")
+  }
   out <- opt$par
   if (is.null(names(out))) names(out) <- fit$param_names
   out

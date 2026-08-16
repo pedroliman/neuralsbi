@@ -153,7 +153,7 @@ test_that("map_estimate() stays inside a bounded prior's support", {
   fit$de$B[1, ] <- fit$de$B[1, ] + 0.5
   post <- posterior(fit, x_obs = 0.9)
 
-  map <- suppressWarnings(map_estimate(post))
+  map <- map_estimate(post)
   expect_true(within_support(prior, matrix(map, nrow = 1)))
 })
 
@@ -174,7 +174,7 @@ test_that("map_estimate() respects a one-sided (lower-only) bound", {
   fit$de$B[1, ] <- fit$de$B[1, ] - 0.3
   post <- posterior(fit, x_obs = 0.1)
 
-  map <- suppressWarnings(map_estimate(post))
+  map <- map_estimate(post)
   expect_true(within_support(prior, matrix(map, nrow = 1)))
 })
 
@@ -186,9 +186,37 @@ test_that("map_estimate() on an unbounded prior lands between the prior mean and
              density_estimator = "linear_gaussian")
   post <- posterior(fit, x_obs = 0.5)
 
-  map <- suppressWarnings(map_estimate(post))
+  map <- map_estimate(post)
   expect_true(is.finite(map))
   expect_true(map > 0 && map < 0.5)
+})
+
+# GitHub #186: map_estimate() always optimized with Nelder-Mead, which
+# optim() itself warns is unreliable for a length-1 `start` ("one-dimensional
+# optimization by Nelder-Mead is unreliable: use \"Brent\" or optimize()
+# directly"). A 1-parameter posterior should now take the Brent (fully
+# bounded), L-BFGS-B (one-sided bound) or BFGS (unbounded) path instead and
+# never raise that warning.
+test_that("map_estimate() raises no Nelder-Mead warning for a 1-D bounded posterior", {
+  set.seed(19)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.05)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  expect_no_warning(map_estimate(post))
+})
+
+test_that("map_estimate() raises no Nelder-Mead warning for a 1-D unbounded posterior", {
+  set.seed(20)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  expect_no_warning(map_estimate(post))
 })
 
 # GitHub #159: map_estimate() seeds its search with sample(post, n = n_init),
