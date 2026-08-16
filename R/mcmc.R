@@ -239,7 +239,9 @@ check_slice_width <- function(width) {
 #' weights it by the posterior density and resamples without replacement: a
 #' sampling-importance-resampling start that puts the chains where the mass is,
 #' which matters because slice sampling has no adaptation phase to rescue a bad
-#' start. `"proposal"` just takes prior draws.
+#' start. `"proposal"` just takes prior draws, keeping whichever land inside
+#' the posterior's support, which is cheaper per draw but wastes every draw the
+#' posterior excludes -- see [mcmc_init_proposal()].
 #'
 #' Two departures from `sbi`, both about the case this exists for. `sbi` draws
 #' its pool once per chain, so 20 chains cost 20 pools; one pool shared across
@@ -256,12 +258,7 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
                       n_pool = 1000L) {
   strategy <- match.arg(strategy)
   if (strategy == "proposal") {
-    for (attempt in seq_len(20L)) {
-      cand <- sample_prior(prior, n_chains)
-      if (all(is.finite(log_prob_fn(cand)))) return(cand)
-    }
-    stop("Could not find prior draws with finite posterior density after 20 ",
-         "attempts. The surrogate likelihood may be degenerate.", call. = FALSE)
+    return(mcmc_init_proposal(prior, log_prob_fn, n_chains, n_pool))
   }
 
   pool <- sample_prior(prior, max(n_pool, n_chains))
@@ -282,6 +279,57 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
   keys <- lp[ok] - log(-log(stats::runif(length(ok))))
   idx <- ok[order(keys, decreasing = TRUE)[seq_len(n_chains)]]
   pool[idx, , drop = FALSE]
+}
+
+#' `"proposal"` starting points: pool prior draws until enough land in support
+#'
+#' A single batch of `n_chains` prior draws is finite only with probability
+#' `acceptance^n_chains`, so a posterior that is entirely ordinary but excludes
+#' a third of the prior's support (acceptance 0.65) already fails almost every
+#' batch: `0.65^20` is about 3e-4. Requiring one batch to succeed whole
+#' conflates that low-but-fine acceptance rate with true degeneracy. Drawing a
+#' pool per attempt and keeping every finite draw across attempts, the way
+#' `"resample"` already pools, fixes this: the chance of collecting `n_chains`
+#' finite draws now grows with the *total* number sampled, not with the size of
+#' one lucky batch.
+#'
+#' Up to 20 pools of `max(n_pool, n_chains)` prior draws are drawn (`n_pool`
+#' defaults to 1000, so 20000 draws by default), stopping as soon as enough
+#' finite ones have accumulated. If the budget runs out first, the error
+#' distinguishes two cases: no draw at all landed in support, which is
+#' consistent with a degenerate surrogate, versus some draws did but not
+#' enough, which is just a low acceptance rate and should not be reported as
+#' degeneracy.
+#'
+#' @keywords internal
+mcmc_init_proposal <- function(prior, log_prob_fn, n_chains, n_pool = 1000L) {
+  batch <- max(n_pool, n_chains)
+  found <- NULL
+  n_drawn <- 0L
+  n_finite <- 0L
+  for (attempt in seq_len(20L)) {
+    cand <- sample_prior(prior, batch)
+    lp <- log_prob_fn(cand)
+    ok <- is.finite(lp)
+    n_drawn <- n_drawn + batch
+    n_finite <- n_finite + sum(ok)
+    found <- rbind(found, cand[ok, , drop = FALSE])
+    if (nrow(found) >= n_chains) return(found[seq_len(n_chains), , drop = FALSE])
+  }
+
+  if (n_finite == 0L) {
+    stop("Could not find prior draws with finite posterior density after 20 ",
+         "attempts (", format_count(n_drawn), " draws). The surrogate ",
+         "likelihood may be degenerate.", call. = FALSE)
+  }
+  stop(sprintf(
+    paste0("Only %d of the %d finite prior draws needed to start the chains ",
+           "turned up after %s draws (about %.1f%% of the prior's support is ",
+           "in the posterior). This is a low acceptance rate, not a sign the ",
+           "surrogate is degenerate; try strategy = \"resample\" (the ",
+           "default) or a larger n_pool."),
+    nrow(found), n_chains, format_count(n_drawn), 100 * n_finite / n_drawn
+  ), call. = FALSE)
 }
 
 #' Split-Rhat and bulk effective sample size
