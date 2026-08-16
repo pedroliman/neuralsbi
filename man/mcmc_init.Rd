@@ -17,7 +17,9 @@ mcmc_init(
 weights it by the posterior density and resamples without replacement: a
 sampling-importance-resampling start that puts the chains where the mass is,
 which matters because slice sampling has no adaptation phase to rescue a bad
-start. \code{"proposal"} just takes prior draws.
+start. \code{"proposal"} just takes prior draws, keeping whichever land inside
+the posterior's support, which is cheaper per draw but wastes every draw the
+posterior excludes -- see \code{\link[=mcmc_init_proposal]{mcmc_init_proposal()}}.
 }
 \details{
 Two departures from \code{sbi}, both about the case this exists for. \code{sbi} draws

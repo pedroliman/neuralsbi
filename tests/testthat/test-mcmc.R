@@ -186,6 +186,39 @@ test_that("mcmc_init proposal strategy gives up after 20 attempts", {
   )
 })
 
+test_that("mcmc_init proposal strategy pools across attempts rather than requiring one lucky batch", {
+  # Finite on 65% of the prior's support: entirely ordinary, not degenerate.
+  # A single batch of n_chains = 20 draws is jointly finite with probability
+  # 0.65^20 ~ 3e-4, so requiring one batch to succeed whole used to fail here
+  # almost every time across 20 retries.
+  set.seed(1)
+  prior <- prior_uniform(low = c(-10, -10), high = c(10, 10))
+  lp <- function(theta) ifelse(theta[, 1] > 3, -Inf, 0)
+
+  init <- mcmc_init(prior, lp, n_chains = 20, strategy = "proposal")
+
+  expect_equal(dim(init), c(20L, 2L))
+  expect_true(all(is.finite(lp(init))))
+})
+
+test_that("mcmc_init proposal strategy reports a low acceptance rate, not degeneracy", {
+  # Acceptance is about 1%, so the 20-attempt budget (n_pool <= n_chains keeps
+  # each batch at n_chains draws) collects roughly 200 finite draws in
+  # expectation -- far short of the 1000 needed, but nowhere near zero, so
+  # this is a low-acceptance failure, not a degenerate one.
+  set.seed(2)
+  prior <- prior_uniform(low = 0, high = 1)
+  lp <- function(theta) ifelse(theta[, 1] < 0.01, 0, -Inf)
+
+  err <- tryCatch(
+    mcmc_init(prior, lp, n_chains = 1000, strategy = "proposal", n_pool = 1),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "low acceptance rate")
+  expect_no_match(conditionMessage(err), "may be degenerate")
+})
+
 test_that("mcmc_init pads with repeats when fewer finite draws than chains turn up", {
   set.seed(1)
   prior <- prior_uniform(low = 0, high = 1)
