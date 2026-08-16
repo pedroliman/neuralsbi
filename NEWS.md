@@ -1,6 +1,6 @@
 # neuralsbi 0.5.32
 
-* Documentation only, no behavior change: `standardizer_log_jac()`'s roxygen docstring (`R/standardize.R`) named the wrong transform direction. It said "inverse standardization (standardized -> original)", but the value it returns, `-sum(log(std$scale))`, is the Jacobian of the *forward* transform `z = (x - center) / scale` (original -> standardized); the code was always correct, every call site already adds it to a standardized-space log-density to recover original units. The docstring and `man/standardizer_log_jac.Rd` now describe the forward direction (#183).
+* Documentation only, no behavior change: `standardizer_log_jac()`'s roxygen docstring (`R/standardize.R`) named the wrong transform direction. It said "inverse standardization (standardized -> original)", but the value it returns, `-sum(log(std$scale))`, is the Jacobian of the *forward* transform `z = (x - center) / scale` (original -> standardized); the code was always correct, every call site already adds it to a standardized-space log-density to recover original units. The docstring and `man/standardizer_log_jac.Rd` now describe the forward direction (#183) (#184).
 
 # neuralsbi 0.5.31
 
