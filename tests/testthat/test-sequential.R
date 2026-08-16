@@ -101,6 +101,28 @@ test_that("npe_sequential warns and continues with fewer draws when the proposal
   expect_lt(fit$rounds[[2]]$n_new, 500L)
 })
 
+test_that("npe_sequential errors clearly, rather than crashing rbind(), when a round accepts zero proposals and dim_x > 1", {
+  set.seed(1)
+  prior <- prior_uniform(low = c(-5, -5), high = c(5, 5))
+  simulator <- function(theta) {
+    x <- theta + rnorm(length(theta), sd = 0.01)
+    matrix(x, nrow = 1)
+  }
+  x_obs <- matrix(c(0, 0), nrow = 1)
+  # epsilon this tight plus a single proposal batch means round 2 almost
+  # certainly accepts nothing; before the fix this crashed inside rbind()
+  # with an opaque "number of columns of matrices must match" error because
+  # run_simulator()'s zero-row fast path fabricated a 0 x 1 matrix instead
+  # of a 0 x 2 one (issue #178).
+  expect_error(
+    suppressWarnings(npe_sequential(prior, simulator, x_obs,
+                                    n_rounds = 2, n_simulations = 30,
+                                    density_estimator = "linear_gaussian",
+                                    epsilon = 1e-4, max_proposal_batches = 1)),
+    "round 2 accepted 0/30 proposal draws"
+  )
+})
+
 test_that("print.nsbi_snpe() labels the targeted x_obs by name when the fit has names", {
   set.seed(9)
   prior <- prior_normal(mean = c(beta = 0, rho = 0), sd = 1)

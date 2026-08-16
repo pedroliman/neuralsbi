@@ -126,7 +126,19 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
         theta_new <- rbind(theta_new, cand[keep, , drop = FALSE])
       }
       acceptance <- nrow(theta_new) / max(tried, 1L)
-      if (nrow(theta_new) < budgets[r]) {
+      if (nrow(theta_new) == 0L) {
+        # A round that adds nothing isn't "fewer simulations", it's no
+        # progress at all: refitting on unchanged data would silently repeat
+        # the previous round's fit and report it as round r's result.
+        stop(sprintf(
+          paste0("npe_sequential(): round %d accepted 0/%d proposal draws ",
+                 "inside the truncated region after %d batch(es). The ",
+                 "posterior estimate from round %d is too narrow relative to ",
+                 "the prior for rejection sampling to find any acceptable ",
+                 "proposals; try a larger `epsilon`, more ",
+                 "`max_proposal_batches`, or fewer rounds."),
+          r, budgets[r], batch, r - 1L), call. = FALSE)
+      } else if (nrow(theta_new) < budgets[r]) {
         warning(sprintf(
           paste0("Round %d: only %d/%d proposal draws inside the truncated ",
                  "region (acceptance %.4f); continuing with fewer simulations ",
@@ -137,8 +149,12 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       }
     }
 
+    # `d` is unknown before round 1 has run; passing it once known keeps a
+    # zero-row round (all proposals rejected by truncation) from getting a
+    # 0 x 1 matrix back that can't rbind() onto x_all's real width.
     x_new <- run_simulator(simulator, theta_new, sim_args = sim_args,
-                           label = sprintf("Round %d/%d", r, n_rounds))
+                           label = sprintf("Round %d/%d", r, n_rounds),
+                           d = if (r > 1L) ncol(x_all) else NULL)
     kept <- drop_failed_sims(theta_new, x_new)
     theta_new <- kept$theta
     x_new <- kept$x
