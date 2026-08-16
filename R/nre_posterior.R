@@ -22,12 +22,14 @@
 #'   default is 2.
 #' @param init_strategy `"resample"` (default, and `sbi`'s) weights a pool of
 #'   prior draws by the posterior density and resamples the starting points
-#'   from it; `"proposal"` skips the weighting and keeps whichever prior draws
-#'   land inside the posterior's support, drawing more pools as needed.
-#'   `"proposal"` is cheaper per accepted draw, but every draw the posterior
-#'   excludes is wasted: if only a fraction `a` of the prior's mass survives,
-#'   roughly `1 / a` draws are needed per starting point, so a posterior that
-#'   rules out most of the prior can make `"proposal"` far slower than
+#'   from it, drawing more pools as needed if the first one lands fewer than
+#'   `n_chains` draws in the posterior's support; `"proposal"` skips the
+#'   weighting and keeps whichever prior draws land inside the posterior's
+#'   support, also drawing more pools as needed. `"proposal"` is cheaper per
+#'   accepted draw, but every draw the posterior excludes is wasted: if only a
+#'   fraction `a` of the prior's mass survives, roughly `1 / a` draws are
+#'   needed per starting point, so a posterior that rules out most of the
+#'   prior can make `"proposal"` far slower than
 #'   `"resample"` to find enough starting points, and it errors out once its
 #'   draw budget is spent.
 #' @param seed Optional integer seed.
