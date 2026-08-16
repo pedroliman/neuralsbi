@@ -239,9 +239,11 @@ check_slice_width <- function(width) {
 #' weights it by the posterior density and resamples without replacement: a
 #' sampling-importance-resampling start that puts the chains where the mass is,
 #' which matters because slice sampling has no adaptation phase to rescue a bad
-#' start. `"proposal"` just takes prior draws, keeping whichever land inside
-#' the posterior's support, which is cheaper per draw but wastes every draw the
-#' posterior excludes -- see [mcmc_init_proposal()].
+#' start. If one pool does not contain `n_chains` finite draws, more are drawn
+#' and pooled in -- see [mcmc_init_resample()]. `"proposal"` just takes prior
+#' draws, keeping whichever land inside the posterior's support, which is
+#' cheaper per draw but wastes every draw the posterior excludes -- see
+#' [mcmc_init_proposal()].
 #'
 #' Two departures from `sbi`, both about the case this exists for. `sbi` draws
 #' its pool once per chain, so 20 chains cost 20 pools; one pool shared across
@@ -260,25 +262,69 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
   if (strategy == "proposal") {
     return(mcmc_init_proposal(prior, log_prob_fn, n_chains, n_pool))
   }
+  mcmc_init_resample(prior, log_prob_fn, n_chains, n_pool)
+}
 
-  pool <- sample_prior(prior, max(n_pool, n_chains))
-  lp <- log_prob_fn(pool)
-  ok <- which(is.finite(lp))
-  if (!length(ok)) {
-    stop("No prior draw has finite posterior density, so the chains cannot be ",
-         "started. Check the prior and the fitted likelihood.", call. = FALSE)
+#' `"resample"` starting points: pool prior draws, then SIR without replacement
+#'
+#' A single pool of `max(n_pool, n_chains)` prior draws can land fewer than
+#' `n_chains` of them in the posterior's support -- the same shape of problem
+#' [mcmc_init_proposal()] fixed for `"proposal"`. Padding the shortfall by
+#' recycling (`rep_len()` on too few indices) used to start several chains from
+#' identical points, which defeats the diagnostics downstream: split-Rhat and
+#' bulk ESS both assume the chains they compare started from distinct
+#' locations, and a repeated start makes chains look more agreed than they are.
+#'
+#' Instead, more pools are drawn and their finite draws accumulated until
+#' `n_chains` distinct ones are collected (up to 20 attempts, the same budget
+#' [mcmc_init_proposal()] uses), and the final start is a weighted resample
+#' without replacement from that accumulated, still-distinct set -- not from a
+#' single pool. If the budget runs out first, the error distinguishes a
+#' genuinely degenerate surrogate (no draw at all landed in support) from a
+#' merely low acceptance rate (some did, just not `n_chains` of them).
+#'
+#' @keywords internal
+mcmc_init_resample <- function(prior, log_prob_fn, n_chains, n_pool = 1000L) {
+  batch <- max(n_pool, n_chains)
+  found <- NULL
+  found_lp <- numeric(0)
+  n_drawn <- 0L
+  n_finite <- 0L
+  for (attempt in seq_len(20L)) {
+    cand <- sample_prior(prior, batch)
+    lp <- log_prob_fn(cand)
+    ok <- is.finite(lp)
+    n_drawn <- n_drawn + batch
+    n_finite <- n_finite + sum(ok)
+    found <- rbind(found, cand[ok, , drop = FALSE])
+    found_lp <- c(found_lp, lp[ok])
+    if (nrow(found) >= n_chains) break
   }
-  if (length(ok) <= n_chains) {
-    return(pool[rep_len(ok, n_chains), , drop = FALSE])
+
+  if (nrow(found) < n_chains) {
+    if (n_finite == 0L) {
+      stop("No prior draw has finite posterior density after 20 attempts (",
+           format_count(n_drawn), " draws), so the chains cannot be ",
+           "started. Check the prior and the fitted likelihood.", call. = FALSE)
+    }
+    stop(sprintf(
+      paste0("Only %d of the %d finite prior draws needed to start the chains ",
+             "turned up after %s draws (about %.1f%% of the prior's support is ",
+             "in the posterior). This is a low acceptance rate, not a sign the ",
+             "surrogate is degenerate; try a larger n_pool."),
+      nrow(found), n_chains, format_count(n_drawn), 100 * n_finite / n_drawn
+    ), call. = FALSE)
   }
+  if (nrow(found) == n_chains) return(found)
+
   # Weighted sampling without replacement, done entirely in log space via the
   # Gumbel top-k trick. Exponentiating the weights first does not survive the
   # case this exists for: with a few thousand observations the log-likelihood
   # spread across prior draws runs to thousands, every weight but a handful
   # underflows to zero, and sample.int() refuses the job outright.
-  keys <- lp[ok] - log(-log(stats::runif(length(ok))))
-  idx <- ok[order(keys, decreasing = TRUE)[seq_len(n_chains)]]
-  pool[idx, , drop = FALSE]
+  keys <- found_lp - log(-log(stats::runif(length(found_lp))))
+  idx <- order(keys, decreasing = TRUE)[seq_len(n_chains)]
+  found[idx, , drop = FALSE]
 }
 
 #' `"proposal"` starting points: pool prior draws until enough land in support

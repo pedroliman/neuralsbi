@@ -1,6 +1,10 @@
-# neuralsbi 0.5.33
+# neuralsbi 0.5.34
 
 * **`map_estimate()` no longer optimizes a 1-parameter posterior with Nelder-Mead.** `stats::optim()`'s own documentation and runtime warn that one-dimensional Nelder-Mead is unreliable ("use \"Brent\" or optimize() directly"), and single-parameter models are not a corner case for this package -- one-parameter priors appear in the `nle()`/`nre()` doc examples themselves. Every `map_estimate()` call on such a posterior hit that warning, and a test already worked around it with `suppressWarnings()` instead of fixing the underlying method choice (`tests/testthat/test-posterior-normalization.R`). `map_estimate()` (`R/posterior.R`) now branches on `fit$dim_theta == 1L`: a bounded prior with both a lower and an upper limit gets `optim(method = "Brent")` over that exact interval; a one-sided bound gets `optim(method = "L-BFGS-B")` with `Inf` on the missing side, since Brent needs both ends finite and plain BFGS's finite-difference gradient can probe past the missing side into masked territory; a fully unbounded prior gets `optim(method = "BFGS")`, which needs no interval and doesn't trigger the warning. Multi-dimensional posteriors are unaffected and stay on Nelder-Mead (#186) (#187).
+
+# neuralsbi 0.5.33
+
+* **`mcmc_init(strategy = "resample")` no longer starts several chains from identical points.** It drew one pool of `max(n_pool, n_chains)` prior draws and kept whichever landed inside the posterior's support; when that left fewer than `n_chains` of them, it padded the shortfall with `rep_len(ok, n_chains)`, recycling the same indices so several slice-sampler chains began from the same point (`R/mcmc.R`). Split-Rhat and bulk ESS both assume the chains they compare started from distinct locations, so a recycled start weakens mode coverage and understates disagreement between chains. A new `mcmc_init_resample()` draws more pools and accumulates their finite draws, the way `mcmc_init_proposal()` already does for `"proposal"`, until `n_chains` distinct finite draws are collected (up to 20 attempts) and only then runs the weighted resample without replacement. If the budget runs out first, the error distinguishes a genuinely degenerate surrogate (no draw at all landed in support) from a merely low acceptance rate (some did, just not enough) (#182) (#185).
 
 # neuralsbi 0.5.32
 
