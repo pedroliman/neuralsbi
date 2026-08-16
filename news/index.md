@@ -1,5 +1,37 @@
 # Changelog
 
+## neuralsbi 0.5.30
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  no longer crashes with an opaque
+  [`rbind()`](https://rdrr.io/r/base/cbind.html) error when a later
+  round accepts zero proposals and `dim_x > 1`.** The truncated-proposal
+  loop (`R/sequential.R`) calls
+  [`run_simulator()`](https://neuralsbi.pedrodelima.com/reference/run_simulator.md)
+  for round `r`’s accepted `theta_new`, but didn’t pass its optional `d`
+  argument (expected output width). When a round exhausted
+  `max_proposal_batches` with zero accepted candidates,
+  [`run_simulator()`](https://neuralsbi.pedrodelima.com/reference/run_simulator.md)’s
+  zero-row fast path (`R/parallel.R`) fell back to `d %||% 1L` and
+  returned a `0 x 1` matrix regardless of the simulator’s real output
+  width, so `x_all <- rbind(x_all, x_new)` failed with “number of
+  columns of matrices must match” whenever `dim_x != 1` – a message
+  naming neither
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  nor the real cause. With `dim_x == 1` it didn’t crash, but silently
+  contributed zero simulations to that round with only a warning to go
+  on.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now passes `d = ncol(x_all)` once round 1 has run, and treats zero
+  accepted proposals as a hard stop rather than “continuing with fewer
+  simulations”: a round that adds nothing would otherwise refit on
+  unchanged data and report that as round `r`’s result, with no way for
+  a caller to see that nothing happened. The new error names the round,
+  the acceptance, and suggests a larger `epsilon`, more
+  `max_proposal_batches`, or fewer rounds
+  ([\#178](https://github.com/pedroliman/neuralsbi/issues/178))
+  ([\#180](https://github.com/pedroliman/neuralsbi/issues/180)).
+
 ## neuralsbi 0.5.29
 
 - **[`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)

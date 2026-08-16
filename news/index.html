@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.30</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.30" id="neuralsbi-0530">neuralsbi 0.5.30<a class="anchor" aria-label="anchor" href="#neuralsbi-0530"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> no longer crashes with an opaque <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind()</a></code> error when a later round accepts zero proposals and <code>dim_x &gt; 1</code>.</strong> The truncated-proposal loop (<code>R/sequential.R</code>) calls <code><a href="../reference/run_simulator.html">run_simulator()</a></code> for round <code>r</code>’s accepted <code>theta_new</code>, but didn’t pass its optional <code>d</code> argument (expected output width). When a round exhausted <code>max_proposal_batches</code> with zero accepted candidates, <code><a href="../reference/run_simulator.html">run_simulator()</a></code>’s zero-row fast path (<code>R/parallel.R</code>) fell back to <code>d %||% 1L</code> and returned a <code>0 x 1</code> matrix regardless of the simulator’s real output width, so <code>x_all &lt;- rbind(x_all, x_new)</code> failed with “number of columns of matrices must match” whenever <code>dim_x != 1</code> – a message naming neither <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> nor the real cause. With <code>dim_x == 1</code> it didn’t crash, but silently contributed zero simulations to that round with only a warning to go on. <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now passes <code>d = ncol(x_all)</code> once round 1 has run, and treats zero accepted proposals as a hard stop rather than “continuing with fewer simulations”: a round that adds nothing would otherwise refit on unchanged data and report that as round <code>r</code>’s result, with no way for a caller to see that nothing happened. The new error names the round, the acceptance, and suggests a larger <code>epsilon</code>, more <code>max_proposal_batches</code>, or fewer rounds (<a href="https://github.com/pedroliman/neuralsbi/issues/178" class="external-link">#178</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/180" class="external-link">#180</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.29" id="neuralsbi-0529">neuralsbi 0.5.29<a class="anchor" aria-label="anchor" href="#neuralsbi-0529"></a></h2>
 <ul><li>
