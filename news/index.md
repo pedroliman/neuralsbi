@@ -1,5 +1,35 @@
 # Changelog
 
+## neuralsbi 0.5.34
+
+- **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  no longer optimizes a 1-parameter posterior with Nelder-Mead.**
+  [`stats::optim()`](https://rdrr.io/r/stats/optim.html)’s own
+  documentation and runtime warn that one-dimensional Nelder-Mead is
+  unreliable (“use "Brent" or optimize() directly”), and
+  single-parameter models are not a corner case for this package –
+  one-parameter priors appear in the
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  doc examples themselves. Every
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  call on such a posterior hit that warning, and a test already worked
+  around it with
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html) instead of
+  fixing the underlying method choice
+  (`tests/testthat/test-posterior-normalization.R`).
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  (`R/posterior.R`) now branches on `fit$dim_theta == 1L`: a bounded
+  prior with both a lower and an upper limit gets
+  `optim(method = "Brent")` over that exact interval; a one-sided bound
+  gets `optim(method = "L-BFGS-B")` with `Inf` on the missing side,
+  since Brent needs both ends finite and plain BFGS’s finite-difference
+  gradient can probe past the missing side into masked territory; a
+  fully unbounded prior gets `optim(method = "BFGS")`, which needs no
+  interval and doesn’t trigger the warning. Multi-dimensional posteriors
+  are unaffected and stay on Nelder-Mead
+  ([\#186](https://github.com/pedroliman/neuralsbi/issues/186))
+  ([\#187](https://github.com/pedroliman/neuralsbi/issues/187)).
+
 ## neuralsbi 0.5.33
 
 - **`mcmc_init(strategy = "resample")` no longer starts several chains

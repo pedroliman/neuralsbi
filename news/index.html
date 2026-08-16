@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.33</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.34</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.34" id="neuralsbi-0534">neuralsbi 0.5.34<a class="anchor" aria-label="anchor" href="#neuralsbi-0534"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/map_estimate.html">map_estimate()</a></code> no longer optimizes a 1-parameter posterior with Nelder-Mead.</strong> <code><a href="https://rdrr.io/r/stats/optim.html" class="external-link">stats::optim()</a></code>’s own documentation and runtime warn that one-dimensional Nelder-Mead is unreliable (“use "Brent" or optimize() directly”), and single-parameter models are not a corner case for this package – one-parameter priors appear in the <code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> doc examples themselves. Every <code><a href="../reference/map_estimate.html">map_estimate()</a></code> call on such a posterior hit that warning, and a test already worked around it with <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code> instead of fixing the underlying method choice (<code>tests/testthat/test-posterior-normalization.R</code>). <code><a href="../reference/map_estimate.html">map_estimate()</a></code> (<code>R/posterior.R</code>) now branches on <code>fit$dim_theta == 1L</code>: a bounded prior with both a lower and an upper limit gets <code>optim(method = "Brent")</code> over that exact interval; a one-sided bound gets <code>optim(method = "L-BFGS-B")</code> with <code>Inf</code> on the missing side, since Brent needs both ends finite and plain BFGS’s finite-difference gradient can probe past the missing side into masked territory; a fully unbounded prior gets <code>optim(method = "BFGS")</code>, which needs no interval and doesn’t trigger the warning. Multi-dimensional posteriors are unaffected and stay on Nelder-Mead (<a href="https://github.com/pedroliman/neuralsbi/issues/186" class="external-link">#186</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/187" class="external-link">#187</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.33" id="neuralsbi-0533">neuralsbi 0.5.33<a class="anchor" aria-label="anchor" href="#neuralsbi-0533"></a></h2>
 <ul><li>
