@@ -2,13 +2,15 @@
 % Please edit documentation in R/standardize.R
 \name{standardizer_log_jac}
 \alias{standardizer_log_jac}
-\title{Log absolute Jacobian determinant of the \emph{inverse} standardization
-(standardized -> original). Constant, so a scalar.}
+\title{Log absolute Jacobian determinant of the forward standardization
+(original -> standardized, \code{z = (x - center) / scale}). Constant, so a
+scalar, since standardization is affine.}
 \usage{
 standardizer_log_jac(std)
 }
 \description{
-Log absolute Jacobian determinant of the \emph{inverse} standardization
-(standardized -> original). Constant, so a scalar.
+Log absolute Jacobian determinant of the forward standardization
+(original -> standardized, \code{z = (x - center) / scale}). Constant, so a
+scalar, since standardization is affine.
 }
 \keyword{internal}
