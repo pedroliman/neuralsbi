@@ -219,15 +219,39 @@ test_that("mcmc_init proposal strategy reports a low acceptance rate, not degene
   expect_no_match(conditionMessage(err), "may be degenerate")
 })
 
-test_that("mcmc_init pads with repeats when fewer finite draws than chains turn up", {
+test_that("mcmc_init resample strategy pools across attempts instead of recycling", {
+  # GitHub #182: a single pool of n_pool draws can land fewer than n_chains of
+  # them in the posterior's support. The old code padded the shortfall with
+  # rep_len(ok, n_chains), which starts several chains from identical points
+  # -- exactly what split-Rhat and bulk ESS assume never happens. Finite only
+  # for theta[, 1] > 9.5 out of a [-10, 10] prior is a narrow sliver: one pool
+  # of 1000 draws lands only a handful there, far fewer than n_chains = 20.
   set.seed(1)
+  prior <- prior_uniform(low = c(-10, -10), high = c(10, 10))
+  lp <- function(theta) ifelse(theta[, 1] > 9.5, 0, -Inf)
+
+  init <- mcmc_init(prior, lp, n_chains = 20, strategy = "resample", n_pool = 1000)
+
+  expect_equal(dim(init), c(20L, 2L))
+  expect_true(all(is.finite(lp(init))))
+  expect_equal(nrow(unique(init)), 20L)
+})
+
+test_that("mcmc_init resample strategy reports a low acceptance rate, not degeneracy", {
+  # Acceptance is about 1%, so a single pool of n_pool = n_chains draws rarely
+  # finds n_chains finite ones, but the 20-attempt budget collects roughly 200
+  # in expectation -- far short of the 1000 needed, but nowhere near zero.
+  set.seed(2)
   prior <- prior_uniform(low = 0, high = 1)
-  # only draws above 0.9999 are finite: with n_pool = 1000 there are far fewer
-  # of those than n_chains, so mcmc_init must pad by repeating them
-  lp <- function(theta) ifelse(theta[, 1] > 0.9999, 0, -Inf)
-  init <- mcmc_init(prior, lp, n_chains = 500, n_pool = 1000)
-  expect_equal(dim(init), c(500L, 1L))
-  expect_true(all(init > 0.9999))
+  lp <- function(theta) ifelse(theta[, 1] < 0.01, 0, -Inf)
+
+  err <- tryCatch(
+    mcmc_init(prior, lp, n_chains = 1000, strategy = "resample", n_pool = 1),
+    error = function(e) e
+  )
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "low acceptance rate")
+  expect_no_match(conditionMessage(err), "cannot be started")
 })
 
 test_that("split-Rhat flags chains that disagree", {
