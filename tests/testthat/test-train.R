@@ -57,6 +57,26 @@ test_that("train_conditional_de() says how many rows the split would need", {
     "holds out 1 row of 1, leaving nothing to train on\\. At this fraction the estimator needs at least 2 rows")
 })
 
+test_that("min_val_rows raises check_train_controls()'s validation-split floor", {
+  # GitHub #188: nre()'s atomic loss needs at least 2 validation rows to
+  # contrast the true parameter against; every other estimator here is fine
+  # with 1. min_val_rows lets a caller ask for the stricter floor without
+  # changing check_train_controls()'s default behavior.
+  expect_no_error(
+    check_train_controls(2000L, 200L, 5e-4, 0.1, 20L, 1L, 5, n = 15))
+  expect_error(
+    check_train_controls(2000L, 200L, 5e-4, 0.1, 20L, 1L, 5, n = 15,
+                         min_val_rows = 2L),
+    "holds out only 1 row of 15.*needs at least .* to score its objective on")
+
+  fifteen <- matrix(stats::rnorm(15), ncol = 1)
+  expect_error(
+    train_conditional_de(build_net = function() stop("not reached"),
+                         log_prob_fn = function(...) stop("not reached"),
+                         theta = fifteen, x = fifteen, min_val_rows = 2L),
+    "needs at least .* to score its objective on")
+})
+
 test_that("minibatches() covers every row and never leaves one on its own", {
   order <- seq_len(21L)
 

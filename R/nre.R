@@ -128,8 +128,30 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
   num_atoms <- check_count(
     num_atoms, "num_atoms", min = 2L,
     why = "since one atom is the true parameter and the rest are contrasts")
+  # min_val_rows only binds for the neural classifiers fit_nre_net() builds:
+  # the closed-form "logistic" fit never splits off a validation set, and a
+  # caller-supplied classifier function may not either, so both keep the
+  # default floor of 1L (see fit_nre_net(), GitHub #188). `n` is filled in
+  # whenever it is already known exactly -- from `theta` when it was passed
+  # directly, or from `n_simulations` when it is a valid count -- so the
+  # common trigger, nre(prior, simulator, n_simulations = 15), is caught here
+  # rather than after the simulation budget is spent.
+  min_val_rows <- if (is.function(classifier) || identical(classifier, "logistic")) {
+    1L
+  } else {
+    2L
+  }
+  n_hint <- if (!is.null(theta) && !is.null(x)) {
+    tryCatch(nrow(as_theta_matrix(theta, prior$dim)), error = function(e) NULL)
+  } else if (is.numeric(n_simulations) && length(n_simulations) == 1L &&
+             is.finite(n_simulations) && n_simulations >= 1) {
+    n_simulations
+  } else {
+    NULL
+  }
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
-                       patience, n_restarts, clip_grad_norm)
+                       patience, n_restarts, clip_grad_norm, n = n_hint,
+                       min_val_rows = min_val_rows)
 
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
@@ -443,6 +465,12 @@ nre_atomic_log_prob <- function(num_atoms) {
 }
 
 #' Train a neural ratio estimator on standardized (theta, x)
+#'
+#' Passes `min_val_rows = 2L` down to [fit_torch_de()], unlike the MDN/MAF/NSF
+#' callers. The atomic objective ([nre_atomic_log_prob()]) needs a second row
+#' to contrast the true parameter against; with a validation split of one row
+#' it silently returns a constant zero loss every epoch instead of a real
+#' signal, which breaks early stopping (GitHub #188).
 #' @keywords internal
 fit_nre_net <- function(theta, x, classifier = "resnet", hidden = 50L,
                         n_blocks = 2L, num_atoms = 10L,
@@ -461,7 +489,8 @@ fit_nre_net <- function(theta, x, classifier = "resnet", hidden = 50L,
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    embedding = embedding, seed = seed, verbose = verbose, device = device
+    embedding = embedding, seed = seed, verbose = verbose, device = device,
+    min_val_rows = 2L
   )
 }
 
