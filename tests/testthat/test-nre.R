@@ -234,6 +234,43 @@ test_that("nre() needs either a simulator or pre-computed simulations", {
   expect_error(nre(gauss_prior()), "Provide either")
 })
 
+# GitHub #188: a validation split of exactly one row made the atomic
+# contrastive objective return a constant zero loss every epoch, which broke
+# early stopping silently -- the fit stopped after `patience` epochs holding
+# the untrained epoch-1 network, reporting best_val_loss = 0 as if it were a
+# perfect fit. These are pure argument-validation checks: no torch involved,
+# since check_train_controls() (which train_conditional_de() calls before
+# ever touching torch) is what actually enforces the floor.
+test_that("nre() fails before simulating rather than train on a 1-row validation split", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  # validation_fraction defaults to 0.1, so n_simulations = 15 leaves exactly
+  # 1 validation row -- the trigger reported in #188.
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 15,
+        classifier = "resnet"),
+    "needs at least .* to score its objective on")
+  expect_identical(calls, 0L)
+
+  # The closed-form logistic classifier never splits off a validation set, so
+  # the same n_simulations must not trip this floor for it.
+  expect_no_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 15,
+        classifier = "logistic"))
+  expect_identical(calls, 15L)
+})
+
+test_that("fit_nre_net() rejects a validation split too small for the atomic loss", {
+  theta <- matrix(stats::rnorm(15), ncol = 1)
+  x <- matrix(stats::rnorm(15), ncol = 1)
+
+  expect_error(fit_nre_net(theta, x, classifier = "resnet"),
+               "needs at least .* to score its objective on")
+})
+
 test_that("an embedding net is rejected by the logistic classifier", {
   expect_warning(
     nre(gauss_prior(), gauss_sim, n_simulations = 200, classifier = "logistic",

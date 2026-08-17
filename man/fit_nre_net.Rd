@@ -25,6 +25,10 @@ fit_nre_net(
 )
 }
 \description{
-Train a neural ratio estimator on standardized (theta, x)
+Passes \code{min_val_rows = 2L} down to \code{\link[=fit_torch_de]{fit_torch_de()}}, unlike the MDN/MAF/NSF
+callers. The atomic objective (\code{\link[=nre_atomic_log_prob]{nre_atomic_log_prob()}}) needs a second row
+to contrast the true parameter against; with a validation split of one row
+it silently returns a constant zero loss every epoch instead of a real
+signal, which breaks early stopping (GitHub #188).
 }
 \keyword{internal}

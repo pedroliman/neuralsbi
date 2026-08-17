@@ -119,11 +119,12 @@ de_sample_flow <- function(de, x, n, inverse_fn) {
 #' estimator (never a torch device object, which would not survive
 #' `saveRDS()`) so `posterior()`/`sample()` can see what it was actually fit
 #' with.
+#' @inheritParams train_conditional_de
 #' @keywords internal
 fit_torch_de <- function(theta, x, build_net_fn, log_prob_fn, class, arch,
                          max_epochs, batch_size, lr, validation_fraction,
                          patience, n_restarts, clip_grad_norm, embedding,
-                         seed, verbose, device = "cpu") {
+                         seed, verbose, device = "cpu", min_val_rows = 1L) {
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
   dim_theta <- ncol(theta)
@@ -136,7 +137,7 @@ fit_torch_de <- function(theta, x, build_net_fn, log_prob_fn, class, arch,
     max_epochs = max_epochs, batch_size = batch_size, lr = lr,
     validation_fraction = validation_fraction, patience = patience,
     n_restarts = n_restarts, clip_grad_norm = clip_grad_norm,
-    seed = seed, verbose = verbose, device = device
+    seed = seed, verbose = verbose, device = device, min_val_rows = min_val_rows
   )
 
   structure(

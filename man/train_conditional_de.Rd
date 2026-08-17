@@ -21,7 +21,8 @@ train_conditional_de(
   min_lr = 1e-06,
   seed = NULL,
   verbose = FALSE,
-  device = "cpu"
+  device = "cpu",
+  min_val_rows = 1L
 )
 }
 \arguments{
@@ -48,6 +49,13 @@ this into an actual, available device). Training and validation tensors
 are created there, and the net is moved there right after \code{build_net()},
 so the two never disagree the way they do under a bare
 \code{torch::with_device()}.}
+
+\item{min_val_rows}{Smallest validation split \code{check_train_controls()} will
+accept. Every estimator here can score a real, if noisy, log-density on a
+single validation row, so the default of \code{1L} is unchanged for MDN, MAF
+and NSF. \code{\link[=fit_nre_net]{fit_nre_net()}} passes \code{2L}: its atomic contrastive objective
+needs a second row to contrast against, and with only one it silently
+returns a constant zero loss instead of training.}
 }
 \value{
 \code{list(net, best_val_loss, history, device)}, where \code{history} is a

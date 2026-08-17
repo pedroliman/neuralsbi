@@ -24,6 +24,12 @@
 #'   are created there, and the net is moved there right after `build_net()`,
 #'   so the two never disagree the way they do under a bare
 #'   `torch::with_device()`.
+#' @param min_val_rows Smallest validation split `check_train_controls()` will
+#'   accept. Every estimator here can score a real, if noisy, log-density on a
+#'   single validation row, so the default of `1L` is unchanged for MDN, MAF
+#'   and NSF. [fit_nre_net()] passes `2L`: its atomic contrastive objective
+#'   needs a second row to contrast against, and with only one it silently
+#'   returns a constant zero loss instead of training.
 #' @return `list(net, best_val_loss, history, device)`, where `history` is a
 #'   data frame of per-epoch train/validation losses for the winning restart
 #'   and `device` is the resolved device (`"cpu"`, `"cuda"` or `"mps"`)
@@ -37,10 +43,11 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
                                  lr_patience = 10L, lr_factor = 0.5,
                                  min_lr = 1e-6,
                                  seed = NULL, verbose = FALSE,
-                                 device = "cpu") {
+                                 device = "cpu", min_val_rows = 1L) {
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm,
-                       n = nrow(as_theta_matrix(theta)))
+                       n = nrow(as_theta_matrix(theta)),
+                       min_val_rows = min_val_rows)
   # The bar spans every restart, so progress reporting is set up out here and
   # the loop itself lives in train_restarts().
   with_nsbi_progress(train_restarts(
@@ -63,14 +70,18 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
 #' `n` is optional because that call happens before there are any rows. When it
 #' is known, `validation_fraction` is checked against it: the requirement is
 #' that both sides of the split come out non-empty, which the fraction alone
-#' cannot decide.
+#' cannot decide. `min_val_rows` raises that floor for callers whose objective
+#' needs more than one validation row to mean anything -- see [fit_nre_net()].
 #'
 #' @inheritParams npe
 #' @param n Number of training rows, or `NULL` when they do not exist yet.
+#' @param min_val_rows Smallest validation split this call will accept
+#'   (default `1L`, i.e. only require it non-empty). Raise it for an objective
+#'   that needs more than one validation row to produce a real signal.
 #' @keywords internal
 check_train_controls <- function(max_epochs, batch_size, lr,
                                  validation_fraction, patience, n_restarts,
-                                 clip_grad_norm, n = NULL) {
+                                 clip_grad_norm, n = NULL, min_val_rows = 1L) {
   check_count(max_epochs, "max_epochs")
   check_count(batch_size, "batch_size")
   check_positive(lr, "lr")
@@ -87,6 +98,17 @@ check_train_controls <- function(max_epochs, batch_size, lr,
                           "leaving nothing to train on. At this fraction the ",
                           "estimator needs at least %s."),
                    format(validation_fraction), n_things(n_val, "row"), n,
+                   n_things(as.integer(need), "row")),
+           call. = FALSE)
+    }
+    if (n_val < min_val_rows) {
+      need <- max(2L, ceiling(min_val_rows / validation_fraction))
+      stop(sprintf(paste0("`validation_fraction` of %s holds out only %s of ",
+                          "%d for validation, but this estimator needs at ",
+                          "least %s to score its objective on. At this ",
+                          "fraction it needs at least %s."),
+                   format(validation_fraction), n_things(n_val, "row"), n,
+                   n_things(as.integer(min_val_rows), "row"),
                    n_things(as.integer(need), "row")),
            call. = FALSE)
     }

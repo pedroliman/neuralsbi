@@ -12,7 +12,8 @@ check_train_controls(
   patience,
   n_restarts,
   clip_grad_norm,
-  n = NULL
+  n = NULL,
+  min_val_rows = 1L
 )
 }
 \arguments{
@@ -31,6 +32,10 @@ clipping). The learning rate also decays 2x after 10 epochs without
 validation improvement.}
 
 \item{n}{Number of training rows, or \code{NULL} when they do not exist yet.}
+
+\item{min_val_rows}{Smallest validation split this call will accept (default
+\code{1L}, i.e. only require it non-empty). Raise it for an objective that
+needs more than one validation row to produce a real signal.}
 }
 \description{
 Every one of these decides how the split, the batches or the restart loop
@@ -45,6 +50,7 @@ call this before they simulate, so a typo does not cost the budget first.
 \code{n} is optional because that call happens before there are any rows. When it
 is known, \code{validation_fraction} is checked against it: the requirement is
 that both sides of the split come out non-empty, which the fraction alone
-cannot decide.
+cannot decide. \code{min_val_rows} raises that floor for callers whose objective
+needs more than one validation row to mean anything -- see \code{\link[=fit_nre_net]{fit_nre_net()}}.
 }
 \keyword{internal}

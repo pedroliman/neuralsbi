@@ -21,8 +21,17 @@ fit_torch_de(
   embedding,
   seed,
   verbose,
-  device = "cpu"
+  device = "cpu",
+  min_val_rows = 1L
 )
+}
+\arguments{
+\item{min_val_rows}{Smallest validation split \code{check_train_controls()} will
+accept. Every estimator here can score a real, if noisy, log-density on a
+single validation row, so the default of \code{1L} is unchanged for MDN, MAF
+and NSF. \code{\link[=fit_nre_net]{fit_nre_net()}} passes \code{2L}: its atomic contrastive objective
+needs a second row to contrast against, and with only one it silently
+returns a constant zero loss instead of training.}
 }
 \description{
 Coerces \code{theta} and \code{x}, builds the net from \code{build_net_fn(dim_x, dim_theta)} now that both are known, trains it with
