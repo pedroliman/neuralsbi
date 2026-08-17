@@ -271,6 +271,16 @@ test_that("fit_nre_net() rejects a validation split too small for the atomic los
                "needs at least .* to score its objective on")
 })
 
+test_that("nre() defers to prepare_simulations() when n_simulations can't hint a row count", {
+  # An invalid n_simulations (not >= 1) and no pre-computed theta/x means the
+  # early min_val_rows check has nothing to check against yet, so it must not
+  # error itself -- the existing n_simulations validation inside
+  # prepare_simulations() is still what reports this.
+  expect_error(
+    nre(gauss_prior(), gauss_sim, n_simulations = 0, classifier = "resnet"),
+    "`n_simulations`")
+})
+
 test_that("an embedding net is rejected by the logistic classifier", {
   expect_warning(
     nre(gauss_prior(), gauss_sim, n_simulations = 200, classifier = "logistic",
