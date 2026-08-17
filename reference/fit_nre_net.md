@@ -1,6 +1,13 @@
 # Train a neural ratio estimator on standardized (theta, x)
 
-Train a neural ratio estimator on standardized (theta, x)
+Passes `min_val_rows = 2L` down to
+[`fit_torch_de()`](https://neuralsbi.pedrodelima.com/reference/fit_torch_de.md),
+unlike the MDN/MAF/NSF callers. The atomic objective
+([`nre_atomic_log_prob()`](https://neuralsbi.pedrodelima.com/reference/nre_atomic_log_prob.md))
+needs a second row to contrast the true parameter against; with a
+validation split of one row it silently returns a constant zero loss
+every epoch instead of a real signal, which breaks early stopping
+(GitHub \#188).
 
 ## Usage
 

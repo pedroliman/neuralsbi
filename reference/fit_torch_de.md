@@ -25,9 +25,24 @@ fit_torch_de(
   embedding,
   seed,
   verbose,
-  device = "cpu"
+  device = "cpu",
+  min_val_rows = 1L
 )
 ```
+
+## Arguments
+
+- min_val_rows:
+
+  Smallest validation split
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  will accept. Every estimator here can score a real, if noisy,
+  log-density on a single validation row, so the default of `1L` is
+  unchanged for MDN, MAF and NSF.
+  [`fit_nre_net()`](https://neuralsbi.pedrodelima.com/reference/fit_nre_net.md)
+  passes `2L`: its atomic contrastive objective needs a second row to
+  contrast against, and with only one it silently returns a constant
+  zero loss instead of training.
 
 ## Details
 

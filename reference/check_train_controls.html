@@ -59,7 +59,7 @@ call this before they simulate, so a typo does not cost the budget first."><meta
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,7 +111,8 @@ call this before they simulate, so a typo does not cost the budget first.</p>
 <span>  <span class="va">patience</span>,</span>
 <span>  <span class="va">n_restarts</span>,</span>
 <span>  <span class="va">clip_grad_norm</span>,</span>
-<span>  n <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  n <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  min_val_rows <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -142,13 +143,20 @@ validation improvement.</p></dd>
 <dt id="arg-n">n<a class="anchor" aria-label="anchor" href="#arg-n"></a></dt>
 <dd><p>Number of training rows, or <code>NULL</code> when they do not exist yet.</p></dd>
 
+
+<dt id="arg-min-val-rows">min_val_rows<a class="anchor" aria-label="anchor" href="#arg-min-val-rows"></a></dt>
+<dd><p>Smallest validation split this call will accept (default
+<code>1L</code>, i.e. only require it non-empty). Raise it for an objective that
+needs more than one validation row to produce a real signal.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>n</code> is optional because that call happens before there are any rows. When it
 is known, <code>validation_fraction</code> is checked against it: the requirement is
 that both sides of the split come out non-empty, which the fraction alone
-cannot decide.</p>
+cannot decide. <code>min_val_rows</code> raises that floor for callers whose objective
+needs more than one validation row to mean anything – see <code><a href="fit_nre_net.html">fit_nre_net()</a></code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

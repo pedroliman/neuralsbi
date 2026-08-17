@@ -51,7 +51,7 @@ object."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/re
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,10 +108,24 @@ object.</p>
 <span>  <span class="va">embedding</span>,</span>
 <span>  <span class="va">seed</span>,</span>
 <span>  <span class="va">verbose</span>,</span>
-<span>  device <span class="op">=</span> <span class="st">"cpu"</span></span>
+<span>  device <span class="op">=</span> <span class="st">"cpu"</span>,</span>
+<span>  min_val_rows <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
+
+
+<dl><dt id="arg-min-val-rows">min_val_rows<a class="anchor" aria-label="anchor" href="#arg-min-val-rows"></a></dt>
+<dd><p>Smallest validation split <code><a href="check_train_controls.html">check_train_controls()</a></code> will
+accept. Every estimator here can score a real, if noisy, log-density on a
+single validation row, so the default of <code>1L</code> is unchanged for MDN, MAF
+and NSF. <code><a href="fit_nre_net.html">fit_nre_net()</a></code> passes <code>2L</code>: its atomic contrastive objective
+needs a second row to contrast against, and with only one it silently
+returns a constant zero loss instead of training.</p></dd>
+
+</dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>arch</code> carries the architecture fields specific to the caller –

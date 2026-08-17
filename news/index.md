@@ -1,5 +1,48 @@
 # Changelog
 
+## neuralsbi 0.5.35
+
+- **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) no
+  longer silently keeps an untrained network when a small
+  `n_simulations` leaves a 1-row validation split.**
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  (`R/train.R`) only required the validation split to be non-empty,
+  which is enough for
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  – their estimators score a real, if noisy, log-density on a single
+  validation row.
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)’s atomic
+  contrastive objective
+  ([`nre_atomic_log_prob()`](https://neuralsbi.pedrodelima.com/reference/nre_atomic_log_prob.md),
+  `R/nre.R`) cannot: with fewer than 2 rows there is no contrast to
+  score, and it returned a literal constant-zero loss every epoch.
+  Inside
+  [`train_restarts()`](https://neuralsbi.pedrodelima.com/reference/train_restarts.md)
+  that zero beat the initial `Inf` at epoch 1, never changed afterward,
+  so the “improved” branch never fired again, and training silently
+  stopped after `patience` more epochs holding the epoch-1 (essentially
+  untrained) network – while reporting `best_val_loss = 0`, which reads
+  as a perfect fit rather than the failure it is.
+  `nre(prior, simulator, n_simulations = 15)` hit this directly: the
+  default `validation_fraction = 0.1` gives
+  `n_val = max(1, floor(0.1 * 15)) = 1`.
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  now takes a `min_val_rows` argument (default `1L`, unchanged for every
+  other caller) threaded through
+  [`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md)
+  and
+  [`fit_torch_de()`](https://neuralsbi.pedrodelima.com/reference/fit_torch_de.md);
+  [`fit_nre_net()`](https://neuralsbi.pedrodelima.com/reference/fit_nre_net.md)
+  (`R/nre.R`) passes `min_val_rows = 2L`, and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) checks
+  it early, before the simulator runs, whenever the true row count is
+  already known (`theta`/`x` passed directly, or a valid
+  `n_simulations`). The closed-form logistic classifier and a
+  caller-supplied classifier function are unaffected – neither uses this
+  validation split at all
+  ([\#188](https://github.com/pedroliman/neuralsbi/issues/188))
+  ([\#189](https://github.com/pedroliman/neuralsbi/issues/189)).
+
 ## neuralsbi 0.5.34
 
 - **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)

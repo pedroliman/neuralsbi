@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.35" id="neuralsbi-0535">neuralsbi 0.5.35<a class="anchor" aria-label="anchor" href="#neuralsbi-0535"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/nre.html">nre()</a></code> no longer silently keeps an untrained network when a small <code>n_simulations</code> leaves a 1-row validation split.</strong> <code><a href="../reference/check_train_controls.html">check_train_controls()</a></code> (<code>R/train.R</code>) only required the validation split to be non-empty, which is enough for <code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code> – their estimators score a real, if noisy, log-density on a single validation row. <code><a href="../reference/nre.html">nre()</a></code>’s atomic contrastive objective (<code><a href="../reference/nre_atomic_log_prob.html">nre_atomic_log_prob()</a></code>, <code>R/nre.R</code>) cannot: with fewer than 2 rows there is no contrast to score, and it returned a literal constant-zero loss every epoch. Inside <code><a href="../reference/train_restarts.html">train_restarts()</a></code> that zero beat the initial <code>Inf</code> at epoch 1, never changed afterward, so the “improved” branch never fired again, and training silently stopped after <code>patience</code> more epochs holding the epoch-1 (essentially untrained) network – while reporting <code>best_val_loss = 0</code>, which reads as a perfect fit rather than the failure it is. <code>nre(prior, simulator, n_simulations = 15)</code> hit this directly: the default <code>validation_fraction = 0.1</code> gives <code>n_val = max(1, floor(0.1 * 15)) = 1</code>. <code><a href="../reference/check_train_controls.html">check_train_controls()</a></code> now takes a <code>min_val_rows</code> argument (default <code>1L</code>, unchanged for every other caller) threaded through <code><a href="../reference/train_conditional_de.html">train_conditional_de()</a></code> and <code><a href="../reference/fit_torch_de.html">fit_torch_de()</a></code>; <code><a href="../reference/fit_nre_net.html">fit_nre_net()</a></code> (<code>R/nre.R</code>) passes <code>min_val_rows = 2L</code>, and <code><a href="../reference/nre.html">nre()</a></code> checks it early, before the simulator runs, whenever the true row count is already known (<code>theta</code>/<code>x</code> passed directly, or a valid <code>n_simulations</code>). The closed-form logistic classifier and a caller-supplied classifier function are unaffected – neither uses this validation split at all (<a href="https://github.com/pedroliman/neuralsbi/issues/188" class="external-link">#188</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/189" class="external-link">#189</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.34" id="neuralsbi-0534">neuralsbi 0.5.34<a class="anchor" aria-label="anchor" href="#neuralsbi-0534"></a></h2>
 <ul><li>

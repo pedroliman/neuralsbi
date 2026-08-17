@@ -57,7 +57,7 @@ match Python sbi, so results are comparable across the two packages."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -117,7 +117,8 @@ match Python <code>sbi</code>, so results are comparable across the two packages
 <span>  min_lr <span class="op">=</span> <span class="fl">1e-06</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  device <span class="op">=</span> <span class="st">"cpu"</span></span>
+<span>  device <span class="op">=</span> <span class="st">"cpu"</span>,</span>
+<span>  min_val_rows <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -161,6 +162,15 @@ this into an actual, available device). Training and validation tensors
 are created there, and the net is moved there right after <code>build_net()</code>,
 so the two never disagree the way they do under a bare
 <code><a href="https://torch.mlverse.org/docs/reference/local_device.html" class="external-link">torch::with_device()</a></code>.</p></dd>
+
+
+<dt id="arg-min-val-rows">min_val_rows<a class="anchor" aria-label="anchor" href="#arg-min-val-rows"></a></dt>
+<dd><p>Smallest validation split <code><a href="check_train_controls.html">check_train_controls()</a></code> will
+accept. Every estimator here can score a real, if noisy, log-density on a
+single validation row, so the default of <code>1L</code> is unchanged for MDN, MAF
+and NSF. <code><a href="fit_nre_net.html">fit_nre_net()</a></code> passes <code>2L</code>: its atomic contrastive objective
+needs a second row to contrast against, and with only one it silently
+returns a constant zero loss instead of training.</p></dd>
 
 </dl></div>
     <div class="section level2">

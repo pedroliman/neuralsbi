@@ -28,7 +28,8 @@ train_conditional_de(
   min_lr = 1e-06,
   seed = NULL,
   verbose = FALSE,
-  device = "cpu"
+  device = "cpu",
+  min_val_rows = 1L
 )
 ```
 
@@ -72,6 +73,18 @@ train_conditional_de(
   right after `build_net()`, so the two never disagree the way they do
   under a bare
   [`torch::with_device()`](https://torch.mlverse.org/docs/reference/local_device.html).
+
+- min_val_rows:
+
+  Smallest validation split
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  will accept. Every estimator here can score a real, if noisy,
+  log-density on a single validation row, so the default of `1L` is
+  unchanged for MDN, MAF and NSF.
+  [`fit_nre_net()`](https://neuralsbi.pedrodelima.com/reference/fit_nre_net.md)
+  passes `2L`: its atomic contrastive objective needs a second row to
+  contrast against, and with only one it silently returns a constant
+  zero loss instead of training.
 
 ## Value
 

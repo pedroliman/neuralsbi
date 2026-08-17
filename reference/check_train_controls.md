@@ -21,7 +21,8 @@ check_train_controls(
   patience,
   n_restarts,
   clip_grad_norm,
-  n = NULL
+  n = NULL,
+  min_val_rows = 1L
 )
 ```
 
@@ -51,9 +52,18 @@ check_train_controls(
 
   Number of training rows, or `NULL` when they do not exist yet.
 
+- min_val_rows:
+
+  Smallest validation split this call will accept (default `1L`, i.e.
+  only require it non-empty). Raise it for an objective that needs more
+  than one validation row to produce a real signal.
+
 ## Details
 
 `n` is optional because that call happens before there are any rows.
 When it is known, `validation_fraction` is checked against it: the
 requirement is that both sides of the split come out non-empty, which
-the fraction alone cannot decide.
+the fraction alone cannot decide. `min_val_rows` raises that floor for
+callers whose objective needs more than one validation row to mean
+anything – see
+[`fit_nre_net()`](https://neuralsbi.pedrodelima.com/reference/fit_nre_net.md).
