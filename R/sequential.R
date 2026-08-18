@@ -87,6 +87,14 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   n_simulations <- check_counts(
     n_simulations, "n_simulations", min = 2L,
     what = "a scalar, or one budget per round")
+  if (!length(n_simulations) %in% c(1L, n_rounds)) {
+    stop(sprintf(paste0(
+      "`n_simulations` must be length 1 or %d (`n_rounds`), not %d. ",
+      "rep_len() would otherwise silently recycle a mismatched length ",
+      "into per-round budgets no one asked for."),
+      n_rounds, length(n_simulations)),
+      call. = FALSE)
+  }
   n_truncation_samples <- check_count(n_truncation_samples,
                                       "n_truncation_samples")
   max_proposal_batches <- check_count(
