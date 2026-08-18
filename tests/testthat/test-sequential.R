@@ -234,3 +234,30 @@ test_that("npe_sequential checks its counts before the first round", {
   expect_error(seq_call(max_proposal_batches = 0),
                "`max_proposal_batches` must be a single whole number of at least 1 since")
 })
+
+test_that("npe_sequential rejects an n_simulations vector whose length doesn't match n_rounds", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  # two budgets for three rounds used to be silently recycled by rep_len()
+  # into c(500, 1000, 500) instead of erroring (issue #191)
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 3,
+                   n_simulations = c(500, 1000),
+                   density_estimator = "linear_gaussian"),
+    "`n_simulations` must be length 1 or 3.*not 2")
+})
+
+test_that("npe_sequential accepts n_simulations as a scalar or as a full-length vector", {
+  set.seed(25)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+  scalar_fit <- npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                               n_simulations = 100,
+                               density_estimator = "linear_gaussian", seed = 1)
+  expect_equal(scalar_fit$n_simulations, 200L)
+  vector_fit <- npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                               n_simulations = c(150, 50),
+                               density_estimator = "linear_gaussian", seed = 2)
+  expect_equal(vector_fit$rounds[[1]]$n_new, 150L)
+  expect_equal(vector_fit$rounds[[2]]$n_new, 50L)
+})
