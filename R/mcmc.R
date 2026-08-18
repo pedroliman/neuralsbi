@@ -56,6 +56,8 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
   n_chains <- nrow(init)
   dim <- ncol(init)
   width <- check_slice_width(suppressWarnings(rep_len(as.numeric(width), dim)))
+  max_steps <- check_count(max_steps, "max_steps", min = 1L,
+                           why = "since slice_sample() uses it to cap the stepping-out loop")
 
   n_kept <- ceiling(n_draws / n_chains)
   n_iter <- warmup + n_kept * thin
@@ -259,6 +261,8 @@ mcmc_init <- function(prior, log_prob_fn, n_chains,
                       strategy = c("resample", "proposal"),
                       n_pool = 1000L) {
   strategy <- match.arg(strategy)
+  n_pool <- check_count(n_pool, "n_pool", min = 1L,
+                        why = "since mcmc_init() draws this many prior samples per pool")
   if (strategy == "proposal") {
     return(mcmc_init_proposal(prior, log_prob_fn, n_chains, n_pool))
   }
