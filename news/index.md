@@ -1,5 +1,30 @@
 # Changelog
 
+## neuralsbi 0.5.37
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now errors when `n_simulations` doesn’t match `n_rounds`, instead of
+  silently recycling it.** `n_simulations` is documented as “either a
+  scalar or a vector of length `n_rounds`” (`R/sequential.R`), but
+  [`check_counts()`](https://neuralsbi.pedrodelima.com/reference/check_counts.md)
+  only validated each element, never `length(n_simulations)` against
+  `n_rounds`; `budgets <- rep_len(n_simulations, n_rounds)` then
+  recycled any other length without a diagnostic.
+  `npe_sequential(prior, sim, n_rounds = 3, n_simulations = c(500, 1000))`
+  – a plausible mistake, such as forgetting the third round’s budget –
+  silently ran with budgets `c(500, 1000, 500)` instead of raising an
+  error. Since every round retrains from scratch and the point of the
+  multi-round scheme is spending a fixed budget deliberately across
+  rounds, a silently wrong per-round budget wastes or misallocates
+  simulator calls with nothing to catch it.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now checks `length(n_simulations) %in% c(1L, n_rounds)` right after
+  [`check_counts()`](https://neuralsbi.pedrodelima.com/reference/check_counts.md)
+  validates its elements, and errors naming both arguments before
+  [`rep_len()`](https://rdrr.io/r/base/rep.html) runs
+  ([\#191](https://github.com/pedroliman/neuralsbi/issues/191))
+  ([\#194](https://github.com/pedroliman/neuralsbi/issues/194)).
+
 ## neuralsbi 0.5.36
 
 - **The slice sampler now validates `max_steps` and `n_pool`, closing
@@ -596,7 +621,7 @@
   `nsbi_nre_posterior`, differing only in the class name they printed
   and, for
   [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
-  the `"NLE"`/`"NRE"` label in its unnormalized-posterior warning.
+  the “NLE”/“NRE” label in its unnormalized-posterior warning.
   [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
   (`R/nle_posterior.R`) now stamps a shared `nsbi_mcmc_posterior` class
   into the middle of the class vector – ahead of `nsbi_posterior`,
@@ -608,7 +633,7 @@
   [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
   and `print.nsbi_mcmc_posterior()`.
   [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
-  reads the `"NLE"`/`"NRE"` label off `inherits(post$fit, "nsbi_nle")`
+  reads the “NLE”/“NRE” label off `inherits(post$fit, "nsbi_nle")`
   instead of taking it from the caller, and
   `print.nsbi_mcmc_posterior()` gates its closing
   [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
