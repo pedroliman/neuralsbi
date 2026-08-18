@@ -1,5 +1,40 @@
 # Changelog
 
+## neuralsbi 0.5.36
+
+- **The slice sampler now validates `max_steps` and `n_pool`, closing
+  the gap the `width` fix in 0.5.26 explicitly left open.**
+  [`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  (`R/mcmc.R`) fed a user-supplied `max_steps` straight into
+  `steps_left <- max_steps; while (steps_left > 0L)`, and
+  [`mcmc_init()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init.md)’s
+  `n_pool` fed straight into `batch <- max(n_pool, n_chains)` inside
+  [`mcmc_init_resample()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_resample.md)/[`mcmc_init_proposal()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_proposal.md),
+  neither checked before use. Both are reachable from
+  `posterior(nle_fit_or_nre_fit, x_obs, max_steps = ..., n_pool = ...)`:
+  [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)/[`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
+  forward them through `...` to
+  [`slice_sample_surrogate()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_surrogate.md)
+  (`R/nle_posterior.R`), which passes `dots$max_steps %||% 100L` to
+  [`slice_sample()`](https://neuralsbi.pedrodelima.com/reference/slice_sample.md)
+  and `dots$n_pool %||% 1000L` to
+  [`mcmc_init()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init.md).
+  `max_steps = NA` looped forever instead of erroring, since `NA > 0L`
+  is `NA` and a `while()` condition only errors once evaluated; a zero
+  or negative `n_pool` reached
+  [`max()`](https://rdrr.io/r/base/Extremes.html) and
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  with nothing said about which argument was wrong.
+  [`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  and
+  [`mcmc_init()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init.md)
+  now check both with
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md)
+  (`R/check.R`), right where `check_slice_width()` already checks
+  `width`, before either value can drive a loop or size a batch
+  ([\#190](https://github.com/pedroliman/neuralsbi/issues/190))
+  ([\#192](https://github.com/pedroliman/neuralsbi/issues/192)).
+
 ## neuralsbi 0.5.35
 
 - **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) no

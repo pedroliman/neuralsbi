@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.35</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.36</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.36" id="neuralsbi-0536">neuralsbi 0.5.36<a class="anchor" aria-label="anchor" href="#neuralsbi-0536"></a></h2>
+<ul><li>
+<strong>The slice sampler now validates <code>max_steps</code> and <code>n_pool</code>, closing the gap the <code>width</code> fix in 0.5.26 explicitly left open.</strong> <code><a href="../reference/slice_sample_run.html">slice_sample_run()</a></code> (<code>R/mcmc.R</code>) fed a user-supplied <code>max_steps</code> straight into <code>steps_left &lt;- max_steps; while (steps_left &gt; 0L)</code>, and <code><a href="../reference/mcmc_init.html">mcmc_init()</a></code>’s <code>n_pool</code> fed straight into <code>batch &lt;- max(n_pool, n_chains)</code> inside <code><a href="../reference/mcmc_init_resample.html">mcmc_init_resample()</a></code>/<code><a href="../reference/mcmc_init_proposal.html">mcmc_init_proposal()</a></code>, neither checked before use. Both are reachable from <code>posterior(nle_fit_or_nre_fit, x_obs, max_steps = ..., n_pool = ...)</code>: <code><a href="../reference/posterior.nsbi_nle.html">posterior.nsbi_nle()</a></code>/<code><a href="../reference/posterior.nsbi_nre.html">posterior.nsbi_nre()</a></code> forward them through <code>...</code> to <code><a href="../reference/slice_sample_surrogate.html">slice_sample_surrogate()</a></code> (<code>R/nle_posterior.R</code>), which passes <code>dots$max_steps %||% 100L</code> to <code><a href="../reference/slice_sample.html">slice_sample()</a></code> and <code>dots$n_pool %||% 1000L</code> to <code><a href="../reference/mcmc_init.html">mcmc_init()</a></code>. <code>max_steps = NA</code> looped forever instead of erroring, since <code>NA &gt; 0L</code> is <code>NA</code> and a <code>while()</code> condition only errors once evaluated; a zero or negative <code>n_pool</code> reached <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max()</a></code> and <code><a href="../reference/sample_prior.html">sample_prior()</a></code> with nothing said about which argument was wrong. <code><a href="../reference/slice_sample_run.html">slice_sample_run()</a></code> and <code><a href="../reference/mcmc_init.html">mcmc_init()</a></code> now check both with <code><a href="../reference/check_count.html">check_count()</a></code> (<code>R/check.R</code>), right where <code>check_slice_width()</code> already checks <code>width</code>, before either value can drive a loop or size a batch (<a href="https://github.com/pedroliman/neuralsbi/issues/190" class="external-link">#190</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/192" class="external-link">#192</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.35" id="neuralsbi-0535">neuralsbi 0.5.35<a class="anchor" aria-label="anchor" href="#neuralsbi-0535"></a></h2>
 <ul><li>
