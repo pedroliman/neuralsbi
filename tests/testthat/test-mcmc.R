@@ -140,6 +140,31 @@ test_that("a non-finite or non-positive width is refused, not left to crash the 
   )
 })
 
+test_that("a non-finite or non-positive max_steps is refused, not left to loop on a bad count", {
+  # GitHub #190: the NEWS entry for #164/#167 flagged max_steps and n_pool as
+  # the same gap width had before that fix -- steps_left <- max_steps drives
+  # the stepping-out loop's `while (steps_left > 0L)` with no validation.
+  lp <- function(theta) rowSums(stats::dnorm(theta, log = TRUE))
+  init <- matrix(0, nrow = 4, ncol = 1)
+
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, max_steps = NA),
+    "`max_steps`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, max_steps = 0),
+    "`max_steps`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, max_steps = -1),
+    "`max_steps`"
+  )
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1, max_steps = 1.5),
+    "`max_steps`"
+  )
+})
+
 test_that("mcmc_init puts chains where the mass is", {
   set.seed(5)
   prior <- prior_uniform(low = -10, high = 10)
@@ -252,6 +277,31 @@ test_that("mcmc_init resample strategy reports a low acceptance rate, not degene
   expect_s3_class(err, "error")
   expect_match(conditionMessage(err), "low acceptance rate")
   expect_no_match(conditionMessage(err), "cannot be started")
+})
+
+test_that("a non-finite or non-positive n_pool is refused, not left to size a batch wrongly", {
+  # GitHub #190, same gap as max_steps above: n_pool sizes
+  # `batch <- max(n_pool, n_chains)` in mcmc_init_resample()/mcmc_init_proposal()
+  # with no validation.
+  prior <- prior_uniform(low = -10, high = 10)
+  lp <- function(theta) stats::dnorm(theta[, 1], mean = 5, sd = 0.5, log = TRUE)
+
+  expect_error(
+    mcmc_init(prior, lp, n_chains = 4, n_pool = NA),
+    "`n_pool`"
+  )
+  expect_error(
+    mcmc_init(prior, lp, n_chains = 4, n_pool = 0),
+    "`n_pool`"
+  )
+  expect_error(
+    mcmc_init(prior, lp, n_chains = 4, n_pool = -1),
+    "`n_pool`"
+  )
+  expect_error(
+    mcmc_init(prior, lp, n_chains = 4, strategy = "proposal", n_pool = NA),
+    "`n_pool`"
+  )
 })
 
 test_that("split-Rhat flags chains that disagree", {
