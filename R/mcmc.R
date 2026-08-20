@@ -238,11 +238,14 @@ check_slice_width <- function(width) {
 #' Starting points for the chains
 #'
 #' `"resample"` (the default, and `sbi`'s) draws a large pool from the prior,
-#' weights it by the posterior density and resamples without replacement: a
+#' weights it by the likelihood and resamples without replacement: a
 #' sampling-importance-resampling start that puts the chains where the mass is,
 #' which matters because slice sampling has no adaptation phase to rescue a bad
-#' start. If one pool does not contain `n_chains` finite draws, more are drawn
-#' and pooled in -- see [mcmc_init_resample()]. `"proposal"` just takes prior
+#' start. The importance weight is target/proposal, and since the proposal is
+#' the prior itself, the prior cancels out of the target's `prior * likelihood`
+#' and only the likelihood is left to weight by. If one pool does not contain
+#' `n_chains` finite draws, more are drawn and pooled in -- see
+#' [mcmc_init_resample()]. `"proposal"` just takes prior
 #' draws, keeping whichever land inside the posterior's support, which is
 #' cheaper per draw but wastes every draw the posterior excludes -- see
 #' [mcmc_init_proposal()].
@@ -326,7 +329,17 @@ mcmc_init_resample <- function(prior, log_prob_fn, n_chains, n_pool = 1000L) {
   # case this exists for: with a few thousand observations the log-likelihood
   # spread across prior draws runs to thousands, every weight but a handful
   # underflows to zero, and sample.int() refuses the job outright.
-  keys <- found_lp - log(-log(stats::runif(length(found_lp))))
+  #
+  # The SIR weight is target/proposal. The proposal g(theta) is the prior
+  # itself (that is what sample_prior() draws from), and the target is the
+  # unnormalized posterior p(theta) * L(x|theta), so the prior cancels and the
+  # weight is the likelihood alone: found_lp minus the prior's own
+  # contribution to it. Weighting by found_lp (the full posterior) instead
+  # double-counts the prior, over-weighting whatever it already favors -- the
+  # resample pulls back toward the prior's mode instead of toward the
+  # likelihood's peak.
+  weight <- found_lp - as.numeric(prior$log_prob(found))
+  keys <- weight - log(-log(stats::runif(length(weight))))
   idx <- order(keys, decreasing = TRUE)[seq_len(n_chains)]
   found[idx, , drop = FALSE]
 }
