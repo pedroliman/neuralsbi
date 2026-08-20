@@ -179,6 +179,41 @@ test_that("mcmc_init puts chains where the mass is", {
   expect_lt(mean(abs(resampled - 5)), mean(abs(proposed - 5)))
 })
 
+test_that("resample weighting is the likelihood alone, not the full posterior", {
+  # GitHub #195: the pool is drawn from the prior (the SIR proposal), so the
+  # importance weight -- target/proposal -- is target/prior, and since target
+  # is prior * likelihood, the prior cancels and only the likelihood is left.
+  # Weighting by found_lp (prior + likelihood, as surrogate_potential()
+  # returns it) double-counts the prior instead, which prior_uniform() can't
+  # expose because a constant drops out of the Gumbel-top-k ranking either
+  # way. A non-flat prior_normal() does expose it.
+  #
+  # prior ~ N(0, 5), likelihood ~ N(8, 3): a normal-normal conjugate update, so
+  # the correctly-weighted resample's mean has a closed form. The buggy
+  # weighting -- found_lp used directly -- resamples from prior^2 * likelihood
+  # instead, equivalent to halving the prior's variance, which has its own
+  # closed form and sits well clear of the correct one.
+  prior <- prior_normal(mean = 0, sd = 5)
+  loglik <- function(theta) stats::dnorm(theta[, 1], mean = 8, sd = 3, log = TRUE)
+  posterior_lp <- function(theta) as.numeric(prior$log_prob(theta)) + loglik(theta)
+
+  prior_var <- 25
+  lik_var <- 9
+  true_prec <- 1 / prior_var + 1 / lik_var
+  true_mean <- (8 / lik_var) / true_prec
+  buggy_prec <- 2 / prior_var + 1 / lik_var
+  buggy_mean <- (8 / lik_var) / buggy_prec
+
+  set.seed(1)
+  init <- mcmc_init(prior, posterior_lp, n_chains = 200, strategy = "resample",
+                    n_pool = 8000)
+
+  expect_equal(mean(init), true_mean, tolerance = 0.15)
+  # A regression to the old weighting would land near buggy_mean instead,
+  # about 1.2 away from true_mean -- far outside the tolerance above.
+  expect_gt(abs(mean(init) - buggy_mean), 0.5)
+})
+
 test_that("resampling survives a likelihood peaked enough to underflow", {
   # The case this broke on: a few thousand independent observations make the
   # log-density spread across prior draws run to thousands, so exponentiating
