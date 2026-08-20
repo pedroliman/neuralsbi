@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.37</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.38</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,6 +78,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.38" id="neuralsbi-0538">neuralsbi 0.5.38<a class="anchor" aria-label="anchor" href="#neuralsbi-0538"></a></h2>
+<ul><li>
+<strong><code>mcmc_init(strategy = "resample")</code> no longer double-counts the prior in its SIR weight.</strong> <code><a href="../reference/mcmc_init_resample.html">mcmc_init_resample()</a></code> (<code>R/mcmc.R</code>) draws its candidate pool from the prior – so the SIR proposal is the prior itself – and resampled without replacement using <code>log_prob_fn(cand)</code> as the weight, which for <code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> posteriors is <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s full unnormalized posterior, <code>log p(theta) + log L(x|theta)</code>. A correct importance weight is target/proposal, and since target is <code>p(theta) * L(x|theta)</code> and the proposal is <code>p(theta)</code>, the prior cancels and the weight should be <code>L(x|theta)</code> alone; weighting by the full posterior instead resampled from <code>p(theta)^2 * L(x|theta)</code>, pulling chain starts back toward the prior’s mode. <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> hid this, since a constant drops out of the Gumbel-top-k ranking either way – the bug only shows for a non-flat prior, such as <code><a href="../reference/prior_normal.html">prior_normal()</a></code> or a <code><a href="../reference/prior_custom.html">prior_custom()</a></code> with an asymmetric density. <code><a href="../reference/mcmc_init_resample.html">mcmc_init_resample()</a></code> now subtracts <code>prior$log_prob(found)</code> from the accumulated <code>found_lp</code> before building the Gumbel keys, leaving the finiteness check that selects <code>found</code> on the full posterior density unchanged (<a href="https://github.com/pedroliman/neuralsbi/issues/195" class="external-link">#195</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/197" class="external-link">#197</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.37" id="neuralsbi-0537">neuralsbi 0.5.37<a class="anchor" aria-label="anchor" href="#neuralsbi-0537"></a></h2>
 <ul><li>

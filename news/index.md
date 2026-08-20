@@ -1,5 +1,36 @@
 # Changelog
 
+## neuralsbi 0.5.38
+
+- **`mcmc_init(strategy = "resample")` no longer double-counts the prior
+  in its SIR weight.**
+  [`mcmc_init_resample()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_resample.md)
+  (`R/mcmc.R`) draws its candidate pool from the prior – so the SIR
+  proposal is the prior itself – and resampled without replacement using
+  `log_prob_fn(cand)` as the weight, which for
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  posteriors is
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  full unnormalized posterior, `log p(theta) + log L(x|theta)`. A
+  correct importance weight is target/proposal, and since target is
+  `p(theta) * L(x|theta)` and the proposal is `p(theta)`, the prior
+  cancels and the weight should be `L(x|theta)` alone; weighting by the
+  full posterior instead resampled from `p(theta)^2 * L(x|theta)`,
+  pulling chain starts back toward the prior’s mode.
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  hid this, since a constant drops out of the Gumbel-top-k ranking
+  either way – the bug only shows for a non-flat prior, such as
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  or a
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  with an asymmetric density.
+  [`mcmc_init_resample()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_resample.md)
+  now subtracts `prior$log_prob(found)` from the accumulated `found_lp`
+  before building the Gumbel keys, leaving the finiteness check that
+  selects `found` on the full posterior density unchanged
+  ([\#195](https://github.com/pedroliman/neuralsbi/issues/195))
+  ([\#197](https://github.com/pedroliman/neuralsbi/issues/197)).
+
 ## neuralsbi 0.5.37
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
