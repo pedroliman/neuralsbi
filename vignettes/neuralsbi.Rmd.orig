@@ -93,7 +93,7 @@ fit
 
 `posterior()` conditions the trained estimator on an observation. This step is quick because it only evaluates the neural network at the observed `x` values, so it runs instantly, and our `sample()` methods draw samples from our posterior object.
 
-```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked."}
+```{r posterior, fig.alt = "Pairs plot of the posterior over beta, gamma and rho with the true values marked.", dev = "ragg_png", dpi = 200}
 post  <- posterior(fit, x_obs = x_obs)
 draws <- sample(post, 4000)
 
@@ -115,7 +115,7 @@ Let's try this. Now we present our model with an outbreak with an R0 = 5 that is
 
 Note that the model doesn't see anything other than the data produced by the simulation:
 
-```{r second, fig.alt = "Pairs plot of the posterior for a second, faster outbreak from the same fit."}
+```{r second, fig.alt = "Pairs plot of the posterior for a second, faster outbreak from the same fit.", dev = "ragg_png", dpi = 200}
 theta_2 <- c(beta = 0.5, gamma = 0.1, rho = 0.3)          # R0 = 5, poorly reported
 x_obs_2 <- sir_simulator(theta_2[["beta"]], theta_2[["gamma"]], theta_2[["rho"]])
 
