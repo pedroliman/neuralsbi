@@ -223,7 +223,7 @@ minutes on a laptop, and everything after it is fast.</p>
 <span><span class="co">#&gt;   data (dim)        : 84</span></span>
 <span><span class="co">#&gt;   embedding (mlp)   : 84 -&gt; 12 features</span></span>
 <span><span class="co">#&gt;   simulations       : 10000</span></span>
-<span><span class="co">#&gt;   best val loss     : -3.2331</span></span>
+<span><span class="co">#&gt;   best val loss     : -3.1405</span></span>
 <span><span class="co">#&gt;   -&gt; build a posterior with posterior(fit, x_obs = ...)</span></span></code></pre></div>
 <p><code><a href="../reference/npe.html">npe()</a></code> drew 10000 parameter sets from the prior, ran the
 simulator on each, and trained the embedding network and a masked
@@ -243,10 +243,10 @@ object.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  beta gamma   rho </span></span>
-<span><span class="co">#&gt; 0.286 0.141 0.594</span></span>
+<span><span class="co">#&gt; 0.281 0.136 0.591</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws</span>, truth <span class="op">=</span> <span class="va">theta_true</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/neuralsbi-posterior-1.svg" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."><p class="caption">
+<img src="figures/neuralsbi-posterior-1.png" alt="Pairs plot of the posterior over beta, gamma and rho with the true values marked."><p class="caption">
 plot of chunk posterior
 </p>
 </div>
@@ -288,10 +288,10 @@ by the simulation:</p>
 <span><span class="va">draws_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="../reference/posterior.html">posterior</a></span><span class="op">(</span><span class="va">fit</span>, x_obs <span class="op">=</span> <span class="va">x_obs_2</span><span class="op">)</span>, <span class="fl">4000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">draws_2</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  beta gamma   rho </span></span>
-<span><span class="co">#&gt; 0.541 0.140 0.306</span></span>
+<span><span class="co">#&gt; 0.535 0.138 0.302</span></span>
 <span><span class="fu"><a href="../reference/pairplot.html">pairplot</a></span><span class="op">(</span><span class="va">draws_2</span>, truth <span class="op">=</span> <span class="va">theta_2</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="figures/neuralsbi-second-1.svg" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."><p class="caption">
+<img src="figures/neuralsbi-second-1.png" alt="Pairs plot of the posterior for a second, faster outbreak from the same fit."><p class="caption">
 plot of chunk second
 </p>
 </div>

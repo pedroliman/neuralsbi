@@ -110,7 +110,7 @@ fit
 #>   data (dim)        : 84
 #>   embedding (mlp)   : 84 -> 12 features
 #>   simulations       : 10000
-#>   best val loss     : -3.2331
+#>   best val loss     : -3.1405
 #>   -> build a posterior with posterior(fit, x_obs = ...)
 ```
 
@@ -135,12 +135,12 @@ draws <- sample(post, 4000)
 
 round(colMeans(draws), 3)
 #>  beta gamma   rho 
-#> 0.286 0.141 0.594
+#> 0.281 0.136 0.591
 pairplot(draws, truth = theta_true)
 ```
 
 ![Pairs plot of the posterior over beta, gamma and rho with the true
-values marked.](figures/neuralsbi-posterior-1.svg)
+values marked.](figures/neuralsbi-posterior-1.png)
 
 plot of chunk posterior
 
@@ -184,12 +184,12 @@ x_obs_2 <- sir_simulator(theta_2[["beta"]], theta_2[["gamma"]], theta_2[["rho"]]
 draws_2 <- sample(posterior(fit, x_obs = x_obs_2), 4000)
 round(colMeans(draws_2), 3)
 #>  beta gamma   rho 
-#> 0.541 0.140 0.306
+#> 0.535 0.138 0.302
 pairplot(draws_2, truth = theta_2)
 ```
 
 ![Pairs plot of the posterior for a second, faster outbreak from the
-same fit.](figures/neuralsbi-second-1.svg)
+same fit.](figures/neuralsbi-second-1.png)
 
 plot of chunk second
 
