@@ -8,7 +8,7 @@ Every simulator is taken from a published example in another package or tutorial
 | --- | --- | --- | --- |
 | `00_installation.R` | installing the package and the torch back end, optional dependencies, a smoke test | none | 5 s |
 | `01_basic_npe_example.R` | the shortest end-to-end NPE run on real data | SIR fit to the 1978 boarding-school influenza outbreak, [Stan case study](https://mc-stan.org/learn-stan/case-studies/boarding_school_case_study.html) | 2 min |
-| `02_priors.R` | `prior_uniform()`, `prior_normal()`, `prior_custom()`, `sample_prior()`, `within_support()` | Sick-Sicker calibration ranges, [darthpack](https://github.com/DARTH-git/darthpack) | 1 s |
+| `02_priors.R` | `prior_uniform()`, `prior_normal()`, the named families, `prior_independent()`, `prior_truncated()`, `prior_custom()`, `sample_prior()`, `within_support()` | Sick-Sicker calibration ranges, [darthpack](https://github.com/DARTH-git/darthpack) | 1 s |
 | `03_npe.R` | the four density estimators, training controls, `save_npe()`, `map_estimate()`, `log_prob()`, `npe_sequential()` | Sick-Sicker cohort model, [DARTH cSTM tutorial](https://github.com/DARTH-git/cohort-modeling-tutorial-intro) | 5 min |
 | `04_nle.R` | `nle()`, `log_lik()`, `likelihood_fn()`, MCMC posteriors, conditioning on n i.i.d. observations | one-compartment PK model for `Theoph`, Pinheiro and Bates via `nlme::SSfol` | 4 min |
 | `05_nre.R` | `nre()`, `log_ratio()`, the four classifiers, `num_atoms` | stochastic SIR, [mcstate SIR vignette](https://mrc-ide.github.io/mcstate/articles/sir_models.html) | 3 min |

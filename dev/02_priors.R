@@ -1,9 +1,11 @@
 # 02_priors.R ----------------------------------------------------------------
 #
-# Everything neuralsbi asks of a prior, and the three ways to build one:
-# prior_uniform(), prior_normal(), prior_custom(). Plus sample_prior(),
-# within_support(), and how parameter names travel from the prior all the way
-# to the axis labels of a diagnostic plot.
+# Everything neuralsbi asks of a prior, and the ways to build one:
+# prior_uniform(), prior_normal(), the named families (prior_lognormal(),
+# prior_beta(), prior_gamma() and the rest), prior_independent(),
+# prior_truncated(), and prior_custom() for anything left over. Plus
+# sample_prior(), within_support(), and how parameter names travel from the
+# prior all the way to the axis labels of a diagnostic plot.
 #
 # Model source
 #   Alarid-Escudero, F., Krijkamp, E., Enns, E. A., Yang, A., Hunink, M. G. M.,
@@ -76,35 +78,101 @@ print(round(sample_prior(prior_n, 3), 3))
 print(within_support(prior_n, c(-99, 99, 0)))
 
 # ---------------------------------------------------------------------------
-# 3. prior_custom(): anything else
+# 3. Named families: one marginal per parameter
+# ---------------------------------------------------------------------------
+#
+# The natural prior for these three parameters is not a box. p_S1S2 is a
+# probability, and the two hazard ratios are positive and right-skewed. A beta
+# and two log-normals say that directly. Each family constructor takes Stan's
+# argument names, and each is vectorized, so one call covers both hazard
+# ratios.
+
+prior_hr <- prior_lognormal(meanlog = c(hr_S1 = log(3), hr_S2 = log(10)),
+                            sdlog = c(0.3, 0.25))
+print(prior_hr)
+print(round(sample_prior(prior_hr, 3), 3))
+
+# The support comes from the family, not from you. A log-normal is positive
+# and a beta lives on [0, 1], and those bounds are what the posterior's
+# leakage correction rejects and renormalizes against.
+print(prior_hr$lower)
+print(prior_beta(2, 15)$upper)
+
+# ---------------------------------------------------------------------------
+# 4. prior_independent(): a different family per parameter
+# ---------------------------------------------------------------------------
+#
+# Stan writes a joint prior as one sampling statement per parameter and lets
+# the product take care of itself. prior_independent() is that, as an object.
+# Name the arguments and the names label every parameter matrix, posterior
+# sample and diagnostic plot downstream.
+
+prior_f <- prior_independent(
+  p_S1S2 = prior_beta(2, 15),
+  hr_S1  = prior_lognormal(log(3), 0.3),
+  hr_S2  = prior_lognormal(log(10), 0.25)
+)
+print(prior_f)
+print(round(sample_prior(prior_f, 5), 3))
+
+# The log-density is the sum of the marginals, one value per row.
+print(prior_f$log_prob(sample_prior(prior_f, 3)))
+
+# ---------------------------------------------------------------------------
+# 5. prior_truncated(): Stan's T[lower, upper]
+# ---------------------------------------------------------------------------
+#
+# darthpack searches hr_S2 between 5 and 15. Truncating the log-normal to that
+# interval renormalizes the density by the mass it keeps, so log_prob() stays a
+# proper log density instead of the untruncated one shifted by an unknown
+# constant. That matters here in a way it does not in Stan, where the constant
+# drops out: the prior density is summed with a learned likelihood in nle() and
+# compared against reference draws in the diagnostics.
+
+prior_t <- prior_truncated(prior_lognormal(log(10), 0.25),
+                           lower = 5, upper = 15)
+print(prior_t)
+print(range(sample_prior(prior_t, 1000)))
+print(integrate(function(z) exp(prior_t$log_prob(z)), 5, 15)$value)
+
+# A half-normal is the same idea with one bound, and comes ready-made.
+print(prior_half_normal(sd = 2))
+
+# ---------------------------------------------------------------------------
+# 6. prior_custom(): anything else
 # ---------------------------------------------------------------------------
 #
 # You supply the sampler and (optionally) the log-density. Both are checked at
 # construction with one probe call, so a shape mistake is caught here rather
 # than after the simulation budget is spent.
 #
-# The natural prior for these three parameters is not a box: p_S1S2 is a
-# probability and the two hazard ratios are positive and right-skewed. A beta
-# and two log-normals say that directly.
+# Prefer a named family wherever one fits. A family carries its own support
+# bounds, survives prior_truncated() with an exact normalizing constant, and is
+# what stan_code() writes out as a sampling statement; prior_custom() is
+# arbitrary R code and does none of those. What it buys you is dependence
+# between parameters, which no product of marginals can express. Here the
+# Sicker hazard ratio is forced above the Sick one.
 
 prior_c <- prior_custom(
   sample_fn = function(n) {
-    cbind(stats::rbeta(n, 2, 15),                  # p_S1S2
-          stats::rlnorm(n, log(3), 0.3),           # hr_S1
-          stats::rlnorm(n, log(10), 0.25))         # hr_S2
+    hr_S1 <- stats::rlnorm(n, log(3), 0.3)
+    cbind(hr_S1 = hr_S1, hr_S2 = hr_S1 * (1 + stats::rexp(n)))
   },
   log_prob_fn = function(theta) {
-    stats::dbeta(theta[, 1], 2, 15, log = TRUE) +
-      stats::dlnorm(theta[, 2], log(3), 0.3, log = TRUE) +
-      stats::dlnorm(theta[, 3], log(10), 0.25, log = TRUE)
+    hr_S1 <- theta[, 1]
+    hr_S2 <- theta[, 2]
+    lp <- stats::dlnorm(hr_S1, log(3), 0.3, log = TRUE) +
+      stats::dexp(hr_S2 / hr_S1 - 1, log = TRUE) - log(hr_S1)
+    ifelse(hr_S2 > hr_S1, lp, -Inf)
   },
-  dim = 3,
-  lower = c(0, 0, 0),
-  upper = c(1, Inf, Inf),
-  param_names = c("p_S1S2", "hr_S1", "hr_S2")
+  dim = 2,
+  lower = c(0, 0),
+  param_names = c("hr_S1", "hr_S2")
 )
 print(prior_c)
-print(round(sample_prior(prior_c, 5), 3))
+draws_c <- sample_prior(prior_c, 5)
+print(round(draws_c, 3))
+print(all(draws_c[, "hr_S2"] > draws_c[, "hr_S1"]))
 
 # The three mistakes prior_custom() catches immediately. Uncomment to see the
 # messages.
@@ -129,7 +197,7 @@ prior_nolp <- prior_custom(
 print(prior_nolp$log_prob(matrix(0.1)))   # NA, by design
 
 # ---------------------------------------------------------------------------
-# 4. Names flow through everything
+# 7. Names flow through everything
 # ---------------------------------------------------------------------------
 #
 # Here is the Sick-Sicker cohort model from the DARTH tutorial, cut down to the
@@ -187,15 +255,16 @@ print(head(round(sims$theta, 3), 3))
 print(head(round(sims$x, 4), 3))
 
 # ---------------------------------------------------------------------------
-# 5. Bounded priors and posterior leakage
+# 8. Bounded priors and posterior leakage
 # ---------------------------------------------------------------------------
 #
 # A density estimator trained in unconstrained space puts some mass outside a
 # bounded prior's support. The posterior handles that by rejection sampling and
 # by renormalizing log_prob() by the estimated acceptance probability. That
-# machinery is driven entirely by the prior's lower/upper, which is why
-# prior_uniform() and a bounded prior_custom() carry them and prior_normal()
-# does not.
+# machinery is driven entirely by the prior's lower/upper. prior_uniform()
+# carries them from its box, a named family from its own support, and
+# prior_custom() only if you pass them; prior_normal() is unbounded and carries
+# none.
 
 fit <- npe(prior, simulator, theta = sims$theta, x = sims$x,
            density_estimator = "linear_gaussian", seed = 1)

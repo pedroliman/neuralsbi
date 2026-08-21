@@ -102,16 +102,8 @@ task_two_moons <- function() {
 #' @rdname tasks
 #' @export
 task_sir <- function(N = 1e6, days = 160, n_points = 10L, n_obs_draws = 1000L) {
-  prior <- prior_custom(
-    sample_fn = function(n) cbind(stats::rlnorm(n, log(0.4), 0.5),
-                                  stats::rlnorm(n, log(0.125), 0.2)),
-    log_prob_fn = function(theta) {
-      theta <- as_theta_matrix(theta, 2L)
-      stats::dlnorm(theta[, 1], log(0.4), 0.5, log = TRUE) +
-        stats::dlnorm(theta[, 2], log(0.125), 0.2, log = TRUE)
-    },
-    dim = 2L, lower = c(0, 0)
-  )
+  prior <- prior_lognormal(meanlog = c(log(0.4), log(0.125)),
+                           sdlog = c(0.5, 0.2))
   obs_times <- round(seq(1, days, length.out = n_points))
   simulator <- function(theta) {
     beta <- theta[1]; gamma <- theta[2]

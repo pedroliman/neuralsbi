@@ -92,31 +92,15 @@ simulator <- function(beta, gamma, phi_inv) {
 #   gamma   ~ normal(0.4, 0.5)
 #   phi_inv ~ exponential(5)
 #
-# so the first two are half-normals truncated at zero. prior_custom() takes the
-# sampler and the log-density and is checked at construction, including one
-# probe call, so a shape mistake surfaces here rather than 4000 simulations
-# later.
+# so the first two are normals truncated at zero. prior_truncated() is the R
+# spelling of Stan's T[0,]: it cuts the density at the bound and renormalizes by
+# the mass it keeps. prior_independent() then multiplies the three marginals
+# together, and the argument names become the parameter names.
 
-rtnorm0 <- function(n, m, s) {
-  stats::qnorm(stats::runif(n, stats::pnorm(0, m, s), 1), m, s)
-}
-dtnorm0 <- function(x, m, s) {
-  stats::dnorm(x, m, s, log = TRUE) -
-    log(stats::pnorm(0, m, s, lower.tail = FALSE))
-}
-
-prior <- prior_custom(
-  sample_fn = function(n) {
-    cbind(rtnorm0(n, 2, 1), rtnorm0(n, 0.4, 0.5), stats::rexp(n, 5))
-  },
-  log_prob_fn = function(theta) {
-    dtnorm0(theta[, 1], 2, 1) +
-      dtnorm0(theta[, 2], 0.4, 0.5) +
-      stats::dexp(theta[, 3], 5, log = TRUE)
-  },
-  dim = 3,
-  lower = 0,
-  param_names = c("beta", "gamma", "phi_inv")
+prior <- prior_independent(
+  beta    = prior_truncated(prior_normal(mean = 2, sd = 1), lower = 0),
+  gamma   = prior_truncated(prior_normal(mean = 0.4, sd = 0.5), lower = 0),
+  phi_inv = prior_exponential(rate = 5)
 )
 print(prior)
 

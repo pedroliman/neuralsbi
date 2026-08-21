@@ -48,14 +48,11 @@ save_plot <- function(p, name) {
 task <- task_sir()
 print(task)
 
-# task_sir()'s prior is a prior_custom() without parameter names, so name the
-# columns here and they will label every axis from now on.
-prior <- prior_custom(
-  sample_fn = task$prior$sample,
-  log_prob_fn = task$prior$log_prob,
-  dim = 2L, lower = c(0, 0),
-  param_names = c("beta", "gamma")
-)
+# task_sir()'s prior carries no parameter names, so restate it here with names
+# and they will label every axis from now on. It is the same pair of
+# log-normals sbibm uses.
+prior <- prior_lognormal(meanlog = c(beta = log(0.4), gamma = log(0.125)),
+                         sdlog = c(0.5, 0.2))
 simulator <- function(theta) {
   stats::setNames(task$simulator(theta), paste0("t", 1:10))
 }
