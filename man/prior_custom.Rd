@@ -50,7 +50,9 @@ Everything is therefore checked at construction, including one probe call of
 
 A custom prior is arbitrary R code rather than a named distribution with
 parameters, so \code{\link[=stan_code]{stan_code()}} cannot restate it as a Stan sampling statement.
-Take \code{stan_code(fit, model = FALSE)} and write the model block yourself.
+Take \code{stan_code(fit, model = FALSE)} and write the model block yourself, or
+build the prior out of \link{prior_families} and \code{\link[=prior_independent]{prior_independent()}} instead,
+which \code{\link[=stan_code]{stan_code()}} does write out.
 }
 
 \examples{

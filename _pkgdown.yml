@@ -110,6 +110,9 @@ reference:
   - priors
   - prior_uniform
   - prior_normal
+  - prior_families
+  - prior_independent
+  - prior_truncated
   - prior_custom
   - sample_prior
   - within_support

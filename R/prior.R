@@ -5,6 +5,22 @@
 #' carry `lower`/`upper` support limits, which are used to reject out-of-support
 #' posterior samples ("leakage" correction).
 #'
+#' There are four ways to build one. [prior_uniform()] is the box prior most
+#' benchmark tasks use. [prior_normal()] and the named families in
+#' [prior_families] (log-normal, exponential, gamma, beta, Student-t, Cauchy
+#' and the half versions of the last two) give one marginal per parameter,
+#' under Stan's argument names. [prior_independent()] multiplies those together
+#' into a joint prior, and [prior_truncated()] bounds one, renormalizing the
+#' density by the mass it keeps. [prior_custom()] takes a sampler and a density
+#' you write yourself, for anything the families do not cover.
+#'
+#' Prefer a named family over [prior_custom()] where one fits. A family carries
+#' its support bounds into the leakage correction, survives [prior_truncated()]
+#' with an exact normalizing constant, and is what [stan_code()] writes out as
+#' a sampling statement; a custom prior does none of those.
+#'
+#' @seealso [prior_families], [prior_independent()], [prior_truncated()],
+#'   [sample_prior()], [within_support()].
 #' @name priors
 NULL
 
@@ -64,8 +80,20 @@ prior_uniform <- function(low, high) {
     const <- -sum(log(high - low))
     ifelse(inside, const, -Inf)
   }
+  # The closures above are the ones this prior has always used; `marginals` is
+  # the same distribution restated in the canonical form of R/prior_families.R,
+  # so prior_truncated() and prior_independent() can take a uniform apart.
+  # An infinite bound is an improper prior with no CDF to invert, so it gets no
+  # marginal; the closures above still work, as they always have.
+  marginals <- if (all(is.finite(low)) && all(is.finite(high))) {
+    lapply(seq_len(d), function(j) {
+      new_marginal("uniform", list(min = low[[j]], max = high[[j]]),
+                   label = param_label(param_names, j))
+    })
+  }
   new_prior(sample_fn, log_prob_fn, d, lower = low, upper = high,
-            type = "uniform", param_names = param_names)
+            type = "uniform", param_names = param_names,
+            params = list(low = low, high = high, marginals = marginals))
 }
 
 #' Independent normal prior
@@ -99,9 +127,15 @@ prior_normal <- function(mean, sd = 1) {
                  nrow = nrow(theta))
     rowSums(lp)
   }
+  marginals <- if (all(is.finite(mean)) && all(is.finite(sd))) {
+    lapply(seq_len(d), function(j) {
+      new_marginal("normal", list(mean = mean[[j]], sd = sd[[j]]),
+                   label = param_label(param_names, j))
+    })
+  }
   new_prior(sample_fn, log_prob_fn, d, lower = NULL, upper = NULL,
             type = "normal", param_names = param_names,
-            params = list(mean = mean, sd = sd))
+            params = list(mean = mean, sd = sd, marginals = marginals))
 }
 
 #' Build a prior from arbitrary sampling / density functions
@@ -133,7 +167,9 @@ prior_normal <- function(mean, sd = 1) {
 #' @section Stan export:
 #' A custom prior is arbitrary R code rather than a named distribution with
 #' parameters, so [stan_code()] cannot restate it as a Stan sampling statement.
-#' Take `stan_code(fit, model = FALSE)` and write the model block yourself.
+#' Take `stan_code(fit, model = FALSE)` and write the model block yourself, or
+#' build the prior out of [prior_families] and [prior_independent()] instead,
+#' which [stan_code()] does write out.
 #' @examples
 #' prior <- prior_custom(
 #'   sample_fn = function(n) cbind(rexp(n, 1), rexp(n, 2)),
@@ -254,6 +290,17 @@ print.nsbi_prior <- function(x, ...) {
   }
   if (!is.null(x$upper)) {
     cat("  upper:", paste(signif(x$upper, 4), collapse = ", "), "\n")
+  }
+  # One line per marginal, which is the only place a family's parameters show
+  # up. Skipped for uniform and normal: a uniform is fully described by the
+  # bounds already printed, and prior_normal() has printed the way it does
+  # since before families existed.
+  if (!is.null(x$params$marginals) && !x$type %in% c("uniform", "normal")) {
+    described <- describe_marginals(x$params$marginals)
+    nm <- x$param_names %||% sprintf("theta[%d]", seq_along(described))
+    for (j in seq_along(described)) {
+      cat(sprintf("  %s ~ %s\n", nm[[j]], described[[j]]))
+    }
   }
   invisible(x)
 }
