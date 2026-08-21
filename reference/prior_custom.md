@@ -64,7 +64,14 @@ A custom prior is arbitrary R code rather than a named distribution with
 parameters, so
 [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
 cannot restate it as a Stan sampling statement. Take
-`stan_code(fit, model = FALSE)` and write the model block yourself.
+`stan_code(fit, model = FALSE)` and write the model block yourself, or
+build the prior out of
+[prior_families](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+and
+[`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+instead, which
+[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+does write out.
 
 ## Examples
 

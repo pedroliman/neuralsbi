@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.38</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,6 +56,10 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/neuralsbi.html">Get started</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/methods.html">Guide to neural SBI methods</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -78,6 +82,22 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.0" id="neuralsbi-060">neuralsbi 0.6.0<a class="anchor" aria-label="anchor" href="#neuralsbi-060"></a></h2>
+<ul><li>
+<strong>Priors are no longer three constructors.</strong> <code><a href="../reference/prior_families.html">prior_lognormal()</a></code>, <code><a href="../reference/prior_families.html">prior_exponential()</a></code>, <code><a href="../reference/prior_families.html">prior_gamma()</a></code>, <code><a href="../reference/prior_families.html">prior_beta()</a></code>, <code><a href="../reference/prior_families.html">prior_student_t()</a></code>, <code><a href="../reference/prior_families.html">prior_cauchy()</a></code>, <code><a href="../reference/prior_families.html">prior_half_normal()</a></code> and <code><a href="../reference/prior_families.html">prior_half_cauchy()</a></code> (<code>R/prior_families.R</code>) build a prior from a named distribution family under Stan’s argument names, vectorized over parameters the way <code><a href="../reference/prior_normal.html">prior_normal()</a></code> already is. A named family sets <code>lower</code>/<code>upper</code> from its own support, so the out-of-support rejection and the <code>log_prob</code> renormalization in <code>R/posterior.R</code> get the right region with nothing further to declare (<a href="https://github.com/pedroliman/neuralsbi/issues/199" class="external-link">#199</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+<li>
+<strong><code><a href="../reference/prior_independent.html">prior_independent()</a></code> multiplies per-parameter priors into a joint one.</strong> This is what most <code><a href="../reference/prior_custom.html">prior_custom()</a></code> calls were written to do by hand, and doing it by hand is where the quiet mistakes live: a <code>log_prob_fn</code> that returns one number instead of one per row, or a <code>lower</code> of the wrong length that <code><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep()</a></code> recycles into a support test rejecting the wrong draws. Components may be any <code>nsbi_prior</code>, including multi-parameter ones and a <code><a href="../reference/prior_custom.html">prior_custom()</a></code>. Argument names name one-parameter components; a wider component keeps its own <code>param_names</code> (<a href="https://github.com/pedroliman/neuralsbi/issues/199" class="external-link">#199</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+<li>
+<strong><code><a href="../reference/prior_truncated.html">prior_truncated()</a></code> is Stan’s <code>T[lower, upper]</code>, with the density renormalized by the mass it keeps.</strong> Leaving the normalizing constant off would be harmless for a posterior sampled by MCMC on its own, but <code><a href="../reference/nle.html">nle()</a></code> and <code><a href="../reference/nre.html">nre()</a></code> sum the prior density with a learned likelihood in <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code> (<code>R/mcmc.R</code>), so a prior short a constant is a prior of the wrong shape relative to that likelihood. Bounds intersect with the family’s own support and with any earlier truncation. Truncating a <code><a href="../reference/prior_custom.html">prior_custom()</a></code> errors rather than returning an unnormalized density, since there is no CDF behind it to renormalize against (<a href="https://github.com/pedroliman/neuralsbi/issues/199" class="external-link">#199</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+<li>
+<strong><code><a href="../reference/stan_export.html">stan_code()</a></code> writes the new families out as sampling statements.</strong> Uniform and normal priors still travel through the data block, unchanged. Every other family becomes a literal sampling statement carrying <code>T[,]</code> on whichever side the support was cut, and the parameter block declares matching constraints: a shared bound gives <code>vector&lt;lower=...&gt;[Q] theta</code>, differing bounds give per-parameter <code>real</code>s assembled in <code>transformed parameters</code>. A <code><a href="../reference/prior_custom.html">prior_custom()</a></code> still errors, now naming <code><a href="../reference/prior_families.html">?prior_families</a></code> as the alternative (<a href="https://github.com/pedroliman/neuralsbi/issues/199" class="external-link">#199</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+<li>
+<code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> and <code><a href="../reference/prior_normal.html">prior_normal()</a></code> now carry the same internal per-parameter form as the new families, so both can be truncated and composed. Their closures, printing and Stan output are unchanged. <code>print.nsbi_prior()</code> gains one line per marginal for the new types (<code>p ~ beta(2, 15)</code>, <code>s ~ normal(0, 1.5) T[0, ]</code>) (<a href="https://github.com/pedroliman/neuralsbi/issues/199" class="external-link">#199</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+<li>
+<code><a href="../reference/tasks.html">task_sir()</a></code>’s prior (<code>R/tasks.R</code>) is now a <code><a href="../reference/prior_families.html">prior_lognormal()</a></code> rather than the same two log-normals written out through <code><a href="../reference/prior_custom.html">prior_custom()</a></code>, so an <code><a href="../reference/nle.html">nle()</a></code> fit on that task exports with a model block instead of erroring (<a href="https://github.com/pedroliman/neuralsbi/issues/199" class="external-link">#199</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+<li>New <code><a href="../articles/methods.html">vignette("methods")</a></code>, a guide to the methods this package implements: NPE, sequential NPE, NLE and NRE, the MDN/MAF/NSF density estimators, and the SBC, coverage, TARP and C2ST diagnostics. Each entry names the paper the method comes from and then the function that runs it, so a reader who knows a method by its citation can find the call. Citations resolve through <code>inst/REFERENCES.bib</code>, so every entry renders with a link out to the DOI (<a href="https://github.com/pedroliman/neuralsbi/issues/200" class="external-link">#200</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/201" class="external-link">#201</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.38" id="neuralsbi-0538">neuralsbi 0.5.38<a class="anchor" aria-label="anchor" href="#neuralsbi-0538"></a></h2>
 <ul><li>

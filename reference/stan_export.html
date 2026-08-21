@@ -55,7 +55,7 @@ nothing has to be linked against torch at run time."><meta property="og:image" c
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.38</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,6 +64,10 @@ nothing has to be linked against torch at run time."><meta property="og:image" c
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/neuralsbi.html">Get started</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/methods.html">Guide to neural SBI methods</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -190,6 +194,21 @@ generated Stan. Refit with <code>"maf"</code> if you need a flow.</p>
 density; a ratio estimator holds a classifier instead, and there is no
 <code>p(x | theta)</code> in it to write out.</p>
     </div>
+    <div class="section level2">
+    <h2 id="supported-priors">Supported priors<a class="anchor" aria-label="anchor" href="#supported-priors"></a></h2>
+
+
+
+<p>Only <code>model = TRUE</code> needs a prior, since only then is there a model block to
+put one in. <code><a href="prior_uniform.html">prior_uniform()</a></code> and <code><a href="prior_normal.html">prior_normal()</a></code> travel as data, so their
+bounds and their mean and standard deviation come from <code>stan_data()</code> and the
+compiled model does not care what they are. Every other named family (see
+<a href="prior_families.html">prior_families</a>), including <code><a href="prior_independent.html">prior_independent()</a></code> products and
+<code><a href="prior_truncated.html">prior_truncated()</a></code> bounds, is written out as literal sampling statements
+with <code>T[,]</code> where the support was cut down. A <code><a href="prior_custom.html">prior_custom()</a></code> cannot be
+written out at all: take <code>stan_code(fit, model = FALSE)</code> and write the model
+block yourself.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
@@ -210,9 +229,9 @@ density; a ratio estimator holds a classifier instead, and there is no
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="fu">stan_data</span><span class="op">(</span><span class="va">fit</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_nw  : int 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_w   : num [1:3] 2.46e-18 9.57e-01 2.91e-01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_w   : num [1:3] 1.07e-17 9.58e-01 2.87e-01</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ N        : int 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ x        : num [1:10, 1] 0.128 1.352 -0.507 -0.931 0.203 ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ x        : num [1:10, 1] 0.000554 -0.094556 0.217477 0.093222 -0.079257 ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_low : num -3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ nsbi_high: num 3</span>
 </code></pre></div>

@@ -59,7 +59,7 @@ sample_fn(2) and, when it is given, log_prob_fn() on those two rows."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.38</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,6 +68,10 @@ sample_fn(2) and, when it is given, log_prob_fn() on those two rows."><meta prop
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/neuralsbi.html">Get started</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/methods.html">Guide to neural SBI methods</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -157,7 +161,9 @@ its first argument. See <a href="nsbi_simulator.html">nsbi_simulator</a>.</p></d
 
 <p>A custom prior is arbitrary R code rather than a named distribution with
 parameters, so <code><a href="stan_export.html">stan_code()</a></code> cannot restate it as a Stan sampling statement.
-Take <code>stan_code(fit, model = FALSE)</code> and write the model block yourself.</p>
+Take <code>stan_code(fit, model = FALSE)</code> and write the model block yourself, or
+build the prior out of <a href="prior_families.html">prior_families</a> and <code><a href="prior_independent.html">prior_independent()</a></code> instead,
+which <code><a href="stan_export.html">stan_code()</a></code> does write out.</p>
     </div>
 
     <div class="section level2">

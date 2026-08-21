@@ -252,6 +252,19 @@ Define the prior distribution over simulator parameters.
   : Box-uniform (independent uniform) prior
 - [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
   : Independent normal prior
+- [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_exponential()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_gamma()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_beta()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_student_t()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_cauchy()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_half_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  [`prior_half_cauchy()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  : Named prior families
+- [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  : Combine independent priors into one joint prior
+- [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
+  : Truncate a prior to a box
 - [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
   : Build a prior from arbitrary sampling / density functions
 - [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
@@ -399,3 +412,11 @@ Reference inference problems shared by the tests and benchmarks.
 
   Train a neural posterior estimator from a prior and a simulator to
   perform amortized, likelihood-free Bayesian inference in R.
+
+### Methods and references
+
+- [Guide to neural SBI
+  methods](https://neuralsbi.pedrodelima.com/articles/methods.md):
+
+  The methods neuralsbi implements, the paper behind each one, and the
+  function that runs it.

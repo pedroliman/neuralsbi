@@ -99,6 +99,27 @@ not exported at all. What gets transpiled here is a density; a ratio
 estimator holds a classifier instead, and there is no `p(x | theta)` in
 it to write out.
 
+## Supported priors
+
+Only `model = TRUE` needs a prior, since only then is there a model
+block to put one in.
+[`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+and
+[`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+travel as data, so their bounds and their mean and standard deviation
+come from `stan_data()` and the compiled model does not care what they
+are. Every other named family (see
+[prior_families](https://neuralsbi.pedrodelima.com/reference/prior_families.md)),
+including
+[`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+products and
+[`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
+bounds, is written out as literal sampling statements with `T[,]` where
+the support was cut down. A
+[`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+cannot be written out at all: take `stan_code(fit, model = FALSE)` and
+write the model block yourself.
+
 ## Examples
 
 ``` r
@@ -119,9 +140,9 @@ cat(substr(stan_code(fit), 1, 400))
 str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
 #> List of 6
 #>  $ nsbi_nw  : int 3
-#>  $ nsbi_w   : num [1:3] 2.46e-18 9.57e-01 2.91e-01
+#>  $ nsbi_w   : num [1:3] 1.07e-17 9.58e-01 2.87e-01
 #>  $ N        : int 10
-#>  $ x        : num [1:10, 1] 0.128 1.352 -0.507 -0.931 0.203 ...
+#>  $ x        : num [1:10, 1] 0.000554 -0.094556 0.217477 0.093222 -0.079257 ...
 #>  $ nsbi_low : num -3
 #>  $ nsbi_high: num 3
 ```

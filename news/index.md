@@ -1,5 +1,99 @@
 # Changelog
 
+## neuralsbi 0.6.0
+
+- **Priors are no longer three constructors.**
+  [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
+  [`prior_exponential()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
+  [`prior_gamma()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
+  [`prior_beta()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
+  [`prior_student_t()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
+  [`prior_cauchy()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
+  [`prior_half_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  and
+  [`prior_half_cauchy()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  (`R/prior_families.R`) build a prior from a named distribution family
+  under Stan’s argument names, vectorized over parameters the way
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  already is. A named family sets `lower`/`upper` from its own support,
+  so the out-of-support rejection and the `log_prob` renormalization in
+  `R/posterior.R` get the right region with nothing further to declare
+  ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+- **[`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  multiplies per-parameter priors into a joint one.** This is what most
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  calls were written to do by hand, and doing it by hand is where the
+  quiet mistakes live: a `log_prob_fn` that returns one number instead
+  of one per row, or a `lower` of the wrong length that
+  [`sweep()`](https://rdrr.io/r/base/sweep.html) recycles into a support
+  test rejecting the wrong draws. Components may be any `nsbi_prior`,
+  including multi-parameter ones and a
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md).
+  Argument names name one-parameter components; a wider component keeps
+  its own `param_names`
+  ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+- **[`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
+  is Stan’s `T[lower, upper]`, with the density renormalized by the mass
+  it keeps.** Leaving the normalizing constant off would be harmless for
+  a posterior sampled by MCMC on its own, but
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) sum the
+  prior density with a learned likelihood in
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  (`R/mcmc.R`), so a prior short a constant is a prior of the wrong
+  shape relative to that likelihood. Bounds intersect with the family’s
+  own support and with any earlier truncation. Truncating a
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  errors rather than returning an unnormalized density, since there is
+  no CDF behind it to renormalize against
+  ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+- **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  writes the new families out as sampling statements.** Uniform and
+  normal priors still travel through the data block, unchanged. Every
+  other family becomes a literal sampling statement carrying `T[,]` on
+  whichever side the support was cut, and the parameter block declares
+  matching constraints: a shared bound gives
+  `vector<lower=...>[Q] theta`, differing bounds give per-parameter
+  `real`s assembled in `transformed parameters`. A
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  still errors, now naming
+  [`?prior_families`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  as the alternative
+  ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+- [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  and
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  now carry the same internal per-parameter form as the new families, so
+  both can be truncated and composed. Their closures, printing and Stan
+  output are unchanged. `print.nsbi_prior()` gains one line per marginal
+  for the new types (`p ~ beta(2, 15)`, `s ~ normal(0, 1.5) T[0, ]`)
+  ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+- [`task_sir()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)’s
+  prior (`R/tasks.R`) is now a
+  [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
+  rather than the same two log-normals written out through
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md),
+  so an [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  fit on that task exports with a model block instead of erroring
+  ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+- New
+  [`vignette("methods")`](https://neuralsbi.pedrodelima.com/articles/methods.md),
+  a guide to the methods this package implements: NPE, sequential NPE,
+  NLE and NRE, the MDN/MAF/NSF density estimators, and the SBC,
+  coverage, TARP and C2ST diagnostics. Each entry names the paper the
+  method comes from and then the function that runs it, so a reader who
+  knows a method by its citation can find the call. Citations resolve
+  through `inst/REFERENCES.bib`, so every entry renders with a link out
+  to the DOI
+  ([\#200](https://github.com/pedroliman/neuralsbi/issues/200))
+  ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 ## neuralsbi 0.5.38
 
 - **`mcmc_init(strategy = "resample")` no longer double-counts the prior
