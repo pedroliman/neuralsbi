@@ -1,0 +1,108 @@
+---
+title: "Guide to neural SBI methods"
+description: >
+  The methods neuralsbi implements, the paper behind each one, and the function
+  that runs it.
+output: rmarkdown::html_vignette
+bibliography: ../inst/REFERENCES.bib
+link-citations: true
+vignette: >
+  %\VignetteIndexEntry{Guide to neural SBI methods}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This page maps each method in `neuralsbi` to the paper it comes from and the function that runs it. Where the implementation departs from the paper, the entry says so. For a worked example, read `vignette("neuralsbi")` instead.
+
+## Background
+
+- Survey of the field, and the source of the NPE/NLE/NRE naming: @cranmer2020frontier.
+- Head-to-head comparison of the same methods on shared tasks: @lueckmann2021benchmarking.
+- Python `sbi`, whose defaults and argument names `neuralsbi` follows: @tejerocantero2020sbi.
+
+## Inference methods
+
+### Neural posterior estimation
+
+- Trains a conditional density estimator on prior draws, so the fitted network is the posterior. Conditioning on a new observation costs one forward pass, not an MCMC run.
+- Canonical: @papamakarios2016npe, which introduced conditional density estimation as a replacement for ABC rejection.
+- `npe()` runs the single-round amortized case. Sequential correction schemes such as APT [@greenberg2019apt] are not implemented; see truncated proposals below.
+- Functions: `npe()`, then `posterior()` and `sample()`.
+
+### Sequential neural posterior estimation
+
+- Concentrates the simulation budget near one observation over several rounds. The result is not amortized and is trustworthy only near that observation.
+- `npe_sequential()` implements truncated proposals (TSNPE) of @deistler2022tsnpe. Each round draws from the prior restricted to the current posterior's highest-probability region, which keeps the plain NPE loss valid without importance weights.
+
+### Neural likelihood estimation
+
+- Learns the surrogate likelihood \(q(x \mid \theta)\). The posterior follows from Bayes' rule and is sampled with MCMC.
+- Canonical: @papamakarios2019snl, which introduced sequential neural likelihood with autoregressive flows.
+- `nle()` trains the same likelihood estimator but stays single-round, so repeated independent observations are a sum over one trained density.
+- Functions: `nle()`, `log_lik()`, `posterior()`. The default sampler is the vectorized slice sampler of @neal2003slice; `stan_code()` writes the estimator out as Stan code instead.
+
+### Neural likelihood-ratio estimation
+
+- Trains a binary classifier for \(r(\theta, x) = p(x \mid \theta) / p(x)\) rather than either density, then samples the implied posterior with MCMC.
+- Canonical: @hermans2020nre, the amortized approximate likelihood ratio.
+- `nre()` trains the atomic contrastive objective of @durkan2020contrastive by default, matching `sbi`'s `NRE_B`, with 10 atoms per simulation.
+- Functions: `nre()`, `log_ratio()`, `posterior()`.
+
+## Density estimators
+
+All three neural estimators train on z-scored data and are selected through `density_estimator=` in `npe()` or `nle()`. A closed-form `"linear_gaussian"` option needs no `torch` and is exact for linear-Gaussian models. It exists as a test oracle and a fallback, and has no paper behind it.
+
+### Mixture density network
+
+- A multilayer perceptron maps `x` to the logits, means, and full Cholesky factors of a Gaussian mixture over \(\theta\).
+- Canonical: Bishop's 1994 technical report, [Mixture Density Networks](https://publications.aston.ac.uk/id/eprint/373/), which has no DOI.
+- @papamakarios2016npe made the MDN the first density estimator used for NPE, which is the form implemented here.
+- Select with `npe(density_estimator = "mdn")`; `n_components` and `hidden` size it.
+
+### Masked autoregressive flow
+
+- Stacks affine autoregressive transforms to a standard-normal base. Density evaluation is one forward pass; sampling inverts one dimension at a time.
+- Canonical: @papamakarios2017maf, built on the MADE masking scheme of @germain2015made.
+- The default estimator, matching `sbi`. Select with `npe(density_estimator = "maf")`; `n_transforms` sets the depth.
+
+### Neural spline flow
+
+- Replaces MAF's affine transform with a monotonic rational-quadratic spline, which helps on sharply non-Gaussian posteriors.
+- Canonical: @durkan2019nsf.
+- Select with `npe(density_estimator = "nsf")`; `n_bins` and `tail_bound` control the spline. Ours is autoregressive, whereas `sbi`'s NSF uses coupling layers.
+
+## Diagnostics
+
+### Simulation-based calibration
+
+- Ranks the true parameter among posterior draws over many prior draws. Calibrated posteriors give uniform ranks. The test is marginal, one parameter at a time.
+- Canonical: @talts2018sbc.
+- Functions: `sbc()`, `plot_sbc()`.
+
+### Expected coverage
+
+- Turns the SBC ranks into nominal against empirical coverage at each credible level. Calibrated posteriors lie on the diagonal.
+- @hermans2022crisis is the reason to run it: published SBI posteriors are often overconfident, and coverage is what exposes that.
+- Functions: `expected_coverage()`, `plot_coverage()`.
+
+### TARP
+
+- Measures coverage of distance-based credible regions around random reference points. This is a joint test, so it catches a posterior whose marginals are calibrated but whose correlations are wrong.
+- Canonical: @lemos2023tarp.
+- Functions: `tarp()`, `plot_tarp()`.
+
+### Classifier two-sample test
+
+- Trains a classifier to tell two sets of draws apart. Accuracy near 0.5 means they are indistinguishable.
+- Canonical: @lopezpaz2017c2st.
+- `c2st()` uses cross-validated logistic regression on jointly z-scored draws. That classifier is linear, so it sees a shift in location but is close to blind to a difference in spread or dependence. `sbi` uses an MLP, so a 0.5 from here is the weaker claim.
+
+## Not implemented
+
+- Sequential NPE with a proposal correction, SNPE-A through APT [@greenberg2019apt]. `npe_sequential()` covers the truncated-proposal case only. Python `sbi` has the rest [@tejerocantero2020sbi].
+- Flow matching and score-based posterior estimation, FMPE and NPSE. Use `sbi`.
+- Coupling-layer flows. Both MAF and NSF here are autoregressive.
+- Convolutional and recurrent embedding networks. `embedding_mlp()` builds a fully connected summary network and nothing else.
+- Local calibration tests such as L-C2ST. `sbc()`, `tarp()` and `expected_coverage()` all average over the prior.
+
+## References
