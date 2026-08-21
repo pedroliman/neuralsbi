@@ -9,3 +9,22 @@ how to (a) draw samples and (b) evaluate its log-density. Bounded priors also
 carry \code{lower}/\code{upper} support limits, which are used to reject out-of-support
 posterior samples ("leakage" correction).
 }
+\details{
+There are four ways to build one. \code{\link[=prior_uniform]{prior_uniform()}} is the box prior most
+benchmark tasks use. \code{\link[=prior_normal]{prior_normal()}} and the named families in
+\link{prior_families} (log-normal, exponential, gamma, beta, Student-t, Cauchy
+and the half versions of the last two) give one marginal per parameter,
+under Stan's argument names. \code{\link[=prior_independent]{prior_independent()}} multiplies those together
+into a joint prior, and \code{\link[=prior_truncated]{prior_truncated()}} bounds one, renormalizing the
+density by the mass it keeps. \code{\link[=prior_custom]{prior_custom()}} takes a sampler and a density
+you write yourself, for anything the families do not cover.
+
+Prefer a named family over \code{\link[=prior_custom]{prior_custom()}} where one fits. A family carries
+its support bounds into the leakage correction, survives \code{\link[=prior_truncated]{prior_truncated()}}
+with an exact normalizing constant, and is what \code{\link[=stan_code]{stan_code()}} writes out as
+a sampling statement; a custom prior does none of those.
+}
+\seealso{
+\link{prior_families}, \code{\link[=prior_independent]{prior_independent()}}, \code{\link[=prior_truncated]{prior_truncated()}},
+\code{\link[=sample_prior]{sample_prior()}}, \code{\link[=within_support]{within_support()}}.
+}

@@ -7,8 +7,12 @@
 stan_model_blocks(fit, name, packed)
 }
 \description{
-Only \code{prior_uniform()} and \code{prior_normal()} can be written out; anything
-built with \code{prior_custom()} is arbitrary R code with no Stan counterpart, so
-the model block is the user's to write.
+\code{prior_uniform()} and \code{prior_normal()} are written out through the data
+block, so one compiled model serves any bounds and any prior mean. Every
+other named family (see \link{prior_families}) becomes a literal Stan sampling
+statement instead: its parameters are what pick the distribution, and there
+is nothing left to vary at run time. A prior built with \code{\link[=prior_custom]{prior_custom()}} is
+arbitrary R code with no Stan counterpart, so the model block is the user's
+to write.
 }
 \keyword{internal}

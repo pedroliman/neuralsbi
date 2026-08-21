@@ -66,23 +66,12 @@ simulator <- function(beta, gamma, phi_inv) {
                   paste0("day", seq_len(n_days)))
 }
 
-rtnorm0 <- function(n, m, s) {
-  stats::qnorm(stats::runif(n, stats::pnorm(0, m, s), 1), m, s)
-}
-dtnorm0 <- function(x, m, s) {
-  stats::dnorm(x, m, s, log = TRUE) -
-    log(stats::pnorm(0, m, s, lower.tail = FALSE))
-}
-
-prior <- prior_custom(
-  sample_fn = function(n) cbind(rtnorm0(n, 2, 1), rtnorm0(n, 0.4, 0.5),
-                                stats::rexp(n, 5)),
-  log_prob_fn = function(theta) {
-    dtnorm0(theta[, 1], 2, 1) + dtnorm0(theta[, 2], 0.4, 0.5) +
-      stats::dexp(theta[, 3], 5, log = TRUE)
-  },
-  dim = 3, lower = 0,
-  param_names = c("beta", "gamma", "phi_inv")
+# The case study's prior, as in 01: two normals truncated at zero and an
+# exponential.
+prior <- prior_independent(
+  beta    = prior_truncated(prior_normal(mean = 2, sd = 1), lower = 0),
+  gamma   = prior_truncated(prior_normal(mean = 0.4, sd = 0.5), lower = 0),
+  phi_inv = prior_exponential(rate = 5)
 )
 
 estimator <- if (has_torch) "maf" else "linear_gaussian"

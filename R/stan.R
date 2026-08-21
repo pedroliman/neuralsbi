@@ -53,6 +53,18 @@
 #' density; a ratio estimator holds a classifier instead, and there is no
 #' `p(x | theta)` in it to write out.
 #'
+#' @section Supported priors:
+#'
+#' Only `model = TRUE` needs a prior, since only then is there a model block to
+#' put one in. [prior_uniform()] and [prior_normal()] travel as data, so their
+#' bounds and their mean and standard deviation come from [stan_data()] and the
+#' compiled model does not care what they are. Every other named family (see
+#' [prior_families]), including [prior_independent()] products and
+#' [prior_truncated()] bounds, is written out as literal sampling statements
+#' with `T[,]` where the support was cut down. A [prior_custom()] cannot be
+#' written out at all: take `stan_code(fit, model = FALSE)` and write the model
+#' block yourself.
+#'
 #' @param fit An `nsbi_nle` object from [nle()].
 #' @param name Prefix for the generated functions.
 #' @param model Generate a complete, runnable model (the default) or only the
@@ -529,34 +541,20 @@ stan_fn_maf <- function(fit, name, packed) {
 
 #' Data, parameters and model blocks around the generated likelihood
 #'
-#' Only `prior_uniform()` and `prior_normal()` can be written out; anything
-#' built with `prior_custom()` is arbitrary R code with no Stan counterpart, so
-#' the model block is the user's to write.
+#' `prior_uniform()` and `prior_normal()` are written out through the data
+#' block, so one compiled model serves any bounds and any prior mean. Every
+#' other named family (see [prior_families]) becomes a literal Stan sampling
+#' statement instead: its parameters are what pick the distribution, and there
+#' is nothing left to vary at run time. A prior built with [prior_custom()] is
+#' arbitrary R code with no Stan counterpart, so the model block is the user's
+#' to write.
 #' @keywords internal
 stan_model_blocks <- function(fit, name, packed) {
   prior <- fit$prior
   Q <- fit$dim_theta
   P <- fit$dim_x
 
-  decl <- switch(
-    prior$type %||% "custom",
-    uniform = sprintf("  vector<lower=nsbi_low, upper=nsbi_high>[%d] theta;\n", Q),
-    normal = sprintf("  vector[%d] theta;\n", Q),
-    stop("Only prior_uniform() and prior_normal() can be written out as Stan.\n",
-         "For any other prior, take stan_code(fit, model = FALSE) and write ",
-         "the model block yourself.", call. = FALSE)
-  )
-  prior_data <- switch(
-    prior$type,
-    uniform = sprintf("  vector[%d] nsbi_low;\n  vector[%d] nsbi_high;\n", Q, Q),
-    normal = sprintf("  vector[%d] nsbi_prior_mean;\n  vector[%d] nsbi_prior_sd;\n", Q, Q)
-  )
-  prior_stmt <- switch(
-    prior$type,
-    # A uniform prior is implicit in the declared bounds.
-    uniform = "",
-    normal = "  theta ~ normal(nsbi_prior_mean, nsbi_prior_sd);\n"
-  )
+  blocks <- stan_prior_blocks(prior, Q)
 
   paste0(
     "data {\n",
@@ -564,14 +562,143 @@ stan_model_blocks <- function(fit, name, packed) {
     sprintf("  matrix[N, %d] x;                 // the observations\n", P),
     "  int<lower=1> nsbi_nw;\n",
     "  vector[nsbi_nw] nsbi_w;         // trained weights, from stan_data()\n",
-    prior_data,
+    blocks$data,
     "}\n\n",
-    "parameters {\n", decl, "}\n\n",
+    "parameters {\n", blocks$parameters, "}\n\n",
+    if (nzchar(blocks$transformed))
+      paste0("transformed parameters {\n", blocks$transformed, "}\n\n") else "",
     "model {\n",
-    prior_stmt,
+    blocks$model,
     sprintf("  x ~ %s_sum(theta, nsbi_w);\n", name),
     "}\n"
   )
+}
+
+#' The prior's contribution to each Stan block
+#'
+#' @param prior The fit's prior.
+#' @param Q Number of parameters.
+#' @return A list of four strings, one per block, each newline-terminated or
+#'   empty.
+#' @keywords internal
+stan_prior_blocks <- function(prior, Q) {
+  type <- prior$type %||% "custom"
+  if (identical(type, "uniform")) {
+    return(list(
+      data = sprintf("  vector[%d] nsbi_low;\n  vector[%d] nsbi_high;\n", Q, Q),
+      parameters = sprintf(
+        "  vector<lower=nsbi_low, upper=nsbi_high>[%d] theta;\n", Q),
+      transformed = "",
+      # A uniform prior is implicit in the declared bounds.
+      model = ""
+    ))
+  }
+  if (identical(type, "normal")) {
+    return(list(
+      data = sprintf(
+        "  vector[%d] nsbi_prior_mean;\n  vector[%d] nsbi_prior_sd;\n", Q, Q),
+      parameters = sprintf("  vector[%d] theta;\n", Q),
+      transformed = "",
+      model = "  theta ~ normal(nsbi_prior_mean, nsbi_prior_sd);\n"
+    ))
+  }
+  marginals <- prior$params$marginals
+  if (is.null(marginals)) {
+    stop("stan_code() can write out prior_uniform(), prior_normal() and the ",
+         "named families in ?prior_families, but this prior has type \"",
+         type, "\" and is arbitrary R code with no Stan counterpart.\n",
+         "Take stan_code(fit, model = FALSE) and write the model block ",
+         "yourself.", call. = FALSE)
+  }
+  stan_marginal_blocks(marginals, Q)
+}
+
+#' Stan blocks for a prior made of named marginals
+#'
+#' Bounds shared by every parameter go on the `vector` declaration, which is
+#' how the program would be written by hand. Bounds that differ cannot:
+#' `vector<lower=...>` takes one bound for the whole container, so those
+#' parameters are declared one at a time and assembled into `theta` afterwards.
+#' Either way the sampling statements name a scalar, which is what Stan's
+#' `T[,]` truncation syntax requires.
+#' @param marginals The prior's marginals.
+#' @param Q Number of parameters.
+#' @keywords internal
+stan_marginal_blocks <- function(marginals, Q) {
+  lower <- vapply(marginals, `[[`, numeric(1), "lower")
+  upper <- vapply(marginals, `[[`, numeric(1), "upper")
+
+  if (length(unique(lower)) == 1L && length(unique(upper)) == 1L) {
+    parameters <- sprintf("  vector%s[%d] theta;\n",
+                          stan_bounds(lower[[1L]], upper[[1L]]), Q)
+    transformed <- ""
+    target <- sprintf("theta[%d]", seq_len(Q))
+  } else {
+    parameters <- paste0(vapply(seq_len(Q), function(j) {
+      sprintf("  real%s theta_%d;\n", stan_bounds(lower[[j]], upper[[j]]), j)
+    }, character(1)), collapse = "")
+    target <- sprintf("theta_%d", seq_len(Q))
+    transformed <- sprintf("  vector[%d] theta = [%s]';\n", Q,
+                           paste(target, collapse = ", "))
+  }
+
+  stmts <- character(0)
+  for (j in seq_len(Q)) {
+    m <- marginals[[j]]
+    # A uniform marginal is already stated by the bounds on the declaration,
+    # and repeating it as a sampling statement would only add a constant.
+    if (identical(m$family, "uniform")) next
+    f <- prior_family(m$family)
+    args <- paste(vapply(f$args, function(nm) stan_literal(m$args[[nm]]),
+                         character(1)), collapse = ", ")
+    stmts <- c(stmts, sprintf("  %s ~ %s(%s)%s;\n", target[[j]], f$stan, args,
+                              stan_truncation(m)))
+  }
+
+  list(data = "", parameters = parameters, transformed = transformed,
+       model = paste0(stmts, collapse = ""))
+}
+
+#' A `<lower=, upper=>` clause, or nothing when neither side is finite
+#' @param lower,upper The bounds.
+#' @keywords internal
+stan_bounds <- function(lower, upper) {
+  parts <- c(if (is.finite(lower)) sprintf("lower=%s", stan_literal(lower)),
+             if (is.finite(upper)) sprintf("upper=%s", stan_literal(upper)))
+  if (length(parts) == 0L) "" else sprintf("<%s>", paste(parts, collapse = ", "))
+}
+
+#' Stan's `T[,]` clause for a marginal cut down from its natural support
+#'
+#' Written out even though fixed bounds and fixed parameters make it a constant
+#' that Stan would drop. The generated program is meant to be read and edited,
+#' and a reader who lifts the prior parameters into `data` would otherwise
+#' inherit a silently wrong normalization.
+#' @param m One marginal.
+#' @keywords internal
+stan_truncation <- function(m) {
+  lower <- if (m$lower > m$natural[[1L]]) stan_literal(m$lower) else ""
+  upper <- if (m$upper < m$natural[[2L]]) stan_literal(m$upper) else ""
+  if (!nzchar(lower) && !nzchar(upper)) return("")
+  sprintf(" T[%s,%s]", lower, upper)
+}
+
+#' One prior parameter or bound as a Stan literal
+#'
+#' Not `stan_num()`: that one writes `%.17g` because a trained weight has to
+#' come back bit for bit, and `0.40000000000000002` in the middle of a
+#' `lognormal(...)` call is noise in a block a user is meant to read. Fifteen
+#' significant digits is more precision than any hand-written prior parameter
+#' carries.
+#' @param x One number.
+#' @keywords internal
+stan_literal <- function(x) {
+  if (is.infinite(x)) {
+    return(if (x > 0) "positive_infinity()" else "negative_infinity()")
+  }
+  # width = 1 so formatC() does not pad to a common column width; these go
+  # inside an expression, not a table.
+  formatC(x, digits = 15L, format = "g", width = 1L)
 }
 
 # ---- running it -----------------------------------------------------------

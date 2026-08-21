@@ -454,6 +454,44 @@ check_bound <- function(value, arg, d) {
   rep_len(as.double(value), d)
 }
 
+#' Validate one distribution parameter of a named prior family
+#'
+#' The constructors in [prior_families] take numeric vectors, one entry per
+#' parameter or one shared entry, and every one of them ends up inside a
+#' `stats::d*()`/`q*()` pair. Those are quiet about nonsense: `dgamma(x, shape
+#' = -1)` returns `NaN` with a warning, `qgamma(u, shape = 0)` returns zeros,
+#' and either way the mistake surfaces as a prior sample full of `NaN`s once
+#' the simulation budget is already spent. The values are listed rather than
+#' described, as [check_counts()] does, since which entry is wrong is the thing
+#' worth reading.
+#'
+#' Names are left on the value: [family_param_names()] reads the parameter
+#' names off whichever argument carries them, and that has to happen after
+#' validation.
+#'
+#' @param value The user's value.
+#' @param arg Name of the argument.
+#' @param positive Require every entry to be strictly positive, for a scale, a
+#'   rate or a shape.
+#' @return `value`, unchanged.
+#' @keywords internal
+check_family_param <- function(value, arg, positive = FALSE) {
+  ok <- is.numeric(value) && length(value) >= 1L && !anyNA(value) &&
+    all(is.finite(value)) && (!isTRUE(positive) || all(value > 0))
+  if (!ok) {
+    shown <- if (is.numeric(value) && length(value) > 1L) {
+      paste(vapply(value, describe_value, character(1)), collapse = ", ")
+    } else {
+      describe_value(value)
+    }
+    stop(sprintf("`%s` must be %s, not %s.", arg,
+                 if (isTRUE(positive)) "one or more finite positive numbers"
+                 else "one or more finite numbers", shown),
+         call. = FALSE)
+  }
+  value
+}
+
 #' Validate a prior argument, and optionally its dimension
 #'
 #' @param prior The user's value.
@@ -465,7 +503,8 @@ check_bound <- function(value, arg, d) {
 check_prior <- function(prior, arg = "prior", dim = NULL) {
   if (!inherits(prior, "nsbi_prior")) {
     stop(sprintf(paste0("`%s` must be an nsbi_prior object, not %s. Build one ",
-                        "with prior_uniform(), prior_normal() or ",
+                        "with prior_uniform(), prior_normal(), one of the ",
+                        "named families in ?prior_families, or ",
                         "prior_custom(); see ?priors."),
                  arg, if (is.null(prior)) "NULL" else class(prior)[1L]),
          call. = FALSE)

@@ -92,6 +92,20 @@ density; a ratio estimator holds a classifier instead, and there is no
 \code{p(x | theta)} in it to write out.
 }
 
+\section{Supported priors}{
+
+
+Only \code{model = TRUE} needs a prior, since only then is there a model block to
+put one in. \code{\link[=prior_uniform]{prior_uniform()}} and \code{\link[=prior_normal]{prior_normal()}} travel as data, so their
+bounds and their mean and standard deviation come from \code{\link[=stan_data]{stan_data()}} and the
+compiled model does not care what they are. Every other named family (see
+\link{prior_families}), including \code{\link[=prior_independent]{prior_independent()}} products and
+\code{\link[=prior_truncated]{prior_truncated()}} bounds, is written out as literal sampling statements
+with \code{T[,]} where the support was cut down. A \code{\link[=prior_custom]{prior_custom()}} cannot be
+written out at all: take \code{stan_code(fit, model = FALSE)} and write the model
+block yourself.
+}
+
 \examples{
 prior <- prior_uniform(c(mu = -3), c(mu = 3))
 fit <- nle(prior, function(mu) c(y = rnorm(1, mu, 0.5)),

@@ -247,6 +247,29 @@ now shared between the two MCMC fit types rather than duplicated. The
 torch-free `"logistic"` classifier is the analytic oracle that keeps the whole
 path testable in CI.
 
+**2026-08-21 (#199):** the prior surface is no longer `prior_uniform()`,
+`prior_normal()` and a hand-written `prior_custom()`. `R/prior_families.R`
+adds eight named families under Stan's argument names (`prior_lognormal()`,
+`prior_exponential()`, `prior_gamma()`, `prior_beta()`, `prior_student_t()`,
+`prior_cauchy()`, `prior_half_normal()`, `prior_half_cauchy()`),
+`prior_independent()` to multiply per-parameter marginals into a joint prior,
+and `prior_truncated()` for Stan's `T[lower, upper]` with the density
+renormalized by the mass it keeps. All of them share one canonical form, a
+list of per-parameter marginals under `prior$params$marginals`, holding the
+family, its parameters, the effective bounds and the truncated mass;
+`prior_uniform()` and `prior_normal()` now carry that form too, so both can be
+truncated and composed. `stan_code()` writes any of it out
+(`stan_prior_blocks()` in `R/stan.R`), which was the second half of the point:
+a prior that is a named family is one an `nle()` export can restate, and a
+`prior_custom()` never was. `task_sir()` is now a `prior_lognormal()` rather
+than the same two log-normals written by hand. Tests are in
+`tests/testthat/test-prior-families.R`, torch-free throughout, checking the
+densities against the base R `d*()` functions and the truncated ones by
+numerical integration. What is deliberately not here: discrete families,
+multivariate families (a multivariate normal or a Dirichlet would need a
+different marginal representation), and truncating a `prior_custom()`, which
+errors rather than silently returning an unnormalized density.
+
 `nre()` has been run head to head against Python `sbi`'s `NRE` (its alias for
 `NRE_B`) on a 2-dimensional linear-Gaussian task, 8000 simulations, both at
 their own defaults. Scored against the analytic log ratio on an 11x11 grid

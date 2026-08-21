@@ -138,9 +138,12 @@ lines <- strsplit(code, "\n")[[1]]
 cat("\ngenerated program:", length(lines), "lines\n\n")
 cat(paste(head(lines, 40), collapse = "\n"), "\n  ...\n")
 
-# The model blocks at the end restate the prior as a Stan sampling statement,
-# which works because prior_uniform() and prior_normal() are named
-# distributions with parameters. A prior_custom() is arbitrary R code and
+# The model blocks at the end restate the prior as a Stan sampling statement.
+# prior_uniform() and prior_normal() travel as data, so their bounds and their
+# mean and sd come from stan_data(); every other named family (see
+# ?prior_families), including prior_independent() products and
+# prior_truncated() bounds, is written out as literal sampling statements with
+# T[,] where the support was cut. A prior_custom() is arbitrary R code and
 # cannot be restated, so use model = FALSE and write the model block yourself.
 data_at <- grep("^data \\{", lines)[1]
 cat("\n", paste(lines[data_at:length(lines)], collapse = "\n"), "\n")
