@@ -1,0 +1,121 @@
+# Runs the Stan-generated-code numeric-agreement tests (tests/testthat/test-stan.R),
+# which need a working CmdStan toolchain, not just the cmdstanr R package.
+# skip_if_no_cmdstan() (tests/testthat/helper-stan.R) means these tests never run
+# in R-CMD-check.yaml or test-coverage.yaml, since neither installs CmdStan.
+# Installing a compiler toolchain on every push would slow down the fast feedback
+# loop those workflows exist for, so this runs on its own schedule instead: on
+# demand via workflow_dispatch, and every two weeks on main as a standing check
+# that R/stan.R's code generation (MAF's permutation bookkeeping, MDN's
+# softplus-diagonal Cholesky assembly, the log-Jacobian sign) still agrees with
+# log_lik() (see #196).
+name: stan-tests
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # 06:00 UTC on the 1st and 15th of each month -- close enough to "every two
+    # weeks" without cron's lack of a native fortnightly unit, and it lands on
+    # fixed calendar dates that are easy to reason about.
+    - cron: '0 6 1,15 * *'
+
+permissions: read-all
+
+jobs:
+  stan-tests:
+    # Scheduled workflows run on whatever is at the tip of the default branch,
+    # so there is no need to pin ref: main explicitly.
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      TORCH_HOME: /home/runner/.cache/torch
+      NOT_CRAN: "true"
+      # Pin a known-good CmdStan release rather than always installing
+      # "latest". Older releases stay downloadable from GitHub indefinitely, so
+      # this is deterministic and only needs bumping when there is a reason to
+      # (a new Stan language feature the package wants to rely on, say).
+      CMDSTAN_VERSION: "2.35.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+          # cmdstanr is a Suggests and is not on CRAN, so the dependency solver
+          # cannot resolve it without the Stan repository.
+          extra-repositories: https://mc-stan.org/r-packages/
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          # torch and cmdstanr are named explicitly so a resolver that treats
+          # Suggests as optional still installs them; this job exists
+          # specifically to exercise both.
+          extra-packages: >-
+            any::torch,
+            any::cmdstanr
+          needs: check
+
+      - name: Cache libtorch
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/torch
+          key: libtorch-${{ runner.os }}-r-torch
+
+      - name: Install libtorch
+        # torch 0.17 refuses a TORCH_HOME that does not exist yet, so create it
+        # before asking for the install.
+        run: |
+          mkdir -p "$TORCH_HOME"
+          Rscript -e 'if (!torch::torch_is_installed()) torch::install_torch()'
+
+      - name: Get cmdstanr version
+        id: cmdstanr-version
+        run: |
+          echo "version=$(Rscript -e 'cat(as.character(packageVersion("cmdstanr")))')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache CmdStan
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: cmdstan-${{ runner.os }}-cmdstanr${{ steps.cmdstanr-version.outputs.version }}-${{ env.CMDSTAN_VERSION }}
+
+      - name: Install CmdStan
+        # Guard the install so a cache hit is a no-op: install_cmdstan() itself
+        # errors on a pre-existing installation of the same version unless told
+        # to overwrite it, and there is nothing to overwrite when the cache
+        # already has it.
+        run: |
+          Rscript -e '
+            install_dir <- path.expand("~/.cmdstan")
+            dir.create(install_dir, showWarnings = FALSE, recursive = TRUE)
+            target <- file.path(install_dir, paste0("cmdstan-", Sys.getenv("CMDSTAN_VERSION")))
+            if (dir.exists(target)) {
+              message("CmdStan ", Sys.getenv("CMDSTAN_VERSION"), " already installed at ", target)
+            } else {
+              cmdstanr::install_cmdstan(
+                dir = install_dir,
+                version = Sys.getenv("CMDSTAN_VERSION"),
+                cores = 2,
+                quiet = FALSE
+              )
+            }
+          '
+          echo "CMDSTAN=$HOME/.cmdstan/cmdstan-${CMDSTAN_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Install neuralsbi
+        run: R CMD INSTALL --no-docs .
+
+      - name: Run Stan tests
+        # test_check() (not test_file()) so internal, unexported functions
+        # (cmdstan_ready(), stan_data(), ...) used directly in the tests
+        # resolve inside the package namespace, same as the CI-equivalent path
+        # documented in CLAUDE.md (tests/testthat.R). filter = "^stan$" scopes
+        # the run to test-stan.R alone -- anchored so it does not also match
+        # test-standardize.R, which contains "stan" as a substring.
+        # test_check() defaults to stop_on_failure = TRUE, so a failing test
+        # here fails the job rather than being swallowed.
+        run: |
+          Rscript -e '
+            library(testthat)
+            library(neuralsbi)
+            test_check("neuralsbi", filter = "^stan$")
+          '
