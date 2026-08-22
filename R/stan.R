@@ -124,6 +124,8 @@ stan_data <- function(fit, x_obs = NULL) {
   packed <- stan_pack(fit)
   out <- list(nsbi_nw = length(packed$w), nsbi_w = packed$w)
   if (!is.null(x_obs)) {
+    x_obs <- check_numeric(x_obs, "x_obs")
+    check_finite(x_obs, "x_obs")
     x_obs <- as_theta_matrix(x_obs, fit$dim_x)
     out$N <- nrow(x_obs)
     out$x <- x_obs
