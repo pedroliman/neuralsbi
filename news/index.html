@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.3" id="neuralsbi-063">neuralsbi 0.6.3<a class="anchor" aria-label="anchor" href="#neuralsbi-063"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/stan_export.html">stan_data()</a></code> now validates <code>x_obs</code> before handing it to Stan.</strong> <code><a href="../reference/posterior.html">posterior.nsbi_npe()</a></code> and <code><a href="../reference/mcmc_posterior.html">mcmc_posterior()</a></code> both check <code>x_obs</code> with <code><a href="../reference/check_numeric.html">check_numeric()</a></code> and <code><a href="../reference/check_finite.html">check_finite()</a></code> before <code><a href="../reference/as_theta_matrix.html">as_theta_matrix()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/51" class="external-link">#51</a>), but <code><a href="../reference/stan_export.html">stan_data()</a></code> called <code><a href="../reference/as_theta_matrix.html">as_theta_matrix()</a></code> directly. An <code>NA</code> in an otherwise numeric <code>x_obs</code>, or a character column that <code>storage.mode&lt;-</code> silently turns into <code>NA</code>, reached <code>cmdstan_model()$sample()</code>/<code><a href="https://mc-stan.org/rstan/reference/stanmodel-method-sampling.html" class="external-link">rstan::sampling()</a></code> unnoticed and surfaced as an opaque Stan error instead of a named <code>neuralsbi</code> one. <code><a href="../reference/stan_export.html">stan_data()</a></code> now runs the same two checks <code><a href="../reference/posterior.html">posterior()</a></code> and <code><a href="../reference/mcmc_posterior.html">mcmc_posterior()</a></code> already do (<a href="https://github.com/pedroliman/neuralsbi/issues/203" class="external-link">#203</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/206" class="external-link">#206</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.2" id="neuralsbi-062">neuralsbi 0.6.2<a class="anchor" aria-label="anchor" href="#neuralsbi-062"></a></h2>
 <ul><li>
