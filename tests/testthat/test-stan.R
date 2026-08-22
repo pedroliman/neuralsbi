@@ -59,6 +59,27 @@ test_that("stan_data() carries the weights, the data and the prior", {
   expect_null(dimnames(data$x))
 })
 
+test_that("stan_data() rejects a non-finite x_obs instead of passing it to Stan", {
+  # Without check_finite(), an NA here reaches as_theta_matrix() unnoticed and
+  # then cmdstan_model()$sample()/rstan::sampling(), surfacing as an opaque
+  # Stan error rather than a named neuralsbi one (#203).
+  fit <- stan_lingauss_fit()
+  x_obs <- matrix(stats::rnorm(12), ncol = 2)
+  x_obs[3, 2] <- NA
+
+  expect_error(stan_data(fit, x_obs), "`x_obs` contains")
+})
+
+test_that("stan_data() rejects a non-numeric x_obs instead of passing it to Stan", {
+  # storage.mode(x) <- "double" turns a character column into all NA, so
+  # without check_numeric() this failure would be reported as non-finite data
+  # rather than the wrong-type mistake it actually is.
+  fit <- stan_lingauss_fit()
+  x_obs <- data.frame(a = c(1, 2), b = c("x", "y"))
+
+  expect_error(stan_data(fit, x_obs), "`x_obs` has non-numeric columns")
+})
+
 test_that("a normal prior is written out as a sampling statement", {
   fit <- nle(prior_normal(mean = c(mu = 0, nu = 0), sd = c(1, 2)), stan_sim,
              n_simulations = 800, density_estimator = "linear_gaussian",

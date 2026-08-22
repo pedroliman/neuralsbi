@@ -1,3 +1,7 @@
+# neuralsbi 0.6.1
+
+* **`stan_data()` now validates `x_obs` before handing it to Stan.** `posterior.nsbi_npe()` and `mcmc_posterior()` both check `x_obs` with `check_numeric()` and `check_finite()` before `as_theta_matrix()` (#51), but `stan_data()` called `as_theta_matrix()` directly. An `NA` in an otherwise numeric `x_obs`, or a character column that `storage.mode<-` silently turns into `NA`, reached `cmdstan_model()$sample()`/`rstan::sampling()` unnoticed and surfaced as an opaque Stan error instead of a named `neuralsbi` one. `stan_data()` now runs the same two checks `posterior()` and `mcmc_posterior()` already do (#203).
+
 # neuralsbi 0.6.0
 
 * **Priors are no longer three constructors.** `prior_lognormal()`, `prior_exponential()`, `prior_gamma()`, `prior_beta()`, `prior_student_t()`, `prior_cauchy()`, `prior_half_normal()` and `prior_half_cauchy()` (`R/prior_families.R`) build a prior from a named distribution family under Stan's argument names, vectorized over parameters the way `prior_normal()` already is. A named family sets `lower`/`upper` from its own support, so the out-of-support rejection and the `log_prob` renormalization in `R/posterior.R` get the right region with nothing further to declare (#199) (#201).
