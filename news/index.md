@@ -60,6 +60,35 @@
   ([\#202](https://github.com/pedroliman/neuralsbi/issues/202))
   ([\#205](https://github.com/pedroliman/neuralsbi/issues/205)).
 
+- **[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  now validates `x_obs` before handing it to Stan.**
+  [`posterior.nsbi_npe()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  and
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
+  both check `x_obs` with
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  and
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  before
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
+  ([\#51](https://github.com/pedroliman/neuralsbi/issues/51)), but
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  called
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md)
+  directly. An `NA` in an otherwise numeric `x_obs`, or a character
+  column that `storage.mode<-` silently turns into `NA`, reached
+  `cmdstan_model()$sample()`/[`rstan::sampling()`](https://mc-stan.org/rstan/reference/stanmodel-method-sampling.html)
+  unnoticed and surfaced as an opaque Stan error instead of a named
+  `neuralsbi` one.
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  now runs the same two checks
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  and
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
+  already do
+  ([\#203](https://github.com/pedroliman/neuralsbi/issues/203))
+  ([\#206](https://github.com/pedroliman/neuralsbi/issues/206)).
+
 ## neuralsbi 0.6.1
 
 - **The Stan-generated-code tests now run in CI.**
