@@ -4,12 +4,18 @@
 \alias{check_finite}
 \title{Require every entry to be finite}
 \usage{
-check_finite(m, arg)
+check_finite(m, arg, allow_inf = FALSE)
 }
 \arguments{
 \item{m}{A numeric vector or matrix.}
 
 \item{arg}{Name of the argument.}
+
+\item{allow_inf}{Let \code{Inf}/\code{-Inf} through and only reject \code{NA}/\code{NaN}. Use
+this where \code{Inf} already has a well-defined meaning downstream: an MCMC
+posterior's \code{theta} routes through the prior's own density first, which
+correctly sends an infinite parameter value to zero mass rather than to
+the estimator.}
 }
 \value{
 \code{m}, invisibly.
