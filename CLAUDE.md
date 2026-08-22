@@ -116,11 +116,21 @@ handoff/next-steps section — **keep it current as you work.**
   an exported function, either run `devtools::document()` or add the matching
   `export()`/`S3method()` line and a hand-written `.Rd` consistent with the
   others. Every export must have a man page — verify before committing.
+- **Every neural network in this package is built and trained in `torch`.**
+  No exceptions, and no hand-rolled alternative: if something needs a network,
+  it gets `nn_module()`/`nn_linear()` and a torch optimizer, not a matrix
+  multiply and a hand-written Adam. Writing the arithmetic out to dodge the
+  Suggests dependency puts an autograd engine in the package that nobody will
+  maintain, and it is not where a reader looks for a network. Torch being
+  unavailable is what `require_torch()` is for; it is not a reason to write a
+  second implementation. Reuse the pieces that exist (`mlp_layers()`,
+  `train_conditional_de()`, `c2st_mlp_module()`) before adding new ones.
 - Keep the hard dependency surface minimal: `torch`, `testthat`, `knitr`,
   `rmarkdown` are all **Suggests**, never Imports. Neural code must degrade
-  gracefully (skip, or point to `linear_gaussian`) when torch is unavailable —
-  guard with `require_torch()` / the test helper, and never define a torch
-  object at package-load time (wrap `nn_module()` construction in a function).
+  gracefully (skip, or point to `linear_gaussian`, or to a torch-free
+  classifier as `c2st()` does) when torch is unavailable — guard with
+  `require_torch()` / the test helper, and never define a torch object at
+  package-load time (wrap `nn_module()` construction in a function).
 - Use `roxygen2` markdown docstrings; match the existing voice (see below).
 
 ## Git & release workflow
