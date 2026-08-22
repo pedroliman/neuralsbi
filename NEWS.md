@@ -1,6 +1,6 @@
 # neuralsbi 0.6.1
 
-* **`stan_data()` now validates `x_obs` before handing it to Stan.** `posterior.nsbi_npe()` and `mcmc_posterior()` both check `x_obs` with `check_numeric()` and `check_finite()` before `as_theta_matrix()` (#51), but `stan_data()` called `as_theta_matrix()` directly. An `NA` in an otherwise numeric `x_obs`, or a character column that `storage.mode<-` silently turns into `NA`, reached `cmdstan_model()$sample()`/`rstan::sampling()` unnoticed and surfaced as an opaque Stan error instead of a named `neuralsbi` one. `stan_data()` now runs the same two checks `posterior()` and `mcmc_posterior()` already do (#203).
+* **`stan_data()` now validates `x_obs` before handing it to Stan.** `posterior.nsbi_npe()` and `mcmc_posterior()` both check `x_obs` with `check_numeric()` and `check_finite()` before `as_theta_matrix()` (#51), but `stan_data()` called `as_theta_matrix()` directly. An `NA` in an otherwise numeric `x_obs`, or a character column that `storage.mode<-` silently turns into `NA`, reached `cmdstan_model()$sample()`/`rstan::sampling()` unnoticed and surfaced as an opaque Stan error instead of a named `neuralsbi` one. `stan_data()` now runs the same two checks `posterior()` and `mcmc_posterior()` already do (#203) (#206).
 
 # neuralsbi 0.6.0
 
