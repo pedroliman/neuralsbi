@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.4" id="neuralsbi-064">neuralsbi 0.6.4<a class="anchor" aria-label="anchor" href="#neuralsbi-064"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_prob.html">log_prob()</a></code> on an NLE/NRE posterior no longer returns a silent <code>NA</code>/<code>NaN</code> for a non-finite <code>theta</code>.</strong> <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code> (<code>R/nle_posterior.R</code>), the shared body behind <code><a href="../reference/log_prob.html">log_prob.nsbi_mcmc_posterior()</a></code>, validated <code>theta</code> with <code><a href="../reference/check_matrix.html">check_matrix()</a></code> alone, which checks type and shape but never finiteness. An <code>NA</code>/<code>NaN</code> entry reached <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s closure, came back non-finite from <code>prior$log_prob()</code> the same way an out-of-support draw does, and was left as a silent <code>NA</code>/<code>NaN</code> log-prob instead of a named error. <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code> now runs <code>theta</code> through <code><a href="../reference/check_numeric.html">check_numeric()</a></code> and <code><a href="../reference/check_finite.html">check_finite()</a></code> before <code><a href="../reference/check_matrix.html">check_matrix()</a></code>, matching <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/202" class="external-link">#202</a>) and <code><a href="../reference/stan_export.html">stan_data()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/203" class="external-link">#203</a>). <code><a href="../reference/check_finite.html">check_finite()</a></code> gains an <code>allow_inf</code> argument for this call site: an <code>Inf</code> <code>theta</code> is not part of the bug, since it correctly resolves to <code>-Inf</code> through the prior’s own density, so it stays allowed and only <code>NA</code>/<code>NaN</code> are rejected (<a href="https://github.com/pedroliman/neuralsbi/issues/208" class="external-link">#208</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/209" class="external-link">#209</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.3" id="neuralsbi-063">neuralsbi 0.6.3<a class="anchor" aria-label="anchor" href="#neuralsbi-063"></a></h2>
 <ul><li>

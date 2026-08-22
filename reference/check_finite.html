@@ -53,7 +53,7 @@ act on."><meta property="og:image" content="https://neuralsbi.pedrodelima.com/re
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,7 +98,7 @@ act on.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_finite</span><span class="op">(</span><span class="va">m</span>, <span class="va">arg</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_finite</span><span class="op">(</span><span class="va">m</span>, <span class="va">arg</span>, allow_inf <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -111,6 +111,14 @@ act on.</p>
 
 <dt id="arg-arg">arg<a class="anchor" aria-label="anchor" href="#arg-arg"></a></dt>
 <dd><p>Name of the argument.</p></dd>
+
+
+<dt id="arg-allow-inf">allow_inf<a class="anchor" aria-label="anchor" href="#arg-allow-inf"></a></dt>
+<dd><p>Let <code>Inf</code>/<code>-Inf</code> through and only reject <code>NA</code>/<code>NaN</code>. Use
+this where <code>Inf</code> already has a well-defined meaning downstream: an MCMC
+posterior's <code>theta</code> routes through the prior's own density first, which
+correctly sends an infinite parameter value to zero mass rather than to
+the estimator.</p></dd>
 
 </dl></div>
     <div class="section level2">

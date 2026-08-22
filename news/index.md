@@ -1,5 +1,40 @@
 # Changelog
 
+## neuralsbi 0.6.4
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an NLE/NRE posterior no longer returns a silent `NA`/`NaN` for a
+  non-finite `theta`.**
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  (`R/nle_posterior.R`), the shared body behind
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  validated `theta` with
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  alone, which checks type and shape but never finiteness. An `NA`/`NaN`
+  entry reached
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  closure, came back non-finite from `prior$log_prob()` the same way an
+  out-of-support draw does, and was left as a silent `NA`/`NaN` log-prob
+  instead of a named error.
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  now runs `theta` through
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  and
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  before
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md),
+  matching
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  ([\#202](https://github.com/pedroliman/neuralsbi/issues/202)) and
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  ([\#203](https://github.com/pedroliman/neuralsbi/issues/203)).
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  gains an `allow_inf` argument for this call site: an `Inf` `theta` is
+  not part of the bug, since it correctly resolves to `-Inf` through the
+  prior’s own density, so it stays allowed and only `NA`/`NaN` are
+  rejected ([\#208](https://github.com/pedroliman/neuralsbi/issues/208))
+  ([\#209](https://github.com/pedroliman/neuralsbi/issues/209)).
+
 ## neuralsbi 0.6.3
 
 - **[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
