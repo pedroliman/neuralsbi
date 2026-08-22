@@ -302,12 +302,17 @@ mcmc_log_prob <- function(post, theta, x, warn, what) {
   }
   # surrogate_potential()'s closure only reshapes theta with
   # as_theta_matrix(), which coerces a non-numeric column to NA rather than
-  # erroring -- so a bad theta used to come back as a silent NA log-prob
-  # instead of the same named error surrogate_score() already gives
-  # log_lik()/log_ratio() for the same fit (#163). Checked here, once, with
-  # the caller's theta in hand, rather than inside surrogate_potential()'s
+  # erroring (#163), and treats an NA/NaN entry the same as an out-of-support
+  # one: prior$log_prob() comes back non-finite, the network is skipped for
+  # that row, and the row is left as a silent NA/NaN instead of a named error
+  # (#208). An Inf entry is not a bug -- it resolves to zero density through
+  # the prior, the same way an out-of-support draw does -- so it is allowed
+  # through here and only NA/NaN are rejected. Checked here, once, with the
+  # caller's theta in hand, rather than inside surrogate_potential()'s
   # returned closure, which every MCMC step also calls with a theta it built
   # internally and has no need to re-validate.
+  theta <- check_numeric(theta, "theta")
+  check_finite(theta, "theta", allow_inf = TRUE)
   theta <- check_matrix(theta, post$fit$dim_theta, "theta",
                         "one parameter per column")
   potential <- surrogate_potential(post$fit, resolve_x_iid(post, x, "x"))

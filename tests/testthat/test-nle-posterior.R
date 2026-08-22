@@ -305,6 +305,29 @@ test_that("log_prob() rejects non-numeric theta by name instead of returning NA"
                "`theta` has non-numeric columns: mu")
 })
 
+# GitHub #208: mcmc_log_prob() only checked theta with check_matrix(), which
+# never checks finiteness -- an NA/NaN theta reached surrogate_potential()'s
+# closure, came back non-finite from prior$log_prob() the same way an
+# out-of-support draw does, and was left as a silent NA/NaN log-prob instead
+# of a named error. Inf is not part of the bug: it legitimately resolves to
+# -Inf through the prior, so it must keep working rather than start erroring.
+test_that("log_prob() on an NLE posterior rejects NaN/NA theta but not Inf theta", {
+  set.seed(3)
+  prior <- prior_normal(mean = 0, sd = 1)
+  fit <- nle(prior, function(theta) stats::rnorm(1, theta, sd = 0.5),
+             n_simulations = 500, density_estimator = "linear_gaussian", seed = 3)
+  post <- posterior(fit, matrix(0.3, ncol = 1), n_chains = 2, warmup = 10, seed = 6)
+
+  expect_error(log_prob(post, matrix(NaN, ncol = 1), normalize = FALSE),
+               "`theta` contains 1 non-finite value \\(NaN\\)")
+  expect_error(log_prob(post, matrix(NA_real_, ncol = 1), normalize = FALSE),
+               "`theta` contains 1 non-finite value \\(NA\\)")
+
+  # Inf is not an error: it resolves to -Inf through the prior's own density.
+  expect_equal(log_prob(post, matrix(Inf, ncol = 1), normalize = FALSE), -Inf)
+  expect_equal(log_prob(post, matrix(-Inf, ncol = 1), normalize = FALSE), -Inf)
+})
+
 # GitHub #162: n reached mcmc_draws() -- and from there ceiling(n / n_chains)
 # -- unchecked, so a non-integer n like 2.5 silently returned 2 draws instead
 # of erroring the way every other draw-count argument in the package does.
