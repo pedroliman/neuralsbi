@@ -54,9 +54,11 @@ Both sides get the same simulations, the same estimator family and the same
 sampler family (a vectorized slice sampler), and both run on their own
 defaults. Tuning either one would answer a different question.
 
-Read `c2st_*_vs_ref` next to the mean error and the sd ratio, not on its own:
-`c2st()` here trains a logistic regression, which sees a shift in location and
-is close to blind to a difference in spread (`?c2st` says so).
+`c2st()` runs the same procedure as `sbibm/metrics/c2st.py`, the metric the
+benchmarking paper reports: two hidden layers of `10 * d` ReLU units trained by
+Adam, 5-fold cross-validated accuracy, both sample sets z-scored by the moments
+of the reference. So the numbers in these tables are on the same scale as the
+published ones. Reference draws go in first, as they do in `sbibm`.
 
 ## The NRE protocol (scripts 09–12)
 
@@ -92,6 +94,33 @@ ratio is identified only up to an additive constant. That grid metric answers
 "did the two classifiers learn the same shape"; the C2ST numbers answer "are
 the two posteriors the same distribution", which is the one #146 asked for.
 
+## The C2ST parity check (scripts 13-14)
+
+Every number above is a C2ST, so the metric itself has to be the same one the
+benchmarking paper reports. Scripts `13`/`14` check that against the reference
+implementation rather than against the description of it:
+
+```sh
+Rscript 13_c2st_parity.R
+python  14_c2st_parity.py
+```
+
+`13` writes five sample-set pairs whose answer is known by construction (two
+draws from the same distribution, a shift, a change of scale, the same in one
+and five dimensions) and scores them with `c2st()`. `14` scores the same CSVs
+with `sbibm/metrics/c2st.py` and prints the two side by side. The last run:
+
+| case | sbibm acc | ours acc | sbibm auc | ours auc |
+|---|---|---|---|---|
+| `same_d2` | 0.4822 | 0.4780 | 0.4721 | 0.4750 |
+| `shift_d2` | 0.6320 | 0.6322 | 0.6841 | 0.6845 |
+| `scale_d2` | 0.7260 | 0.7285 | 0.7958 | 0.7961 |
+| `shift_d1` | 0.5620 | 0.5607 | 0.5862 | 0.5859 |
+| `scale_d5` | 0.6253 | 0.6097 | 0.6603 | 0.6446 |
+
+The two implementations initialize and shuffle from different random number
+streams, so they agree to Monte-Carlo noise rather than to the digit.
+
 ## Acceptance criteria (roadmap M3)
 
 On `gaussian_linear` and `two_moons` at 10k simulations:
@@ -121,7 +150,12 @@ written). Draws land in
 `results/gaussian_linear_iid_nre/<impl>_<classifier>_n<k>.csv`; grid log
 ratios in `results/gaussian_linear_iid_nre/grid_log_ratio_<impl>_<classifier>.csv`.
 
+The C2ST parity check writes `results/c2st_parity/<case>_x.csv` and
+`<case>_y.csv`, one row per draw with a header row, plus `neuralsbi.csv`
+holding the R side of the table so `14_c2st_parity.py` can print both.
+
 Python environment: `pip install sbi pandas` (sbi >= 0.22; the NLE scripts were
 run against 0.26.1). `sbi` depends on `nflows`, which does not build against
 `setuptools >= 66` -- install `pip install "setuptools<66"` first if `pip
-install sbi` fails while building `nflows`.
+install sbi` fails while building `nflows`. The C2ST parity check needs only
+`pip install scikit-learn`.

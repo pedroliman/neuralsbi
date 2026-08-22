@@ -173,6 +173,54 @@ test_that("c2st of a sample set against itself is ~0.5", {
   b <- matrix(rnorm(2000), ncol = 2)
   res <- c2st(a, b, seed = 1)
   expect_lt(res$accuracy, 0.6)
+  # sbibm reports accuracy and AUC from the same fits, so both come back.
+  expect_lt(abs(res$auc - 0.5), 0.1)
+  expect_length(res$fold_accuracy, 5L)
+  expect_length(res$fold_auc, 5L)
+  expect_identical(res$n, 1000L)
+  expect_identical(res$classifier, "mlp")
+})
+
+test_that("c2st sees a difference in spread that logistic regression misses", {
+  # The reason the default classifier is sbibm's MLP rather than the logistic
+  # regression this used to fit. No hyperplane separates two sample sets that
+  # share a mean and differ only in scale, so the linear score sits at chance
+  # while the two posteriors are plainly different.
+  set.seed(7)
+  a <- matrix(rnorm(2000), ncol = 2)
+  wide <- matrix(rnorm(2000, sd = 2), ncol = 2)
+
+  expect_gt(c2st(a, wide, seed = 1)$accuracy, 0.65)
+  expect_lt(c2st(a, wide, seed = 1, classifier = "logistic")$accuracy, 0.55)
+})
+
+test_that("c2st's z-scoring, noise and network size are settable", {
+  set.seed(8)
+  a <- matrix(rnorm(2000), ncol = 2)
+  b <- matrix(rnorm(2000, mean = 10, sd = 4), ncol = 2)
+
+  # Scaling by x alone is what sbibm does, so y keeps whatever offset it has
+  # relative to the reference and the classifier still sees it.
+  expect_gt(c2st(a, b, seed = 1)$accuracy, 0.9)
+  expect_gt(c2st(a, b, seed = 1, z_score = FALSE)$accuracy, 0.9)
+
+  same <- matrix(rnorm(2000), ncol = 2)
+  expect_lt(c2st(a, same, seed = 1, noise_scale = 0.1)$accuracy, 0.6)
+  expect_lt(c2st(a, same, seed = 1, hidden = c(4, 4))$accuracy, 0.6)
+  expect_lt(c2st(a, same, seed = 1, max_epochs = 1L)$accuracy, 0.6)
+})
+
+test_that("c2st is reproducible under a seed and validates its classifier", {
+  set.seed(9)
+  a <- matrix(rnorm(1000), ncol = 2)
+  b <- matrix(rnorm(1000, mean = 0.5), ncol = 2)
+
+  expect_identical(c2st(a, b, seed = 3)$fold_accuracy,
+                   c2st(a, b, seed = 3)$fold_accuracy)
+  expect_error(c2st(a, b, classifier = "forest"), "should be one of")
+  expect_error(c2st(a, b, hidden = 0), "`hidden` must be")
+  expect_error(c2st(a, b, max_epochs = 0), "`max_epochs` must be")
+  expect_error(c2st(a, b, noise_scale = -1), "`noise_scale` must be")
 })
 
 test_that("c2st is not fooled by unequal sample sizes", {

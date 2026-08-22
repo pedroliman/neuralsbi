@@ -21,7 +21,7 @@ Sigma <- solve(prec); mu <- as.numeric(Sigma %*% (x_obs / sigma^2))
 z <- matrix(rnorm(8000 * d), ncol = d)
 analytic <- sweep(z %*% chol(Sigma), 2, mu, `+`)
 cat(sprintf("Linear-Gaussian C2ST vs analytic: %.3f\n",
-            c2st(draws_lg, analytic, seed = 1)$accuracy))
+            c2st(analytic, draws_lg, seed = 1)$accuracy))
 
 png(file.path(outdir, "linear_gaussian_posterior.png"), width = 900,
     height = 450, res = 110)

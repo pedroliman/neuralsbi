@@ -50,6 +50,10 @@ plot_marginals <- function(sets, pars, cols, truth = NULL, main = "") {
 
 # Bias in units of the reference posterior's own sd, and spread as a ratio to
 # it. Both are scale-free, so the four SIR parameters are readable side by side.
+# The c2st numbers quoted in the prose below predate neuralsbi 0.6.5, where
+# c2st() switched from a linear classifier to sbibm's MLP. Re-running this
+# notebook will move them, and mostly upward, since the MLP also sees a
+# difference in spread.
 compare <- function(sets, ref, pars) {
   rm <- colMeans(ref[, pars]); rs <- apply(ref[, pars], 2, stats::sd)
   out <- t(vapply(sets, function(d) c(

@@ -19,7 +19,7 @@ test_that("linear_gaussian NPE recovers the analytic Gaussian posterior", {
   # indistinguishable from analytic draws
   z <- matrix(rnorm(10000 * d), ncol = d)
   analytic_draws <- sweep(z %*% chol(truth$Sigma), 2, truth$mu, `+`)
-  acc <- c2st(draws, analytic_draws, seed = 1)$accuracy
+  acc <- c2st(analytic_draws, draws, seed = 1)$accuracy
   expect_lt(acc, 0.6)
 })
 

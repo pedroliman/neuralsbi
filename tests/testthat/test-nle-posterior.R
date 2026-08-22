@@ -19,7 +19,7 @@ test_that("an NLE posterior matches the analytic one on the conjugate task", {
   expect_lt(max(abs(colMeans(draws) - colMeans(reference))), 0.05)
   expect_equal(apply(draws, 2, stats::sd), apply(reference, 2, stats::sd),
                tolerance = 0.1)
-  expect_lt(c2st(draws, reference, seed = 1)$accuracy, 0.6)
+  expect_lt(c2st(reference, draws, seed = 1)$accuracy, 0.6)
 })
 
 test_that("more independent observations tighten the posterior correctly", {

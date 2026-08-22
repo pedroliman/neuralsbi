@@ -339,6 +339,44 @@ absent, no network clock, badge 403 through the proxy). Version dropped its
 fields now derive from `Authors@R`. The prior pass added MLP embedding networks
 (`embedding_mlp()` + `embedding_net`), trained jointly inside MDN/MAF/NSF.*
 
+### C2ST aligned with `sbibm` (0.6.5)
+
+`c2st()` (`R/c2st.R`) now runs the procedure in `sbibm/metrics/c2st.py`, the
+metric the benchmarking paper reports, so a number from this package is
+comparable with a published one. That means: z-score both sample sets by the
+mean and standard deviation of `x` alone rather than of the pool, label `x` 0
+and `y` 1, cut 5 shuffled folds over the two sets together, and in each fold
+train a two-hidden-layer ReLU network of `10 * d` units per layer with Adam
+(`lr = 1e-3`, L2 `1e-4`, minibatches of 200, Glorot-uniform init, stop once the
+epoch loss has failed to improve on the best by `1e-4` for 10 epochs running).
+Accuracy and ROC AUC both come back, since `sbibm` reports both.
+
+The network is written out in base R (`c2st_mlp_train()`), not in torch. C2ST
+is a diagnostic and the diagnostics have to work in a session where torch was
+never installed, which is also what lets the analytic-parity tests in Level 1
+keep using it. The cost is speed: a 10k-against-10k comparison at `d = 2` takes
+about 6 seconds, and it grows with `d` because the hidden layers do. The old
+linear classifier is still there as `classifier = "logistic"` for a cheap
+screen.
+
+Two departures from `sbibm`, both deliberate. Unequal sample sizes are still
+balanced by subsampling the larger set, which `sbibm` never needs because it
+always compares 10000 draws against 10000, and accuracy against unbalanced
+classes is not a two-sample test. And `n_folds` is still bounded below the size
+of the smaller set, for the `NaN` reason recorded under "c2st inputs (0.4.12)".
+
+Call sites in `tests/` and `inst/benchmarks/` now pass the reference set first,
+following `sbibm`, because that is the set whose moments fix the scale.
+
+`inst/benchmarks/13_c2st_parity.R` and `14_c2st_parity.py` check the claim
+against the reference implementation instead of against a reading of it: `13`
+writes five sample-set pairs whose answer is known by construction and scores
+them with `c2st()`, `14` scores the same CSVs with `sbibm/metrics/c2st.py` and
+prints both tables. Agreement on the last run was within 0.003 on four of the
+five pairs and 0.016 on the fifth (`d = 5`), which is the noise you would
+expect from two fits on different random number streams. Rerun both after any
+change to `R/c2st.R`.
+
 ### automated CRAN submission (0.5.0)
 
 Issue #110 asked for CRAN submissions to fire on every minor or major version
