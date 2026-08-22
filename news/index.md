@@ -1,6 +1,23 @@
 # Changelog
 
-## neuralsbi 0.6.0
+## neuralsbi 0.6.1
+
+- **The Stan-generated-code tests now run in CI.**
+  `tests/testthat/test-stan.R` checks that the Stan code
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  emits for `linear_gaussian`, `mdn`, and `maf` agrees numerically with
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md),
+  but `skip_if_no_cmdstan()` (`tests/testthat/helper-stan.R`) meant they
+  ran nowhere: neither `R-CMD-check.yaml` nor `test-coverage.yaml`
+  installs a CmdStan toolchain. A new
+  `.github/workflows/stan-tests.yaml` installs libtorch and CmdStan
+  (both cached across runs) and runs the Stan tests on
+  `workflow_dispatch` and on a schedule every two weeks, on `main`,
+  rather than on every push – installing a compiler toolchain on the
+  fast-feedback workflows would slow down every push and PR for a job
+  that only exercises one file
+  ([\#196](https://github.com/pedroliman/neuralsbi/issues/196))
+  ([\#204](https://github.com/pedroliman/neuralsbi/issues/204)).
 
 - **Priors are no longer three constructors.**
   [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
@@ -20,6 +37,7 @@
   `R/posterior.R` get the right region with nothing further to declare
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 - **[`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
   multiplies per-parameter priors into a joint one.** This is what most
   [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
@@ -34,6 +52,7 @@
   its own `param_names`
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 - **[`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
   is Stan’s `T[lower, upper]`, with the density renormalized by the mass
   it keeps.** Leaving the normalizing constant off would be harmless for
@@ -50,6 +69,7 @@
   no CDF behind it to renormalize against
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 - **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
   writes the new families out as sampling statements.** Uniform and
   normal priors still travel through the data block, unchanged. Every
@@ -64,6 +84,7 @@
   as the alternative
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 - [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
   and
   [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
@@ -73,6 +94,7 @@
   for the new types (`p ~ beta(2, 15)`, `s ~ normal(0, 1.5) T[0, ]`)
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 - [`task_sir()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)’s
   prior (`R/tasks.R`) is now a
   [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
@@ -82,6 +104,7 @@
   fit on that task exports with a model block instead of erroring
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
+
 - New
   [`vignette("methods")`](https://neuralsbi.pedrodelima.com/articles/methods.md),
   a guide to the methods this package implements: NPE, sequential NPE,
