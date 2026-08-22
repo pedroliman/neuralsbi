@@ -132,13 +132,18 @@ de_sample.nsbi_de_mdn <- function(de, x, n) {
   xt <- torch::torch_tensor(x, dtype = torch::torch_float(), device = dev)
   params <- torch::with_no_grad(de$net(xt))
   L <- torch::with_no_grad(mdn_build_tril(de$net, params$tril_flat))
+  K <- de$n_components
+  p <- de$dim_theta
   logits <- as.numeric(torch::as_array(params$logits[1, ]$to(device = "cpu")))
-  means <- torch::as_array(params$means[1, , ]$to(device = "cpu"))  # K x p
-  Larr <- torch::as_array(L[1, , , ]$to(device = "cpu"))            # K x p x p
-  if (de$n_components == 1L) {
-    means <- matrix(means, nrow = 1L)
-    Larr <- array(Larr, dim = c(1L, de$dim_theta, de$dim_theta))
-  }
+  # Reshape explicitly from the full (1, K, ...) tensor rather than indexing
+  # out the batch row with `[1, , ]`: R's torch `[` follows base-R drop=TRUE
+  # semantics, which drops *every* size-1 dimension in the result, not just
+  # the batch dim -- collapsing means/Larr to bare vectors when K == 1 or
+  # p == 1. Converting the whole tensor first and dropping the leading
+  # size-1 batch dim via array() (memory layout is identical either way,
+  # since it's the leading dimension) keeps the K x p / K x p x p shape.
+  means <- array(torch::as_array(params$means$to(device = "cpu")), dim = c(K, p))       # K x p
+  Larr <- array(torch::as_array(L$to(device = "cpu")), dim = c(K, p, p))                # K x p x p
   w <- exp(logits - max(logits)); w <- w / sum(w)
   comp <- sample.int(de$n_components, n, replace = TRUE, prob = w)
   out <- matrix(0, nrow = n, ncol = de$dim_theta)

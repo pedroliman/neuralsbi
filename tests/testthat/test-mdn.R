@@ -18,6 +18,25 @@ test_that("MDN log_prob and sampling shapes are correct", {
   expect_true(all(is.finite(lp)))
 })
 
+test_that("MDN sampling works when dim_theta == 1 and n_components > 1 (#211)", {
+  # Regression test: de_sample.nsbi_de_mdn used to index the batch dim of
+  # torch tensors with `[1, , ]`, which follows R's drop=TRUE semantics and
+  # drops every size-1 dimension, not just the batch dim. With a 1-d target
+  # and more than one mixture component, means/Larr collapsed to bare
+  # vectors and de_sample() errored with "incorrect number of dimensions".
+  skip_if_no_torch()
+  set.seed(3)
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 500, density_estimator = "mdn",
+             n_components = 3L, hidden = c(16L, 16L), max_epochs = 10L,
+             seed = 3)
+  post <- posterior(fit, x_obs = 0.5)
+  draws <- sample(post, 50)
+  expect_equal(dim(draws), c(50L, 1L))
+  expect_true(all(is.finite(draws)))
+})
+
 test_that("MDN posterior is close to the analytic linear-Gaussian posterior", {
   skip_if_no_torch()
   set.seed(2)
