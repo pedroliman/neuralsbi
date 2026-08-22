@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.2
+
+- **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  and
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  no longer return a silent `NA` for a non-finite `theta` or `x`.**
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  (`R/likelihood.R`), the body both share, validated its arguments with
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  alone, which checks type and shape but never finiteness. An
+  `NA`/`NaN`/`Inf` entry standardized into another `NA` and came back as
+  a silent `NA` log-density or log-ratio instead of an error, the same
+  failure mode fixed for `theta` passed to a surrogate posterior’s
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  in [\#163](https://github.com/pedroliman/neuralsbi/issues/163).
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  now runs `theta` and `x` through
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  and
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  before
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md),
+  matching
+  [`posterior.nsbi_npe()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  and
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
+  ([\#202](https://github.com/pedroliman/neuralsbi/issues/202))
+  ([\#205](https://github.com/pedroliman/neuralsbi/issues/205)).
+
 ## neuralsbi 0.6.1
 
 - **The Stan-generated-code tests now run in CI.**
@@ -19,6 +48,8 @@
   ([\#196](https://github.com/pedroliman/neuralsbi/issues/196))
   ([\#204](https://github.com/pedroliman/neuralsbi/issues/204)).
 
+## neuralsbi 0.6.0
+
 - **Priors are no longer three constructors.**
   [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
   [`prior_exponential()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md),
@@ -37,7 +68,6 @@
   `R/posterior.R` get the right region with nothing further to declare
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
-
 - **[`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
   multiplies per-parameter priors into a joint one.** This is what most
   [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
@@ -52,7 +82,6 @@
   its own `param_names`
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
-
 - **[`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
   is Stan’s `T[lower, upper]`, with the density renormalized by the mass
   it keeps.** Leaving the normalizing constant off would be harmless for
@@ -69,7 +98,6 @@
   no CDF behind it to renormalize against
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
-
 - **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
   writes the new families out as sampling statements.** Uniform and
   normal priors still travel through the data block, unchanged. Every
@@ -84,7 +112,6 @@
   as the alternative
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
-
 - [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
   and
   [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
@@ -94,7 +121,6 @@
   for the new types (`p ~ beta(2, 15)`, `s ~ normal(0, 1.5) T[0, ]`)
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
-
 - [`task_sir()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)’s
   prior (`R/tasks.R`) is now a
   [`prior_lognormal()`](https://neuralsbi.pedrodelima.com/reference/prior_families.md)
@@ -104,7 +130,6 @@
   fit on that task exports with a model block instead of erroring
   ([\#199](https://github.com/pedroliman/neuralsbi/issues/199))
   ([\#201](https://github.com/pedroliman/neuralsbi/issues/201)).
-
 - New
   [`vignette("methods")`](https://neuralsbi.pedrodelima.com/articles/methods.md),
   a guide to the methods this package implements: NPE, sequential NPE,
