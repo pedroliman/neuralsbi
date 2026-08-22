@@ -1,3 +1,7 @@
+# neuralsbi 0.6.3
+
+* **`stan_data()` now validates `x_obs` before handing it to Stan.** `posterior.nsbi_npe()` and `mcmc_posterior()` both check `x_obs` with `check_numeric()` and `check_finite()` before `as_theta_matrix()` (#51), but `stan_data()` called `as_theta_matrix()` directly. An `NA` in an otherwise numeric `x_obs`, or a character column that `storage.mode<-` silently turns into `NA`, reached `cmdstan_model()$sample()`/`rstan::sampling()` unnoticed and surfaced as an opaque Stan error instead of a named `neuralsbi` one. `stan_data()` now runs the same two checks `posterior()` and `mcmc_posterior()` already do (#203) (#206).
+
 # neuralsbi 0.6.2
 
 * **`log_lik()` and `log_ratio()` no longer return a silent `NA` for a non-finite `theta` or `x`.** `surrogate_score()` (`R/likelihood.R`), the body both share, validated its arguments with `check_matrix()` alone, which checks type and shape but never finiteness. An `NA`/`NaN`/`Inf` entry standardized into another `NA` and came back as a silent `NA` log-density or log-ratio instead of an error, the same failure mode fixed for `theta` passed to a surrogate posterior's `log_prob()` in #163. `surrogate_score()` now runs `theta` and `x` through `check_numeric()` and `check_finite()` before `check_matrix()`, matching `posterior.nsbi_npe()` and `mcmc_posterior()` (#202) (#205).
