@@ -87,6 +87,15 @@ surrogate_score <- function(fit, theta, x, sum_iid, max_batch) {
   matrix_fn <- ops$matrix_fn
   evaluator <- ops$evaluator
   log_jac <- ops$log_jac
+  # check_matrix() only enforces type and shape, so an NA/NaN/Inf entry used to
+  # standardize into another NA and come back as a silent NA log-lik or
+  # log-ratio instead of an error (#202). Checked explicitly here, as
+  # posterior.nsbi_npe() and mcmc_posterior() already do for the same fits.
+  theta <- check_numeric(theta, "theta")
+  check_finite(theta, "theta")
+  x <- check_numeric(x, "x")
+  check_finite(x, "x")
+
   # Both arguments are matrices with a required width, so a bare "expected 2
   # columns" would leave the user guessing which one is wrong.
   theta <- check_matrix(theta, fit$dim_theta, "theta",
