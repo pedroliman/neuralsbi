@@ -168,27 +168,105 @@ test_that("tarp errors on a short posterior draw too", {
 })
 
 test_that("c2st of a sample set against itself is ~0.5", {
+  skip_if_no_torch()
   set.seed(1)
   a <- matrix(rnorm(2000), ncol = 2)
   b <- matrix(rnorm(2000), ncol = 2)
   res <- c2st(a, b, seed = 1)
   expect_lt(res$accuracy, 0.6)
+  # sbibm reports accuracy and AUC from the same fits, so both come back.
+  expect_lt(abs(res$auc - 0.5), 0.1)
+  expect_length(res$fold_accuracy, 5L)
+  expect_length(res$fold_auc, 5L)
+  expect_identical(res$n, 1000L)
+  expect_identical(res$classifier, "mlp")
+})
+
+test_that("c2st sees a difference in spread that logistic regression misses", {
+  # The reason the default classifier is sbibm's MLP rather than the logistic
+  # regression this used to fit. No hyperplane separates two sample sets that
+  # share a mean and differ only in scale, so the linear score sits at chance
+  # while the two posteriors are plainly different.
+  skip_if_no_torch()
+  set.seed(7)
+  a <- matrix(rnorm(2000), ncol = 2)
+  wide <- matrix(rnorm(2000, sd = 2), ncol = 2)
+
+  expect_gt(c2st(a, wide, seed = 1)$accuracy, 0.65)
+  expect_lt(c2st(a, wide, seed = 1, classifier = "logistic")$accuracy, 0.55)
+})
+
+test_that("c2st's z-scoring, noise and network size are settable", {
+  skip_if_no_torch()
+  set.seed(8)
+  a <- matrix(rnorm(1000), ncol = 2)
+  b <- matrix(rnorm(1000, mean = 10, sd = 4), ncol = 2)
+
+  # Scaling by x alone is what sbibm does, so y keeps whatever offset it has
+  # relative to the reference and the classifier still sees it.
+  expect_gt(c2st(a, b, seed = 1)$accuracy, 0.9)
+  expect_gt(c2st(a, b, seed = 1, z_score = FALSE)$accuracy, 0.9)
+
+  same <- matrix(rnorm(1000), ncol = 2)
+  expect_lt(c2st(a, same, seed = 1, noise_scale = 0.1)$accuracy, 0.6)
+  expect_lt(c2st(a, same, seed = 1, hidden = c(4, 4))$accuracy, 0.6)
+  expect_lt(c2st(a, same, seed = 1, max_epochs = 1L)$accuracy, 0.6)
+})
+
+test_that("c2st validates its arguments before it reaches for torch", {
+  # A typo has to be reported as a typo even on a machine with no libtorch,
+  # so every check runs above the require_torch() guard.
+  set.seed(9)
+  a <- matrix(rnorm(1000), ncol = 2)
+  b <- matrix(rnorm(1000, mean = 0.5), ncol = 2)
+
+  expect_error(c2st(a, b, classifier = "forest"), "should be one of")
+  expect_error(c2st(a, b, hidden = 0), "`hidden` must be")
+  expect_error(c2st(a, b, max_epochs = 0), "`max_epochs` must be")
+  expect_error(c2st(a, b, noise_scale = -1), "`noise_scale` must be")
+  expect_error(c2st(a, b, device = "tpu"), "`device` must be one of")
+})
+
+test_that("c2st's MLP asks for torch and names the torch-free test", {
+  # Mocked rather than skipped, so the message is covered on the coverage job
+  # too, which installs libtorch on purpose. Both bindings, as test-utils.R
+  # does: with torch installed, torch_available() alone only reaches
+  # require_torch()'s other branch, the one about libtorch.
+  local_mocked_bindings(torch_available = function() FALSE)
+  local_mocked_bindings(requireNamespace = function(package, ...) FALSE,
+                        .package = "base")
+  a <- matrix(rnorm(200), ncol = 2)
+  expect_error(c2st(a, a), "needs the 'torch' package")
+  expect_error(c2st(a, a), 'classifier = "logistic"')
+  # The torch-free classifier still answers.
+  expect_type(c2st(a, a, classifier = "logistic", seed = 1)$accuracy, "double")
+})
+
+test_that("c2st is reproducible under a seed", {
+  skip_if_no_torch()
+  set.seed(9)
+  a <- matrix(rnorm(400), ncol = 2)
+  b <- matrix(rnorm(400, mean = 0.5), ncol = 2)
+
+  expect_identical(c2st(a, b, seed = 3)$fold_accuracy,
+                   c2st(a, b, seed = 3)$fold_accuracy)
 })
 
 test_that("c2st is not fooled by unequal sample sizes", {
+  skip_if_no_torch()
   # Accuracy against unbalanced classes is not a two-sample test. Four times as
   # many draws on one side and a classifier scores 0.8 by always answering with
   # the bigger class, having learned nothing -- which is what the vignette hit
   # comparing 8000 slice draws against 2000 from Stan.
   set.seed(2)
-  a <- matrix(rnorm(16000), ncol = 2)
-  b <- matrix(rnorm(4000), ncol = 2)
+  a <- matrix(rnorm(8000), ncol = 2)
+  b <- matrix(rnorm(2000), ncol = 2)
 
   expect_lt(c2st(a, b, seed = 1)$accuracy, 0.6)
   expect_lt(c2st(b, a, seed = 1)$accuracy, 0.6)
 
   # Balancing must not cost it the ability to see a real difference.
-  shifted <- matrix(rnorm(4000, mean = 3), ncol = 2)
+  shifted <- matrix(rnorm(2000, mean = 3), ncol = 2)
   expect_gt(c2st(a, shifted, seed = 1)$accuracy, 0.9)
 })
 
@@ -284,9 +362,12 @@ test_that("c2st() refuses more folds than it has draws to fill them", {
                regexp = "at least 2 since each fold is scored")
 
   # Fewer folds than draws is fine, including on the smaller of two sets.
-  expect_type(c2st(few, few, n_folds = 3, seed = 1)$accuracy, "double")
+  cheap <- list(classifier = "logistic", seed = 1)
+  expect_type(do.call(c2st, c(list(few, few, n_folds = 3), cheap))$accuracy,
+              "double")
   plenty <- matrix(stats::rnorm(400), ncol = 2)
-  expect_false(is.nan(c2st(plenty, few, n_folds = 3, seed = 1)$accuracy))
+  expect_false(is.nan(
+    do.call(c2st, c(list(plenty, few, n_folds = 3), cheap))$accuracy))
 })
 
 test_that("sbc() and tarp() refuse a prior that is not the width of the fit", {

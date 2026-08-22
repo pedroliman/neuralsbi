@@ -46,14 +46,14 @@ for (k in n_obs) {
 
   row <- data.frame(
     n_obs = k,
-    c2st_ours_vs_ref = c2st(ours, ref, seed = k)$accuracy,
+    c2st_ours_vs_ref = c2st(ref, ours, seed = k)$accuracy,
     ours_max_mean_err = max(abs(colMeans(ours) - colMeans(ref))),
     ours_sd_ratio = mean(apply(ours, 2, sd) / apply(ref, 2, sd))
   )
   if (file.exists(f_sbi)) {
     theirs <- as.matrix(read.csv(f_sbi, header = FALSE))
     ref_s <- reference_iid(x_obs, nrow(theirs))
-    row$c2st_sbi_vs_ref <- c2st(theirs, ref_s, seed = k)$accuracy
+    row$c2st_sbi_vs_ref <- c2st(ref_s, theirs, seed = k)$accuracy
     row$sbi_max_mean_err <- max(abs(colMeans(theirs) - colMeans(ref_s)))
     row$sbi_sd_ratio <- mean(apply(theirs, 2, sd) / apply(ref_s, 2, sd))
     row$c2st_ours_vs_sbi <- c2st(ours, theirs, seed = k)$accuracy

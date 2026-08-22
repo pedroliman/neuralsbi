@@ -253,7 +253,9 @@ test_that("Stan NUTS and the slice sampler reach the same posterior", {
   # Absolute, not relative: these means sit near zero, where testthat's
   # relative tolerance is far tighter than the Monte-Carlo error.
   expect_lt(max(abs(colMeans(by_stan) - colMeans(reference))), 0.05)
-  expect_lt(c2st(by_stan, reference, seed = 1)$accuracy, 0.6)
+  expect_lt(c2st(reference, by_stan, classifier = "logistic",
+                 seed = 1)$accuracy, 0.6)
+  if (has_torch()) expect_lt(c2st(reference, by_stan, seed = 1)$accuracy, 0.6)
 })
 
 test_that("the rstan fallback compiles, samples, and hands back the same shape", {

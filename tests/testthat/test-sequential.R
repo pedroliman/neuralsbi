@@ -24,7 +24,9 @@ test_that("npe_sequential recovers the analytic posterior at x_obs", {
 
   z <- matrix(rnorm(5000 * d), ncol = d)
   analytic_draws <- sweep(z %*% chol(truth$Sigma), 2, truth$mu, `+`)
-  expect_lt(c2st(draws, analytic_draws, seed = 2)$accuracy, 0.6)
+  expect_lt(c2st(analytic_draws, draws, classifier = "logistic",
+                 seed = 2)$accuracy, 0.6)
+  if (has_torch()) expect_lt(c2st(analytic_draws, draws, seed = 2)$accuracy, 0.6)
 })
 
 test_that("later rounds actually truncate the proposal", {

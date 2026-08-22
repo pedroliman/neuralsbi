@@ -31,8 +31,8 @@ for (i in seq_len(nrow(x_obs))) {
                     max_mean_diff = mean_diff, max_sd_diff = sd_diff)
   if (!is.null(task$reference_posterior)) {
     ref <- task$reference_posterior(x_obs[i, ], nrow(ours))
-    row$c2st_ours_vs_ref <- c2st(ours, ref, seed = i)$accuracy
-    row$c2st_sbi_vs_ref <- c2st(theirs, ref, seed = i)$accuracy
+    row$c2st_ours_vs_ref <- c2st(ref, ours, seed = i)$accuracy
+    row$c2st_sbi_vs_ref <- c2st(ref, theirs, seed = i)$accuracy
   }
   rows[[length(rows) + 1L]] <- row
 }

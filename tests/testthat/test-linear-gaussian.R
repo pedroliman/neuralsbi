@@ -19,8 +19,13 @@ test_that("linear_gaussian NPE recovers the analytic Gaussian posterior", {
   # indistinguishable from analytic draws
   z <- matrix(rnorm(10000 * d), ncol = d)
   analytic_draws <- sweep(z %*% chol(truth$Sigma), 2, truth$mu, `+`)
-  acc <- c2st(draws, analytic_draws, seed = 1)$accuracy
-  expect_lt(acc, 0.6)
+  expect_lt(c2st(analytic_draws, draws, classifier = "logistic",
+                 seed = 1)$accuracy, 0.6)
+  # The sbibm classifier also sees a difference in spread, which the linear
+  # one cannot. It needs torch, so it runs only where libtorch is installed.
+  if (has_torch()) {
+    expect_lt(c2st(analytic_draws, draws, seed = 1)$accuracy, 0.6)
+  }
 })
 
 test_that("npe errors clearly when neither simulator nor (theta,x) are given", {

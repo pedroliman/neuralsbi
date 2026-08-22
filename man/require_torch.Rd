@@ -4,7 +4,19 @@
 \alias{require_torch}
 \title{Check that torch is available, error otherwise}
 \usage{
-require_torch()
+require_torch(
+  what = "This density estimator",
+  alternative = paste("Alternatively use", "density_estimator =",
+    "'linear_gaussian' for a", "torch-free baseline.")
+)
+}
+\arguments{
+\item{what}{What needs torch, as the subject of the sentence. The default
+suits the density estimators, which is where most of the calls are.}
+
+\item{alternative}{The torch-free thing to do instead, as a full sentence.
+Every caller has one, and naming it is the difference between a dead end
+and a next step.}
 }
 \description{
 Check that torch is available, error otherwise
