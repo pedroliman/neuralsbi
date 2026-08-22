@@ -1,6 +1,6 @@
 # neuralsbi 0.6.1
 
-* **`log_lik()` and `log_ratio()` no longer return a silent `NA` for a non-finite `theta` or `x`.** `surrogate_score()` (`R/likelihood.R`), the body both share, validated its arguments with `check_matrix()` alone, which checks type and shape but never finiteness. An `NA`/`NaN`/`Inf` entry standardized into another `NA` and came back as a silent `NA` log-density or log-ratio instead of an error, the same failure mode fixed for `theta` passed to a surrogate posterior's `log_prob()` in #163. `surrogate_score()` now runs `theta` and `x` through `check_numeric()` and `check_finite()` before `check_matrix()`, matching `posterior.nsbi_npe()` and `mcmc_posterior()` (#202).
+* **`log_lik()` and `log_ratio()` no longer return a silent `NA` for a non-finite `theta` or `x`.** `surrogate_score()` (`R/likelihood.R`), the body both share, validated its arguments with `check_matrix()` alone, which checks type and shape but never finiteness. An `NA`/`NaN`/`Inf` entry standardized into another `NA` and came back as a silent `NA` log-density or log-ratio instead of an error, the same failure mode fixed for `theta` passed to a surrogate posterior's `log_prob()` in #163. `surrogate_score()` now runs `theta` and `x` through `check_numeric()` and `check_finite()` before `check_matrix()`, matching `posterior.nsbi_npe()` and `mcmc_posterior()` (#202) (#205).
 
 # neuralsbi 0.6.0
 
