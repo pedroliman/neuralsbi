@@ -119,6 +119,6 @@ x_obs <- matrix(rnorm(50, mean = 1, sd = 0.5), ncol = 1)
 post <- posterior(fit, x_obs, n_chains = 4, warmup = 50, thin = 2)
 draws <- sample(post, 400)
 colMeans(draws)
-#>        mu 
-#> 0.9226684 
+#>       mu 
+#> 1.186398 
 ```

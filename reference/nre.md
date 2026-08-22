@@ -258,5 +258,5 @@ fit <- nre(prior, simulator, n_simulations = 2000, classifier = "logistic")
 
 x_obs <- matrix(rnorm(50, mean = 1, sd = 0.5), ncol = 1)
 log_ratio(fit, theta = c(1), x = x_obs)
-#> [1] 65.05644
+#> [1] 98.74039
 ```

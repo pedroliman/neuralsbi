@@ -1,5 +1,45 @@
 # Changelog
 
+## neuralsbi 0.6.5
+
+- **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
+  runs the same test as the `sbibm` benchmark, so its numbers are
+  comparable with published ones.** It fit a cross-validated logistic
+  regression, which is linear: it scores two sample sets that share a
+  mean and differ in spread at chance, and a difference in spread is
+  exactly what a mis-trained posterior usually shows. `R/c2st.R`
+  replaces it with the procedure in `sbibm/metrics/c2st.py` – both
+  sample sets z-scored by the mean and standard deviation of `x`, then a
+  two-hidden-layer ReLU network of `10 * d` units per layer trained by
+  Adam (`lr = 1e-3`, L2 `1e-4`, minibatches of 200, stopping once the
+  epoch loss has gone 10 epochs without improving by `1e-4`), scored by
+  accuracy over 5 shuffled folds. On two standard normals differing only
+  in scale (sd 1 against sd 2) the old classifier returned 0.50 and the
+  new one returns 0.74. The network trains on torch, like the rest of
+  the package’s neural code, so `classifier = "mlp"` needs torch
+  installed and says so when it is missing; `classifier = "logistic"` is
+  the torch-free way to get a number, and it is what the analytic-parity
+  tests assert on in the CI job that has no libtorch.
+- [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) gains
+  `classifier`, `z_score`, `noise_scale`, `hidden`, `max_epochs` and
+  `device`. `classifier = "logistic"` is the old linear test, kept as a
+  cheap screen. `z_score` and `noise_scale` are `sbibm`’s arguments of
+  the same name; the noise is for draws that are discrete or lie on a
+  lower-dimensional set, where a classifier separates the two sides on
+  an artefact of representation. `device` sends the network to a GPU the
+  same way the `fit_*` functions do. It also returns the ROC AUC
+  alongside the accuracy, as `sbibm` does.
+- [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)’s two
+  sample sets are no longer symmetric, since `x` alone sets the
+  z-scoring. Pass the reference draws as `x`, following `sbibm`. The
+  call sites in `tests/` and `inst/benchmarks/` were flipped to match.
+- New `inst/benchmarks/13_c2st_parity.R` and `14_c2st_parity.py` check
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  against `sbibm/metrics/c2st.py` itself on five sample-set pairs whose
+  answer is known by construction, so the parity claim rests on a run
+  rather than on a reading of the Python source. The two agree to
+  Monte-Carlo noise; `inst/benchmarks/README.md` records the table.
+
 ## neuralsbi 0.6.4
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)

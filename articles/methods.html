@@ -78,7 +78,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -330,9 +330,15 @@ displays it.</li>
 two-sample test, which trains a classifier to tell two sets of draws
 apart. Accuracy near 0.5 means they are indistinguishable.</li>
 <li>
-<code><a href="../reference/c2st.html">c2st()</a></code> uses cross-validated logistic regression on
-jointly z-scored draws. That classifier is linear, so it sees a shift in
-location but is close to blind to a difference in spread or
+<code><a href="../reference/c2st.html">c2st()</a></code> runs the procedure <span class="citation">Lueckmann et al. (<a href="#ref-lueckmann2021benchmarking">2021</a>)</span> use in
+<code>sbibm</code>, so its numbers are comparable with published
+benchmark results: a two-hidden-layer ReLU network of
+<code>10 * d</code> units per layer, 5-fold cross-validated accuracy,
+both sample sets z-scored by the moments of the first. The network
+trains on torch, so this classifier needs torch installed.
+<code>classifier = "logistic"</code> swaps in cross-validated logistic
+regression, which needs no torch and is faster, but is linear: it sees a
+shift in location and is close to blind to a difference in spread or
 dependence.</li>
 </ul>
 </div>

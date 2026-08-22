@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,16 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.5" id="neuralsbi-065">neuralsbi 0.6.5<a class="anchor" aria-label="anchor" href="#neuralsbi-065"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/c2st.html">c2st()</a></code> now runs the same test as the <code>sbibm</code> benchmark, so its numbers are comparable with published ones.</strong> It fit a cross-validated logistic regression, which is linear: it scores two sample sets that share a mean and differ in spread at chance, and a difference in spread is exactly what a mis-trained posterior usually shows. <code>R/c2st.R</code> replaces it with the procedure in <code>sbibm/metrics/c2st.py</code> – both sample sets z-scored by the mean and standard deviation of <code>x</code>, then a two-hidden-layer ReLU network of <code>10 * d</code> units per layer trained by Adam (<code>lr = 1e-3</code>, L2 <code>1e-4</code>, minibatches of 200, stopping once the epoch loss has gone 10 epochs without improving by <code>1e-4</code>), scored by accuracy over 5 shuffled folds. On two standard normals differing only in scale (sd 1 against sd 2) the old classifier returned 0.50 and the new one returns 0.74. The network trains on torch, like the rest of the package’s neural code, so <code>classifier = "mlp"</code> needs torch installed and says so when it is missing; <code>classifier = "logistic"</code> is the torch-free way to get a number, and it is what the analytic-parity tests assert on in the CI job that has no libtorch.</li>
+<li>
+<code><a href="../reference/c2st.html">c2st()</a></code> gains <code>classifier</code>, <code>z_score</code>, <code>noise_scale</code>, <code>hidden</code>, <code>max_epochs</code> and <code>device</code>. <code>classifier = "logistic"</code> is the old linear test, kept as a cheap screen. <code>z_score</code> and <code>noise_scale</code> are <code>sbibm</code>’s arguments of the same name; the noise is for draws that are discrete or lie on a lower-dimensional set, where a classifier separates the two sides on an artefact of representation. <code>device</code> sends the network to a GPU the same way the <code>fit_*</code> functions do. It also returns the ROC AUC alongside the accuracy, as <code>sbibm</code> does.</li>
+<li>
+<code><a href="../reference/c2st.html">c2st()</a></code>’s two sample sets are no longer symmetric, since <code>x</code> alone sets the z-scoring. Pass the reference draws as <code>x</code>, following <code>sbibm</code>. The call sites in <code>tests/</code> and <code>inst/benchmarks/</code> were flipped to match.</li>
+<li>New <code>inst/benchmarks/13_c2st_parity.R</code> and <code>14_c2st_parity.py</code> check <code><a href="../reference/c2st.html">c2st()</a></code> against <code>sbibm/metrics/c2st.py</code> itself on five sample-set pairs whose answer is known by construction, so the parity claim rests on a run rather than on a reading of the Python source. The two agree to Monte-Carlo noise; <code>inst/benchmarks/README.md</code> records the table.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.4" id="neuralsbi-064">neuralsbi 0.6.4<a class="anchor" aria-label="anchor" href="#neuralsbi-064"></a></h2>
 <ul><li>

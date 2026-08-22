@@ -148,10 +148,17 @@ oracle.
 - Lopez-Paz and Oquab ([2016](#ref-lopezpaz2017c2st)) introduced the
   classifier two-sample test, which trains a classifier to tell two sets
   of draws apart. Accuracy near 0.5 means they are indistinguishable.
-- [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) uses
-  cross-validated logistic regression on jointly z-scored draws. That
-  classifier is linear, so it sees a shift in location but is close to
-  blind to a difference in spread or dependence.
+- [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) runs
+  the procedure Lueckmann et al.
+  ([2021](#ref-lueckmann2021benchmarking)) use in `sbibm`, so its
+  numbers are comparable with published benchmark results: a
+  two-hidden-layer ReLU network of `10 * d` units per layer, 5-fold
+  cross-validated accuracy, both sample sets z-scored by the moments of
+  the first. The network trains on torch, so this classifier needs torch
+  installed. `classifier = "logistic"` swaps in cross-validated logistic
+  regression, which needs no torch and is faster, but is linear: it sees
+  a shift in location and is close to blind to a difference in spread or
+  dependence.
 
 ## References
 

@@ -18,6 +18,10 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/build_embedding_module.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/builtin_bar.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/c2st.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/c2st_adam.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/c2st_logistic_prob.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/c2st_mlp_module.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/c2st_mlp_prob.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/calibration_plot.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/call_sim_once.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/cat_dropped.html</loc></url>
@@ -192,6 +196,7 @@
 <url><loc>https://neuralsbi.pedrodelima.com/reference/resolve_x_iid.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/ridge_scale.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/rng_streams.html</loc></url>
+<url><loc>https://neuralsbi.pedrodelima.com/reference/roc_auc.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/rq_spline.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/run_simulator.html</loc></url>
 <url><loc>https://neuralsbi.pedrodelima.com/reference/sample.html</loc></url>
