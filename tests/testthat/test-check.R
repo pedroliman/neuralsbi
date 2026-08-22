@@ -197,6 +197,15 @@ test_that("check_finite() names the argument and the first bad entry", {
   expect_error(check_finite("a", "x"), "`x` must be numeric")
 })
 
+test_that("check_finite(allow_inf = TRUE) rejects NA/NaN but lets Inf through", {
+  expect_silent(check_finite(c(1, Inf, -Inf), "theta", allow_inf = TRUE))
+
+  expect_error(check_finite(c(1, NaN, Inf), "theta", allow_inf = TRUE),
+               "`theta` contains 1 non-finite value \\(NaN\\), first at position 2")
+  expect_error(check_finite(c(NA, Inf), "theta", allow_inf = TRUE),
+               "`theta` contains 1 non-finite value \\(NA\\), first at position 1")
+})
+
 test_that("log_lik() rejects a wrong-length vector by name", {
   fit <- nle(prior_uniform(c(mu = -3), c(mu = 3)),
              function(mu) c(y = stats::rnorm(1, mu, 0.5)), n_simulations = 400,

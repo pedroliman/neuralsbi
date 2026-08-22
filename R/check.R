@@ -528,17 +528,26 @@ check_prior <- function(prior, arg = "prior", dim = NULL) {
 #'
 #' @param m A numeric vector or matrix.
 #' @param arg Name of the argument.
+#' @param allow_inf Let `Inf`/`-Inf` through and only reject `NA`/`NaN`. Use
+#'   this where `Inf` already has a well-defined meaning downstream: an MCMC
+#'   posterior's `theta` routes through the prior's own density first, which
+#'   correctly sends an infinite parameter value to zero mass rather than to
+#'   the estimator.
 #' @return `m`, invisibly.
 #' @keywords internal
-check_finite <- function(m, arg) {
+check_finite <- function(m, arg, allow_inf = FALSE) {
   if (!is.numeric(m) && !is.logical(m)) {
     stop(sprintf("`%s` must be numeric, but it is of type %s.", arg, typeof(m)),
          call. = FALSE)
   }
-  bad <- !is.finite(m)
+  bad <- if (allow_inf) is.na(m) else !is.finite(m)
   if (!any(bad)) return(invisible(m))
-  kinds <- c("NA", "NaN", "Inf")[c(any(is.na(m) & !is.nan(m)), any(is.nan(m)),
-                                   any(is.infinite(m)))]
+  kinds <- if (allow_inf) {
+    c("NA", "NaN")[c(any(is.na(m) & !is.nan(m)), any(is.nan(m)))]
+  } else {
+    c("NA", "NaN", "Inf")[c(any(is.na(m) & !is.nan(m)), any(is.nan(m)),
+                            any(is.infinite(m)))]
+  }
   first <- which(bad)[1L]
   where <- if (is.null(dim(m))) {
     sprintf("position %d", first)
