@@ -205,6 +205,21 @@ test_that("wrongly shaped input is rejected by name", {
                "`x` must have 2 columns")
 })
 
+test_that("log_ratio() rejects a non-finite theta or x instead of returning NA (#202)", {
+  fit <- logistic_fit(n = 500)
+  theta <- matrix(c(1, -0.5), nrow = 1)
+  x <- matrix(c(0.4, -0.2), nrow = 1)
+
+  expect_error(log_ratio(fit, theta, matrix(c(0.4, NA), nrow = 1)),
+               "`x` contains 1 non-finite value \\(NA\\), first at row 1, column 2")
+  expect_error(log_ratio(fit, theta, matrix(c(NaN, -0.2), nrow = 1)),
+               "`x` contains")
+  expect_error(log_ratio(fit, theta, matrix(c(Inf, -0.2), nrow = 1)),
+               "`x` contains 1 non-finite value \\(Inf\\)")
+  expect_error(log_ratio(fit, matrix(c(1, NA), nrow = 1), x),
+               "`theta` contains 1 non-finite value \\(NA\\), first at row 1, column 2")
+})
+
 test_that("nre() checks its arguments before the simulator runs", {
   calls <- 0L
   counting_simulator <- function(mu, nu) {

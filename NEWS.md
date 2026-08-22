@@ -1,3 +1,7 @@
+# neuralsbi 0.6.1
+
+* **`log_lik()` and `log_ratio()` no longer return a silent `NA` for a non-finite `theta` or `x`.** `surrogate_score()` (`R/likelihood.R`), the body both share, validated its arguments with `check_matrix()` alone, which checks type and shape but never finiteness. An `NA`/`NaN`/`Inf` entry standardized into another `NA` and came back as a silent `NA` log-density or log-ratio instead of an error, the same failure mode fixed for `theta` passed to a surrogate posterior's `log_prob()` in #163. `surrogate_score()` now runs `theta` and `x` through `check_numeric()` and `check_finite()` before `check_matrix()`, matching `posterior.nsbi_npe()` and `mcmc_posterior()` (#202).
+
 # neuralsbi 0.6.0
 
 * **Priors are no longer three constructors.** `prior_lognormal()`, `prior_exponential()`, `prior_gamma()`, `prior_beta()`, `prior_student_t()`, `prior_cauchy()`, `prior_half_normal()` and `prior_half_cauchy()` (`R/prior_families.R`) build a prior from a named distribution family under Stan's argument names, vectorized over parameters the way `prior_normal()` already is. A named family sets `lower`/`upper` from its own support, so the out-of-support rejection and the `log_prob` renormalization in `R/posterior.R` get the right region with nothing further to declare (#199) (#201).
