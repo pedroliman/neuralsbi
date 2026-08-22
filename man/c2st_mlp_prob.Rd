@@ -2,7 +2,7 @@
 % Please edit documentation in R/c2st.R
 \name{c2st_mlp_prob}
 \alias{c2st_mlp_prob}
-\title{\code{sbibm}'s C2ST classifier}
+\title{\code{sbibm}'s C2ST classifier, trained on one fold}
 \usage{
 c2st_mlp_prob(
   x_train,
@@ -14,7 +14,8 @@ c2st_mlp_prob(
   batch_size = 200L,
   max_epochs = 10000L,
   tol = 1e-04,
-  n_iter_no_change = 10L
+  n_iter_no_change = 10L,
+  device = "cpu"
 )
 }
 \arguments{
@@ -24,8 +25,7 @@ c2st_mlp_prob(
 
 \item{hidden}{Widths of the hidden layers, one entry per layer.}
 
-\item{alpha}{L2 penalty, scaled by batch size the way \code{scikit-learn} scales
-it.}
+\item{alpha}{L2 penalty on the weights.}
 
 \item{lr}{Adam step size.}
 
@@ -36,20 +36,24 @@ it.}
 \item{tol}{Smallest loss improvement that counts as progress.}
 
 \item{n_iter_no_change}{Epochs without progress before training stops.}
+
+\item{device}{Resolved torch device to train on.}
 }
 \value{
 Predicted probability of class 1 for each row of \code{x_test}.
 }
 \description{
-A two-hidden-layer ReLU network trained by Adam on the binary log loss,
-matching the \code{MLPClassifier} settings \code{sbibm} uses: Glorot-uniform
-initialization, L2 penalty \code{alpha}, minibatches of 200 drawn in a fresh
-random order each epoch, Adam with bias-corrected step size, and a stop once
-the epoch loss has failed to improve on the best by more than \code{tol} for
-\code{n_iter_no_change} epochs in a row.
+Adam on the binary log loss under the \code{MLPClassifier} settings \code{sbibm} uses:
+minibatches of 200 in a fresh random order each epoch, learning rate \code{1e-3},
+and a stop once the epoch loss has failed to improve on the best by more
+than \code{tol} for \code{n_iter_no_change} epochs in a row.
 }
 \details{
-Written out in base R on purpose. C2ST is a diagnostic, and the diagnostics
-have to run in a session where torch was never installed.
+\code{scikit-learn}'s \code{alpha} penalizes the weights and leaves the biases alone,
+adding \code{alpha * W / batch} to the gradient. That is what \code{weight_decay}
+does, so the optimizer carries it in two parameter groups rather than the
+loss carrying it as a graph node: the penalty is also part of the loss the
+stopping rule reads, but evaluating it once an epoch instead of once a batch
+costs nothing and saves half the running time of the loop.
 }
 \keyword{internal}

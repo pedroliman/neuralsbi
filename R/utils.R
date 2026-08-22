@@ -84,14 +84,24 @@ math_labels <- function(labels) {
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 #' Check that torch is available, error otherwise
+#'
+#' @param what What needs torch, as the subject of the sentence. The default
+#'   suits the density estimators, which is where most of the calls are.
+#' @param alternative The torch-free thing to do instead, as a full sentence.
+#'   Every caller has one, and naming it is the difference between a dead end
+#'   and a next step.
 #' @keywords internal
-require_torch <- function() {
+require_torch <- function(what = "This density estimator",
+                          alternative = paste("Alternatively use",
+                                              "density_estimator =",
+                                              "'linear_gaussian' for a",
+                                              "torch-free baseline.")) {
   if (torch_available()) return(invisible(TRUE))
   if (!requireNamespace("torch", quietly = TRUE)) {
     stop(
-      "This density estimator needs the 'torch' package.\n",
+      what, " needs the 'torch' package.\n",
       "Install it with install.packages('torch') and then torch::install_torch().\n",
-      "Alternatively use density_estimator = 'linear_gaussian' for a torch-free baseline.",
+      alternative,
       call. = FALSE
     )
   }

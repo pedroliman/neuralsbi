@@ -112,14 +112,16 @@ with `sbibm/metrics/c2st.py` and prints the two side by side. The last run:
 
 | case | sbibm acc | ours acc | sbibm auc | ours auc |
 |---|---|---|---|---|
-| `same_d2` | 0.4822 | 0.4780 | 0.4721 | 0.4750 |
-| `shift_d2` | 0.6320 | 0.6322 | 0.6841 | 0.6845 |
-| `scale_d2` | 0.7260 | 0.7285 | 0.7958 | 0.7961 |
-| `shift_d1` | 0.5620 | 0.5607 | 0.5862 | 0.5859 |
-| `scale_d5` | 0.6253 | 0.6097 | 0.6603 | 0.6446 |
+| `same_d2` | 0.4822 | 0.4803 | 0.4721 | 0.4776 |
+| `shift_d2` | 0.6320 | 0.6352 | 0.6841 | 0.6830 |
+| `scale_d2` | 0.7260 | 0.7288 | 0.7958 | 0.7957 |
+| `shift_d1` | 0.5620 | 0.5620 | 0.5862 | 0.5859 |
+| `scale_d5` | 0.6253 | 0.6157 | 0.6603 | 0.6568 |
 
 The two implementations initialize and shuffle from different random number
-streams, so they agree to Monte-Carlo noise rather than to the digit.
+streams, so they agree to Monte-Carlo noise rather than to the digit. `13`
+needs torch, since that is what `c2st(classifier = "mlp")` trains on; it takes
+a few minutes.
 
 ## Acceptance criteria (roadmap M3)
 

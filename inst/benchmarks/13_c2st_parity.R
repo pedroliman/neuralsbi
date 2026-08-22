@@ -10,6 +10,8 @@
 # different random number streams, so agreement means agreement to Monte-Carlo
 # noise, not to the digit.
 #
+# Needs torch, since c2st(classifier = "mlp") trains its network on it.
+#
 # Usage:
 #   Rscript 13_c2st_parity.R
 #   python  14_c2st_parity.py

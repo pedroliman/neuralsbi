@@ -351,13 +351,42 @@ train a two-hidden-layer ReLU network of `10 * d` units per layer with Adam
 epoch loss has failed to improve on the best by `1e-4` for 10 epochs running).
 Accuracy and ROC AUC both come back, since `sbibm` reports both.
 
-The network is written out in base R (`c2st_mlp_train()`), not in torch. C2ST
-is a diagnostic and the diagnostics have to work in a session where torch was
-never installed, which is also what lets the analytic-parity tests in Level 1
-keep using it. The cost is speed: a 10k-against-10k comparison at `d = 2` takes
-about 6 seconds, and it grows with `d` because the hidden layers do. The old
-linear classifier is still there as `classifier = "logistic"` for a cheap
-screen.
+The network trains on torch (`c2st_mlp_prob()`, `c2st_mlp_module()`), like
+every other neural piece of the package, so `classifier = "mlp"` goes through
+`require_torch()` and errors without libtorch. It is the only diagnostic that
+does. The old linear classifier stays as `classifier = "logistic"`, which is
+what a session with no torch gets, and what the Level 1 analytic-parity tests
+assert on in the torch-free CI job; those tests add the MLP assertion on top
+when `has_torch()` (`tests/testthat/helper-torch.R`) says it can run, so the
+coverage job exercises both.
+
+Three details of the torch fit are worth knowing. The layers are initialized
+Glorot-uniform, weights and biases alike, where `nn_linear()` would use
+Kaiming-uniform on the weight and a fan-in bound on the bias; the fit has to
+start where `MLPClassifier`'s would. `scikit-learn`'s `alpha` penalizes the
+weights and not the biases, so it rides in as `weight_decay` on one of two
+parameter groups, and the penalty term that belongs in the loss the stopping
+rule reads is evaluated once an epoch rather than once a batch. And the
+optimizer is `optim_ignite_adam()` where torch is new enough for it
+(`c2st_adam()` falls back to `optim_adam()` below 0.13.0, which DESCRIPTION
+still allows).
+
+That last one is not a micro-optimization. This network is small enough that
+the fit is bound by R-side torch overhead rather than by arithmetic: roughly 25
+tensor operations per minibatch, each on a matrix too small for the work to
+matter. Taking the Adam step in C++ instead of looping over six parameters in R
+cut a 1000-against-1000 comparison at `d = 2` from 38 seconds to 14. Two
+further things were measured and rejected: writing the forward pass as bare
+`nnf_linear()` calls instead of an `nn_sequential()` saves about 17% and costs
+more readability than that is worth, and pre-slicing the minibatches saves
+nothing, since indexing is not where the time goes.
+
+Where that leaves the timings, measured on this container's CPU: 10000 draws
+against 10000 takes 26 seconds at `d = 2` and 373 seconds at `d = 5`. The
+`d = 5` figure is the one to watch if the benchmark protocol grows a task that
+wide, and the cost is epochs rather than arithmetic; `sbibm` runs
+`max_iter = 10000` with only the no-improvement rule to stop it, and on 20000
+rows that rule takes a few hundred epochs to fire.
 
 Two departures from `sbibm`, both deliberate. Unequal sample sizes are still
 balanced by subsampling the larger set, which `sbibm` never needs because it
@@ -372,10 +401,10 @@ following `sbibm`, because that is the set whose moments fix the scale.
 against the reference implementation instead of against a reading of it: `13`
 writes five sample-set pairs whose answer is known by construction and scores
 them with `c2st()`, `14` scores the same CSVs with `sbibm/metrics/c2st.py` and
-prints both tables. Agreement on the last run was within 0.003 on four of the
-five pairs and 0.016 on the fifth (`d = 5`), which is the noise you would
-expect from two fits on different random number streams. Rerun both after any
-change to `R/c2st.R`.
+prints both tables. The largest gap on the last run was 0.010, on the `d = 5`
+pair, and the rest were inside 0.006, which is the noise you would expect from
+two fits on different random number streams. Rerun both after any change to
+`R/c2st.R`.
 
 ### automated CRAN submission (0.5.0)
 

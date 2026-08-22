@@ -13,7 +13,8 @@ c2st(
   z_score = TRUE,
   noise_scale = NULL,
   hidden = NULL,
-  max_epochs = 10000L
+  max_epochs = 10000L,
+  device = "cpu"
 )
 }
 \arguments{
@@ -44,11 +45,15 @@ default, is \code{sbibm}'s two layers of \code{10 * d} units.}
 
 \item{max_epochs}{Cap on training epochs per fold. A guard, not a budget:
 the no-improvement rule normally stops training first.}
+
+\item{device}{Torch device to train the network on: \code{"cpu"} (the default),
+\code{"cuda"}, \code{"mps"}, or \code{"gpu"}/\code{"auto"} for whichever is available. Ignored
+by \code{classifier = "logistic"}.}
 }
 \value{
 A list with the mean cross-validated accuracy and ROC AUC, the
-per-fold values of each, the number of draws per class, and a one-line
-reading of the accuracy.
+per-fold values of each, the number of draws per class, the classifier
+used, and a one-line reading of the accuracy.
 }
 \description{
 Trains a classifier to tell the draws in \code{x} apart from the draws in \code{y} and
@@ -68,19 +73,23 @@ epoch loss fails to improve by \code{1e-4} for 10 epochs in a row, which is what
 ends the fit long before \code{max_epochs}. \code{sbibm} passes reference draws first,
 so pass the reference as \code{x}: that is the set whose moments set the scale.
 
-The network is written in base R rather than delegating to torch, because
-C2ST is a diagnostic and must work in a session with no torch installed.
-Budget about six seconds for the 10000-against-10000 comparison \code{sbibm} runs
-in two dimensions, and more as \code{d} grows, since the hidden layers grow with
-it. Where that is too slow, lower \code{hidden} or \code{max_epochs}, or take the
-logistic screen below.
+The network trains on torch, like every other neural piece of this package,
+so \code{classifier = "mlp"} needs torch installed and errors without it. That is
+the only part of the diagnostics that does.
+
+Budget for the fit. \code{sbibm}'s own comparison, 10000 draws against 10000 in
+two dimensions, takes about 25 seconds on one CPU core; at \code{d = 5} it is
+several minutes, because the hidden layers are \code{10 * d} wide and the loss
+takes longer to flatten. Five folds of an all but unbounded epoch budget is
+what the \code{sbibm} recipe asks for, and that is what it costs. \code{hidden} and
+\code{max_epochs} cut it down, and \code{device} moves the fit to a GPU.
 
 \code{classifier = "logistic"} swaps the network for cross-validated logistic
-regression. It is fast and deterministic, and it is what this function used
-before it was aligned with \code{sbibm}, but it is linear: it sees a shift in
-location and is close to blind to two sample sets that share a mean and
-differ in spread or in the shape of their dependence. Use it as a cheap
-screen, and report the MLP number.
+regression. It needs no torch, it answers in milliseconds, and it is what
+this function used before it was aligned with \code{sbibm}. It is also linear: it
+sees a shift in location and is close to blind to two sample sets that share
+a mean and differ in spread or in the shape of their dependence. Use it as a
+cheap screen, or in a session with no torch, and report the MLP number.
 
 Unequal sample sizes are balanced by subsampling the larger set, which
 \code{sbibm} does not do because it always compares 10000 draws against 10000.

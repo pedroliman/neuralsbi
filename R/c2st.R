@@ -16,19 +16,23 @@
 #' ends the fit long before `max_epochs`. `sbibm` passes reference draws first,
 #' so pass the reference as `x`: that is the set whose moments set the scale.
 #'
-#' The network is written in base R rather than delegating to torch, because
-#' C2ST is a diagnostic and must work in a session with no torch installed.
-#' Budget about six seconds for the 10000-against-10000 comparison `sbibm` runs
-#' in two dimensions, and more as `d` grows, since the hidden layers grow with
-#' it. Where that is too slow, lower `hidden` or `max_epochs`, or take the
-#' logistic screen below.
+#' The network trains on torch, like every other neural piece of this package,
+#' so `classifier = "mlp"` needs torch installed and errors without it. That is
+#' the only part of the diagnostics that does.
+#'
+#' Budget for the fit. `sbibm`'s own comparison, 10000 draws against 10000 in
+#' two dimensions, takes about 25 seconds on one CPU core; at `d = 5` it is
+#' several minutes, because the hidden layers are `10 * d` wide and the loss
+#' takes longer to flatten. Five folds of an all but unbounded epoch budget is
+#' what the `sbibm` recipe asks for, and that is what it costs. `hidden` and
+#' `max_epochs` cut it down, and `device` moves the fit to a GPU.
 #'
 #' `classifier = "logistic"` swaps the network for cross-validated logistic
-#' regression. It is fast and deterministic, and it is what this function used
-#' before it was aligned with `sbibm`, but it is linear: it sees a shift in
-#' location and is close to blind to two sample sets that share a mean and
-#' differ in spread or in the shape of their dependence. Use it as a cheap
-#' screen, and report the MLP number.
+#' regression. It needs no torch, it answers in milliseconds, and it is what
+#' this function used before it was aligned with `sbibm`. It is also linear: it
+#' sees a shift in location and is close to blind to two sample sets that share
+#' a mean and differ in spread or in the shape of their dependence. Use it as a
+#' cheap screen, or in a session with no torch, and report the MLP number.
 #'
 #' Unequal sample sizes are balanced by subsampling the larger set, which
 #' `sbibm` does not do because it always compares 10000 draws against 10000.
@@ -56,9 +60,12 @@
 #'   default, is `sbibm`'s two layers of `10 * d` units.
 #' @param max_epochs Cap on training epochs per fold. A guard, not a budget:
 #'   the no-improvement rule normally stops training first.
+#' @param device Torch device to train the network on: `"cpu"` (the default),
+#'   `"cuda"`, `"mps"`, or `"gpu"`/`"auto"` for whichever is available. Ignored
+#'   by `classifier = "logistic"`.
 #' @return A list with the mean cross-validated accuracy and ROC AUC, the
-#'   per-fold values of each, the number of draws per class, and a one-line
-#'   reading of the accuracy.
+#'   per-fold values of each, the number of draws per class, the classifier
+#'   used, and a one-line reading of the accuracy.
 #' @references Lopez-Paz, D. and Oquab, M. (2017). Revisiting classifier
 #'   two-sample tests. *ICLR*. \doi{10.48550/arXiv.1610.06545}
 #'
@@ -72,11 +79,16 @@
 #' @export
 c2st <- function(x, y, n_folds = 5L, seed = NULL,
                  classifier = c("mlp", "logistic"), z_score = TRUE,
-                 noise_scale = NULL, hidden = NULL, max_epochs = 10000L) {
+                 noise_scale = NULL, hidden = NULL, max_epochs = 10000L,
+                 device = "cpu") {
   classifier <- match.arg(classifier)
   n_folds <- check_count(n_folds, "n_folds", min = 2L,
                          why = "since each fold is scored by a fit on the rest")
   max_epochs <- check_count(max_epochs, "max_epochs")
+  check_device_arg(device)
+  if (!is.null(hidden)) {
+    hidden <- check_counts(hidden, "hidden", what = "hidden units")
+  }
   if (!is.null(noise_scale)) noise_scale <- check_positive(noise_scale, "noise_scale")
   if (!is.null(seed)) set.seed(seed)
   # A row is one draw here, so a bare vector is a column of 1-D draws rather
@@ -105,9 +117,22 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
                  n_folds, n_things(n_each, "draw")),
          call. = FALSE)
   }
-  d <- ncol(x)
-  hidden <- if (is.null(hidden)) rep(10L * d, 2L) else
-    check_counts(hidden, "hidden", what = "hidden units")
+  if (is.null(hidden)) hidden <- rep(10L * ncol(x), 2L)
+  if (identical(classifier, "mlp")) {
+    # Last, so that a bad argument or a mismatched pair of sample sets is
+    # reported as itself rather than as a missing torch install.
+    require_torch(
+      what = "c2st()'s MLP classifier, the one sbibm uses,",
+      alternative = paste("Alternatively use classifier = \"logistic\" for a",
+                          "torch-free two-sample test. It is linear, so it",
+                          "sees a shift in location but not a difference in",
+                          "spread; see ?c2st.")
+    )
+    device <- resolve_device(device)
+    # Two random streams to fix: R's decides the folds, the subsampling and the
+    # batch order, torch's decides the network's starting weights.
+    if (!is.null(seed)) torch::torch_manual_seed(seed)
+  }
   # base::sample.int, not the package's sample() generic, which dispatches on
   # its first argument.
   if (nrow(x) > n_each) x <- x[base::sample.int(nrow(x), n_each), , drop = FALSE]
@@ -140,7 +165,7 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
       classifier,
       mlp = c2st_mlp_prob(data[tr, , drop = FALSE], label[tr],
                           data[te, , drop = FALSE], hidden = hidden,
-                          max_epochs = max_epochs),
+                          max_epochs = max_epochs, device = device),
       logistic = c2st_logistic_prob(data[tr, , drop = FALSE], label[tr],
                                     data[te, , drop = FALSE])
     )
@@ -166,147 +191,139 @@ c2st_logistic_prob <- function(x_train, y_train, x_test) {
   stats::predict(fit, newdata = data.frame(x_test), type = "response")
 }
 
-#' `sbibm`'s C2ST classifier
+#' Build `sbibm`'s C2ST classifier as a torch module
 #'
-#' A two-hidden-layer ReLU network trained by Adam on the binary log loss,
-#' matching the `MLPClassifier` settings `sbibm` uses: Glorot-uniform
-#' initialization, L2 penalty `alpha`, minibatches of 200 drawn in a fresh
-#' random order each epoch, Adam with bias-corrected step size, and a stop once
-#' the epoch loss has failed to improve on the best by more than `tol` for
-#' `n_iter_no_change` epochs in a row.
+#' A plain `linear/relu` stack ending in one logit, the same trunk
+#' [mlp_layers()] builds for every other estimator in the package. The one
+#' thing worth doing by hand is the initialization: `scikit-learn` draws both
+#' weights and biases from Glorot uniform, `torch` uses Kaiming uniform on the
+#' weight and a fan-in bound on the bias, and the fit has to start where
+#' `MLPClassifier`'s would for the numbers to line up.
 #'
-#' Written out in base R on purpose. C2ST is a diagnostic, and the diagnostics
-#' have to run in a session where torch was never installed.
+#' @param d Number of columns in the draws.
+#' @param hidden Widths of the hidden layers, one entry per layer.
+#' @keywords internal
+c2st_mlp_module <- function(d, hidden) {
+  torch::nn_module(
+    classname = "nsbi_c2st_net",
+    initialize = function() {
+      layers <- mlp_layers(c(d, hidden))
+      layers[[length(layers) + 1L]] <-
+        torch::nn_linear(hidden[length(hidden)], 1L)
+      for (layer in layers) {
+        if (!inherits(layer, "nn_linear")) next
+        bound <- sqrt(6 / (layer$in_features + layer$out_features))
+        torch::nn_init_uniform_(layer$weight, -bound, bound)
+        torch::nn_init_uniform_(layer$bias, -bound, bound)
+      }
+      self$trunk <- do.call(torch::nn_sequential, layers)
+    },
+    forward = function(x) self$trunk(x)$squeeze(2)
+  )
+}
+
+#' `sbibm`'s C2ST classifier, trained on one fold
+#'
+#' Adam on the binary log loss under the `MLPClassifier` settings `sbibm` uses:
+#' minibatches of 200 in a fresh random order each epoch, learning rate `1e-3`,
+#' and a stop once the epoch loss has failed to improve on the best by more
+#' than `tol` for `n_iter_no_change` epochs in a row.
+#'
+#' `scikit-learn`'s `alpha` penalizes the weights and leaves the biases alone,
+#' adding `alpha * W / batch` to the gradient. That is what `weight_decay`
+#' does, so the optimizer carries it in two parameter groups rather than the
+#' loss carrying it as a graph node: the penalty is also part of the loss the
+#' stopping rule reads, but evaluating it once an epoch instead of once a batch
+#' costs nothing and saves half the running time of the loop.
 #'
 #' @param x_train,y_train Training draws and their 0/1 labels.
 #' @param x_test Draws to score.
 #' @param hidden Widths of the hidden layers, one entry per layer.
-#' @param alpha L2 penalty, scaled by batch size the way `scikit-learn` scales
-#'   it.
+#' @param alpha L2 penalty on the weights.
 #' @param lr Adam step size.
 #' @param batch_size Minibatch size, capped at the number of training draws.
 #' @param max_epochs Cap on epochs.
 #' @param tol Smallest loss improvement that counts as progress.
 #' @param n_iter_no_change Epochs without progress before training stops.
+#' @param device Resolved torch device to train on.
 #' @return Predicted probability of class 1 for each row of `x_test`.
 #' @keywords internal
-c2st_mlp_prob <- function(x_train, y_train, x_test, hidden,
-                          alpha = 1e-4, lr = 1e-3, batch_size = 200L,
-                          max_epochs = 10000L, tol = 1e-4,
-                          n_iter_no_change = 10L) {
-  net <- c2st_mlp_train(x_train, y_train, hidden = hidden, alpha = alpha,
-                        lr = lr, batch_size = batch_size,
-                        max_epochs = max_epochs, tol = tol,
-                        n_iter_no_change = n_iter_no_change)
-  c2st_mlp_forward(net, x_test)
-}
-
-#' Add a bias row-wise
-#'
-#' `sweep()` and `t(t(z) + b)` both copy more than they need to; this is the
-#' same thing written as one recycled vector, and the inner loop of the
-#' network runs it a few hundred thousand times.
-#'
-#' @param z An `n x p` matrix.
-#' @param b A length-`p` bias vector.
-#' @keywords internal
-c2st_add_bias <- function(z, b) z + rep(b, each = nrow(z))
-
-#' Forward pass of the [c2st()] network
-#'
-#' @param net Weights and biases from [c2st_mlp_train()].
-#' @param x Draws to score.
-#' @return Predicted probability of class 1 for each row of `x`.
-#' @keywords internal
-c2st_mlp_forward <- function(net, x) {
-  n_layers <- length(net$w)
-  a <- x
-  for (i in seq_len(n_layers)) {
-    z <- c2st_add_bias(a %*% net$w[[i]], net$b[[i]])
-    a <- if (i < n_layers) pmax(z, 0) else stats::plogis(z)
-  }
-  a[, 1L]
-}
-
-#' Train the [c2st()] network
-#'
-#' @inheritParams c2st_mlp_prob
-#' @return A list of weight matrices `w`, bias vectors `b`, and the number of
-#'   epochs run.
-#' @keywords internal
-c2st_mlp_train <- function(x_train, y_train, hidden, alpha = 1e-4, lr = 1e-3,
-                           batch_size = 200L, max_epochs = 10000L, tol = 1e-4,
-                           n_iter_no_change = 10L) {
-  sizes <- c(ncol(x_train), hidden, 1L)
-  n_layers <- length(sizes) - 1L
-  w <- vector("list", n_layers)
-  b <- vector("list", n_layers)
-  for (i in seq_len(n_layers)) {
-    # Glorot uniform, as scikit-learn initializes a ReLU layer.
-    bound <- sqrt(6 / (sizes[i] + sizes[i + 1L]))
-    w[[i]] <- matrix(stats::runif(sizes[i] * sizes[i + 1L], -bound, bound),
-                     sizes[i], sizes[i + 1L])
-    b[[i]] <- stats::runif(sizes[i + 1L], -bound, bound)
-  }
-  zeros_like <- function(p) lapply(p, function(q) q * 0)
-  mw <- zeros_like(w); vw <- zeros_like(w)
-  mb <- zeros_like(b); vb <- zeros_like(b)
-  beta1 <- 0.9; beta2 <- 0.999; adam_eps <- 1e-8
+c2st_mlp_prob <- function(x_train, y_train, x_test, hidden, alpha = 1e-4,
+                          lr = 1e-3, batch_size = 200L, max_epochs = 10000L,
+                          tol = 1e-4, n_iter_no_change = 10L, device = "cpu") {
+  net <- c2st_mlp_module(ncol(x_train), hidden)()
+  net$to(device = device)
   n <- nrow(x_train)
   batch_size <- min(as.integer(batch_size), n)
-  clip <- .Machine$double.eps
-  step <- 0L
+
+  # A weight is the two-dimensional parameter of a linear layer, a bias the
+  # one-dimensional one, and only the weights are penalized.
+  is_weight <- function(p) length(dim(p)) == 2L
+  weights <- Filter(is_weight, net$parameters)
+  opt <- c2st_adam(
+    list(list(params = weights, weight_decay = alpha / batch_size),
+         list(params = Filter(Negate(is_weight), net$parameters),
+              weight_decay = 0)),
+    lr = lr)
+  # Named device, not with_device(): torch_tensor() from an R matrix always
+  # lands on the CPU otherwise, the same wrinkle train_restarts() works around.
+  xt <- torch::torch_tensor(x_train, dtype = torch::torch_float(),
+                            device = device)
+  yt <- torch::torch_tensor(y_train, dtype = torch::torch_float(),
+                            device = device)
+
   best_loss <- Inf
   no_improvement <- 0L
-  epochs <- 0L
   for (epoch in seq_len(max_epochs)) {
-    epochs <- epoch
-    ord <- base::sample.int(n)
+    net$train()
     running <- 0
-    start <- 1L
-    while (start <= n) {
-      idx <- ord[start:min(start + batch_size - 1L, n)]
-      start <- start + batch_size
-      nb <- length(idx)
-      xb <- x_train[idx, , drop = FALSE]
-      yb <- y_train[idx]
-
-      a <- vector("list", n_layers + 1L)
-      a[[1L]] <- xb
-      for (i in seq_len(n_layers)) {
-        z <- c2st_add_bias(a[[i]] %*% w[[i]], b[[i]])
-        a[[i + 1L]] <- if (i < n_layers) pmax(z, 0) else stats::plogis(z)
-      }
-      out <- a[[n_layers + 1L]][, 1L]
-      p <- pmin(pmax(out, clip), 1 - clip)
-      loss <- -sum(yb * log(p) + (1 - yb) * log1p(-p)) / nb +
-        0.5 * alpha * sum(vapply(w, function(m) sum(m * m), 0)) / nb
-      running <- running + loss * nb
-
-      delta <- matrix(out - yb, ncol = 1L)
-      for (i in rev(seq_len(n_layers))) {
-        gw <- (crossprod(a[[i]], delta) + alpha * w[[i]]) / nb
-        gb <- colMeans(delta)
-        if (i > 1L) delta <- tcrossprod(delta, w[[i]]) * (a[[i]] > 0)
-        step_i <- step + 1L
-        # Adam's bias correction folded into the step size, as scikit-learn
-        # writes it, so the first steps are not shrunk toward zero.
-        lr_t <- lr * sqrt(1 - beta2^step_i) / (1 - beta1^step_i)
-        mw[[i]] <- beta1 * mw[[i]] + (1 - beta1) * gw
-        vw[[i]] <- beta2 * vw[[i]] + (1 - beta2) * gw * gw
-        w[[i]] <- w[[i]] - lr_t * mw[[i]] / (sqrt(vw[[i]]) + adam_eps)
-        mb[[i]] <- beta1 * mb[[i]] + (1 - beta1) * gb
-        vb[[i]] <- beta2 * vb[[i]] + (1 - beta2) * gb * gb
-        b[[i]] <- b[[i]] - lr_t * mb[[i]] / (sqrt(vb[[i]]) + adam_eps)
-      }
-      step <- step + 1L
+    # sample.int() and minibatches(), so R's seed governs the batch order the
+    # way it governs every other training loop in the package.
+    for (idx in minibatches(base::sample.int(n), batch_size)) {
+      opt$zero_grad()
+      logit <- net(xt[idx, , drop = FALSE])
+      loss <- torch::nnf_binary_cross_entropy_with_logits(logit, yt[idx])
+      loss$backward()
+      opt$step()
+      running <- running + loss$item() * length(idx)
     }
-    epoch_loss <- running / n
+    # The penalty term scikit-learn folds into the loss it watches, on the
+    # weights as they end the epoch.
+    penalty <- torch::with_no_grad(
+      0.5 * alpha * sum(vapply(weights, function(w) {
+        as.numeric(torch::torch_sum(w * w)$item())
+      }, 0)) / batch_size)
+    epoch_loss <- running / n + penalty
     no_improvement <- if (epoch_loss > best_loss - tol) no_improvement + 1L else 0L
     if (epoch_loss < best_loss) best_loss <- epoch_loss
     if (no_improvement > n_iter_no_change) break
   }
-  list(w = w, b = b, epochs = epochs)
+
+  net$eval()
+  torch::with_no_grad({
+    xte <- torch::torch_tensor(x_test, dtype = torch::torch_float(),
+                               device = device)
+    as.numeric(torch::torch_sigmoid(net(xte))$cpu())
+  })
+}
+
+#' Adam for [c2st_mlp_prob()], preferring torch's C++ implementation
+#'
+#' `optim_ignite_adam()` takes the whole step in C++ where `optim_adam()` loops
+#' over the parameters in R. The two produce identical trajectories, and this
+#' loop is thousands of steps over six small tensors, so the R-side overhead is
+#' most of what it costs: swapping one for the other halves the running time.
+#' `optim_ignite_adam()` arrived in torch 0.13.0 and DESCRIPTION allows 0.11.0,
+#' which is what the fallback is for.
+#'
+#' @param groups Parameter groups, as `optim_adam()` takes them.
+#' @param lr Adam step size.
+#' @keywords internal
+c2st_adam <- function(groups, lr) {
+  if (utils::packageVersion("torch") >= "0.13.0") {
+    return(torch::optim_ignite_adam(groups, lr = lr))
+  }
+  torch::optim_adam(groups, lr = lr)
 }
 
 #' Area under the ROC curve
