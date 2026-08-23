@@ -1,5 +1,32 @@
 # Changelog
 
+## neuralsbi 0.6.7
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  now honor `seed` when called with pre-computed `theta`/`x`.** The
+  `seed` argument only ever reached R’s base RNG through
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)’s
+  own `set.seed(seed)`, which runs on the branch of
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  that calls the simulator; the documented, first-class `theta`/`x` code
+  path skipped it entirely.
+  [`train_restarts()`](https://neuralsbi.pedrodelima.com/reference/train_restarts.md)
+  (`R/train.R`) draws its train/validation split and every epoch’s
+  minibatch order from
+  [`sample.int()`](https://rdrr.io/r/base/sample.html), which reads R’s
+  base RNG, not `torch`’s – so two calls with an identical `seed` and
+  identical pre-computed `theta`/`x` could still train on different
+  splits and minibatch orders, and so land on different weights,
+  depending on whatever base RNG state happened to be ambient at call
+  time. All three entry points now call `set.seed(seed)` themselves
+  before
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  runs, matching the pattern already used in
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md), and
+  the NLE MCMC posterior
+  ([\#214](https://github.com/pedroliman/neuralsbi/issues/214)).
+
 ## neuralsbi 0.6.6
 
 - **`de_sample.nsbi_de_mdn()` no longer errors on a 1-d target with more
