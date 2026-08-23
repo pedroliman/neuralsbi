@@ -1,6 +1,6 @@
 # neuralsbi 0.6.7
 
-* **`npe_sequential()` now honors `seed` for weight initialization, not just for the proposal/simulation randomness.** `npe_sequential()` calls `set.seed(seed)` up front, which seeds R's base RNG for the whole run, but its inner `npe()` call never forwarded `seed` on, so `npe()`'s own `seed` argument stayed at its default `NULL`. `train_restarts()` (`R/train.R`) only calls `torch::torch_manual_seed(seed)` when `seed` is non-`NULL`, and that call is what drives reproducible network weight initialization every round -- so two `npe_sequential(..., seed = 42)` calls could still train different networks, depending on whatever torch RNG state happened to be ambient at call time. The fix passes `seed` through to the inner `npe()` call (#PR_NUMBER).
+* **`npe_sequential()` now honors `seed` for weight initialization, not just for the proposal/simulation randomness.** `npe_sequential()` calls `set.seed(seed)` up front, which seeds R's base RNG for the whole run, but its inner `npe()` call never forwarded `seed` on, so `npe()`'s own `seed` argument stayed at its default `NULL`. `train_restarts()` (`R/train.R`) only calls `torch::torch_manual_seed(seed)` when `seed` is non-`NULL`, and that call is what drives reproducible network weight initialization every round -- so two `npe_sequential(..., seed = 42)` calls could still train different networks, depending on whatever torch RNG state happened to be ambient at call time. The fix passes `seed` through to the inner `npe()` call (#216).
 
 # neuralsbi 0.6.6
 
