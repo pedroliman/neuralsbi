@@ -120,6 +120,14 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
 
+  # Seed R's base RNG here, unconditionally of which prepare_simulations()
+  # branch runs below: with a simulator it reseeds again inside
+  # simulate_for_sbi() (redundant but harmless -- that keeps simulate_for_sbi()
+  # reproducible when called directly), but with pre-computed theta/x nothing
+  # else in this call would ever touch the base RNG, and train_restarts()
+  # (R/train.R) still draws the train/validation split and every epoch's
+  # minibatch order from it (GitHub #213).
+  if (!is.null(seed)) set.seed(seed)
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
   de <- fit_density_estimator(
