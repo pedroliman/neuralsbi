@@ -90,9 +90,12 @@ test_that("npe_sequential rejects a prior that is not an nsbi_prior", {
 test_that("npe_sequential warns and continues with fewer draws when the proposal batch cap bites", {
   set.seed(31)
   # a wide prior and a tight likelihood: round 2's truncated region is narrow,
-  # so with only one proposal batch allowed, most rounds fall short of budget
+  # so with only one proposal batch allowed, most rounds fall short of budget.
+  # sd = 0.3 keeps round 2's acceptance count away from the 0-vs-1 edge (a
+  # tighter likelihood lands exactly on that edge now that seed forwards into
+  # the inner npe() call, #215, and reseeds R's base RNG each round, #214).
   prior <- prior_uniform(low = -50, high = 50)
-  simulator <- function(theta) theta + rnorm(1, sd = 0.05)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.3)
   expect_warning(
     fit <- npe_sequential(prior, simulator, x_obs = 0.2, n_rounds = 2,
                           n_simulations = 500, epsilon = 0.5,
