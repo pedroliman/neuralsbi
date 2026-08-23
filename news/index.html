@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.8" id="neuralsbi-068">neuralsbi 0.6.8<a class="anchor" aria-label="anchor" href="#neuralsbi-068"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now honors <code>seed</code> for weight initialization, not just for the proposal/simulation randomness.</strong> <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> calls <code>set.seed(seed)</code> up front, which seeds R’s base RNG for the whole run, but its inner <code><a href="../reference/npe.html">npe()</a></code> call never forwarded <code>seed</code> on, so <code><a href="../reference/npe.html">npe()</a></code>’s own <code>seed</code> argument stayed at its default <code>NULL</code>. <code><a href="../reference/train_restarts.html">train_restarts()</a></code> (<code>R/train.R</code>) only calls <code>torch::torch_manual_seed(seed)</code> when <code>seed</code> is non-<code>NULL</code>, and that call is what drives reproducible network weight initialization every round – so two <code>npe_sequential(..., seed = 42)</code> calls could still train different networks, depending on whatever torch RNG state happened to be ambient at call time. The fix passes <code>seed</code> through to the inner <code><a href="../reference/npe.html">npe()</a></code> call (<a href="https://github.com/pedroliman/neuralsbi/issues/216" class="external-link">#216</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.7" id="neuralsbi-067">neuralsbi 0.6.7<a class="anchor" aria-label="anchor" href="#neuralsbi-067"></a></h2>
 <ul><li>
