@@ -90,9 +90,12 @@ test_that("npe_sequential rejects a prior that is not an nsbi_prior", {
 test_that("npe_sequential warns and continues with fewer draws when the proposal batch cap bites", {
   set.seed(31)
   # a wide prior and a tight likelihood: round 2's truncated region is narrow,
-  # so with only one proposal batch allowed, most rounds fall short of budget
+  # so with only one proposal batch allowed, most rounds fall short of budget.
+  # sd = 0.3 keeps round 2's acceptance count away from the 0-vs-1 edge (a
+  # tighter likelihood lands exactly on that edge now that seed forwards into
+  # the inner npe() call, #215, and reseeds R's base RNG each round, #214).
   prior <- prior_uniform(low = -50, high = 50)
-  simulator <- function(theta) theta + rnorm(1, sd = 0.05)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.3)
   expect_warning(
     fit <- npe_sequential(prior, simulator, x_obs = 0.2, n_rounds = 2,
                           n_simulations = 500, epsilon = 0.5,
@@ -247,6 +250,35 @@ test_that("npe_sequential rejects an n_simulations vector whose length doesn't m
                    n_simulations = c(500, 1000),
                    density_estimator = "linear_gaussian"),
     "`n_simulations` must be length 1 or 3.*not 2")
+})
+
+test_that("npe_sequential() is reproducible given `seed`, including torch's RNG (#215)", {
+  skip_if_no_torch()
+  # Regression test for GitHub #215. npe_sequential() seeds R's base RNG
+  # itself (set.seed(seed), above), but until the fix it never forwarded
+  # `seed` to the inner npe() call (R/sequential.R), so npe()'s own `seed`
+  # stayed NULL and train_restarts() (R/train.R) never called
+  # torch::torch_manual_seed(): torch's RNG, which drives network weight
+  # initialization every round, was never seeded by npe_sequential().
+  prior <- prior_normal(mean = 0, sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
+
+  # Diverge torch's ambient RNG by a different amount before each call, so
+  # an identical result proves it came from `seed`, not from the RNG
+  # already happening to agree.
+  torch::torch_manual_seed(100)
+  fit1 <- npe_sequential(prior, simulator, x_obs = 0.3, n_rounds = 2,
+                         n_simulations = 100, density_estimator = "mdn",
+                         n_components = 1L, hidden = c(4L), max_epochs = 3L,
+                         n_restarts = 1L, seed = 1)
+  torch::torch_manual_seed(200)
+  fit2 <- npe_sequential(prior, simulator, x_obs = 0.3, n_rounds = 2,
+                         n_simulations = 100, density_estimator = "mdn",
+                         n_components = 1L, hidden = c(4L), max_epochs = 3L,
+                         n_restarts = 1L, seed = 1)
+
+  expect_identical(fit1$de$history, fit2$de$history)
+  expect_identical(fit1$de$best_val_loss, fit2$de$best_val_loss)
 })
 
 test_that("npe_sequential accepts n_simulations as a scalar or as a full-length vector", {

@@ -176,7 +176,8 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       r, n_rounds, nrow(theta_new), nrow(theta_all), acceptance))
 
     fit <- npe(prior, theta = theta_all, x = x_all,
-               density_estimator = density_estimator, verbose = verbose, ...)
+               density_estimator = density_estimator, verbose = verbose,
+               seed = seed, ...)
     rounds[[r]] <- list(n_new = nrow(theta_new), acceptance = acceptance,
                         threshold = threshold)
   }
