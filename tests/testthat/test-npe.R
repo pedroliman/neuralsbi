@@ -254,3 +254,35 @@ test_that("simulate_for_sbi() names a swapped (simulator, prior) pair", {
                "`prior` must be an nsbi_prior object")
   expect_equal(nrow(simulate_for_sbi(toy_simulator, toy_prior(), 5)$x), 5L)
 })
+
+test_that("npe() with pre-computed theta/x is reproducible given `seed` (#213)", {
+  skip_if_no_torch()
+  # Regression test for GitHub #213. simulate_for_sbi() seeds R's base RNG,
+  # but that function only runs on the branch of prepare_simulations() that
+  # calls the simulator (R/npe.R); it is skipped entirely when theta/x are
+  # supplied directly. train_restarts() (R/train.R) still draws the
+  # train/validation split and every epoch's minibatch order from
+  # sample.int(), which reads R's base RNG, not torch's -- so before the fix,
+  # two npe() calls with identical `seed` and identical pre-computed
+  # theta/x could still train on different splits/minibatch orders if the
+  # ambient base RNG state differed between the calls.
+  prior <- prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+  set.seed(1)
+  theta <- matrix(stats::rnorm(200), ncol = 2)
+  x <- theta + matrix(stats::rnorm(200, sd = 0.1), ncol = 2)
+
+  # Advance the ambient RNG by a different amount before each call, so an
+  # identical result proves it came from `seed`, not from the RNG already
+  # happening to agree.
+  runif(5)
+  fit1 <- npe(prior, theta = theta, x = x, density_estimator = "mdn",
+             n_components = 1L, hidden = c(4L), max_epochs = 3L,
+             n_restarts = 1L, seed = 1)
+  runif(11)
+  fit2 <- npe(prior, theta = theta, x = x, density_estimator = "mdn",
+             n_components = 1L, hidden = c(4L), max_epochs = 3L,
+             n_restarts = 1L, seed = 1)
+
+  expect_identical(fit1$de$history, fit2$de$history)
+  expect_identical(fit1$de$best_val_loss, fit2$de$best_val_loss)
+})

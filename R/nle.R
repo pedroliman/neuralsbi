@@ -84,6 +84,11 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
 
+  # See npe(): seed the base RNG here, unconditionally of which
+  # prepare_simulations() branch runs, so train_restarts()'s train/validation
+  # split and minibatch order are reproducible even with pre-computed
+  # theta/x (GitHub #213).
+  if (!is.null(seed)) set.seed(seed)
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
 
