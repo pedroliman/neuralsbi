@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.10" id="neuralsbi-0610">neuralsbi 0.6.10<a class="anchor" aria-label="anchor" href="#neuralsbi-0610"></a></h2>
+<ul><li>
+<strong><code>bulk_ess()</code> no longer floors Geyer’s <code>tau</code> estimate at <code>1</code>.</strong> The reference formula (Stan’s implementation, and Vehtari et al. 2021, which <code>split_rhat()</code> already matches) floors <code>tau_hat</code> at <code>1 / log10(n*k)</code>, not at <code>1</code>; <code>min(n*k / tau, n*k * log10(n*k))</code> and <code>n*k / max(tau, 1/log10(n*k))</code> are the same clamp written two ways, and the code used the first form for the upper bound but then separately floored <code>tau</code> itself at <code>1</code>, discarding the lower bound the reference formula allows. A well-mixing or anti-correlated chain routinely has an uncapped <code>tau_hat</code> below <code>1</code>, and the wrong floor silently clamped its ESS at <code>n*k</code>, the raw draw count, instead of the larger value the reference computation gives – confirmed against <code><a href="https://mc-stan.org/posterior/reference/ess_bulk.html" class="external-link">posterior::ess_bulk()</a></code> on AR(1) chains with negative lag-1 autocorrelation, where the old code reported exactly <code>n*k</code> while the correct value ran 2x-3x higher. A new test adds anti-correlated AR(1) fixtures (<a href="https://github.com/pedroliman/neuralsbi/issues/219" class="external-link">#219</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/220" class="external-link">#220</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.9" id="neuralsbi-069">neuralsbi 0.6.9<a class="anchor" aria-label="anchor" href="#neuralsbi-069"></a></h2>
 <ul><li>
