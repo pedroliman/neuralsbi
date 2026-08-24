@@ -578,8 +578,19 @@ bulk_ess <- function(m) {
   }
   if (length(pairs) > 1L) pairs <- cummin(pairs)
   tau <- -1 + 2 * sum(pairs)
-  if (!is.finite(tau) || tau < 1) tau <- 1
-  min(n * k / tau, n * k * log10(n * k))
+
+  # Floor tau at 1 / log10(n*k), not 1. n*k / tau is unbounded as tau -> 0,
+  # which happens for well-mixing or anti-correlated chains where the paired
+  # sum above stops after just the lag-0 pair; Stan (and Vehtari et al. 2021,
+  # eq. 10, which split_rhat() above already matches) caps ESS at
+  # n*k*log10(n*k) instead of letting it run away, and that cap is this same
+  # floor on tau expressed the other way: n*k / max(tau, 1/log10(n*k)) ==
+  # min(n*k/tau, n*k*log10(n*k)). Flooring tau at 1 instead silently drops
+  # that bound and clamps ESS at n*k, the raw draw count, whenever the true
+  # tau_hat is below 1.
+  tau_bound <- 1 / log10(n * k)
+  if (!is.finite(tau) || tau < tau_bound) tau <- tau_bound
+  n * k / tau
 }
 
 #' Autocovariance of a single chain at lags 0..n-1, via the FFT
