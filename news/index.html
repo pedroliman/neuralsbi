@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.9" id="neuralsbi-069">neuralsbi 0.6.9<a class="anchor" aria-label="anchor" href="#neuralsbi-069"></a></h2>
+<ul><li>
+<strong><code>bulk_ess()</code> no longer over-corrects autocorrelation at every lag.</strong> <code><a href="../reference/autocov.html">autocov()</a></code> returns the biased autocovariance (divided by <code>n</code>), and the <code>n / (n - 1)</code> factor exists to convert only the lag-0 term into the unbiased quantity that matches <code>W</code>, which <code><a href="https://rdrr.io/r/stats/cor.html" class="external-link">stats::var</a></code> already computes with the <code>n - 1</code> divisor. The code instead applied <code>n / (n - 1)</code> to the whole autocovariance vector before computing <code>rho</code>, which happened to leave lag 0 correct (<code>acov[1] * n / (n - 1) == W</code> algebraically) but inflated every higher-lag autocorrelation entering Geyer’s paired sum, matching neither Stan’s own implementation nor rstan’s <code>monitor.R::ess_rfun</code>, which rescale <code>acov[0]</code> alone and leave every lag <code>&gt;= 1</code> unscaled. The effect shrinks as <code>n -&gt; Inf</code> (the <code>n / (n - 1)</code> factor approaches 1), which is why the package’s regression test against <code><a href="https://mc-stan.org/posterior/reference/ess_bulk.html" class="external-link">posterior::ess_bulk()</a></code> didn’t catch it: it ran at <code>n = 400</code> with a 1% tolerance, small enough to hide a discrepancy that reaches 1-2% at the <code>n = 20-100</code> range typical of <code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code>’s default slice-sampler settings. Only the diagnostic ESS number reported by <code><a href="../reference/mcmc_diagnostics.html">mcmc_diagnostics()</a></code> was affected, not the MCMC draws themselves or <code>split_rhat()</code>. A new test adds an <code>n = 50</code> fixture with a tolerance tight enough to have caught this (<a href="https://github.com/pedroliman/neuralsbi/issues/217" class="external-link">#217</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/218" class="external-link">#218</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.8" id="neuralsbi-068">neuralsbi 0.6.8<a class="anchor" aria-label="anchor" href="#neuralsbi-068"></a></h2>
 <ul><li>

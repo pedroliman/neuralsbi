@@ -1,5 +1,36 @@
 # Changelog
 
+## neuralsbi 0.6.9
+
+- **`bulk_ess()` no longer over-corrects autocorrelation at every lag.**
+  [`autocov()`](https://neuralsbi.pedrodelima.com/reference/autocov.md)
+  returns the biased autocovariance (divided by `n`), and the
+  `n / (n - 1)` factor exists to convert only the lag-0 term into the
+  unbiased quantity that matches `W`, which
+  [`stats::var`](https://rdrr.io/r/stats/cor.html) already computes with
+  the `n - 1` divisor. The code instead applied `n / (n - 1)` to the
+  whole autocovariance vector before computing `rho`, which happened to
+  leave lag 0 correct (`acov[1] * n / (n - 1) == W` algebraically) but
+  inflated every higher-lag autocorrelation entering Geyer’s paired sum,
+  matching neither Stan’s own implementation nor rstan’s
+  `monitor.R::ess_rfun`, which rescale `acov[0]` alone and leave every
+  lag `>= 1` unscaled. The effect shrinks as `n -> Inf` (the
+  `n / (n - 1)` factor approaches 1), which is why the package’s
+  regression test against
+  [`posterior::ess_bulk()`](https://mc-stan.org/posterior/reference/ess_bulk.html)
+  didn’t catch it: it ran at `n = 400` with a 1% tolerance, small enough
+  to hide a discrepancy that reaches 1-2% at the `n = 20-100` range
+  typical of
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)’s
+  default slice-sampler settings. Only the diagnostic ESS number
+  reported by
+  [`mcmc_diagnostics()`](https://neuralsbi.pedrodelima.com/reference/mcmc_diagnostics.md)
+  was affected, not the MCMC draws themselves or `split_rhat()`. A new
+  test adds an `n = 50` fixture with a tolerance tight enough to have
+  caught this
+  ([\#217](https://github.com/pedroliman/neuralsbi/issues/217))
+  ([\#218](https://github.com/pedroliman/neuralsbi/issues/218)).
+
 ## neuralsbi 0.6.8
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
