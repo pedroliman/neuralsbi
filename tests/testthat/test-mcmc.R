@@ -416,6 +416,41 @@ test_that("bulk ESS agrees with the posterior package at small n", {
                tolerance = 1e-6)
 })
 
+test_that("bulk ESS agrees with the posterior package for anti-correlated chains", {
+  # GitHub #219: tau (Geyer's initial-positive-sequence estimate) was floored
+  # at 1, not at 1/log10(n*k) as Stan and Vehtari et al. 2021 do. Negatively
+  # autocorrelated chains are exactly where the uncapped tau_hat falls below
+  # 1, so the wrong floor silently clamped ESS at n*k, the raw draw count,
+  # instead of the larger value the reference formula gives.
+  skip_if_no_posterior()
+  n <- 400
+  k <- 6
+  ar1 <- function(phi, seed) {
+    set.seed(seed)
+    chains <- array(0, c(n, k, 1))
+    for (c in seq_len(k)) {
+      y <- numeric(n)
+      for (i in 2:n) y[i] <- phi * y[i - 1] + stats::rnorm(1)
+      chains[, c, 1] <- y
+    }
+    chains
+  }
+
+  for (phi in c(-0.3, -0.6)) {
+    chains <- ar1(phi, seed = 219)
+    ours <- mcmc_diagnostics(chains)
+    # tolerance = 0.01, not the 1e-6 used for the #217 fixtures above: a
+    # small, pre-existing difference in how the two implementations handle
+    # the truncation boundary of Geyer's sequence shows up here (~0.8% at
+    # phi = -0.3), unrelated to the floor this test targets. That's still
+    # two orders of magnitude tighter than the >40% deflation the bug caused.
+    expect_equal(ours$ess_bulk, posterior::ess_bulk(chains[, , 1]),
+                 tolerance = 0.01)
+    # The bug clamped ESS at exactly n*k; confirm the fix reports more.
+    expect_gt(ours$ess_bulk, n * k)
+  }
+})
+
 test_that("split_rhat() catches disagreement a classical Rhat misses", {
   # Rank-normalization is what makes Rhat robust to heavy tails: an extreme
   # outlier moves a raw value by an unbounded amount but a rank by at most
