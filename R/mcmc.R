@@ -556,10 +556,14 @@ bulk_ess <- function(m) {
   var_hat <- ((n - 1) / n) * W + B / n
 
   # Average autocorrelation across chains, via the FFT. autocov() divides by n,
-  # so the n/(n-1) factor puts it on the same footing as the unbiased chain
-  # variances in W.
+  # so the n/(n-1) factor puts the lag-0 entry on the same footing as the
+  # unbiased chain variances in W. Only lag 0 gets this correction -- Stan's
+  # own ess_rfun (rstan's monitor.R) rescales acov[0] alone and leaves every
+  # lag >= 1 as the raw, biased autocovariance; scaling the whole vector
+  # inflates every higher-lag autocorrelation entering Geyer's paired sum.
   acov <- rowMeans(vapply(seq_len(k), function(c) autocov(z[, c], n), numeric(n)))
-  rho <- 1 - (W - acov * (n / (n - 1))) / var_hat
+  acov[1] <- acov[1] * n / (n - 1)
+  rho <- 1 - (W - acov) / var_hat
 
   # Geyer's initial positive sequence: sum paired autocorrelations while the
   # pair sum stays positive, then enforce the monotone decrease the theory

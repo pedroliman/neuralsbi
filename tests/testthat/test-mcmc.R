@@ -392,6 +392,30 @@ test_that("rhat and bulk ESS agree with the posterior package", {
                tolerance = 0.01)
 })
 
+test_that("bulk ESS agrees with the posterior package at small n", {
+  # GitHub #217: the n/(n-1) bias correction on autocov() belongs on the
+  # lag-0 entry alone (to match W, which stats::var already computes with
+  # the n-1 divisor), not on the whole autocovariance vector. Applying it at
+  # every lag inflates every higher-lag autocorrelation entering Geyer's
+  # paired sum, and the effect shrinks as n -> Inf (the n/(n-1) factor -> 1)
+  # -- which is why the n = 400, tolerance = 0.01 case above doesn't catch
+  # it. n = 50 with moderate autocorrelation and a tight tolerance does.
+  skip_if_no_posterior()
+  set.seed(217)
+  n <- 50
+  k <- 6
+  chains <- array(0, c(n, k, 1))
+  for (c in seq_len(k)) {
+    y <- numeric(n)
+    for (i in 2:n) y[i] <- 0.6 * y[i - 1] + stats::rnorm(1)
+    chains[, c, 1] <- y
+  }
+  ours <- mcmc_diagnostics(chains)
+
+  expect_equal(ours$ess_bulk, posterior::ess_bulk(chains[, , 1]),
+               tolerance = 1e-6)
+})
+
 test_that("split_rhat() catches disagreement a classical Rhat misses", {
   # Rank-normalization is what makes Rhat robust to heavy tails: an extreme
   # outlier moves a raw value by an unbounded amount but a rank by at most
