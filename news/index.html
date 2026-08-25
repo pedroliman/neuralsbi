@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.12" id="neuralsbi-0612">neuralsbi 0.6.12<a class="anchor" aria-label="anchor" href="#neuralsbi-0612"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/c2st.html">c2st()</a></code> no longer silently corrupts a whole column on a non-finite entry.</strong> <code>x</code>/<code>y</code> went through <code><a href="../reference/check_numeric.html">check_numeric()</a></code> alone, and with the default <code>z_score = TRUE</code> a single <code>NA</code>/<code>NaN</code>/<code>Inf</code> anywhere in a column reaches <code><a href="../reference/fit_standardizer.html">fit_standardizer()</a></code>/<code>apply_standardizer()</code> (<code>R/standardize.R</code>), whose <code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans()</a></code>/<code><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd()</a></code> carry no <code>na.rm</code> – so that column standardizes to <code>NA</code> in every row, not just the offending one. The corrupted matrix then either crashes several frames away with no mention of <code>x</code> or <code>y</code> (<code>classifier = "logistic"</code>’s <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> call errors with “Argument mu must be a nonempty numeric vector” once <code>na.action</code> drops every row; <code>classifier = "mlp"</code>’s training loop hits “missing value where TRUE/FALSE needed” once the propagated <code>NaN</code> reaches the stopping check), or, worse, survives to report an accuracy/AUC computed on a corrupted column, the metric this package’s diagnostics are built around. <code><a href="../reference/c2st.html">c2st()</a></code> now runs <code><a href="../reference/check_finite.html">check_finite()</a></code> on <code>x</code> and <code>y</code> right after <code><a href="../reference/check_numeric.html">check_numeric()</a></code>, matching <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/202" class="external-link">#202</a>) and <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/208" class="external-link">#208</a>/#209) (<a href="https://github.com/pedroliman/neuralsbi/issues/222" class="external-link">#222</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.11" id="neuralsbi-0611">neuralsbi 0.6.11<a class="anchor" aria-label="anchor" href="#neuralsbi-0611"></a></h2>
 <ul><li>

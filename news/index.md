@@ -1,5 +1,39 @@
 # Changelog
 
+## neuralsbi 0.6.12
+
+- **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) no
+  longer silently corrupts a whole column on a non-finite entry.**
+  `x`/`y` went through
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  alone, and with the default `z_score = TRUE` a single `NA`/`NaN`/`Inf`
+  anywhere in a column reaches
+  [`fit_standardizer()`](https://neuralsbi.pedrodelima.com/reference/fit_standardizer.md)/`apply_standardizer()`
+  (`R/standardize.R`), whose
+  [`colMeans()`](https://rdrr.io/r/base/colSums.html)/[`sd()`](https://rdrr.io/r/stats/sd.html)
+  carry no `na.rm` – so that column standardizes to `NA` in every row,
+  not just the offending one. The corrupted matrix then either crashes
+  several frames away with no mention of `x` or `y`
+  (`classifier = "logistic"`’s
+  [`glm()`](https://rdrr.io/r/stats/glm.html) call errors with “Argument
+  mu must be a nonempty numeric vector” once `na.action` drops every
+  row; `classifier = "mlp"`’s training loop hits “missing value where
+  TRUE/FALSE needed” once the propagated `NaN` reaches the stopping
+  check), or, worse, survives to report an accuracy/AUC computed on a
+  corrupted column, the metric this package’s diagnostics are built
+  around.
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
+  runs
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  on `x` and `y` right after
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md),
+  matching
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  ([\#202](https://github.com/pedroliman/neuralsbi/issues/202)) and
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  ([\#208](https://github.com/pedroliman/neuralsbi/issues/208)/#209)
+  ([\#222](https://github.com/pedroliman/neuralsbi/issues/222)).
+
 ## neuralsbi 0.6.11
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
