@@ -217,7 +217,17 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
                                     n_normalization = 10000L, ...) {
   n_normalization <- check_count(n_normalization, "n_normalization")
   fit <- post$fit
-  theta <- as_theta_matrix(check_numeric(theta, "theta"), fit$dim_theta)
+  theta <- check_numeric(theta, "theta")
+  # A NaN/NA entry in theta is not a valid parameter value to evaluate, and
+  # within_support() on a NaN row returns NA -- which R leaves untouched on
+  # assignment, so `lp[!within_support(prior, theta)] <- -Inf` silently skips
+  # it and de_log_prob() returns a NaN log-density instead of erroring
+  # (#221). Inf is allowed through: it is not a bug, since it resolves to
+  # zero density/-Inf through the prior or the estimator, mirroring the
+  # allow_inf = TRUE precedent in mcmc_log_prob() for the same "posterior
+  # log_prob" contract.
+  check_finite(theta, "theta", allow_inf = TRUE)
+  theta <- as_theta_matrix(theta, fit$dim_theta)
   xo_std <- standardized_obs(post, x)
   theta_z <- apply_standardizer(fit$std_theta, theta)
   lp <- de_log_prob(fit$de, theta_z, xo_std) + standardizer_log_jac(fit$std_theta)
