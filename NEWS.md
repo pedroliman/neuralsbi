@@ -1,6 +1,10 @@
-# neuralsbi 0.6.11
+# neuralsbi 0.6.12
 
 * **`c2st()` no longer silently corrupts a whole column on a non-finite entry.** `x`/`y` went through `check_numeric()` alone, and with the default `z_score = TRUE` a single `NA`/`NaN`/`Inf` anywhere in a column reaches `fit_standardizer()`/`apply_standardizer()` (`R/standardize.R`), whose `colMeans()`/`sd()` carry no `na.rm` -- so that column standardizes to `NA` in every row, not just the offending one. The corrupted matrix then either crashes several frames away with no mention of `x` or `y` (`classifier = "logistic"`'s `glm()` call errors with "Argument mu must be a nonempty numeric vector" once `na.action` drops every row; `classifier = "mlp"`'s training loop hits "missing value where TRUE/FALSE needed" once the propagated `NaN` reaches the stopping check), or, worse, survives to report an accuracy/AUC computed on a corrupted column, the metric this package's diagnostics are built around. `c2st()` now runs `check_finite()` on `x` and `y` right after `check_numeric()`, matching `surrogate_score()` (#202) and `mcmc_log_prob()` (#208/#209) (#222).
+
+# neuralsbi 0.6.11
+
+* **`log_prob()` on an NPE posterior no longer returns a silent `NaN` for a non-finite `theta`.** `log_prob.nsbi_posterior()` (`R/posterior.R`) validated `theta` with `check_numeric()` alone, never `check_finite()`. With a bounded prior, `within_support()` on a row containing `NA`/`NaN` returns logical `NA`, and R leaves an `NA`-indexed position untouched on assignment, so `lp[!within_support(prior, theta)] <- -Inf` was a no-op for that row and the `NaN` `de_log_prob()` produced reached the caller unnamed. `log_prob.nsbi_posterior()` now runs `theta` through `check_finite(theta, "theta", allow_inf = TRUE)` right after `check_numeric()`, matching `mcmc_log_prob()`'s precedent for the same "posterior `log_prob`" contract (#202) (#208) (#209): `Inf` stays allowed, since it resolves to zero density or `-Inf` through the prior or the estimator rather than signaling a bug, and only `NA`/`NaN` are rejected (#221) (#223).
 
 # neuralsbi 0.6.10
 
