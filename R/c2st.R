@@ -94,8 +94,18 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
   # A row is one draw here, so a bare vector is a column of 1-D draws rather
   # than check_matrix()'s single row. That is the pre-computed (theta, x) rule
   # in npe(), and it is why the type check and the reshape are separate calls.
-  x <- as_theta_matrix(check_numeric(x, "x"))
-  y <- as_theta_matrix(check_numeric(y, "y"))
+  # check_numeric() only enforces type, so an NA/NaN/Inf entry used to
+  # standardize via fit_standardizer()/apply_standardizer() into a whole
+  # column of NA (colMeans()/sd() carry no na.rm), corrupting every draw in
+  # that column instead of just the offending row (#222). Checked explicitly
+  # here, as surrogate_score() (#202) and mcmc_log_prob() (#208/#209) already
+  # do for the same failure mode.
+  x <- check_numeric(x, "x")
+  check_finite(x, "x")
+  y <- check_numeric(y, "y")
+  check_finite(y, "y")
+  x <- as_theta_matrix(x)
+  y <- as_theta_matrix(y)
   if (ncol(x) != ncol(y)) {
     # rbind() is where this lands otherwise, and it complains about the number
     # of columns of a matrix it was handed rather than about x or y.
