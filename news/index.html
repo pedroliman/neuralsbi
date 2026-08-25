@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.11" id="neuralsbi-0611">neuralsbi 0.6.11<a class="anchor" aria-label="anchor" href="#neuralsbi-0611"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_prob.html">log_prob()</a></code> on an NPE posterior no longer returns a silent <code>NaN</code> for a non-finite <code>theta</code>.</strong> <code><a href="../reference/log_prob.html">log_prob.nsbi_posterior()</a></code> (<code>R/posterior.R</code>) validated <code>theta</code> with <code><a href="../reference/check_numeric.html">check_numeric()</a></code> alone, never <code><a href="../reference/check_finite.html">check_finite()</a></code>. With a bounded prior, <code><a href="../reference/within_support.html">within_support()</a></code> on a row containing <code>NA</code>/<code>NaN</code> returns logical <code>NA</code>, and R leaves an <code>NA</code>-indexed position untouched on assignment, so <code>lp[!within_support(prior, theta)] &lt;- -Inf</code> was a no-op for that row and the <code>NaN</code> <code>de_log_prob()</code> produced reached the caller unnamed. <code><a href="../reference/log_prob.html">log_prob.nsbi_posterior()</a></code> now runs <code>theta</code> through <code>check_finite(theta, "theta", allow_inf = TRUE)</code> right after <code><a href="../reference/check_numeric.html">check_numeric()</a></code>, matching <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code>’s precedent for the same “posterior <code>log_prob</code>” contract (<a href="https://github.com/pedroliman/neuralsbi/issues/202" class="external-link">#202</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/208" class="external-link">#208</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/209" class="external-link">#209</a>): <code>Inf</code> stays allowed, since it resolves to zero density or <code>-Inf</code> through the prior or the estimator rather than signaling a bug, and only <code>NA</code>/<code>NaN</code> are rejected (<a href="https://github.com/pedroliman/neuralsbi/issues/221" class="external-link">#221</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/223" class="external-link">#223</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.10" id="neuralsbi-0610">neuralsbi 0.6.10<a class="anchor" aria-label="anchor" href="#neuralsbi-0610"></a></h2>
 <ul><li>

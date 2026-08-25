@@ -1,5 +1,37 @@
 # Changelog
 
+## neuralsbi 0.6.11
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an NPE posterior no longer returns a silent `NaN` for a non-finite
+  `theta`.**
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  (`R/posterior.R`) validated `theta` with
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md)
+  alone, never
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md).
+  With a bounded prior,
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  on a row containing `NA`/`NaN` returns logical `NA`, and R leaves an
+  `NA`-indexed position untouched on assignment, so
+  `lp[!within_support(prior, theta)] <- -Inf` was a no-op for that row
+  and the `NaN` `de_log_prob()` produced reached the caller unnamed.
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  now runs `theta` through
+  `check_finite(theta, "theta", allow_inf = TRUE)` right after
+  [`check_numeric()`](https://neuralsbi.pedrodelima.com/reference/check_numeric.md),
+  matching
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)’s
+  precedent for the same “posterior `log_prob`” contract
+  ([\#202](https://github.com/pedroliman/neuralsbi/issues/202))
+  ([\#208](https://github.com/pedroliman/neuralsbi/issues/208))
+  ([\#209](https://github.com/pedroliman/neuralsbi/issues/209)): `Inf`
+  stays allowed, since it resolves to zero density or `-Inf` through the
+  prior or the estimator rather than signaling a bug, and only
+  `NA`/`NaN` are rejected
+  ([\#221](https://github.com/pedroliman/neuralsbi/issues/221))
+  ([\#223](https://github.com/pedroliman/neuralsbi/issues/223)).
+
 ## neuralsbi 0.6.10
 
 - **`bulk_ess()` no longer floors Geyer’s `tau` estimate at `1`.** The
