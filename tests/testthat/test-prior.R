@@ -46,6 +46,44 @@ test_that("prior_uniform rejects bounds that do not describe an interval", {
   expect_s3_class(prior_uniform(low = 1, high = 2), "nsbi_prior")
 })
 
+test_that("prior_uniform rejects non-finite low/high but allows Inf", {
+  expect_error(prior_uniform(low = NA, high = 5),
+               "`low` contains 1 non-finite value \\(NA\\)")
+  expect_error(prior_uniform(low = 0, high = NaN),
+               "`high` contains 1 non-finite value \\(NaN\\)")
+  expect_error(prior_uniform(low = c(0, NA), high = c(1, 2)),
+               "`low` contains 1 non-finite value \\(NA\\)")
+  expect_error(prior_uniform(low = NULL, high = 5), "`low` must be numeric")
+  # An infinite bound is allowed at construction time, for prior_truncated()
+  # to bound it.
+  prior <- prior_uniform(low = c(mu = 0), high = c(mu = Inf))
+  expect_s3_class(prior, "nsbi_prior")
+  expect_equal(prior$upper, Inf)
+})
+
+test_that("sample_prior() errors on an improper (infinite-bound) uniform prior", {
+  prior <- prior_uniform(low = c(mu = 0), high = c(mu = Inf))
+  expect_error(sample_prior(prior, 5), "prior_truncated\\(\\)")
+  # Fixed at both sides, sampling still works as always.
+  finite <- prior_uniform(low = c(mu = 0), high = c(mu = 10))
+  expect_s3_class(finite, "nsbi_prior")
+  th <- sample_prior(finite, 5)
+  expect_true(all(th >= 0 & th <= 10))
+})
+
+test_that("prior_normal rejects non-finite mean/sd, including Inf", {
+  expect_error(prior_normal(mean = NA, sd = 1),
+               "`mean` contains 1 non-finite value \\(NA\\)")
+  expect_error(prior_normal(mean = 0, sd = NaN),
+               "`sd` contains 1 non-finite value \\(NaN\\)")
+  expect_error(prior_normal(mean = Inf, sd = 1),
+               "`mean` contains 1 non-finite value \\(Inf\\)")
+  expect_error(prior_normal(mean = 0, sd = Inf),
+               "`sd` contains 1 non-finite value \\(Inf\\)")
+  expect_error(prior_normal(mean = c(0, NA), sd = 1),
+               "`mean` contains 1 non-finite value \\(NA\\)")
+})
+
 test_that("prior_normal rejects an sd that is not positive or not one per mean", {
   expect_error(prior_normal(mean = 0, sd = -1), "`sd` must be positive")
   expect_error(prior_normal(mean = 0, sd = 0), "`sd` must be positive")

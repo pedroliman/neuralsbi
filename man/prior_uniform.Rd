@@ -9,9 +9,13 @@ prior_uniform(low, high)
 \arguments{
 \item{low}{Numeric vector of lower bounds (one per parameter). Naming the
 vector (e.g. \code{c(beta = 0, gamma = 0)}) attaches those names to every
-downstream parameter matrix, posterior sample, and diagnostic plot.}
+downstream parameter matrix, posterior sample, and diagnostic plot.
+\code{NA}/\code{NaN} are rejected; \code{-Inf} is accepted (matching
+\code{high}'s \code{Inf}) but makes the prior improper, so \code{\link[=sample_prior]{sample_prior()}}
+on it errors unless it is first bounded with \code{\link[=prior_truncated]{prior_truncated()}}.}
 
-\item{high}{Numeric vector of upper bounds (one per parameter).}
+\item{high}{Numeric vector of upper bounds (one per parameter). Same
+finiteness rule as \code{low}, with \code{Inf} in place of \code{-Inf}.}
 }
 \value{
 An \code{nsbi_prior} object.
