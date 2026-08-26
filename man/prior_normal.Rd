@@ -9,9 +9,11 @@ prior_normal(mean, sd = 1)
 \arguments{
 \item{mean}{Numeric vector of means (one per parameter). Naming the vector
 (e.g. \code{c(beta = 0, gamma = 0)}) attaches those names to every downstream
-parameter matrix, posterior sample, and diagnostic plot.}
+parameter matrix, posterior sample, and diagnostic plot. Must be finite;
+a normal prior has no legitimate use for an infinite mean.}
 
-\item{sd}{Numeric scalar or vector of standard deviations.}
+\item{sd}{Numeric scalar or vector of standard deviations. Must be finite
+and positive.}
 }
 \value{
 An \code{nsbi_prior} object.

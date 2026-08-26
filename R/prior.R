@@ -50,7 +50,11 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
 #' @param low Numeric vector of lower bounds (one per parameter). Naming the
 #'   vector (e.g. `c(beta = 0, gamma = 0)`) attaches those names to every
 #'   downstream parameter matrix, posterior sample, and diagnostic plot.
-#' @param high Numeric vector of upper bounds (one per parameter).
+#'   `NA`/`NaN` are rejected; `-Inf` is accepted (matching `high`'s `Inf`)
+#'   but makes the prior improper, so [sample_prior()] on it errors unless
+#'   it is first bounded with [prior_truncated()].
+#' @param high Numeric vector of upper bounds (one per parameter). Same
+#'   finiteness rule as `low`, with `Inf` in place of `-Inf`.
 #' @return An `nsbi_prior` object.
 #' @examples
 #' prior <- prior_uniform(low = c(-2, -2, -2), high = c(2, 2, 2))
@@ -58,6 +62,8 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
 #' @export
 prior_uniform <- function(low, high) {
   param_names <- names(low) %||% names(high)
+  check_finite(low, "low", allow_inf = TRUE)
+  check_finite(high, "high", allow_inf = TRUE)
   low <- as.numeric(low)
   high <- as.numeric(high)
   if (length(low) != length(high)) {
@@ -69,6 +75,13 @@ prior_uniform <- function(low, high) {
   }
   d <- length(low)
   sample_fn <- function(n) {
+    if (any(!is.finite(high - low))) {
+      stop(paste0("sample_prior() cannot draw from this prior directly: an ",
+                  "infinite `low`/`high` bound makes it an improper ",
+                  "distribution with no density to sample from. Wrap it in ",
+                  "prior_truncated() to bound it to a finite interval first."),
+           call. = FALSE)
+    }
     out <- matrix(stats::runif(n * d), nrow = n, ncol = d)
     sweep(sweep(out, 2, high - low, `*`), 2, low, `+`)
   }
@@ -100,16 +113,20 @@ prior_uniform <- function(low, high) {
 #'
 #' @param mean Numeric vector of means (one per parameter). Naming the vector
 #'   (e.g. `c(beta = 0, gamma = 0)`) attaches those names to every downstream
-#'   parameter matrix, posterior sample, and diagnostic plot.
-#' @param sd Numeric scalar or vector of standard deviations.
+#'   parameter matrix, posterior sample, and diagnostic plot. Must be finite;
+#'   a normal prior has no legitimate use for an infinite mean.
+#' @param sd Numeric scalar or vector of standard deviations. Must be finite
+#'   and positive.
 #' @return An `nsbi_prior` object.
 #' @examples
 #' prior <- prior_normal(mean = c(0, 0), sd = 1)
 #' @export
 prior_normal <- function(mean, sd = 1) {
   param_names <- names(mean)
+  check_finite(mean, "mean")
   mean <- as.numeric(mean)
   d <- length(mean)
+  check_finite(sd, "sd")
   sd <- as.numeric(sd)
   if (length(sd) == 1L) sd <- rep(sd, d)
   if (length(sd) != d) {
