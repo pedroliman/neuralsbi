@@ -15,10 +15,16 @@ prior_uniform(low, high)
   Numeric vector of lower bounds (one per parameter). Naming the vector
   (e.g. `c(beta = 0, gamma = 0)`) attaches those names to every
   downstream parameter matrix, posterior sample, and diagnostic plot.
+  `NA`/`NaN` are rejected; `-Inf` is accepted (matching `high`'s `Inf`)
+  but makes the prior improper, so
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  on it errors unless it is first bounded with
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md).
 
 - high:
 
-  Numeric vector of upper bounds (one per parameter).
+  Numeric vector of upper bounds (one per parameter). Same finiteness
+  rule as `low`, with `Inf` in place of `-Inf`.
 
 ## Value
 

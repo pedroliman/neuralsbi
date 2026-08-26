@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.13" id="neuralsbi-0613">neuralsbi 0.6.13<a class="anchor" aria-label="anchor" href="#neuralsbi-0613"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/prior_uniform.html">prior_uniform()</a></code>/<code><a href="../reference/prior_normal.html">prior_normal()</a></code> no longer let <code>NA</code>/<code>Inf</code> build a silently corrupted prior.</strong> Both constructors coerced their arguments with bare <code><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric()</a></code> and never validated them, unlike every named family in <code>R/prior_families.R</code>. <code>prior_uniform(low = c(mu = 0), high = c(mu = Inf))</code> built without error, and <code><a href="../reference/sample_prior.html">sample_prior()</a></code> on it returned <code>Inf</code> on every draw, since <code>runif(n) * (high - low) + low</code> is always infinite once the range is; <code>prior_uniform(low = NA, high = 5)</code> crashed with a raw, unnamed base-R error (“missing value where TRUE/FALSE needed”) instead of a validated one, because the <code>high &lt;= low</code> comparison came before any check that <code>low</code>/<code>high</code> were finite; and <code>prior_normal(mean = NA, sd = 1)</code> built without error and silently returned an all-<code>NA</code> sample matrix. <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> now runs <code>low</code>/<code>high</code> through <code>check_finite(allow_inf = TRUE)</code>, which rejects <code>NA</code>/<code>NaN</code> but still allows <code>Inf</code> – needed so an improper prior can be built for <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code>/<code><a href="../reference/prior_independent.html">prior_independent()</a></code> to bound – and <code><a href="../reference/prior_normal.html">prior_normal()</a></code> runs <code>mean</code>/<code>sd</code> through <code><a href="../reference/check_finite.html">check_finite()</a></code> with no such allowance, since a normal prior has no legitimate use for an infinite mean or sd. Calling <code><a href="../reference/sample_prior.html">sample_prior()</a></code> directly on an infinite-bound <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> now errors with a message pointing at <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code>, rather than returning <code>Inf</code> (<a href="https://github.com/pedroliman/neuralsbi/issues/227" class="external-link">#227</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.12" id="neuralsbi-0612">neuralsbi 0.6.12<a class="anchor" aria-label="anchor" href="#neuralsbi-0612"></a></h2>
 <ul><li>

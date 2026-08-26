@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,11 +99,13 @@
 <dl><dt id="arg-mean">mean<a class="anchor" aria-label="anchor" href="#arg-mean"></a></dt>
 <dd><p>Numeric vector of means (one per parameter). Naming the vector
 (e.g. <code>c(beta = 0, gamma = 0)</code>) attaches those names to every downstream
-parameter matrix, posterior sample, and diagnostic plot.</p></dd>
+parameter matrix, posterior sample, and diagnostic plot. Must be finite;
+a normal prior has no legitimate use for an infinite mean.</p></dd>
 
 
 <dt id="arg-sd">sd<a class="anchor" aria-label="anchor" href="#arg-sd"></a></dt>
-<dd><p>Numeric scalar or vector of standard deviations.</p></dd>
+<dd><p>Numeric scalar or vector of standard deviations. Must be finite
+and positive.</p></dd>
 
 </dl></div>
     <div class="section level2">

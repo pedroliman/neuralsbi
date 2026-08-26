@@ -1,5 +1,41 @@
 # Changelog
 
+## neuralsbi 0.6.13
+
+- **[`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)/[`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  no longer let `NA`/`Inf` build a silently corrupted prior.** Both
+  constructors coerced their arguments with bare
+  [`as.numeric()`](https://rdrr.io/r/base/numeric.html) and never
+  validated them, unlike every named family in `R/prior_families.R`.
+  `prior_uniform(low = c(mu = 0), high = c(mu = Inf))` built without
+  error, and
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  on it returned `Inf` on every draw, since
+  `runif(n) * (high - low) + low` is always infinite once the range is;
+  `prior_uniform(low = NA, high = 5)` crashed with a raw, unnamed base-R
+  error (“missing value where TRUE/FALSE needed”) instead of a validated
+  one, because the `high <= low` comparison came before any check that
+  `low`/`high` were finite; and `prior_normal(mean = NA, sd = 1)` built
+  without error and silently returned an all-`NA` sample matrix.
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  now runs `low`/`high` through `check_finite(allow_inf = TRUE)`, which
+  rejects `NA`/`NaN` but still allows `Inf` – needed so an improper
+  prior can be built for
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)/[`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  to bound – and
+  [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  runs `mean`/`sd` through
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  with no such allowance, since a normal prior has no legitimate use for
+  an infinite mean or sd. Calling
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  directly on an infinite-bound
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  now errors with a message pointing at
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md),
+  rather than returning `Inf`
+  ([\#227](https://github.com/pedroliman/neuralsbi/issues/227)).
+
 ## neuralsbi 0.6.12
 
 - **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) no

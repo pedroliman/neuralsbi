@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,11 +99,15 @@
 <dl><dt id="arg-low">low<a class="anchor" aria-label="anchor" href="#arg-low"></a></dt>
 <dd><p>Numeric vector of lower bounds (one per parameter). Naming the
 vector (e.g. <code>c(beta = 0, gamma = 0)</code>) attaches those names to every
-downstream parameter matrix, posterior sample, and diagnostic plot.</p></dd>
+downstream parameter matrix, posterior sample, and diagnostic plot.
+<code>NA</code>/<code>NaN</code> are rejected; <code>-Inf</code> is accepted (matching
+<code>high</code>'s <code>Inf</code>) but makes the prior improper, so <code><a href="sample_prior.html">sample_prior()</a></code>
+on it errors unless it is first bounded with <code><a href="prior_truncated.html">prior_truncated()</a></code>.</p></dd>
 
 
 <dt id="arg-high">high<a class="anchor" aria-label="anchor" href="#arg-high"></a></dt>
-<dd><p>Numeric vector of upper bounds (one per parameter).</p></dd>
+<dd><p>Numeric vector of upper bounds (one per parameter). Same
+finiteness rule as <code>low</code>, with <code>Inf</code> in place of <code>-Inf</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
