@@ -1,6 +1,6 @@
 # neuralsbi 0.6.13
 
-* **`npe_sequential()` now validates `epsilon` up front, before round 1 simulates.** Every other round-controlling argument (`n_rounds`, `n_simulations`, `n_truncation_samples`, `max_proposal_batches`) is checked before any simulation runs, but `epsilon` fell through that net: it is only read starting in round 2, where it sets the truncation threshold via `stats::quantile(lp_ref, probs = epsilon, ...)`. An out-of-range `epsilon` (e.g. `1.5`, `-0.1`, `NA`) passed construction and round 1 silently, spent round 1's simulation budget, and only then failed in round 2 with `stats::quantile()`'s raw `'probs' outside [0,1]` error. `npe_sequential()` now runs `epsilon` through `check_prob()` alongside the other up-front checks (#226).
+* **`npe_sequential()` now validates `epsilon` up front, before round 1 simulates.** Every other round-controlling argument (`n_rounds`, `n_simulations`, `n_truncation_samples`, `max_proposal_batches`) is checked before any simulation runs, but `epsilon` fell through that net: it is only read starting in round 2, where it sets the truncation threshold via `stats::quantile(lp_ref, probs = epsilon, ...)`. An out-of-range `epsilon` (e.g. `1.5`, `-0.1`, `NA`) passed construction and round 1 silently, spent round 1's simulation budget, and only then failed in round 2 with `stats::quantile()`'s raw `'probs' outside [0,1]` error. `npe_sequential()` now runs `epsilon` through `check_prob()` alongside the other up-front checks (#226) (#228).
 
 # neuralsbi 0.6.12
 
