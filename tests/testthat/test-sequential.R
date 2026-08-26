@@ -240,6 +240,32 @@ test_that("npe_sequential checks its counts before the first round", {
                "`max_proposal_batches` must be a single whole number of at least 1 since")
 })
 
+test_that("npe_sequential rejects an out-of-range epsilon before round 1 simulates (#226)", {
+  # epsilon only gets read starting in round 2 (it sets the truncation
+  # threshold), so an out-of-range value used to pass round 1 silently and
+  # only fail once round 2 called stats::quantile() with the raw base-R
+  # error "'probs' outside [0,1]" -- burning round 1's simulation budget on a
+  # value that was never going to work.
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  seq_call <- function(epsilon) {
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 100, epsilon = epsilon,
+                   density_estimator = "linear_gaussian")
+  }
+  expect_error(seq_call(1.5), "`epsilon` must be a single number")
+  expect_error(seq_call(-0.1), "`epsilon` must be a single number")
+  expect_error(seq_call(NA_real_), "`epsilon` must be a single number")
+  expect_equal(n_calls, 0L)
+
+  fit <- seq_call(0.1)
+  expect_s3_class(fit, "nsbi_snpe")
+})
+
 test_that("npe_sequential rejects an n_simulations vector whose length doesn't match n_rounds", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
