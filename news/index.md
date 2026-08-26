@@ -2,6 +2,24 @@
 
 ## neuralsbi 0.6.13
 
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now validates `epsilon` up front, before round 1 simulates.** Every
+  other round-controlling argument (`n_rounds`, `n_simulations`,
+  `n_truncation_samples`, `max_proposal_batches`) is checked before any
+  simulation runs, but `epsilon` fell through that net: it is only read
+  starting in round 2, where it sets the truncation threshold via
+  `stats::quantile(lp_ref, probs = epsilon, ...)`. An out-of-range
+  `epsilon` (e.g. `1.5`, `-0.1`, `NA`) passed construction and round 1
+  silently, spent round 1’s simulation budget, and only then failed in
+  round 2 with
+  [`stats::quantile()`](https://rdrr.io/r/stats/quantile.html)’s raw
+  `'probs' outside [0,1]` error.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now runs `epsilon` through
+  [`check_prob()`](https://neuralsbi.pedrodelima.com/reference/check_prob.md)
+  alongside the other up-front checks
+  ([\#226](https://github.com/pedroliman/neuralsbi/issues/226))
+  ([\#228](https://github.com/pedroliman/neuralsbi/issues/228)).
 - **[`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)/[`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
   no longer let `NA`/`Inf` build a silently corrupted prior.** Both
   constructors coerced their arguments with bare

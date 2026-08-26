@@ -77,7 +77,8 @@ npe_sequential(
 - epsilon:
 
   Mass cut for the truncation: the proposal region is the `1 - epsilon`
-  highest-probability region of the current posterior.
+  highest-probability region of the current posterior. Must be a single
+  number strictly between 0 and 1.
 
 - n_truncation_samples:
 
