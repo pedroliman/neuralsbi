@@ -39,7 +39,8 @@
 #'   vector of length `n_rounds`.
 #' @param density_estimator Passed to [npe()] each round.
 #' @param epsilon Mass cut for the truncation: the proposal region is the
-#'   `1 - epsilon` highest-probability region of the current posterior.
+#'   `1 - epsilon` highest-probability region of the current posterior. Must
+#'   be a single number strictly between 0 and 1.
 #' @param n_truncation_samples Posterior draws used to locate the truncation
 #'   threshold each round.
 #' @param max_proposal_batches Cap on rejection-sampling batches per round.
@@ -95,6 +96,11 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       n_rounds, length(n_simulations)),
       call. = FALSE)
   }
+  # epsilon only gets read starting in round 2 (it sets the truncation
+  # threshold), but an out-of-range value should fail before round 1 spends
+  # its simulation budget rather than surfacing base R's quantile() error
+  # after the fact.
+  epsilon <- check_prob(epsilon, "epsilon")
   n_truncation_samples <- check_count(n_truncation_samples,
                                       "n_truncation_samples")
   max_proposal_batches <- check_count(

@@ -43,7 +43,8 @@ call; see \link{nsbi_simulator}.}
 \item{density_estimator}{Passed to \code{\link[=npe]{npe()}} each round.}
 
 \item{epsilon}{Mass cut for the truncation: the proposal region is the
-\code{1 - epsilon} highest-probability region of the current posterior.}
+\code{1 - epsilon} highest-probability region of the current posterior. Must
+be a single number strictly between 0 and 1.}
 
 \item{n_truncation_samples}{Posterior draws used to locate the truncation
 threshold each round.}
