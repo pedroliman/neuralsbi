@@ -1,5 +1,46 @@
 # Changelog
 
+## neuralsbi 0.6.16
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  and
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  no longer let a `NaN` draw from the density estimator slip past
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)’s
+  rejection filter.**
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  (`R/prior.R`) compares a row against `lower`/`upper` with
+  [`sweep()`](https://rdrr.io/r/base/sweep.html)/[`rowSums()`](https://rdrr.io/r/base/colSums.html)/`==`,
+  so a row containing `NA`/`NaN` returns `NA` rather than `FALSE`.
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  already accounts for this on user-supplied `theta` by running it
+  through
+  [`check_finite()`](https://neuralsbi.pedrodelima.com/reference/check_finite.md)
+  first ([\#221](https://github.com/pedroliman/neuralsbi/issues/221)),
+  but three call sites test a vector that comes from the density
+  estimator’s own output instead, and none of them treated `NA` as
+  reject:
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)’s
+  rejection filter (`draw[within_support(prior, draw), ]`) kept an
+  `NA`-indexed row rather than dropping it – R’s matrix indexing fills
+  it with `NA` instead – so a `NaN` draw from an under-trained
+  MAF/NSF/MDN became an all-`NA` row counted toward `n` and returned as
+  a real posterior draw, with no warning;
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)’s
+  `normalize = TRUE` acceptance estimate
+  (`mean(within_support(prior, draw))`) turned `NA` and then crashed the
+  following comparison with the unrelated base-R message
+  `"missing value where TRUE/FALSE needed"`; and
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)’s
+  objective crashed the same way if the optimizer ever proposed a
+  non-finite parameter. All three now coerce
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)’s
+  `NA` to `FALSE` before using it, so a non-finite draw is rejected as
+  leakage the same way an out-of-bounds one is
+  ([\#234](https://github.com/pedroliman/neuralsbi/issues/234))
+  ([\#236](https://github.com/pedroliman/neuralsbi/issues/236)).
+
 ## neuralsbi 0.6.15
 
 - **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)

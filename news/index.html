@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.16" id="neuralsbi-0616">neuralsbi 0.6.16<a class="anchor" aria-label="anchor" href="#neuralsbi-0616"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sample.html">sample()</a></code>, <code><a href="../reference/log_prob.html">log_prob()</a></code>, and <code><a href="../reference/map_estimate.html">map_estimate()</a></code> no longer let a <code>NaN</code> draw from the density estimator slip past <code><a href="../reference/within_support.html">within_support()</a></code>’s rejection filter.</strong> <code><a href="../reference/within_support.html">within_support()</a></code> (<code>R/prior.R</code>) compares a row against <code>lower</code>/<code>upper</code> with <code><a href="https://rdrr.io/r/base/sweep.html" class="external-link">sweep()</a></code>/<code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums()</a></code>/<code>==</code>, so a row containing <code>NA</code>/<code>NaN</code> returns <code>NA</code> rather than <code>FALSE</code>. <code><a href="../reference/log_prob.html">log_prob.nsbi_posterior()</a></code> already accounts for this on user-supplied <code>theta</code> by running it through <code><a href="../reference/check_finite.html">check_finite()</a></code> first (<a href="https://github.com/pedroliman/neuralsbi/issues/221" class="external-link">#221</a>), but three call sites test a vector that comes from the density estimator’s own output instead, and none of them treated <code>NA</code> as reject: <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code>’s rejection filter (<code>draw[within_support(prior, draw), ]</code>) kept an <code>NA</code>-indexed row rather than dropping it – R’s matrix indexing fills it with <code>NA</code> instead – so a <code>NaN</code> draw from an under-trained MAF/NSF/MDN became an all-<code>NA</code> row counted toward <code>n</code> and returned as a real posterior draw, with no warning; <code><a href="../reference/log_prob.html">log_prob()</a></code>’s <code>normalize = TRUE</code> acceptance estimate (<code>mean(within_support(prior, draw))</code>) turned <code>NA</code> and then crashed the following comparison with the unrelated base-R message <code>"missing value where TRUE/FALSE needed"</code>; and <code><a href="../reference/map_estimate.html">map_estimate()</a></code>’s objective crashed the same way if the optimizer ever proposed a non-finite parameter. All three now coerce <code><a href="../reference/within_support.html">within_support()</a></code>’s <code>NA</code> to <code>FALSE</code> before using it, so a non-finite draw is rejected as leakage the same way an out-of-bounds one is (<a href="https://github.com/pedroliman/neuralsbi/issues/234" class="external-link">#234</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/236" class="external-link">#236</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.15" id="neuralsbi-0615">neuralsbi 0.6.15<a class="anchor" aria-label="anchor" href="#neuralsbi-0615"></a></h2>
 <ul><li>
