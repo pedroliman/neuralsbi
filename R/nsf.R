@@ -34,6 +34,14 @@ NULL
 rq_spline <- function(inputs, w_un, h_un, d_un, inverse = FALSE,
                       tail_bound = 3, min_bin = 1e-3, min_deriv = 1e-3) {
   K <- w_un$shape[2]
+  # widths/heights below rescale a softmax (which sums to 1) via
+  # min_bin + (1 - min_bin * K) * softmax, valid only while min_bin * K < 1;
+  # past that point the scale factor goes negative and a large softmax weight
+  # produces a negative bin width or height, breaking the spline's
+  # monotonicity. n_bins has no fixed upper bound (check_architecture() only
+  # enforces a minimum), so guard the invariant here rather than capping how
+  # many bins a caller may ask for.
+  min_bin <- min(min_bin, 0.5 / K)
   B <- tail_bound
   inside <- (inputs >= -B) & (inputs <= B)
   outputs <- inputs$clone()

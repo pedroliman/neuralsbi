@@ -22,6 +22,40 @@ test_that("rational-quadratic spline round-trips and is identity outside", {
                rep(0, sum(outside)), tolerance = 1e-6)
 })
 
+test_that("rq_spline's min_bin rescaling stays valid for any n_bins (#235)", {
+  # min_bin + (1 - min_bin * K) * softmax only rescales into positive bin
+  # widths while min_bin * K < 1; past K = 1 / min_bin the scale factor goes
+  # negative, and a large softmax weight (as an autoregressive net can easily
+  # produce) yields a negative bin width. This never needed torch to reproduce
+  # or to fix, so it runs unconditionally rather than skipping without it.
+  K <- 2000L
+  min_bin <- 1e-3
+  w <- c(0.5, rep(0.5 / (K - 1), K - 1))  # concentrated softmax weight
+  unguarded <- min_bin + (1 - min_bin * K) * w
+  expect_true(any(unguarded < 0))  # confirms the bug is real before the fix
+
+  guarded_min_bin <- min(min_bin, 0.5 / K)
+  widths <- guarded_min_bin + (1 - guarded_min_bin * K) * w
+  expect_true(all(widths > 0))
+})
+
+test_that("rq_spline stays finite at large n_bins with skewed weights", {
+  skip_if_no_torch()
+  torch::torch_manual_seed(235)
+  N <- 20L; K <- 2000L
+  xin <- torch::torch_rand(N) * 5 - 2.5
+  # push most of the softmax mass onto one bin, the failure mode that
+  # produced negative widths/heights before the min_bin guard
+  w <- torch::torch_full(c(N, K), -10)
+  w[, 1] <- 10
+  h <- torch::torch_full(c(N, K), -10)
+  h[, 1] <- 10
+  d <- torch::torch_randn(c(N, K - 1L))
+  fw <- rq_spline(xin, w, h, d, inverse = FALSE, tail_bound = 3)
+  expect_true(all(is.finite(torch::as_array(fw$outputs))))
+  expect_true(all(is.finite(torch::as_array(fw$logdet))))
+})
+
 test_that("NSF flow forward/inverse round trip through the full stack", {
   skip_if_no_torch()
   torch::torch_manual_seed(13)
