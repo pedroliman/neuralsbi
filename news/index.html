@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.17" id="neuralsbi-0617">neuralsbi 0.6.17<a class="anchor" aria-label="anchor" href="#neuralsbi-0617"></a></h2>
+<ul><li>
+<strong>NSF’s spline no longer produces negative bin widths/heights at large <code>n_bins</code>, which could surface as a <code>NaN</code> training loss.</strong> <code><a href="../reference/rq_spline.html">rq_spline()</a></code> (<code>R/nsf.R</code>) turns a softmax over <code>n_bins</code> (<code>K</code>) bins into bin widths via <code>min_bin + (1 - min_bin * K) * softmax</code>, valid only while <code>min_bin * K &lt; 1</code>; <code><a href="../reference/check_architecture.html">check_architecture()</a></code> enforces <code>n_bins &gt;= 2</code> but never capped it, so <code>npe(..., density_estimator = "nsf", n_bins = 2000)</code> passed validation with the fixed default <code>min_bin = 1e-3</code> and <code>1 - min_bin * K</code> went negative. Once that scale factor is negative, any softmax weight large enough (routine once an autoregressive net starts concentrating mass on one bin) makes its bin width negative, which breaks the rational-quadratic spline’s monotonicity and can send its log-determinant term (<code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log()</a></code> of a non-positive slope ratio) to <code>NaN</code> – including mid-training, far from <code>n_bins</code> where the actual mistake was made. The identical shape applied to bin heights, built the same way two lines down. <code><a href="../reference/rq_spline.html">rq_spline()</a></code> now clamps <code>min_bin</code> to <code>min(min_bin, 0.5 / K)</code> before rescaling, so <code>min_bin * K &lt;= 0.5</code> holds for any <code>n_bins</code> a caller chooses rather than only for <code>n_bins &lt; 1000</code> (<a href="https://github.com/pedroliman/neuralsbi/issues/235" class="external-link">#235</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/237" class="external-link">#237</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.16" id="neuralsbi-0616">neuralsbi 0.6.16<a class="anchor" aria-label="anchor" href="#neuralsbi-0616"></a></h2>
 <ul><li>

@@ -1,5 +1,32 @@
 # Changelog
 
+## neuralsbi 0.6.17
+
+- **NSF’s spline no longer produces negative bin widths/heights at large
+  `n_bins`, which could surface as a `NaN` training loss.**
+  [`rq_spline()`](https://neuralsbi.pedrodelima.com/reference/rq_spline.md)
+  (`R/nsf.R`) turns a softmax over `n_bins` (`K`) bins into bin widths
+  via `min_bin + (1 - min_bin * K) * softmax`, valid only while
+  `min_bin * K < 1`;
+  [`check_architecture()`](https://neuralsbi.pedrodelima.com/reference/check_architecture.md)
+  enforces `n_bins >= 2` but never capped it, so
+  `npe(..., density_estimator = "nsf", n_bins = 2000)` passed validation
+  with the fixed default `min_bin = 1e-3` and `1 - min_bin * K` went
+  negative. Once that scale factor is negative, any softmax weight large
+  enough (routine once an autoregressive net starts concentrating mass
+  on one bin) makes its bin width negative, which breaks the
+  rational-quadratic spline’s monotonicity and can send its
+  log-determinant term ([`log()`](https://rdrr.io/r/base/Log.html) of a
+  non-positive slope ratio) to `NaN` – including mid-training, far from
+  `n_bins` where the actual mistake was made. The identical shape
+  applied to bin heights, built the same way two lines down.
+  [`rq_spline()`](https://neuralsbi.pedrodelima.com/reference/rq_spline.md)
+  now clamps `min_bin` to `min(min_bin, 0.5 / K)` before rescaling, so
+  `min_bin * K <= 0.5` holds for any `n_bins` a caller chooses rather
+  than only for `n_bins < 1000`
+  ([\#235](https://github.com/pedroliman/neuralsbi/issues/235))
+  ([\#237](https://github.com/pedroliman/neuralsbi/issues/237)).
+
 ## neuralsbi 0.6.16
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
