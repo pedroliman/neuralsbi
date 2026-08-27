@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.14" id="neuralsbi-0614">neuralsbi 0.6.14<a class="anchor" aria-label="anchor" href="#neuralsbi-0614"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sample_prior.html">sample_prior()</a></code> now validates <code>n</code>.</strong> It was the one count-taking public entry point that never routed its count through <code><a href="../reference/check_count.html">check_count()</a></code>, unlike <code>n_simulations</code>, <code>n_sbc</code>, <code>n_init</code>, and <code><a href="../reference/simulate_for_sbi.html">simulate_for_sbi()</a></code>’s own <code>n</code>. <code>sample_prior(prior, 2.5)</code> silently returned only 2 rows, via base R’s recycling and an opaque warning; <code>sample_prior(prior, -1)</code> or <code>sample_prior(prior, NA)</code> failed with base R’s generic “invalid arguments” error, naming neither the argument nor the function. <code><a href="../reference/sample_prior.html">sample_prior()</a></code> now runs <code>n</code> through <code>check_count(n, "n")</code> at the top, before it reaches <code>prior$sample()</code> (<a href="https://github.com/pedroliman/neuralsbi/issues/231" class="external-link">#231</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.13" id="neuralsbi-0613">neuralsbi 0.6.13<a class="anchor" aria-label="anchor" href="#neuralsbi-0613"></a></h2>
 <ul><li>
