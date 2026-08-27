@@ -6,6 +6,13 @@ test_that("uniform prior samples within bounds and has correct shape", {
   expect_true(all(th[, 2] >= 0 & th[, 2] <= 5))
 })
 
+test_that("sample_prior() validates n", {
+  prior <- prior_uniform(low = c(-2, 0), high = c(2, 5))
+  expect_error(sample_prior(prior, 2.5), "`n` must be a single whole number")
+  expect_error(sample_prior(prior, -1), "`n` must be a single whole number")
+  expect_error(sample_prior(prior, NA), "`n` must be a single whole number")
+})
+
 test_that("uniform prior log_prob is constant inside, -Inf outside", {
   prior <- prior_uniform(low = c(0, 0), high = c(1, 1))
   inside <- matrix(c(0.5, 0.5), nrow = 1)
