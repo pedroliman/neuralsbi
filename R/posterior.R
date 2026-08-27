@@ -166,7 +166,15 @@ sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
     draw <- invert_standardizer(fit$std_theta, draw_std)
     n_tried <- n_tried + n_needed
     if (bounded) {
-      draw <- draw[within_support(prior, draw), , drop = FALSE]
+      # within_support() returns NA for a NaN/NA row, and R's matrix indexing
+      # keeps (rather than drops) a row selected by an NA logical index and
+      # fills it with NA -- so a NaN draw from the density estimator would
+      # otherwise survive as an all-NA row counted toward n (#234). Coerce NA
+      # to FALSE so a non-finite draw is rejected the same way an
+      # out-of-bounds one is.
+      ok <- within_support(prior, draw)
+      ok[is.na(ok)] <- FALSE
+      draw <- draw[ok, , drop = FALSE]
     }
     collected <- rbind(collected, draw)
   }
@@ -237,7 +245,14 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
   if (normalize && bounded) {
     draw_std <- de_sample(fit$de, xo_std, n_normalization)
     draw <- invert_standardizer(fit$std_theta, draw_std)
-    acc <- mean(within_support(prior, draw))
+    # As in sample.nsbi_posterior(), draw comes from the density estimator
+    # rather than the user, so a NaN row's NA from within_support() must be
+    # coerced to FALSE -- otherwise acc becomes NA and the comparison below
+    # crashes with "missing value where TRUE/FALSE needed" instead of
+    # treating the leak as zero acceptance (#234).
+    in_support <- within_support(prior, draw)
+    in_support[is.na(in_support)] <- FALSE
+    acc <- mean(in_support)
     if (acc < 1 / n_normalization) {
       warning(sprintf(
         "0/%d normalization draws landed inside the prior support; flooring the acceptance estimate at 1/%d to avoid log(0). ",
@@ -309,7 +324,15 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
   # without paying for it on every objective evaluation.
   neg <- function(par) {
     par <- matrix(par, nrow = 1)
-    if (bounded && !within_support(prior, par)) return(Inf)
+    if (bounded) {
+      # A non-finite par proposed by the optimizer makes within_support()
+      # return NA rather than FALSE; !NA is NA, not TRUE, so the guard below
+      # would fall through to log_prob() instead of rejecting the point,
+      # which then crashes with "missing value where TRUE/FALSE needed"
+      # (#234). Treat NA as out of support instead.
+      ok <- within_support(prior, par)
+      if (is.na(ok) || !ok) return(Inf)
+    }
     -log_prob(post, par, x = x, normalize = FALSE)
   }
   # Nelder-Mead is a simplex search: in one dimension the simplex degenerates
