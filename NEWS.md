@@ -1,6 +1,6 @@
 # neuralsbi 0.6.14
 
-* **`sample_prior()` now validates `n`.** It was the one count-taking public entry point that never routed its count through `check_count()`, unlike `n_simulations`, `n_sbc`, `n_init`, and `simulate_for_sbi()`'s own `n`. `sample_prior(prior, 2.5)` silently returned only 2 rows, via base R's recycling and an opaque warning; `sample_prior(prior, -1)` or `sample_prior(prior, NA)` failed with base R's generic "invalid arguments" error, naming neither the argument nor the function. `sample_prior()` now runs `n` through `check_count(n, "n")` at the top, before it reaches `prior$sample()` (#PLACEHOLDER).
+* **`sample_prior()` now validates `n`.** It was the one count-taking public entry point that never routed its count through `check_count()`, unlike `n_simulations`, `n_sbc`, `n_init`, and `simulate_for_sbi()`'s own `n`. `sample_prior(prior, 2.5)` silently returned only 2 rows, via base R's recycling and an opaque warning; `sample_prior(prior, -1)` or `sample_prior(prior, NA)` failed with base R's generic "invalid arguments" error, naming neither the argument nor the function. `sample_prior()` now runs `n` through `check_count(n, "n")` at the top, before it reaches `prior$sample()` (#231).
 
 # neuralsbi 0.6.13
 
