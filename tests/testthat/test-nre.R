@@ -220,6 +220,15 @@ test_that("log_ratio() rejects a non-finite theta or x instead of returning NA (
                "`theta` contains 1 non-finite value \\(NA\\), first at row 1, column 2")
 })
 
+test_that("log_ratio() rejects a non-finite max_batch instead of an opaque rep() error (#230)", {
+  fit <- logistic_fit(n = 500)
+  theta <- matrix(c(1, -0.5), nrow = 1)
+  x <- matrix(c(0.4, -0.2), nrow = 1)
+
+  expect_error(log_ratio(fit, theta, x, max_batch = NA), "`max_batch`")
+  expect_error(log_ratio(fit, theta, x, max_batch = NaN), "`max_batch`")
+})
+
 test_that("nre() checks its arguments before the simulator runs", {
   calls <- 0L
   counting_simulator <- function(mu, nu) {

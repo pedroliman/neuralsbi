@@ -87,6 +87,10 @@ surrogate_score <- function(fit, theta, x, sum_iid, max_batch) {
   matrix_fn <- ops$matrix_fn
   evaluator <- ops$evaluator
   log_jac <- ops$log_jac
+  # A non-finite max_batch used to reach cross_iid()'s rep(..., times = NA)
+  # and fail with a bare "invalid 'times' argument", naming neither this
+  # argument nor log_lik()/log_ratio() (#230).
+  check_positive(max_batch, "max_batch", allow_inf = TRUE)
   # check_matrix() only enforces type and shape, so an NA/NaN/Inf entry used to
   # standardize into another NA and come back as a silent NA log-lik or
   # log-ratio instead of an error (#202). Checked explicitly here, as

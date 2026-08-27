@@ -1,3 +1,7 @@
+# neuralsbi 0.6.15
+
+* **`log_lik()`/`log_ratio()` on an NLE or NRE fit now reject a non-finite `max_batch` instead of an opaque `rep()` error.** Both route through `surrogate_score()` (`R/likelihood.R`), which divides `max_batch` down into `cross_iid()`'s per-block size; a `NA`/`NaN` `max_batch` (`Inf` was already fine) reached `rep(..., times = NA)` there and failed with the bare base-R message `"invalid 'times' argument"`, naming neither `max_batch` nor `log_lik()`/`log_ratio()`. `surrogate_score()` now runs `max_batch` through `check_positive(max_batch, "max_batch", allow_inf = TRUE)` up front, matching the validation already applied to every other numeric argument at that boundary (#230) (#232).
+
 # neuralsbi 0.6.14
 
 * **`sample_prior()` now validates `n`.** It was the one count-taking public entry point that never routed its count through `check_count()`, unlike `n_simulations`, `n_sbc`, `n_init`, and `simulate_for_sbi()`'s own `n`. `sample_prior(prior, 2.5)` silently returned only 2 rows, via base R's recycling and an opaque warning; `sample_prior(prior, -1)` or `sample_prior(prior, NA)` failed with base R's generic "invalid arguments" error, naming neither the argument nor the function. `sample_prior()` now runs `n` through `check_count(n, "n")` at the top, before it reaches `prior$sample()` (#231).

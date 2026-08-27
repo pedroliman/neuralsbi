@@ -242,6 +242,15 @@ test_that("log_lik() rejects a non-finite theta or x instead of returning NA (#2
                "`theta` contains 1 non-finite value \\(NA\\), first at row 1, column 2")
 })
 
+test_that("log_lik() rejects a non-finite max_batch instead of an opaque rep() error (#230)", {
+  fit <- lingauss_fit()
+  theta <- matrix(c(1, -0.5), nrow = 1)
+  x <- matrix(c(0.4, -0.2), nrow = 1)
+
+  expect_error(log_lik(fit, theta, x, max_batch = NA), "`max_batch`")
+  expect_error(log_lik(fit, theta, x, max_batch = NaN), "`max_batch`")
+})
+
 test_that("nle() needs either a simulator or pre-computed simulations", {
   expect_error(nle(gauss_prior()), "Provide either")
 })
