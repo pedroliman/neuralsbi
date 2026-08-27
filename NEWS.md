@@ -1,6 +1,6 @@
 # neuralsbi 0.6.14
 
-* **`log_lik()`/`log_ratio()` on an NLE or NRE fit now reject a non-finite `max_batch` instead of an opaque `rep()` error.** Both route through `surrogate_score()` (`R/likelihood.R`), which divides `max_batch` down into `cross_iid()`'s per-block size; a `NA`/`NaN` `max_batch` (`Inf` was already fine) reached `rep(..., times = NA)` there and failed with the bare base-R message `"invalid 'times' argument"`, naming neither `max_batch` nor `log_lik()`/`log_ratio()`. `surrogate_score()` now runs `max_batch` through `check_positive(max_batch, "max_batch", allow_inf = TRUE)` up front, matching the validation already applied to every other numeric argument at that boundary (#230).
+* **`log_lik()`/`log_ratio()` on an NLE or NRE fit now reject a non-finite `max_batch` instead of an opaque `rep()` error.** Both route through `surrogate_score()` (`R/likelihood.R`), which divides `max_batch` down into `cross_iid()`'s per-block size; a `NA`/`NaN` `max_batch` (`Inf` was already fine) reached `rep(..., times = NA)` there and failed with the bare base-R message `"invalid 'times' argument"`, naming neither `max_batch` nor `log_lik()`/`log_ratio()`. `surrogate_score()` now runs `max_batch` through `check_positive(max_batch, "max_batch", allow_inf = TRUE)` up front, matching the validation already applied to every other numeric argument at that boundary (#230) (#232).
 
 # neuralsbi 0.6.13
 
