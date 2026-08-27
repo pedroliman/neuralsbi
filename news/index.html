@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.15" id="neuralsbi-0615">neuralsbi 0.6.15<a class="anchor" aria-label="anchor" href="#neuralsbi-0615"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_lik.html">log_lik()</a></code>/<code><a href="../reference/log_ratio.html">log_ratio()</a></code> on an NLE or NRE fit now reject a non-finite <code>max_batch</code> instead of an opaque <code><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep()</a></code> error.</strong> Both route through <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code> (<code>R/likelihood.R</code>), which divides <code>max_batch</code> down into <code><a href="../reference/cross_iid.html">cross_iid()</a></code>’s per-block size; a <code>NA</code>/<code>NaN</code> <code>max_batch</code> (<code>Inf</code> was already fine) reached <code>rep(..., times = NA)</code> there and failed with the bare base-R message <code>"invalid 'times' argument"</code>, naming neither <code>max_batch</code> nor <code><a href="../reference/log_lik.html">log_lik()</a></code>/<code><a href="../reference/log_ratio.html">log_ratio()</a></code>. <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code> now runs <code>max_batch</code> through <code>check_positive(max_batch, "max_batch", allow_inf = TRUE)</code> up front, matching the validation already applied to every other numeric argument at that boundary (<a href="https://github.com/pedroliman/neuralsbi/issues/230" class="external-link">#230</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/232" class="external-link">#232</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.14" id="neuralsbi-0614">neuralsbi 0.6.14<a class="anchor" aria-label="anchor" href="#neuralsbi-0614"></a></h2>
 <ul><li>
