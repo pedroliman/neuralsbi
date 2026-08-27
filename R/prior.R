@@ -266,6 +266,7 @@ prior_custom <- function(sample_fn, log_prob_fn = NULL, dim, lower = NULL,
 #' @export
 sample_prior <- function(prior, n) {
   stopifnot(inherits(prior, "nsbi_prior"))
+  n <- check_count(n, "n")
   out <- as_theta_matrix(prior$sample(n), prior$dim)
   if (is.null(colnames(out)) && !is.null(prior$param_names)) {
     colnames(out) <- prior$param_names

@@ -1,3 +1,7 @@
+# neuralsbi 0.6.14
+
+* **`sample_prior()` now validates `n`.** It was the one count-taking public entry point that never routed its count through `check_count()`, unlike `n_simulations`, `n_sbc`, `n_init`, and `simulate_for_sbi()`'s own `n`. `sample_prior(prior, 2.5)` silently returned only 2 rows, via base R's recycling and an opaque warning; `sample_prior(prior, -1)` or `sample_prior(prior, NA)` failed with base R's generic "invalid arguments" error, naming neither the argument nor the function. `sample_prior()` now runs `n` through `check_count(n, "n")` at the top, before it reaches `prior$sample()` (#231).
+
 # neuralsbi 0.6.13
 
 * **`npe_sequential()` now validates `epsilon` up front, before round 1 simulates.** Every other round-controlling argument (`n_rounds`, `n_simulations`, `n_truncation_samples`, `max_proposal_batches`) is checked before any simulation runs, but `epsilon` fell through that net: it is only read starting in round 2, where it sets the truncation threshold via `stats::quantile(lp_ref, probs = epsilon, ...)`. An out-of-range `epsilon` (e.g. `1.5`, `-0.1`, `NA`) passed construction and round 1 silently, spent round 1's simulation budget, and only then failed in round 2 with `stats::quantile()`'s raw `'probs' outside [0,1]` error. `npe_sequential()` now runs `epsilon` through `check_prob()` alongside the other up-front checks (#226) (#228).
