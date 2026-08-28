@@ -2,14 +2,18 @@
 % Please edit documentation in R/likelihood.R
 \name{mdn_iid_blocks}
 \alias{mdn_iid_blocks}
-\title{Walk the observation chunks of an MDN's i.i.d. density, calling
-\code{collect(idx, lp)} with the \verb{(n_theta, n_chunk)} tensor of log-densities}
+\title{Walk the theta and observation blocks of an MDN's i.i.d. density, calling
+\code{collect(theta_idx, obs_idx, lp)} with the \verb{(n_theta_chunk, n_obs_chunk)}
+tensor of log-densities}
 \usage{
 mdn_iid_blocks(de, xt, theta, max_batch, collect)
 }
 \description{
-The MLP maps \code{theta} to the mixture parameters and never sees \code{x}, so the
-forward pass and the Cholesky assembly run once for the whole observation
-set and only the quadratic form is chunked.
+The MLP maps \code{theta} to the mixture parameters and never sees \code{x}, so
+within one theta block the forward pass and the Cholesky assembly run once
+and only the quadratic form is chunked over observations. \code{theta} itself is
+blocked first (\code{\link[=mdn_theta_chunk_size]{mdn_theta_chunk_size()}}), so \code{max_batch} bounds
+\code{\link[=mdn_mixture]{mdn_mixture()}}'s output the same way \code{\link[=cross_iid]{cross_iid()}} bounds a flow's forward
+pass, rather than only chunking the observation side (#240).
 }
 \keyword{internal}

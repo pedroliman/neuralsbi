@@ -165,6 +165,51 @@ test_that("blocking does not change a neural estimator's answer either", {
   }
 })
 
+test_that("mdn_theta_chunk_size() bounds theta the same way cross_iid() bounds it (#240)", {
+  # Pure arithmetic, no torch needed: theta_chunk * n_obs stays within
+  # max_batch, and never exceeds n_theta itself.
+  expect_equal(mdn_theta_chunk_size(n_theta = 1000, n_obs = 1, max_batch = 50), 50L)
+  expect_equal(mdn_theta_chunk_size(n_theta = 1000, n_obs = 200, max_batch = 50), 1L)
+  expect_equal(mdn_theta_chunk_size(n_theta = 10, n_obs = 1, max_batch = 1e5), 10L)
+})
+
+test_that("the MDN i.i.d. path chunks theta, not just x, under max_batch (#240)", {
+  # Before the fix, mdn_iid_blocks() ran mdn_mixture() -- the MLP forward pass
+  # and Cholesky assembly -- over the whole of theta in one call regardless of
+  # max_batch, only chunking the observation side. A dense theta grid against a
+  # handful of observations (e.g. a profile-likelihood plot) is exactly the
+  # shape that bypassed max_batch entirely: n_theta large, n_obs small.
+  skip_if_no_torch()
+  fit <- nle(gauss_prior(), gauss_sim, n_simulations = 600,
+             density_estimator = "mdn", hidden = c(16L, 16L),
+             n_components = 3L, max_epochs = 10L, seed = 1)
+  theta <- matrix(stats::runif(2 * 47, -2, 2), ncol = 2)  # 47 rows of theta
+  x <- matrix(stats::rnorm(4), ncol = 2)                  # 2 observations
+
+  orig_mixture <- mdn_mixture
+  sizes <- integer(0)
+  local_mocked_bindings(mdn_mixture = function(de, tt) {
+    sizes <<- c(sizes, tt$shape[1])
+    orig_mixture(de, tt)
+  })
+
+  chunked <- log_lik(fit, theta, x, sum_iid = FALSE, max_batch = 10)
+  # theta chunk size for n_obs = 2, max_batch = 10 is floor(10 / 2) = 5, so 47
+  # rows of theta take 10 calls to mdn_mixture(), the last one short -- not the
+  # single call the bug produced regardless of max_batch.
+  expect_equal(length(sizes), 10L)
+  expect_true(all(sizes <= 5L))
+  expect_equal(sum(sizes), 47L)
+
+  unchunked <- log_lik(fit, theta, x, sum_iid = FALSE, max_batch = 1e5)
+  expect_equal(chunked, unchunked, tolerance = 1e-6)
+
+  # The summed evaluator (log_lik(sum_iid = TRUE), and every MCMC step) goes
+  # through the same mdn_iid_blocks(), so it has to agree too.
+  expect_equal(log_lik(fit, theta, x, max_batch = 10),
+               log_lik(fit, theta, x, max_batch = 1e5), tolerance = 1e-6)
+})
+
 test_that("the traced MDN likelihood agrees with the eager one", {
   # de_iid_evaluator() serves the first few calls eagerly and then records a
   # TorchScript trace per parameter-row count. The trace is checked internally
