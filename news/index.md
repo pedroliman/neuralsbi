@@ -1,6 +1,40 @@
 # Changelog
 
-## neuralsbi 0.6.20
+## neuralsbi 0.6.21
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  on an unbounded posterior
+  (e.g. [`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md))
+  no longer lets a non-finite draw from the density estimator through.**
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)’s
+  non-finite-row filter ran only inside `if (bounded)`, since it was
+  added by
+  [\#234](https://github.com/pedroliman/neuralsbi/issues/234)/#236 to
+  work around
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  returning `NA` (not `FALSE`) for a NaN row – a problem specific to the
+  bounded rejection-sampling path. That left
+  `bounded <- !is.null(prior$lower) || !is.null(prior$upper)` `FALSE`
+  for an unbounded prior, the common case in the package’s own NPE
+  examples, with no filter at all: a NaN/Inf row that an under-trained
+  MAF/NSF/MDN occasionally produces was `rbind`’d straight into the
+  returned draws matrix, `attr(draws, "acceptance_rate")` still reported
+  `1.0`, and the corruption propagated silently into
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`pairplot()`](https://neuralsbi.pedrodelima.com/reference/pairplot.md),
+  and
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)/[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)
+  diagnostics – or surfaced downstream in
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  as a confusing “`theta` contains non-finite value” error blaming the
+  seed draw.
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  now drops a non-finite row from `de_sample()`’s output
+  unconditionally, before the `bounded` branch’s
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  check runs, so `acceptance_rate` reflects the drop for every prior
+  ([\#244](https://github.com/pedroliman/neuralsbi/issues/244))
+  ([\#245](https://github.com/pedroliman/neuralsbi/issues/245)).
 
 - **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)’s
   `max_batch` now bounds memory for an MDN-based fit even when `theta`,
