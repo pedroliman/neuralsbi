@@ -24,12 +24,13 @@
 #'   are created there, and the net is moved there right after `build_net()`,
 #'   so the two never disagree the way they do under a bare
 #'   `torch::with_device()`.
-#' @param min_val_rows Smallest validation split `check_train_controls()` will
-#'   accept. Every estimator here can score a real, if noisy, log-density on a
-#'   single validation row, so the default of `1L` is unchanged for MDN, MAF
-#'   and NSF. [fit_nre_net()] passes `2L`: its atomic contrastive objective
-#'   needs a second row to contrast against, and with only one it silently
-#'   returns a constant zero loss instead of training.
+#' @param min_val_rows Smallest training *or* validation split
+#'   `check_train_controls()` will accept. Every estimator here can score a
+#'   real, if noisy, log-density on a single row, so the default of `1L` is
+#'   unchanged for MDN, MAF and NSF. [fit_nre_net()] passes `2L`: its atomic
+#'   contrastive objective needs a second row to contrast against, and with
+#'   only one it silently returns a constant zero loss instead of training --
+#'   on whichever side of the split falls that low.
 #' @return `list(net, best_val_loss, history, device)`, where `history` is a
 #'   data frame of per-epoch train/validation losses for the winning restart
 #'   and `device` is the resolved device (`"cpu"`, `"cuda"` or `"mps"`)
@@ -71,13 +72,21 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
 #' is known, `validation_fraction` is checked against it: the requirement is
 #' that both sides of the split come out non-empty, which the fraction alone
 #' cannot decide. `min_val_rows` raises that floor for callers whose objective
-#' needs more than one validation row to mean anything -- see [fit_nre_net()].
+#' needs more than one row to mean anything -- see [fit_nre_net()] -- and
+#' applies to *both* sides of the split. Without a matching floor on the
+#' training side, a large `validation_fraction` can leave `n - n_val` rows
+#' below what the objective needs while the validation side alone still
+#' clears it: the same "constant zero loss, no signal" failure NRE's
+#' `min_val_rows` was added for (see the note below), just on the training
+#' side, and unlike a genuine simulation-budget error it trains silently to
+#' `patience` epochs instead of raising one.
 #'
 #' @inheritParams npe
 #' @param n Number of training rows, or `NULL` when they do not exist yet.
-#' @param min_val_rows Smallest validation split this call will accept
-#'   (default `1L`, i.e. only require it non-empty). Raise it for an objective
-#'   that needs more than one validation row to produce a real signal.
+#' @param min_val_rows Smallest split -- training or validation -- this call
+#'   will accept (default `1L`, i.e. only require each side non-empty). Raise
+#'   it for an objective that needs more than one row to produce a real
+#'   signal.
 #' @keywords internal
 check_train_controls <- function(max_epochs, batch_size, lr,
                                  validation_fraction, patience, n_restarts,
@@ -108,6 +117,18 @@ check_train_controls <- function(max_epochs, batch_size, lr,
                           "least %s to score its objective on. At this ",
                           "fraction it needs at least %s."),
                    format(validation_fraction), n_things(n_val, "row"), n,
+                   n_things(as.integer(min_val_rows), "row"),
+                   n_things(as.integer(need), "row")),
+           call. = FALSE)
+    }
+    n_tr <- n - n_val
+    if (n_tr < min_val_rows) {
+      need <- max(2L, ceiling(min_val_rows / (1 - validation_fraction)))
+      stop(sprintf(paste0("`validation_fraction` of %s leaves only %s of ",
+                          "%d for training, but this estimator needs at ",
+                          "least %s to score its objective on. At this ",
+                          "fraction it needs at least %s."),
+                   format(validation_fraction), n_things(n_tr, "row"), n,
                    n_things(as.integer(min_val_rows), "row"),
                    n_things(as.integer(need), "row")),
            call. = FALSE)

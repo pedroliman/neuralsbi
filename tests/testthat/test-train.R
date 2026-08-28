@@ -77,6 +77,28 @@ test_that("min_val_rows raises check_train_controls()'s validation-split floor",
     "needs at least .* to score its objective on")
 })
 
+test_that("min_val_rows also raises check_train_controls()'s training-split floor", {
+  # GitHub #239: min_val_rows was only ever checked against n_val, so a large
+  # validation_fraction could hold out enough rows to clear that floor while
+  # leaving n_tr = n - n_val below it. n = 4, validation_fraction = 0.75 gives
+  # n_val = 3 (clears min_val_rows = 2) and n_tr = 1 (does not) -- the exact
+  # scenario from the issue.
+  expect_no_error(
+    check_train_controls(2000L, 200L, 5e-4, 0.75, 20L, 1L, 5, n = 4))
+  expect_error(
+    check_train_controls(2000L, 200L, 5e-4, 0.75, 20L, 1L, 5, n = 4,
+                         min_val_rows = 2L),
+    "leaves only 1 row of 4 for training.*needs at least .* to score its objective on")
+
+  four <- matrix(stats::rnorm(4), ncol = 1)
+  expect_error(
+    train_conditional_de(build_net = function() stop("not reached"),
+                         log_prob_fn = function(...) stop("not reached"),
+                         theta = four, x = four, validation_fraction = 0.75,
+                         min_val_rows = 2L),
+    "needs at least .* to score its objective on")
+})
+
 test_that("minibatches() covers every row and never leaves one on its own", {
   order <- seq_len(21L)
 

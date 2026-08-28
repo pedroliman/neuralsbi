@@ -295,6 +295,43 @@ test_that("fit_nre_net() rejects a validation split too small for the atomic los
                "needs at least .* to score its objective on")
 })
 
+# GitHub #239: check_train_controls() enforced min_val_rows on the validation
+# side only. A large validation_fraction can hold out enough rows to clear
+# that floor while leaving fewer than min_val_rows for training -- e.g.
+# n_simulations = 4, validation_fraction = 0.75 gives n_val = 3 (clears the
+# floor of 2) and n_tr = 1 (does not). Before the fix this slipped through:
+# every training step scored nre_atomic_log_prob()'s k < 2L branch, a
+# constant zero loss with no gradient, and training ran silently to
+# `patience` epochs reporting a best_val_loss as if it had actually trained.
+test_that("nre() fails before simulating rather than train on a 1-row training split", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 4,
+        validation_fraction = 0.75, classifier = "resnet"),
+    "needs at least .* to score its objective on")
+  expect_identical(calls, 0L)
+
+  # The closed-form logistic classifier never splits off a validation set
+  # (min_val_rows = 1L), so the same split must not trip this floor for it.
+  expect_no_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 4,
+        validation_fraction = 0.75, classifier = "logistic"))
+  expect_identical(calls, 4L)
+})
+
+test_that("fit_nre_net() rejects a training split too small for the atomic loss", {
+  theta <- matrix(stats::rnorm(4), ncol = 1)
+  x <- matrix(stats::rnorm(4), ncol = 1)
+
+  expect_error(
+    fit_nre_net(theta, x, classifier = "resnet", validation_fraction = 0.75),
+    "needs at least .* to score its objective on")
+})
+
 test_that("nre() defers to prepare_simulations() when n_simulations can't hint a row count", {
   # An invalid n_simulations (not >= 1) and no pre-computed theta/x means the
   # early min_val_rows check has nothing to check against yet, so it must not

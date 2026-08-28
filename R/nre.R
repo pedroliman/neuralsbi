@@ -473,9 +473,12 @@ nre_atomic_log_prob <- function(num_atoms) {
 #'
 #' Passes `min_val_rows = 2L` down to [fit_torch_de()], unlike the MDN/MAF/NSF
 #' callers. The atomic objective ([nre_atomic_log_prob()]) needs a second row
-#' to contrast the true parameter against; with a validation split of one row
-#' it silently returns a constant zero loss every epoch instead of a real
-#' signal, which breaks early stopping (GitHub #188).
+#' to contrast the true parameter against; with a split of one row on either
+#' side it silently returns a constant zero loss every epoch instead of a real
+#' signal -- breaking early stopping when it is the validation side (GitHub
+#' #188), and training on zero gradient with no error when it is the training
+#' side (GitHub #239). `check_train_controls()` enforces `min_val_rows` on
+#' both sides of the split for exactly this reason.
 #' @keywords internal
 fit_nre_net <- function(theta, x, classifier = "resnet", hidden = 50L,
                         n_blocks = 2L, num_atoms = 10L,
