@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.18" id="neuralsbi-0618">neuralsbi 0.6.18<a class="anchor" aria-label="anchor" href="#neuralsbi-0618"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/map_estimate.html">map_estimate()</a></code> on a 1-D posterior no longer errors on a <code><a href="../reference/prior_custom.html">prior_custom()</a></code> with one infinite bound.</strong> Its <code>fit$dim_theta == 1L</code> branch chose <code>stats::optim(method = "Brent")</code> whenever <code>prior$lower</code> and <code>prior$upper</code> were both non-<code>NULL</code>, on the assumption that a <code>NULL</code> bound is the only way a prior can be one-sided. <code>prior_custom(dim = 1, lower = -Inf, upper = 5)</code> has both fields set – one is just non-finite – so it took the Brent branch anyway, and <code>stats::optim(method = "Brent", lower = -Inf, ...)</code> errored immediately with <code>"'lower' and 'upper' must be finite values"</code> before the search ran at all. The Brent branch now also requires <code>is.finite(prior$lower) &amp;&amp; is.finite(prior$upper)</code>; a bound that is present but infinite falls through to the existing <code>L-BFGS-B</code> branch, which already handles <code>Inf</code> on the missing side (<a href="https://github.com/pedroliman/neuralsbi/issues/238" class="external-link">#238</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/241" class="external-link">#241</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.17" id="neuralsbi-0617">neuralsbi 0.6.17<a class="anchor" aria-label="anchor" href="#neuralsbi-0617"></a></h2>
 <ul><li>

@@ -1,5 +1,25 @@
 # Changelog
 
+## neuralsbi 0.6.18
+
+- **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  on a 1-D posterior no longer errors on a
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  with one infinite bound.** Its `fit$dim_theta == 1L` branch chose
+  `stats::optim(method = "Brent")` whenever `prior$lower` and
+  `prior$upper` were both non-`NULL`, on the assumption that a `NULL`
+  bound is the only way a prior can be one-sided.
+  `prior_custom(dim = 1, lower = -Inf, upper = 5)` has both fields set –
+  one is just non-finite – so it took the Brent branch anyway, and
+  `stats::optim(method = "Brent", lower = -Inf, ...)` errored
+  immediately with `"'lower' and 'upper' must be finite values"` before
+  the search ran at all. The Brent branch now also requires
+  `is.finite(prior$lower) && is.finite(prior$upper)`; a bound that is
+  present but infinite falls through to the existing `L-BFGS-B` branch,
+  which already handles `Inf` on the missing side
+  ([\#238](https://github.com/pedroliman/neuralsbi/issues/238))
+  ([\#241](https://github.com/pedroliman/neuralsbi/issues/241)).
+
 ## neuralsbi 0.6.17
 
 - **NSF’s spline no longer produces negative bin widths/heights at large
