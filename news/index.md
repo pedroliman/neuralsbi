@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.19
+
+- **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) no
+  longer silently trains on zero gradient when the training split, not
+  just the validation split, drops to one row.**
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  (`R/train.R`) enforced `min_val_rows` (2 for
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)’s atomic
+  contrastive objective, per
+  [\#188](https://github.com/pedroliman/neuralsbi/issues/188)) against
+  `n_val` only, with no matching floor on `n_tr = n - n_val`. A large
+  `validation_fraction` can clear the validation-side floor while
+  leaving `n_tr` below it – `n_simulations = 4`,
+  `validation_fraction = 0.75` gives `n_val = 3` (passes) and `n_tr = 1`
+  (was never checked).
+  [`train_restarts()`](https://neuralsbi.pedrodelima.com/reference/train_restarts.md)
+  then trained on that single row, and
+  [`nre_atomic_log_prob()`](https://neuralsbi.pedrodelima.com/reference/nre_atomic_log_prob.md)’s
+  `k < 2L` guard – the same branch
+  [\#188](https://github.com/pedroliman/neuralsbi/issues/188) fixed for
+  the validation side – returned a constant zero loss every step: no
+  gradient, no error, training ran to `patience` epochs and reported a
+  `best_val_loss` as if it had actually trained.
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  now also requires `n - n_val >= min_val_rows`, the same floor already
+  applied to the validation side
+  ([\#239](https://github.com/pedroliman/neuralsbi/issues/239))
+  ([\#242](https://github.com/pedroliman/neuralsbi/issues/242)).
+
 ## neuralsbi 0.6.18
 
 - **[`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
