@@ -1,6 +1,32 @@
 # Changelog
 
-## neuralsbi 0.6.19
+## neuralsbi 0.6.20
+
+- **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)’s
+  `max_batch` now bounds memory for an MDN-based fit even when `theta`,
+  not `x`, is the large dimension.** For MAF/NSF/`linear_gaussian`/NRE,
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  (`R/likelihood.R`) chunks the `(theta, x)` cross product by `theta`
+  rows, so `max_batch` bounds memory regardless of which side is large.
+  The MDN’s fast i.i.d. path,
+  [`mdn_iid_blocks()`](https://neuralsbi.pedrodelima.com/reference/mdn_iid_blocks.md),
+  only chunked `x`: it ran
+  [`mdn_mixture()`](https://neuralsbi.pedrodelima.com/reference/mdn_mixture.md)
+  – the MLP forward pass and Cholesky assembly – over the whole of
+  `theta` in one call before any chunking happened, so scoring a dense
+  `theta` grid (a profile-likelihood plot, say) against a handful of
+  observations materialized a `(n_theta, K, dim_theta, dim_theta)`
+  tensor however small `max_batch` was set.
+  [`mdn_iid_blocks()`](https://neuralsbi.pedrodelima.com/reference/mdn_iid_blocks.md)
+  now blocks `theta` first, the same way
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  does, and chunks observations within each block as before;
+  [`mdn_trace_cache()`](https://neuralsbi.pedrodelima.com/reference/mdn_trace_cache.md)’s
+  TorchScript shortcut only fires when a single call would cover both
+  dimensions, since a trace recorded at one shape can’t stand in for the
+  chunked path
+  ([\#240](https://github.com/pedroliman/neuralsbi/issues/240))
+  ([\#243](https://github.com/pedroliman/neuralsbi/issues/243)).
 
 - **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) no
   longer silently trains on zero gradient when the training split, not
