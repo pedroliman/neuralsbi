@@ -165,13 +165,23 @@ sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
     draw_std <- de_sample(fit$de, xo_std, n_needed)
     draw <- invert_standardizer(fit$std_theta, draw_std)
     n_tried <- n_tried + n_needed
+    # A non-finite row from de_sample() (an under-trained MAF/NSF/MDN can
+    # produce one) needs dropping regardless of whether the prior is bounded
+    # -- unlike within_support()'s NA-vs-FALSE issue below, this filter has
+    # nothing to do with support and ran only inside `if (bounded)` before
+    # #244, so an unbounded prior (prior_normal(), the common case) let a
+    # NaN/Inf draw straight into the returned matrix with acceptance_rate
+    # still reporting 1.0.
+    draw <- draw[apply(is.finite(draw), 1, all), , drop = FALSE]
     if (bounded) {
       # within_support() returns NA for a NaN/NA row, and R's matrix indexing
       # keeps (rather than drops) a row selected by an NA logical index and
       # fills it with NA -- so a NaN draw from the density estimator would
       # otherwise survive as an all-NA row counted toward n (#234). Coerce NA
       # to FALSE so a non-finite draw is rejected the same way an
-      # out-of-bounds one is.
+      # out-of-bounds one is. (The finite-row filter above already removes
+      # non-finite rows, so this NA never actually arises here anymore, but
+      # within_support() is still the source of truth for the bound itself.)
       ok <- within_support(prior, draw)
       ok[is.na(ok)] <- FALSE
       draw <- draw[ok, , drop = FALSE]
