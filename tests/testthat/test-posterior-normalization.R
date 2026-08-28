@@ -178,6 +178,30 @@ test_that("map_estimate() respects a one-sided (lower-only) bound", {
   expect_true(within_support(prior, matrix(map, nrow = 1)))
 })
 
+# GitHub #238: the Brent branch was chosen with is.null(prior$lower) &&
+# is.null(prior$upper), which can't distinguish "no bound" from "a bound that
+# happens to be infinite". prior_custom(lower = -Inf, upper = 5) has both
+# fields set (one just non-finite), so it took the Brent branch anyway and
+# stats::optim(method = "Brent", lower = -Inf, ...) errored immediately with
+# "'lower' and 'upper' must be finite values". This one-sided (upper-only)
+# bound should instead fall through to L-BFGS-B and return a finite estimate.
+test_that("map_estimate() respects a one-sided (upper-only) bound with an explicit -Inf lower", {
+  set.seed(16)
+  prior <- prior_custom(
+    sample_fn = function(n) matrix(5 - stats::rexp(n, 1), ncol = 1),
+    log_prob_fn = function(theta) stats::dexp(5 - theta[, 1], 1, log = TRUE),
+    dim = 1, lower = -Inf, upper = 5
+  )
+  simulator <- function(theta) theta + stats::rnorm(1, sd = 0.3)
+  fit <- npe(prior, simulator, n_simulations = 2000,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 4.9)
+
+  map <- map_estimate(post)
+  expect_true(is.finite(map))
+  expect_true(within_support(prior, matrix(map, nrow = 1)))
+})
+
 test_that("map_estimate() on an unbounded prior lands between the prior mean and the observation", {
   set.seed(13)
   prior <- prior_normal(mean = 0, sd = 1)

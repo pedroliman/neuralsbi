@@ -349,7 +349,14 @@ map_estimate <- function(post, x = NULL, n_init = 1000L) {
   # needs no interval and doesn't trigger the Nelder-Mead-specific warning.
   # Multi-dimensional posteriors are unaffected.
   opt <- if (fit$dim_theta == 1L) {
-    if (!is.null(prior$lower) && !is.null(prior$upper)) {
+    # A bound can be present but infinite (prior_custom(lower = -Inf, upper =
+    # 5)): is.null() alone can't tell that apart from a genuine two-sided box,
+    # and Brent errors immediately on a non-finite interval end ("'lower' and
+    # 'upper' must be finite values"). Require both bounds to be finite before
+    # taking the Brent branch; a one-sided (or fully open) bound falls through
+    # to L-BFGS-B below, which accepts Inf on the missing side.
+    if (!is.null(prior$lower) && !is.null(prior$upper) &&
+          is.finite(prior$lower) && is.finite(prior$upper)) {
       stats::optim(start, neg, method = "Brent",
                    lower = prior$lower, upper = prior$upper)
     } else if (bounded) {
