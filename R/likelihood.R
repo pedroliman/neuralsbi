@@ -186,12 +186,12 @@ de_log_lik_iid.nsbi_de_lingauss <- function(de, x, theta, max_batch = 1e5) {
 de_log_lik_iid.nsbi_de_mdn <- function(de, x, theta, max_batch = 1e5) {
   xt <- torch::torch_tensor(x, dtype = torch::torch_float(),
                             device = net_device(de$net))
-  pieces <- list()
-  mdn_iid_blocks(de, xt, theta, max_batch, function(idx, lp) {
-    pieces[[length(pieces) + 1L]] <<-
+  out <- matrix(0, nrow = nrow(theta), ncol = nrow(x))
+  mdn_iid_blocks(de, xt, theta, max_batch, function(theta_idx, obs_idx, lp) {
+    out[theta_idx, obs_idx] <<-
       torch::as_array(lp$to(device = "cpu", dtype = torch::torch_float64()))
   })
-  matrix(unlist(pieces), nrow = nrow(theta))
+  out
 }
 
 #' A summed i.i.d. log-likelihood with the observation held fixed
@@ -262,8 +262,8 @@ de_iid_evaluator.nsbi_de_mdn <- function(de, x, max_batch = 1e5) {
   force(max_batch)
   eager <- function(theta) {
     total <- numeric(nrow(theta))
-    mdn_iid_blocks(de, xt, theta, max_batch, function(idx, lp) {
-      total <<- total +
+    mdn_iid_blocks(de, xt, theta, max_batch, function(theta_idx, obs_idx, lp) {
+      total[theta_idx] <<- total[theta_idx] +
         as.numeric(lp$to(device = "cpu",
                          dtype = torch::torch_float64())$sum(dim = 2))
     })
@@ -334,6 +334,11 @@ mdn_trace_cache <- function(de, xt, max_batch, eager, warmup = 4L) {
     calls <<- calls + 1L
     n_theta <- nrow(theta)
     if (calls <= warmup) return(NULL)
+    # mdn_trace() records mdn_mixture()/mdn_chunk_lp() at the full shape of
+    # `theta` and `xt`, so tracing is only sound when mdn_iid_blocks() would
+    # run both as a single block; otherwise the trace bakes in a shape the
+    # chunked eager path never uses (#240).
+    if (mdn_theta_chunk_size(n_theta, n_obs, max_batch) < n_theta) return(NULL)
     if (mdn_chunk_size(n_theta, max_batch, budget) < n_obs) return(NULL)
     key <- as.character(n_theta)
     hit <- cache[[key]]
@@ -402,27 +407,49 @@ cross_iid <- function(de, x, theta, max_batch, collect, score = de_log_prob) {
   invisible(NULL)
 }
 
-#' Walk the observation chunks of an MDN's i.i.d. density, calling
-#' `collect(idx, lp)` with the `(n_theta, n_chunk)` tensor of log-densities
+#' How many rows of `theta` to run through the MLP/Cholesky assembly at once
 #'
-#' The MLP maps `theta` to the mixture parameters and never sees `x`, so the
-#' forward pass and the Cholesky assembly run once for the whole observation
-#' set and only the quadratic form is chunked.
+#' Mirrors the theta-blocking [cross_iid()] does for the flow estimators, so
+#' an MDN bounds the `(theta, x)` pair count the same way: [mdn_mixture()]
+#' materializes a `(theta_chunk, K, dim_theta, dim_theta)` tensor for one
+#' block, and `theta_chunk * n_obs <= max_batch` keeps that bounded
+#' regardless of which of `theta` or `x` is the large dimension (#240).
+#' @keywords internal
+mdn_theta_chunk_size <- function(n_theta, n_obs, max_batch) {
+  max(1L, min(n_theta, floor(max_batch / max(n_obs, 1L))))
+}
+
+#' Walk the theta and observation blocks of an MDN's i.i.d. density, calling
+#' `collect(theta_idx, obs_idx, lp)` with the `(n_theta_chunk, n_obs_chunk)`
+#' tensor of log-densities
+#'
+#' The MLP maps `theta` to the mixture parameters and never sees `x`, so
+#' within one theta block the forward pass and the Cholesky assembly run once
+#' and only the quadratic form is chunked over observations. `theta` itself is
+#' blocked first ([mdn_theta_chunk_size()]), so `max_batch` bounds
+#' [mdn_mixture()]'s output the same way [cross_iid()] bounds a flow's forward
+#' pass, rather than only chunking the observation side (#240).
 #' @keywords internal
 mdn_iid_blocks <- function(de, xt, theta, max_batch, collect) {
   n_theta <- nrow(theta)
   n_obs <- xt$shape[1]
-  tt <- torch::torch_tensor(theta, dtype = torch::torch_float(),
-                            device = xt$device)
+  per_pair <- de$n_components * de$dim_theta
+  theta_chunk <- mdn_theta_chunk_size(n_theta, n_obs, max_batch)
+  tt_all <- torch::torch_tensor(theta, dtype = torch::torch_float(),
+                                device = xt$device)
   torch::with_no_grad({
-    mix <- mdn_mixture(de, tt)
-    per_chunk <- mdn_chunk_size(n_theta, max_batch,
-                                de$n_components * de$dim_theta)
-    for (s in seq.int(1L, n_obs, by = per_chunk)) {
-      idx <- seq.int(s, min(s + per_chunk - 1L, n_obs))
+    for (ts in seq.int(1L, n_theta, by = theta_chunk)) {
+      t_idx <- seq.int(ts, min(ts + theta_chunk - 1L, n_theta))
       # Slicing a tensor is not free; skip it when the chunk is everything.
-      xs <- if (length(idx) == n_obs) xt else xt[idx, , drop = FALSE]
-      collect(idx, mdn_chunk_lp(mix, xs, de$dim_theta))
+      tt <- if (length(t_idx) == n_theta) tt_all
+            else tt_all[t_idx, , drop = FALSE]
+      mix <- mdn_mixture(de, tt)
+      per_chunk <- mdn_chunk_size(length(t_idx), max_batch, per_pair)
+      for (s in seq.int(1L, n_obs, by = per_chunk)) {
+        idx <- seq.int(s, min(s + per_chunk - 1L, n_obs))
+        xs <- if (length(idx) == n_obs) xt else xt[idx, , drop = FALSE]
+        collect(t_idx, idx, mdn_chunk_lp(mix, xs, de$dim_theta))
+      }
     }
   })
   invisible(NULL)
