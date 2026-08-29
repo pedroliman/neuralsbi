@@ -106,6 +106,45 @@ test_that("npe_sequential warns and continues with fewer draws when the proposal
   expect_lt(fit$rounds[[2]]$n_new, 500L)
 })
 
+test_that("npe_sequential drops a NaN log_prob candidate instead of passing it to the simulator (#246)", {
+  set.seed(50)
+  # Same technique as test-posterior-nonfinite-de-draw.R: mock the generic
+  # de_log_prob() -- called by log_prob.nsbi_posterior() -- to inject a NaN
+  # the way an under-trained MAF/NSF would for an out-of-distribution prior
+  # draw. Call 1 is the round-2 threshold's reference sample
+  # (log_prob(post, ref, ...)), which stats::quantile() cannot tolerate a NaN
+  # in; call 2 is the first proposal batch's log_prob(post, cand, ...), where
+  # the corrupted row belongs.
+  prior <- prior_normal(mean = 0, sd = 2)
+  simulator <- function(theta) {
+    # Before the fix, an NA-filled row from the buggy `keep` index survives
+    # into theta_new and is handed to this simulator; stopping here turns
+    # that into a hard test failure instead of a silently wasted simulation.
+    if (anyNA(theta)) stop("simulator called with a non-finite theta")
+    theta + rnorm(length(theta), sd = 0.3)
+  }
+  real_de_log_prob <- de_log_prob
+  call_count <- 0L
+  local_mocked_bindings(
+    de_log_prob = function(de, theta, x) {
+      call_count <<- call_count + 1L
+      lp <- real_de_log_prob(de, theta, x)
+      if (call_count == 2L) lp[1] <- NaN
+      lp
+    }
+  )
+
+  fit <- npe_sequential(prior, simulator, x_obs = 0.5, n_rounds = 2,
+                        n_simulations = c(300, 30), epsilon = 0.3,
+                        density_estimator = "linear_gaussian", seed = 51)
+  expect_gt(call_count, 1L)
+  expect_equal(fit$rounds[[2]]$n_new, 30L)
+  expect_false(anyNA(fit$theta))
+  # acceptance is reported against usable draws, so it cannot exceed 1 even
+  # though one proposal row was rejected for a reason other than truncation
+  expect_lte(fit$rounds[[2]]$acceptance, 1)
+})
+
 test_that("npe_sequential errors clearly, rather than crashing rbind(), when a round accepts zero proposals and dim_x > 1", {
   set.seed(1)
   prior <- prior_uniform(low = c(-5, -5), high = c(5, 5))

@@ -136,7 +136,14 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
         n_needed <- budgets[r] - nrow(theta_new)
         cand <- sample_prior(prior, n_needed)
         tried <- tried + nrow(cand)
-        keep <- log_prob(post, cand, normalize = FALSE) >= threshold
+        lp <- log_prob(post, cand, normalize = FALSE)
+        # An out-of-distribution prior draw can make a MAF/NSF density
+        # estimator return NaN (#221); left unguarded, `lp >= threshold` is
+        # then NA, and R's matrix indexing *keeps* -- rather than drops -- a
+        # row selected by an NA logical index, filling it with NA. That
+        # NA-filled row would otherwise survive into theta_new and reach the
+        # user's simulator (#246).
+        keep <- is.finite(lp) & lp >= threshold
         theta_new <- rbind(theta_new, cand[keep, , drop = FALSE])
       }
       acceptance <- nrow(theta_new) / max(tried, 1L)
@@ -172,6 +179,10 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
     kept <- drop_failed_sims(theta_new, x_new)
     theta_new <- kept$theta
     x_new <- kept$x
+    # Report acceptance against what the simulator could actually use, not
+    # just what passed the truncation threshold before drop_failed_sims()
+    # removed rows with non-finite parameters or output.
+    if (r > 1L) acceptance <- nrow(theta_new) / max(tried, 1L)
     theta_all <- rbind(theta_all, theta_new)
     x_all <- rbind(x_all, x_new)
     # the simulator's output width is only known once it has run, so this is
