@@ -1,5 +1,36 @@
 # Changelog
 
+## neuralsbi 0.6.22
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  no longer hands a `NaN`-filled parameter row to the user’s simulator
+  during round 2+’s truncated proposal rejection.** Round 2+ candidates
+  are drawn from `sample_prior(prior, n_needed)` – the full prior, not
+  the truncated proposal – which is exactly the out-of-distribution
+  regime where a MAF/NSF density estimator can return `NaN` from
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  ([\#221](https://github.com/pedroliman/neuralsbi/issues/221)). The
+  proposal filter compared that vector to the truncation threshold with
+  a bare `>= threshold`, so a `NaN` log-density made `keep` `NA` at that
+  row; R’s matrix indexing *keeps*, rather than drops, a row selected by
+  an `NA` logical index and fills it with `NA`, so the corrupted row
+  survived into `theta_new` and reached
+  [`run_simulator()`](https://neuralsbi.pedrodelima.com/reference/run_simulator.md)
+  – wasting a simulation, or erroring outright for a simulator that
+  checks its input. The loop now guards the comparison with
+  `is.finite(lp) & lp >= threshold`, the same coercion already used at
+  the
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  and
+  [`mcmc_init_resample()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_resample.md)/[`mcmc_init_proposal()`](https://neuralsbi.pedrodelima.com/reference/mcmc_init_proposal.md)
+  call sites for this exact `NA`-vs-`FALSE` problem.
+  `fit$rounds[[r]]$acceptance` is also now computed after
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  for round 2+, so it reflects proposals the simulator could actually
+  use rather than the pre-simulation count a rejected `NaN` row used to
+  inflate ([\#246](https://github.com/pedroliman/neuralsbi/issues/246))
+  ([\#247](https://github.com/pedroliman/neuralsbi/issues/247)).
+
 ## neuralsbi 0.6.21
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
