@@ -53,7 +53,7 @@ and nre_score() for a ratio estimator; the blocking is the same either way."><me
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,8 +101,24 @@ and <code><a href="nre_score.html">nre_score()</a></code> for a ratio estimator;
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cross_iid</span><span class="op">(</span><span class="va">de</span>, <span class="va">x</span>, <span class="va">theta</span>, <span class="va">max_batch</span>, <span class="va">collect</span>, score <span class="op">=</span> <span class="va">de_log_prob</span><span class="op">)</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p><code>theta</code> is blocked first, exactly as before. What changed (#248) is that a
+theta block used to hand <code>score()</code> its whole observation set in one call –
+fine when <code>n_obs &lt;= max_batch</code>, but when <code>n_obs</code> alone exceeds <code>max_batch</code>
+(NLE/NRE's headline case of conditioning on thousands of trials) that one
+call saw <code>n_obs</code> pairs regardless of <code>max_batch</code>, the observation side never
+being chunked at all. Observations are now chunked within each theta block
+too, so no call to <code>score()</code> sees more than <code>max_batch</code> pairs. <code><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect()</a></code>
+still only sees one call per theta block, with the same complete
+<code>length(idx) * n_obs</code> flat vector it always did – the inner chunking is
+accumulated into that vector before <code><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect()</a></code> runs, so callers are
+untouched. <code><a href="mdn_iid_blocks.html">mdn_iid_blocks()</a></code> already chunked both sides for the MDN path;
+this brings the flow/NRE path in line with it.</p>
+    </div>
 
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.23
+
+- **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)’s
+  `max_batch` now bounds memory on the flow/NRE path even when `x`, not
+  `theta`, is the large dimension.**
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  (`R/likelihood.R`) chunked `theta` into blocks sized so
+  `theta_chunk * n_obs <= max_batch`, but once `n_obs` alone exceeded
+  `max_batch`, `theta_chunk` floored to 1 and that single call still
+  handed `score()` the entire `n_obs`-row observation set – the
+  observation side was never chunked at all, contradicting the
+  “regardless of which side is large” contract restored for the MDN path
+  by [\#243](https://github.com/pedroliman/neuralsbi/issues/243). This
+  is the path
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)’s
+  MCMC sampling uses for an NLE or NRE fit, and NLE/NRE’s headline use
+  case is conditioning on a large i.i.d. observation set (thousands of
+  trials) without retraining, so this is exactly the shape most likely
+  to spike memory.
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  now blocks `theta` first as before and chunks observations within each
+  theta block, accumulating into the same flat `(theta, x)` vector
+  before calling
+  [`collect()`](https://dplyr.tidyverse.org/reference/compute.html) – no
+  call to `score()` sees more than `max_batch` pairs, and every caller’s
+  `collect(idx, lp)` contract is unchanged
+  ([\#248](https://github.com/pedroliman/neuralsbi/issues/248))
+  ([\#249](https://github.com/pedroliman/neuralsbi/issues/249)).
+
 ## neuralsbi 0.6.22
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
