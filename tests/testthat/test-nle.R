@@ -144,6 +144,41 @@ test_that("the blocked cross product visits every (theta, x) pair once", {
   }
 })
 
+test_that("cross_iid() chunks observations, not just theta, under max_batch (#248)", {
+  # Before the fix, per_block floored to one theta row per call once n_obs
+  # exceeded max_batch, but that one call still scored the entire n_obs-row
+  # observation set -- the observation side was never chunked. A scorer that
+  # counts its own pairs catches that directly, rather than only checking the
+  # final answer (which was already correct; only the batching was wrong).
+  n_obs <- 50L
+  n_theta <- 6L
+  x <- matrix(seq_len(n_obs), ncol = 1)
+  theta <- matrix(seq_len(n_theta), ncol = 1)
+  expected <- outer(seq_len(n_theta), seq_len(n_obs),
+                    function(i, j) j * 1000 + i)
+
+  max_pairs <- 0L
+  n_calls <- 0L
+  counting_score <- function(de, x, theta) {
+    n_calls <<- n_calls + 1L
+    max_pairs <<- max(max_pairs, nrow(x))
+    x[, 1] * 1000 + theta[, 1]
+  }
+
+  max_batch <- 7L
+  expect_equal(iid_matrix(NULL, x, theta, max_batch, counting_score), expected)
+  expect_lte(max_pairs, max_batch)
+  expect_gt(n_calls, 1L)
+
+  max_pairs <- 0L
+  ev <- iid_evaluator(NULL, x, max_batch, counting_score)
+  expect_equal(ev(theta), rowSums(expected))
+  expect_lte(max_pairs, max_batch)
+
+  # Numerically identical to an effectively unchunked call.
+  expect_equal(iid_matrix(NULL, x, theta, 1e5, counting_score), expected)
+})
+
 test_that("blocking does not change a neural estimator's answer either", {
   # The MDN chunks over observations and the flow over parameters, and both
   # reuse a constant block that a short final block has to truncate. A batch

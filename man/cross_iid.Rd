@@ -12,4 +12,18 @@ the whole observation set for the first parameter, then for the second, and
 so on. \code{score} is \link[=density_estimator]{de_log_prob()} for a density estimator
 and \code{\link[=nre_score]{nre_score()}} for a ratio estimator; the blocking is the same either way.
 }
+\details{
+\code{theta} is blocked first, exactly as before. What changed (#248) is that a
+theta block used to hand \code{score()} its whole observation set in one call --
+fine when \code{n_obs <= max_batch}, but when \code{n_obs} alone exceeds \code{max_batch}
+(NLE/NRE's headline case of conditioning on thousands of trials) that one
+call saw \code{n_obs} pairs regardless of \code{max_batch}, the observation side never
+being chunked at all. Observations are now chunked within each theta block
+too, so no call to \code{score()} sees more than \code{max_batch} pairs. \code{collect()}
+still only sees one call per theta block, with the same complete
+\code{length(idx) * n_obs} flat vector it always did -- the inner chunking is
+accumulated into that vector before \code{collect()} runs, so callers are
+untouched. \code{\link[=mdn_iid_blocks]{mdn_iid_blocks()}} already chunked both sides for the MDN path;
+this brings the flow/NRE path in line with it.
+}
 \keyword{internal}

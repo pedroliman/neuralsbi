@@ -389,20 +389,40 @@ mdn_trace <- function(de, xt, tt) {
 #' the whole observation set for the first parameter, then for the second, and
 #' so on. `score` is [de_log_prob()][density_estimator] for a density estimator
 #' and [nre_score()] for a ratio estimator; the blocking is the same either way.
+#'
+#' `theta` is blocked first, exactly as before. What changed (#248) is that a
+#' theta block used to hand `score()` its whole observation set in one call --
+#' fine when `n_obs <= max_batch`, but when `n_obs` alone exceeds `max_batch`
+#' (NLE/NRE's headline case of conditioning on thousands of trials) that one
+#' call saw `n_obs` pairs regardless of `max_batch`, the observation side never
+#' being chunked at all. Observations are now chunked within each theta block
+#' too, so no call to `score()` sees more than `max_batch` pairs. `collect()`
+#' still only sees one call per theta block, with the same complete
+#' `length(idx) * n_obs` flat vector it always did -- the inner chunking is
+#' accumulated into that vector before `collect()` runs, so callers are
+#' untouched. [mdn_iid_blocks()] already chunked both sides for the MDN path;
+#' this brings the flow/NRE path in line with it.
 #' @keywords internal
 cross_iid <- function(de, x, theta, max_batch, collect, score = de_log_prob) {
   n_theta <- nrow(theta)
   n_obs <- nrow(x)
-  per_block <- max(1L, floor(max_batch / max(n_obs, 1L)))
-  # The observation half of the cross product is the same in every block, so it
-  # is built once at the widest one and truncated for a short final block.
-  target <- x[rep(seq_len(n_obs), times = min(per_block, n_theta)), ,
-              drop = FALSE]
-  for (s in seq.int(1L, n_theta, by = per_block)) {
-    idx <- seq.int(s, min(s + per_block - 1L, n_theta))
-    rows <- seq_len(length(idx) * n_obs)
-    collect(idx, score(de, target[rows, , drop = FALSE],
-                       theta[rep(idx, each = n_obs), , drop = FALSE]))
+  theta_chunk <- max(1L, min(n_theta, floor(max_batch / max(n_obs, 1L))))
+  for (s in seq.int(1L, n_theta, by = theta_chunk)) {
+    idx <- seq.int(s, min(s + theta_chunk - 1L, n_theta))
+    nt <- length(idx)
+    obs_chunk <- max(1L, min(n_obs, floor(max_batch / nt)))
+    lp <- numeric(nt * n_obs)
+    for (os in seq.int(1L, n_obs, by = obs_chunk)) {
+      oidx <- seq.int(os, min(os + obs_chunk - 1L, n_obs))
+      no <- length(oidx)
+      x_rows <- x[rep(oidx, times = nt), , drop = FALSE]
+      theta_rows <- theta[rep(idx, each = no), , drop = FALSE]
+      # Position of each (t, o) pair in the flat, theta-major `lp` this theta
+      # block ultimately hands to collect().
+      pos <- rep((seq_len(nt) - 1L) * n_obs, each = no) + rep(oidx, times = nt)
+      lp[pos] <- score(de, x_rows, theta_rows)
+    }
+    collect(idx, lp)
   }
   invisible(NULL)
 }
