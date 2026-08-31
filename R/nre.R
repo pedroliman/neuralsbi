@@ -152,6 +152,14 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm, n = n_hint,
                        min_val_rows = min_val_rows)
+  # See npe(): "resnet"/"mlp"/"linear" need torch (the default is "resnet");
+  # only "logistic" and a caller-supplied classifier do not. Fails before the
+  # simulator runs rather than after (GitHub #250).
+  check_torch_for_estimator(
+    classifier, c("resnet", "mlp", "linear"), device,
+    what = "This classifier",
+    alternative = paste("Alternatively use classifier = \"logistic\" for a",
+                        "torch-free baseline."))
 
   # See npe(): seed the base RNG here, unconditionally of which
   # prepare_simulations() branch runs, so train_restarts()'s train/validation

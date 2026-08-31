@@ -409,8 +409,9 @@ check_function <- function(f, arg, what = NULL) {
 #' is the whole check for `"cpu"`. Turning `"cuda"`/`"mps"`/`"gpu"`/`"auto"`
 #' into a concrete, available device needs `torch` loaded, which
 #' `density_estimator = "linear_gaussian"` never requires; that step is
-#' [resolve_device()]'s job, called only once a `torch`-backed estimator is
-#' about to train.
+#' [resolve_device()]'s job, run by [check_torch_for_estimator()] before the
+#' simulator runs and again inside `train_restarts()` (idempotent) once
+#' training actually starts.
 #'
 #' @param device The user's value.
 #' @return `device`, unchanged.
@@ -425,6 +426,49 @@ check_device_arg <- function(device) {
          call. = FALSE)
   }
   device
+}
+
+#' Fail fast when the chosen estimator/classifier needs torch but it is
+#' unavailable
+#'
+#' [npe()], [nle()] and [nre()] all validate their cheap arguments -- device,
+#' prior, architecture -- before the simulator runs, because the simulation
+#' budget is the expensive part of a call. Left alone, [require_torch()] is
+#' only reached deep inside `train_restarts()` (`R/train.R`), which runs after
+#' `prepare_simulations()` has already spent that whole budget (GitHub #250).
+#' This closes the gap: called right after the other cheap-argument checks, it
+#' raises the same error `train_restarts()` would eventually raise, before a
+#' single simulation has run. Once torch is confirmed present it also runs
+#' [resolve_device()] for its CUDA/MPS availability check, for the identical
+#' reason -- `device = "cuda"` on a machine with no CUDA build should not cost
+#' the simulation budget to discover either.
+#'
+#' A caller-supplied estimator function is opaque: `fit_density_estimator()`
+#' and `fit_ratio_estimator()` never look at `device` for one, and it may or
+#' may not need torch itself, so it is skipped here and left to fail (or not)
+#' on its own terms once it actually runs. The torch-free string names
+#' (`"linear_gaussian"`, `"logistic"`) are simply absent from `torch_names`,
+#' so they pass through untouched too -- neither ever requires torch.
+#'
+#' @param estimator The already-resolved `density_estimator`/`classifier`
+#'   argument: a matched string or a function.
+#' @param torch_names Character vector of the string values among `estimator`'s
+#'   choices that need torch.
+#' @param device The already-validated `device` keyword.
+#' @param what,alternative Passed straight through to [require_torch()].
+#' @keywords internal
+check_torch_for_estimator <- function(estimator, torch_names, device,
+                                      what = "This density estimator",
+                                      alternative = paste(
+                                        "Alternatively use",
+                                        "density_estimator = 'linear_gaussian'",
+                                        "for a torch-free baseline.")) {
+  if (is.function(estimator) || !(estimator %in% torch_names)) {
+    return(invisible(TRUE))
+  }
+  require_torch(what = what, alternative = alternative)
+  resolve_device(device)
+  invisible(TRUE)
 }
 
 #' Validate a support bound

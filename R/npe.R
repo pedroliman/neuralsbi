@@ -119,6 +119,10 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
+  # Also fails fast: "maf"/"mdn"/"nsf" need torch, and so does a `device`
+  # other than "cpu" once one of them is going to train. "linear_gaussian" and
+  # a caller-supplied function are untouched (GitHub #250).
+  check_torch_for_estimator(density_estimator, c("maf", "mdn", "nsf"), device)
 
   # Seed R's base RNG here, unconditionally of which prepare_simulations()
   # branch runs below: with a simulator it reseeds again inside

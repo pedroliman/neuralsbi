@@ -332,7 +332,10 @@ test_that("log_lik() rejects a non-finite max_batch instead of an opaque rep() e
 })
 
 test_that("nle() needs either a simulator or pre-computed simulations", {
-  expect_error(nle(gauss_prior()), "Provide either")
+  # linear_gaussian, so torch availability (check_torch_for_estimator(),
+  # #250) has nothing to say and this is purely about prepare_simulations().
+  expect_error(nle(gauss_prior(), density_estimator = "linear_gaussian"),
+               "Provide either")
 })
 
 test_that("a bad density_estimator errors before the simulator runs", {

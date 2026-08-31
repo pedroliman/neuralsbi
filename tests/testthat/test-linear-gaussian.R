@@ -30,7 +30,10 @@ test_that("linear_gaussian NPE recovers the analytic Gaussian posterior", {
 
 test_that("npe errors clearly when neither simulator nor (theta,x) are given", {
   prior <- prior_normal(0, 1)
-  expect_error(npe(prior), "simulator")
+  # linear_gaussian, so this is the "Provide either" message from
+  # prepare_simulations() and not check_torch_for_estimator()'s (#250) --
+  # the two are independent checks and this test is about the former.
+  expect_error(npe(prior, density_estimator = "linear_gaussian"), "simulator")
 })
 
 test_that("a bad density_estimator errors before the simulator runs", {

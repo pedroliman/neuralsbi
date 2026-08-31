@@ -255,7 +255,9 @@ test_that("nre() checks its arguments before the simulator runs", {
 })
 
 test_that("nre() needs either a simulator or pre-computed simulations", {
-  expect_error(nre(gauss_prior()), "Provide either")
+  # logistic, so torch availability (check_torch_for_estimator(), #250) has
+  # nothing to say and this is purely about prepare_simulations().
+  expect_error(nre(gauss_prior(), classifier = "logistic"), "Provide either")
 })
 
 # GitHub #188: a validation split of exactly one row made the atomic
@@ -336,9 +338,11 @@ test_that("nre() defers to prepare_simulations() when n_simulations can't hint a
   # An invalid n_simulations (not >= 1) and no pre-computed theta/x means the
   # early min_val_rows check has nothing to check against yet, so it must not
   # error itself -- the existing n_simulations validation inside
-  # prepare_simulations() is still what reports this.
+  # prepare_simulations() is still what reports this. classifier = "logistic"
+  # keeps torch availability (check_torch_for_estimator(), #250) out of it,
+  # since that is an independent check this test is not about.
   expect_error(
-    nre(gauss_prior(), gauss_sim, n_simulations = 0, classifier = "resnet"),
+    nre(gauss_prior(), gauss_sim, n_simulations = 0, classifier = "logistic"),
     "`n_simulations`")
 })
 
