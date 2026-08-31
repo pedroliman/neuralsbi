@@ -164,6 +164,11 @@ test_that("npe() with density_estimator = 'linear_gaussian' silently ignores neu
 })
 
 test_that("npe() rejects simulations too few to split", {
+  # This exercises train_conditional_de()'s own check_train_controls(n = ...)
+  # call, reached only past check_torch_for_estimator() (#250), so it
+  # genuinely needs torch now -- unlike before the fix, when it happened to
+  # error here first regardless.
+  skip_if_no_torch()
   theta <- matrix(0.5, ncol = 1)
   x <- matrix(0.4, ncol = 1)
   # One row also has no standard deviation, so standardization warns on the
