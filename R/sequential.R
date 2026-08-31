@@ -46,7 +46,8 @@
 #' @param max_proposal_batches Cap on rejection-sampling batches per round.
 #' @param seed Optional integer seed for reproducibility.
 #' @param verbose Print per-round progress.
-#' @param ... Passed to [npe()] (estimator and training settings).
+#' @param ... Passed to [npe()] (estimator and training settings). Checked
+#'   before round 1 simulates, the same as the arguments above.
 #'
 #' @return An object of class `c("nsbi_snpe", "nsbi_npe")` with a `rounds`
 #'   field recording per-round budgets, acceptance rates, and thresholds.
@@ -106,6 +107,28 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   max_proposal_batches <- check_count(
     max_proposal_batches, "max_proposal_batches",
     why = "since one batch is one round of rejection sampling")
+  # `...` carries round 1's estimator/training-control arguments (n_bins,
+  # batch_size, and so on) straight through to the npe() call at the bottom
+  # of the loop below, so until now they were only checked once that call
+  # actually ran -- after prepare_simulations() had already spent round 1's
+  # simulation budget. Running npe()'s own pre-simulation checks here closes
+  # the same gap #226 closed for n_rounds/n_simulations/epsilon/etc (#251).
+  # Reading the fallback for an argument the caller left out from npe()'s own
+  # formals, rather than repeating its default literals here, keeps the two
+  # from drifting apart.
+  dots <- list(...)
+  npe_default <- function(name) eval(formals(npe)[[name]])
+  npe_arg <- function(name) {
+    if (name %in% names(dots)) dots[[name]] else npe_default(name)
+  }
+  check_architecture(npe_arg("n_components"), npe_arg("n_transforms"),
+                     npe_arg("hidden"), npe_arg("n_bins"),
+                     npe_arg("tail_bound"))
+  check_train_controls(npe_arg("max_epochs"), npe_arg("batch_size"),
+                       npe_arg("lr"), npe_arg("validation_fraction"),
+                       npe_arg("patience"), npe_arg("n_restarts"),
+                       npe_arg("clip_grad_norm"))
+  check_device_arg(npe_arg("device"))
   if (!is.null(seed)) set.seed(seed)
   budgets <- rep_len(n_simulations, n_rounds)
 
