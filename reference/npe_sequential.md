@@ -100,7 +100,8 @@ npe_sequential(
 
   Passed to
   [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
-  (estimator and training settings).
+  (estimator and training settings). Checked before round 1 simulates,
+  the same as the arguments above.
 
 ## Value
 

@@ -2,6 +2,38 @@
 
 ## neuralsbi 0.6.25
 
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now checks round 1’s estimator/training-control arguments before round
+  1 simulates.** `n_rounds`, `n_simulations`, `epsilon`,
+  `n_truncation_samples` and `max_proposal_batches` were already
+  validated up front, closing this gap for
+  [\#226](https://github.com/pedroliman/neuralsbi/issues/226), but
+  everything else that round 1 forwards through `...` to its internal
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) call –
+  `n_bins`, `tail_bound`, `hidden`, `n_components`, `n_transforms`,
+  `batch_size`, `lr`, `patience`, `n_restarts`, `clip_grad_norm`,
+  `max_epochs`, `validation_fraction`, `device` – was still only checked
+  once that
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) call
+  actually ran, at the end of the round, after
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  had already spent round 1’s simulation budget.
+  `npe_sequential(prior, simulator, x_obs = 0.5, n_rounds = 1, n_simulations = 500, density_estimator = "linear_gaussian", n_bins = 1)`
+  ran the simulator 500 times before raising `n_bins`’s “at least 2”
+  error.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now runs
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)’s own
+  [`check_architecture()`](https://neuralsbi.pedrodelima.com/reference/check_architecture.md)/[`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)/[`check_device_arg()`](https://neuralsbi.pedrodelima.com/reference/check_device_arg.md)
+  on round 1’s `...` args before the first
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  call, filling in
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)’s own
+  defaults for anything the caller left unset so the two checks cannot
+  drift apart
+  ([\#251](https://github.com/pedroliman/neuralsbi/issues/251))
+  ([\#254](https://github.com/pedroliman/neuralsbi/issues/254)).
+
 - **[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)/[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
   now refuse a
   [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
