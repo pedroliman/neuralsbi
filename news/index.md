@@ -1,5 +1,39 @@
 # Changelog
 
+## neuralsbi 0.6.24
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  now fail before running the simulator when the chosen estimator or
+  `device` needs torch and torch is unavailable, instead of after.** All
+  three validate their cheap arguments – device, prior, architecture –
+  before
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  runs the simulator, since the simulation budget is the expensive part
+  of a call.
+  [`require_torch()`](https://neuralsbi.pedrodelima.com/reference/require_torch.md)
+  was only reached deep inside
+  [`train_restarts()`](https://neuralsbi.pedrodelima.com/reference/train_restarts.md)
+  (`R/train.R`), which runs after
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  has already called the simulator `n_simulations` times, so
+  `npe(prior, simulator, n_simulations = 500)` (the default
+  `density_estimator = "maf"`) ran the simulator 500 times on a machine
+  without torch before erroring – the same for
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)’s
+  default estimator and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)’s
+  default `classifier = "resnet"`.
+  [`resolve_device()`](https://neuralsbi.pedrodelima.com/reference/resolve_device.md)’s
+  CUDA/MPS availability check had the identical ordering problem:
+  `device = "cuda"` on a non-CUDA machine only failed after simulating.
+  A new `check_torch_for_estimator()` (`R/check.R`) runs both checks
+  right after the other cheap-argument checks, for any string
+  `density_estimator`/`classifier` that needs torch;
+  `density_estimator = "linear_gaussian"`, `classifier = "logistic"`,
+  and a caller-supplied estimator/classifier function are unaffected
+  ([\#250](https://github.com/pedroliman/neuralsbi/issues/250))
+  ([\#253](https://github.com/pedroliman/neuralsbi/issues/253)).
+
 ## neuralsbi 0.6.23
 
 - **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)’s
