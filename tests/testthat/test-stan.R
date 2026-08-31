@@ -105,6 +105,55 @@ test_that("a custom prior cannot be written out, and the error says why", {
   expect_match(stan_code(fit, model = FALSE), "real nsbi_log_lik_lpdf\\(")
 })
 
+test_that("stan_data() and stan_code() refuse an improper uniform prior", {
+  # prior_uniform(-Inf, Inf) is legal (it exists so prior_truncated() can
+  # bound it), and sample_prior() already refuses to draw from it directly.
+  # A fit built from pre-computed theta/x never calls sample_prior(), so
+  # without this check the infinite bound reached stan_data() as
+  # nsbi_low = -Inf, nsbi_high = Inf and stan_code() as an unconstrained
+  # `vector[...] theta;`, with no error from this package (#252).
+  prior <- prior_uniform(c(mu = -Inf, nu = -3), c(mu = Inf, nu = 3))
+  theta <- sample_prior(stan_prior(), 500)
+  x <- t(apply(theta, 1, function(r) stan_sim(r[["mu"]], r[["nu"]])))
+  fit <- nle(prior, theta = theta, x = x, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 5)
+
+  expect_error(stan_data(fit), "improper distribution")
+  expect_error(stan_code(fit), "improper distribution")
+  # The escape hatch a custom prior gets still names the real cause here:
+  # this is not arbitrary R code, it is a named family with no finite support.
+  expect_error(stan_data(fit), "prior_truncated")
+})
+
+test_that("stan_data()/stan_code() still work for a finite-bound uniform prior from pre-computed theta/x", {
+  theta <- sample_prior(stan_prior(), 500)
+  x <- t(apply(theta, 1, function(r) stan_sim(r[["mu"]], r[["nu"]])))
+  fit <- nle(stan_prior(), theta = theta, x = x, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 6)
+
+  data <- stan_data(fit, matrix(stats::rnorm(4), ncol = 2))
+  expect_equal(data$nsbi_low, c(-3, -3))
+  expect_equal(data$nsbi_high, c(3, 3))
+  expect_match(stan_code(fit), "parameters \\{")
+})
+
+test_that("an improper uniform nested in prior_independent() is also refused", {
+  # The joint prior's own type is "independent" here, not "uniform": the
+  # infinite bound means prior_independent() cannot use its marginals fast
+  # path, so it falls back to composing closures and stan_prior_blocks()
+  # never sees a bare "uniform" type. It refuses anyway, through the
+  # existing prior_custom()-style rejection -- confirming the two paths
+  # together leave no way for an infinite bound to reach generated Stan code.
+  prior <- prior_independent(mu = prior_uniform(-Inf, Inf),
+                             nu = prior_normal(0, 1))
+  theta <- cbind(mu = stats::rnorm(500), nu = stats::rnorm(500))
+  x <- t(apply(theta, 1, function(r) stan_sim(r[[1]], r[[2]])))
+  fit <- nle(prior, theta = theta, x = x, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 7)
+
+  expect_error(stan_code(fit), "no Stan counterpart")
+})
+
 test_that("write_stan_model() writes a file", {
   fit <- stan_lingauss_fit()
   path <- tempfile(fileext = ".stan")
