@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.25
+
+- **[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)/[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  now refuse a
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  with an infinite `low`/`high` bound instead of writing it out as
+  `nsbi_low = -Inf, nsbi_high = Inf`.**
+  `prior_uniform(low = -Inf, high = Inf)` is a legal, if improper, prior
+  – it exists so
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
+  can bound it – and
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  already refuses to draw from it directly. An
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) fit
+  built from pre-computed `theta`/`x` never calls
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md),
+  so the improper prior previously reached
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  and
+  [`stan_prior_blocks()`](https://neuralsbi.pedrodelima.com/reference/stan_prior_blocks.md)
+  (`R/stan.R`) untouched:
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  returned `nsbi_low = -Inf, nsbi_high = Inf`, and
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  emitted an unconstrained `vector[...] theta;` with no error from this
+  package, leaving the failure (if any) to surface later inside Stan.
+  Both functions now call a new `check_finite_uniform_bounds()`,
+  matching the existing
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  rejection in style and message
+  ([\#252](https://github.com/pedroliman/neuralsbi/issues/252))
+  ([\#255](https://github.com/pedroliman/neuralsbi/issues/255)).
+
 ## neuralsbi 0.6.24
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)

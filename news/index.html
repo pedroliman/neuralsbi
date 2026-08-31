@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.25</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.25" id="neuralsbi-0625">neuralsbi 0.6.25<a class="anchor" aria-label="anchor" href="#neuralsbi-0625"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/stan_export.html">stan_data()</a></code>/<code><a href="../reference/stan_export.html">stan_code()</a></code> now refuse a <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> with an infinite <code>low</code>/<code>high</code> bound instead of writing it out as <code>nsbi_low = -Inf, nsbi_high = Inf</code>.</strong> <code>prior_uniform(low = -Inf, high = Inf)</code> is a legal, if improper, prior – it exists so <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code> can bound it – and <code><a href="../reference/sample_prior.html">sample_prior()</a></code> already refuses to draw from it directly. An <code><a href="../reference/nle.html">nle()</a></code> fit built from pre-computed <code>theta</code>/<code>x</code> never calls <code><a href="../reference/sample_prior.html">sample_prior()</a></code>, so the improper prior previously reached <code><a href="../reference/stan_export.html">stan_data()</a></code> and <code><a href="../reference/stan_prior_blocks.html">stan_prior_blocks()</a></code> (<code>R/stan.R</code>) untouched: <code><a href="../reference/stan_export.html">stan_data()</a></code> returned <code>nsbi_low = -Inf, nsbi_high = Inf</code>, and <code><a href="../reference/stan_export.html">stan_code()</a></code> emitted an unconstrained <code>vector[...] theta;</code> with no error from this package, leaving the failure (if any) to surface later inside Stan. Both functions now call a new <code>check_finite_uniform_bounds()</code>, matching the existing <code><a href="../reference/prior_custom.html">prior_custom()</a></code> rejection in style and message (<a href="https://github.com/pedroliman/neuralsbi/issues/252" class="external-link">#252</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/255" class="external-link">#255</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.24" id="neuralsbi-0624">neuralsbi 0.6.24<a class="anchor" aria-label="anchor" href="#neuralsbi-0624"></a></h2>
 <ul><li>
