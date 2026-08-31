@@ -305,6 +305,34 @@ test_that("npe_sequential rejects an out-of-range epsilon before round 1 simulat
   expect_s3_class(fit, "nsbi_snpe")
 })
 
+test_that("npe_sequential checks round 1's estimator/training args before round 1 simulates (#251)", {
+  # n_bins, batch_size and the rest of npe()'s architecture/training-control
+  # arguments reach round 1 through `...` and used to be checked only once
+  # the inner npe() call ran, at the end of the round -- after
+  # prepare_simulations() had already spent round 1's simulation budget. The
+  # same class of bug #226 fixed for n_rounds/n_simulations/epsilon/etc.
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  seq_call <- function(...) {
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "linear_gaussian",
+                   ...)
+  }
+  expect_error(seq_call(n_bins = 1), "`n_bins` must be a single whole number of at least 2")
+  expect_equal(n_calls, 0L)
+  expect_error(seq_call(batch_size = 0), "`batch_size` must be a single whole number of at least 1")
+  expect_equal(n_calls, 0L)
+  expect_error(seq_call(device = "not-a-device"), "`device` must be one of")
+  expect_equal(n_calls, 0L)
+
+  fit <- seq_call(n_bins = 4)
+  expect_s3_class(fit, "nsbi_snpe")
+})
+
 test_that("npe_sequential rejects an n_simulations vector whose length doesn't match n_rounds", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)

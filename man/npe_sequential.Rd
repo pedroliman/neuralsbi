@@ -55,7 +55,8 @@ threshold each round.}
 
 \item{verbose}{Print per-round progress.}
 
-\item{...}{Passed to \code{\link[=npe]{npe()}} (estimator and training settings).}
+\item{...}{Passed to \code{\link[=npe]{npe()}} (estimator and training settings). Checked
+before round 1 simulates, the same as the arguments above.}
 }
 \value{
 An object of class \code{c("nsbi_snpe", "nsbi_npe")} with a \code{rounds}
