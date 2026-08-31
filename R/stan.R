@@ -133,6 +133,7 @@ stan_data <- function(fit, x_obs = NULL) {
   }
   prior <- fit$prior
   if (identical(prior$type, "uniform")) {
+    check_finite_uniform_bounds(prior$lower, prior$upper)
     out$nsbi_low <- as.numeric(prior$lower)
     out$nsbi_high <- as.numeric(prior$upper)
   } else if (identical(prior$type, "normal")) {
@@ -159,6 +160,28 @@ check_exportable_fit <- function(fit) {
   }
   stop("stan_code() needs a fit from nle(), not an object of class ",
        paste(class(fit), collapse = "/"), ".", call. = FALSE)
+}
+
+#' Refuse to write an improper uniform prior out to Stan
+#'
+#' [prior_uniform()] allows an infinite `low`/`high` bound so it can be handed
+#' to [prior_truncated()]; [sample_prior()] already refuses to draw from that
+#' prior directly, because there is no density to sample from. An [nle()] fit
+#' built from pre-computed `theta`/`x` never calls [sample_prior()], so an
+#' improper uniform can otherwise reach here untouched, from either
+#' [stan_data()] or [stan_prior_blocks()], and come out as `nsbi_low = -Inf`,
+#' `nsbi_high = Inf` and an unconstrained `vector[...] theta;` -- silently
+#' wrong rather than refused, with the failure (if any) surfacing later inside
+#' Stan.
+#' @param lower,upper The prior's bounds.
+#' @keywords internal
+check_finite_uniform_bounds <- function(lower, upper) {
+  if (all(is.finite(lower)) && all(is.finite(upper))) return(invisible(TRUE))
+  stop(paste0(
+    "Cannot write this prior out to Stan: it is a uniform prior with an ",
+    "infinite `low`/`high` bound, which is an improper distribution with no ",
+    "finite support to declare.\nBound it first with prior_truncated(), or ",
+    "build the prior with finite bounds."), call. = FALSE)
 }
 
 # ---- weight packing -------------------------------------------------------
@@ -586,6 +609,7 @@ stan_model_blocks <- function(fit, name, packed) {
 stan_prior_blocks <- function(prior, Q) {
   type <- prior$type %||% "custom"
   if (identical(type, "uniform")) {
+    check_finite_uniform_bounds(prior$lower, prior$upper)
     return(list(
       data = sprintf("  vector[%d] nsbi_low;\n  vector[%d] nsbi_high;\n", Q, Q),
       parameters = sprintf(
