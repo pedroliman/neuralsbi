@@ -83,6 +83,10 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)
+  # See npe(): default density_estimator is "maf", which needs torch just as
+  # it does for npe() -- fail before the simulator runs rather than after
+  # (GitHub #250).
+  check_torch_for_estimator(density_estimator, c("maf", "mdn", "nsf"), device)
 
   # See npe(): seed the base RNG here, unconditionally of which
   # prepare_simulations() branch runs, so train_restarts()'s train/validation

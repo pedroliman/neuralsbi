@@ -145,8 +145,12 @@ check_train_controls <- function(max_epochs, batch_size, lr,
 #' `device` here is still the raw, unresolved keyword `train_conditional_de()`
 #' was given (`"cpu"`, `"cuda"`, `"mps"`, `"gpu"` or `"auto"`); resolving it to
 #' an actual, available device needs `torch` loaded (see `resolve_device()`),
-#' and this is the first point that is guaranteed true -- `require_torch()` is
-#' the line above. Doing it here rather than earlier in
+#' and this is the first point *within this function* that is guaranteed true
+#' -- `require_torch()` is the line above. `npe()`/`nle()`/`nre()` already ran
+#' both checks once, before the simulator, via `check_torch_for_estimator()`
+#' (`R/check.R`, GitHub #250); repeating them here is what makes this function
+#' safe to call directly too, and `resolve_device()` is idempotent so the
+#' repeat costs nothing. Doing it here rather than earlier in
 #' `train_conditional_de()` keeps [check_train_controls()] (which needs no
 #' torch at all) running first, so a bad `batch_size` is still reported before
 #' an unavailable device is.
