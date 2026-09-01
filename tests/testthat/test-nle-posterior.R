@@ -330,6 +330,43 @@ test_that("log_prob() on an NLE posterior rejects NaN/NA theta but not Inf theta
   expect_equal(log_prob(post, matrix(-Inf, ncol = 1), normalize = FALSE), -Inf)
 })
 
+# GitHub #256: posterior()'s MCMC path reaches surrogate_potential() through
+# slice_sample_surrogate() and mcmc_log_prob(), both of which used to ignore a
+# caller's max_batch entirely, so sample()/log_prob() always ran the default
+# max_batch = 1e5 no matter what posterior() was given.
+test_that("posterior()'s max_batch reaches sample() and log_prob() without changing the answer", {
+  set.seed(23)
+  prior <- prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+  simulator <- function(mu, nu) c(a = mu + stats::rnorm(1, sd = 0.4),
+                                  b = nu + stats::rnorm(1, sd = 0.4))
+  fit <- nle(prior, simulator, n_simulations = 2000,
+             density_estimator = "linear_gaussian", seed = 24)
+  x_obs <- cbind(stats::rnorm(20, 0.4, 0.4), stats::rnorm(20, -0.2, 0.4))
+  theta <- matrix(c(0.2, -0.1), nrow = 1)
+
+  chunked <- posterior(fit, x_obs, n_chains = 4, warmup = 40, thin = 2,
+                       seed = 25, max_batch = 7)
+  default <- posterior(fit, x_obs, n_chains = 4, warmup = 40, thin = 2,
+                       seed = 25, max_batch = 1e5)
+
+  expect_equal(sample(chunked, 300), sample(default, 300), ignore_attr = TRUE)
+  expect_equal(log_prob(chunked, theta, normalize = FALSE),
+               log_prob(default, theta, normalize = FALSE))
+})
+
+test_that("posterior() rejects a non-finite max_batch instead of an opaque rep() error (#230, #256)", {
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 500, density_estimator = "linear_gaussian",
+             seed = 26)
+  x_obs <- matrix(stats::rnorm(10, 0.5, 0.5), ncol = 1)
+
+  expect_error(posterior(fit, x_obs, max_batch = NA), "`max_batch`")
+  expect_error(posterior(fit, x_obs, max_batch = NaN), "`max_batch`")
+  expect_error(posterior(fit, x_obs, max_batch = -1), "`max_batch`")
+  expect_error(posterior(fit, x_obs, max_batch = 0), "`max_batch`")
+})
+
 # GitHub #162: n reached mcmc_draws() -- and from there ceiling(n / n_chains)
 # -- unchecked, so a non-integer n like 2.5 silently returned 2 draws instead
 # of erroring the way every other draw-count argument in the package does.

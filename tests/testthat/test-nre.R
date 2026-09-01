@@ -229,6 +229,44 @@ test_that("log_ratio() rejects a non-finite max_batch instead of an opaque rep()
   expect_error(log_ratio(fit, theta, x, max_batch = NaN), "`max_batch`")
 })
 
+# GitHub #256: posterior()'s MCMC path reaches surrogate_potential() through
+# slice_sample_surrogate() and mcmc_log_prob(), both of which used to ignore a
+# caller's max_batch entirely, so sample()/log_prob() always ran the default
+# max_batch = 1e5 no matter what posterior() was given. This bit hardest for
+# nre(), whose ratio classifier has no i.i.d. fast path (nre_iid_evaluator()
+# goes through the same cross_iid() chunking every flow uses), so a small
+# max_batch here genuinely exercises chunking rather than being ignored the
+# way linear_gaussian's own de_iid_evaluator() ignores it.
+test_that("posterior()'s max_batch reaches sample() and log_prob() without changing the answer", {
+  set.seed(23)
+  prior <- prior_uniform(c(mu = -3, nu = -3), c(mu = 3, nu = 3))
+  sim <- function(mu, nu) c(a = stats::rnorm(1, mu, 0.5),
+                            b = stats::rnorm(1, nu, 0.5))
+  fit <- nre(prior, sim, n_simulations = 3000, classifier = "logistic",
+             seed = 24)
+  x_obs <- cbind(stats::rnorm(20, 0.4, 0.5), stats::rnorm(20, -0.2, 0.5))
+  theta <- matrix(c(0.2, -0.1), nrow = 1)
+
+  chunked <- posterior(fit, x_obs, n_chains = 4, warmup = 40, thin = 2,
+                       seed = 25, max_batch = 7)
+  default <- posterior(fit, x_obs, n_chains = 4, warmup = 40, thin = 2,
+                       seed = 25, max_batch = 1e5)
+
+  expect_equal(sample(chunked, 300), sample(default, 300), ignore_attr = TRUE)
+  expect_equal(log_prob(chunked, theta, normalize = FALSE),
+               log_prob(default, theta, normalize = FALSE))
+})
+
+test_that("posterior() rejects a non-finite max_batch instead of an opaque rep() error (#230, #256)", {
+  fit <- logistic_fit(n = 500)
+  x_obs <- matrix(stats::rnorm(10), ncol = 2)
+
+  expect_error(posterior(fit, x_obs, max_batch = NA), "`max_batch`")
+  expect_error(posterior(fit, x_obs, max_batch = NaN), "`max_batch`")
+  expect_error(posterior(fit, x_obs, max_batch = -1), "`max_batch`")
+  expect_error(posterior(fit, x_obs, max_batch = 0), "`max_batch`")
+})
+
 test_that("nre() checks its arguments before the simulator runs", {
   calls <- 0L
   counting_simulator <- function(mu, nu) {

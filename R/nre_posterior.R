@@ -33,6 +33,11 @@
 #'   `"resample"` to find enough starting points, and it errors out once its
 #'   draw budget is spent.
 #' @param seed Optional integer seed.
+#' @param max_batch Largest number of `(theta, x)` pairs evaluated in one call
+#'   to the classifier, both at every MCMC step and in [log_prob()]. Only
+#'   affects memory and speed; see `max_batch` on [log_ratio()] for the same
+#'   knob on a direct ratio evaluation, and matters most here since the ratio
+#'   classifier has no i.i.d. fast path -- every pair costs a forward pass.
 #' @param ... Further arguments to the sampler: `width`, `max_steps` and
 #'   `n_pool`.
 #'
@@ -52,8 +57,8 @@
 posterior.nsbi_nre <- function(fit, x_obs = NULL, n_chains = 20L,
                                warmup = 200L, thin = 2L,
                                init_strategy = c("resample", "proposal"),
-                               seed = NULL, ...) {
+                               seed = NULL, max_batch = 1e5, ...) {
   mcmc_posterior(fit, x_obs, "slice", n_chains, warmup, thin,
-                 match.arg(init_strategy), seed, list(...),
+                 match.arg(init_strategy), seed, max_batch, list(...),
                  "nsbi_nre_posterior")
 }
