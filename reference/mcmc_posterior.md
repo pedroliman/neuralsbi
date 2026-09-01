@@ -21,6 +21,7 @@ mcmc_posterior(
   thin,
   init_strategy,
   seed,
+  max_batch,
   dots,
   class
 )
@@ -84,6 +85,15 @@ mcmc_posterior(
 - seed:
 
   Optional integer seed.
+
+- max_batch:
+
+  Largest number of `(theta, x)` pairs evaluated in one call to the
+  estimator, both at every MCMC step and in
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md).
+  Only affects memory and speed; see `max_batch` on
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  for the same knob on a direct likelihood evaluation.
 
 - dots:
 

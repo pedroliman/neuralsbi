@@ -55,7 +55,7 @@ sample() on it runs a chain rather than a forward pass."><meta property="og:imag
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.25</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,6 +111,7 @@ result has no closed form and no direct sampler. <code><a href="posterior.html">
 <span>  thin <span class="op">=</span> <span class="fl">2L</span>,</span>
 <span>  init_strategy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"resample"</span>, <span class="st">"proposal"</span><span class="op">)</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  max_batch <span class="op">=</span> <span class="fl">1e+05</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -173,6 +174,13 @@ bill before the first MCMC step.</p></dd>
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Optional integer seed.</p></dd>
+
+
+<dt id="arg-max-batch">max_batch<a class="anchor" aria-label="anchor" href="#arg-max-batch"></a></dt>
+<dd><p>Largest number of <code>(theta, x)</code> pairs evaluated in one call
+to the estimator, both at every MCMC step and in <code><a href="log_prob.html">log_prob()</a></code>. Only
+affects memory and speed; see <code>max_batch</code> on <code><a href="log_lik.html">log_lik()</a></code> for the same
+knob on a direct likelihood evaluation.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

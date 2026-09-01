@@ -55,7 +55,7 @@ before it gets here."><meta property="og:image" content="https://neuralsbi.pedro
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.25</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,6 +110,7 @@ before it gets here.</p>
 <span>  <span class="va">thin</span>,</span>
 <span>  <span class="va">init_strategy</span>,</span>
 <span>  <span class="va">seed</span>,</span>
+<span>  <span class="va">max_batch</span>,</span>
 <span>  <span class="va">dots</span>,</span>
 <span>  <span class="va">class</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -173,6 +174,13 @@ bill before the first MCMC step.</p></dd>
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Optional integer seed.</p></dd>
+
+
+<dt id="arg-max-batch">max_batch<a class="anchor" aria-label="anchor" href="#arg-max-batch"></a></dt>
+<dd><p>Largest number of <code>(theta, x)</code> pairs evaluated in one call
+to the estimator, both at every MCMC step and in <code><a href="log_prob.html">log_prob()</a></code>. Only
+affects memory and speed; see <code>max_batch</code> on <code><a href="log_lik.html">log_lik()</a></code> for the same
+knob on a direct likelihood evaluation.</p></dd>
 
 
 <dt id="arg-dots">dots<a class="anchor" aria-label="anchor" href="#arg-dots"></a></dt>

@@ -1,5 +1,51 @@
 # Changelog
 
+## neuralsbi 0.6.26
+
+- **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  on an `nsbi_nle`/`nsbi_nre` fit now honors `max_batch`, instead of
+  silently ignoring it.**
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  and
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  both chunk the `(theta, x)` pairs they evaluate according to
+  `max_batch`, and
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)’s
+  MCMC path reaches the same evaluator,
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  – but
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
+  stored a caller’s `max_batch` unchecked into `control$dots`, and
+  neither
+  [`slice_sample_surrogate()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_surrogate.md)
+  nor
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  (which back
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  and
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on the resulting posterior) ever read it, so every MCMC evaluation ran
+  at the default `max_batch = 1e5` regardless of what was passed. This
+  bit hardest for
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md), whose
+  ratio classifier has no i.i.d. fast path: every observation costs a
+  forward pass, so there was no way through the public API to shrink a
+  batch and avoid an out-of-memory error on many chains against a large
+  observation set.
+  [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)
+  and
+  [`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
+  now take `max_batch` as a named argument (default `1e5`, matching
+  prior behavior), validated the same way
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)/[`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  validate it
+  ([\#230](https://github.com/pedroliman/neuralsbi/issues/230)), and
+  threaded through to every
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  call the resulting posterior makes
+  ([\#256](https://github.com/pedroliman/neuralsbi/issues/256))
+  ([\#257](https://github.com/pedroliman/neuralsbi/issues/257)).
+
 ## neuralsbi 0.6.25
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
