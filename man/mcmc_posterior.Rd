@@ -13,6 +13,7 @@ mcmc_posterior(
   thin,
   init_strategy,
   seed,
+  max_batch,
   dots,
   class
 )
@@ -57,6 +58,11 @@ which on a surrogate summed over thousands of observations is a large
 bill before the first MCMC step.}
 
 \item{seed}{Optional integer seed.}
+
+\item{max_batch}{Largest number of \code{(theta, x)} pairs evaluated in one call
+to the estimator, both at every MCMC step and in \code{\link[=log_prob]{log_prob()}}. Only
+affects memory and speed; see \code{max_batch} on \code{\link[=log_lik]{log_lik()}} for the same
+knob on a direct likelihood evaluation.}
 
 \item{dots}{The sampler arguments the caller collected from \code{...}.}
 
