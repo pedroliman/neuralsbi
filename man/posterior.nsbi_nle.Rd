@@ -13,6 +13,7 @@
   thin = 2L,
   init_strategy = c("resample", "proposal"),
   seed = NULL,
+  max_batch = 1e+05,
   ...
 )
 }
@@ -56,6 +57,11 @@ which on a surrogate summed over thousands of observations is a large
 bill before the first MCMC step.}
 
 \item{seed}{Optional integer seed.}
+
+\item{max_batch}{Largest number of \code{(theta, x)} pairs evaluated in one call
+to the estimator, both at every MCMC step and in \code{\link[=log_prob]{log_prob()}}. Only
+affects memory and speed; see \code{max_batch} on \code{\link[=log_lik]{log_lik()}} for the same
+knob on a direct likelihood evaluation.}
 
 \item{...}{Further arguments to the sampler: \code{width}, \code{max_steps} and
 \code{n_pool} for \code{"slice"}, or \code{iter_warmup}, \code{iter_sampling} and \code{refresh}

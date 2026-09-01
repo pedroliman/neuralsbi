@@ -12,6 +12,7 @@
   thin = 2L,
   init_strategy = c("resample", "proposal"),
   seed = NULL,
+  max_batch = 1e+05,
   ...
 )
 }
@@ -42,6 +43,12 @@ prior can make \code{"proposal"} far slower than \code{"resample"} to find enoug
 starting points, and it errors out once its draw budget is spent.}
 
 \item{seed}{Optional integer seed.}
+
+\item{max_batch}{Largest number of \code{(theta, x)} pairs evaluated in one call
+to the classifier, both at every MCMC step and in \code{\link[=log_prob]{log_prob()}}. Only
+affects memory and speed; see \code{max_batch} on \code{\link[=log_ratio]{log_ratio()}} for the same
+knob on a direct ratio evaluation, and matters most here since the ratio
+classifier has no i.i.d. fast path -- every pair costs a forward pass.}
 
 \item{...}{Further arguments to the sampler: \code{width}, \code{max_steps} and
 \code{n_pool}.}

@@ -45,6 +45,10 @@
 #'   which on a surrogate summed over thousands of observations is a large
 #'   bill before the first MCMC step.
 #' @param seed Optional integer seed.
+#' @param max_batch Largest number of `(theta, x)` pairs evaluated in one call
+#'   to the estimator, both at every MCMC step and in [log_prob()]. Only
+#'   affects memory and speed; see `max_batch` on [log_lik()] for the same
+#'   knob on a direct likelihood evaluation.
 #' @param ... Further arguments to the sampler: `width`, `max_steps` and
 #'   `n_pool` for `"slice"`, or `iter_warmup`, `iter_sampling` and `refresh`
 #'   for `"stan"`.
@@ -66,12 +70,12 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
                                sampler = c("slice", "stan"),
                                n_chains = NULL, warmup = 200L, thin = 2L,
                                init_strategy = c("resample", "proposal"),
-                               seed = NULL, ...) {
+                               seed = NULL, max_batch = 1e5, ...) {
   sampler <- match.arg(sampler)
   mcmc_posterior(fit, x_obs, sampler,
                  n_chains %||% if (sampler == "stan") 4L else 20L,
-                 warmup, thin, match.arg(init_strategy), seed, list(...),
-                 "nsbi_nle_posterior")
+                 warmup, thin, match.arg(init_strategy), seed, max_batch,
+                 list(...), "nsbi_nle_posterior")
 }
 
 #' Check the arguments of an MCMC-sampled posterior and assemble it
@@ -87,7 +91,7 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
 #' @param class The posterior class to stamp on the result.
 #' @keywords internal
 mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
-                           init_strategy, seed, dots, class) {
+                           init_strategy, seed, max_batch, dots, class) {
   check_fit_alive(fit)
   if (!is.null(x_obs)) {
     x_obs <- check_numeric(x_obs, "x_obs")
@@ -99,6 +103,12 @@ mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
   warmup <- check_mcmc_count(warmup, "warmup", 0L)
   thin <- check_mcmc_count(thin, "thin", 1L,
                            "since one draw in `thin` is kept")
+  # A non-finite max_batch used to reach cross_iid()'s rep(..., times = NA) and
+  # fail with a bare "invalid 'times' argument" (#230), fixed there for
+  # log_lik()/log_ratio(); posterior()'s MCMC path shares the same evaluator
+  # (surrogate_potential()) and is checked the same way here, once, rather
+  # than at every downstream call site (#256).
+  max_batch <- check_positive(max_batch, "max_batch", allow_inf = TRUE)
   structure(
     list(
       fit = fit,
@@ -109,6 +119,7 @@ mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
                      thin = thin,
                      init_strategy = init_strategy,
                      seed = seed,
+                     max_batch = max_batch,
                      dots = dots),
       cache = new.env(parent = emptyenv())
     ),
@@ -239,7 +250,7 @@ finish_draws <- function(draws, diagnostics, fit) {
 #' @keywords internal
 slice_sample_surrogate <- function(fit, x_obs, ctl, n, verbose = FALSE) {
   dots <- ctl$dots
-  potential <- surrogate_potential(fit, x_obs)
+  potential <- surrogate_potential(fit, x_obs, max_batch = ctl$max_batch)
   init <- mcmc_init(fit$prior, potential, ctl$n_chains,
                     strategy = ctl$init_strategy,
                     n_pool = dots$n_pool %||% 1000L)
@@ -315,7 +326,8 @@ mcmc_log_prob <- function(post, theta, x, warn, what) {
   check_finite(theta, "theta", allow_inf = TRUE)
   theta <- check_matrix(theta, post$fit$dim_theta, "theta",
                         "one parameter per column")
-  potential <- surrogate_potential(post$fit, resolve_x_iid(post, x, "x"))
+  potential <- surrogate_potential(post$fit, resolve_x_iid(post, x, "x"),
+                                   max_batch = post$control$max_batch)
   potential(theta)
 }
 
