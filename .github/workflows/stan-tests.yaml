@@ -113,9 +113,23 @@ jobs:
         # test-standardize.R, which contains "stan" as a substring.
         # test_check() defaults to stop_on_failure = TRUE, so a failing test
         # here fails the job rather than being swallowed.
+        #
+        # It runs from tests/, not the repository root: test_check() looks for
+        # its test files in "testthat" relative to the working directory, which
+        # only exists one level down. From the root it found nothing and died
+        # with "No test files found." before running a single test.
+        working-directory: tests
         run: |
           Rscript -e '
             library(testthat)
             library(neuralsbi)
+            # The tests this job exists for skip themselves without CmdStan or
+            # libtorch, so a half-installed toolchain would skip every one of
+            # them and still report success. Fail on the missing toolchain
+            # instead of passing having checked nothing.
+            stopifnot(
+              neuralsbi:::cmdstan_ready(),
+              torch::torch_is_installed()
+            )
             test_check("neuralsbi", filter = "^stan$")
           '
