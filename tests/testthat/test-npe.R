@@ -59,6 +59,19 @@ test_that("npe() checks the controls before running the simulator", {
   expect_identical(env$calls, 0L)
 })
 
+test_that("npe() rejects a malformed caller-supplied density_estimator before simulating (#259)", {
+  env <- new.env(parent = emptyenv())
+  env$calls <- 0L
+  sim <- counting_simulator(env)
+
+  # Wrong arity: a niladic fitter can never be called as fitter(theta_z, x_z).
+  bad_fitter <- function() stop("never reached")
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = bad_fitter),
+               "`density_estimator` must be a function")
+  expect_identical(env$calls, 0L)
+})
+
 test_that("npe() checks architecture arguments", {
   expect_error(npe(toy_prior(), toy_simulator, n_simulations = 100,
                    density_estimator = "linear_gaussian", n_components = 0),

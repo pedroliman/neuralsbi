@@ -113,7 +113,11 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
                 seed = NULL, verbose = FALSE) {
   # See npe(): everything here is checked before the simulator runs, so a typo
   # does not cost the simulation budget first.
-  if (!is.function(classifier)) classifier <- match.arg(classifier)
+  if (is.function(classifier)) {
+    check_function(classifier, "classifier", what = "theta and x matrices")
+  } else {
+    classifier <- match.arg(classifier)
+  }
   device <- check_device_arg(device)
   check_prior(prior)
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {

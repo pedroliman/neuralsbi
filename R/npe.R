@@ -102,7 +102,10 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   # Everything here runs before the simulator does. An argument that is only
   # noticed by the arithmetic inside training costs the whole budget first,
   # and the budget is the expensive part of a run.
-  if (!is.function(density_estimator)) {
+  if (is.function(density_estimator)) {
+    check_function(density_estimator, "density_estimator",
+                   what = "theta and x matrices")
+  } else {
     density_estimator <- match.arg(density_estimator)
   }
   device <- check_device_arg(device)
