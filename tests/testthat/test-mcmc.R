@@ -140,6 +140,40 @@ test_that("a non-finite or non-positive width is refused, not left to crash the 
   )
 })
 
+test_that("a NaN/Inf log-density from log_prob_fn is treated as -Inf, not left to corrupt the chain", {
+  # GitHub #258: a candidate can land outside the region a trained NLE/NRE
+  # estimator was fit on and come back NaN even though the prior still
+  # covers it. slice_sample_run() only checked the *initial* state for
+  # finiteness (below); every candidate afterwards went straight into
+  # `<=`/`>` comparisons and rowSums()/max.col(), so a single NaN used to
+  # corrupt the whole row -- an entire batch of stepping-out or shrinkage
+  # candidates, not just the offending one -- surfacing downstream as a bare
+  # "NAs are not allowed in subscripted assignments" or as NaN silently
+  # carried into the retained draws.
+  set.seed(258)
+  target <- function(theta) stats::dnorm(theta[, 1], log = TRUE)
+  # Mimics a network that is well-behaved near the mode but returns garbage
+  # (NaN, Inf, -Inf, alternating) once a candidate strays past +/- 3 -- the
+  # "outside the training distribution" failure mode #258 describes.
+  flaky_lp <- function(theta) {
+    lp <- target(theta)
+    far <- abs(theta[, 1]) > 3
+    if (any(far)) {
+      bad <- c(NaN, Inf, -Inf, NaN)
+      lp[far] <- bad[seq_len(sum(far)) %% length(bad) + 1L]
+    }
+    lp
+  }
+
+  init <- matrix(stats::rnorm(8), ncol = 1)
+  res <- slice_sample(flaky_lp, init, n_draws = 400, warmup = 100, thin = 2,
+                      width = 5)
+
+  expect_true(all(is.finite(res$draws)))
+  expect_true(all(is.finite(res$chains)))
+  expect_equal(nrow(res$draws), 400L)
+})
+
 test_that("a non-finite or non-positive max_steps is refused, not left to loop on a bad count", {
   # GitHub #190: the NEWS entry for #164/#167 flagged max_steps and n_pool as
   # the same gap width had before that fix -- steps_left <- max_steps drives
