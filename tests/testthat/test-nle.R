@@ -352,6 +352,22 @@ test_that("a bad density_estimator errors before the simulator runs", {
   expect_identical(calls, 0L)
 })
 
+test_that("a malformed caller-supplied density_estimator errors before the simulator runs (#259)", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  # Wrong arity: a niladic fitter can never be called as fitter(theta_z, x_z).
+  bad_fitter <- function() stop("never reached")
+  expect_error(
+    nle(gauss_prior(), counting_simulator, n_simulations = 100,
+        density_estimator = bad_fitter),
+    "`density_estimator` must be a function"
+  )
+  expect_identical(calls, 0L)
+})
+
 test_that("pre-computed simulations give the same fit as running the simulator", {
   sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 800, seed = 9)
   from_sims <- nle(gauss_prior(), theta = sims$theta, x = sims$x,

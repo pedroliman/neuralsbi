@@ -292,6 +292,22 @@ test_that("nre() checks its arguments before the simulator runs", {
   expect_identical(calls, 0L)
 })
 
+test_that("a malformed caller-supplied classifier errors before the simulator runs (#259)", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  # Wrong arity: a niladic classifier can never be called as classifier(theta_z, x_z).
+  bad_classifier <- function() stop("never reached")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = bad_classifier),
+    "`classifier` must be a function"
+  )
+  expect_identical(calls, 0L)
+})
+
 test_that("nre() needs either a simulator or pre-computed simulations", {
   # logistic, so torch availability (check_torch_for_estimator(), #250) has
   # nothing to say and this is purely about prepare_simulations().

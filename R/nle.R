@@ -75,7 +75,10 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
                 standardize = TRUE, device = "cpu",
                 seed = NULL, verbose = FALSE) {
   # See npe(): everything here is checked before the simulator runs.
-  if (!is.function(density_estimator)) {
+  if (is.function(density_estimator)) {
+    check_function(density_estimator, "density_estimator",
+                   what = "theta and x matrices")
+  } else {
     density_estimator <- match.arg(density_estimator)
   }
   device <- check_device_arg(device)
