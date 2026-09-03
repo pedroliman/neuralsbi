@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.28" id="neuralsbi-0628">neuralsbi 0.6.28<a class="anchor" aria-label="anchor" href="#neuralsbi-0628"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> now validate a caller-supplied <code>density_estimator</code>/<code>classifier</code> function before running the simulator, instead of only discovering it is broken at the very end of <code>fit_density_estimator()</code>/<code><a href="../reference/fit_ratio_estimator.html">fit_ratio_estimator()</a></code>.</strong> Every other argument to these three functions is checked before <code><a href="../reference/prepare_simulations.html">prepare_simulations()</a></code> spends the simulation budget (<a href="https://github.com/pedroliman/neuralsbi/issues/250" class="external-link">#250</a>), and <code><a href="../reference/check_function.html">check_function()</a></code> already exists for exactly this, used for <code>simulator</code> and for <code><a href="../reference/prior_custom.html">prior_custom()</a></code>’s <code>sample_fn</code>/<code>log_prob_fn</code>. A caller-supplied estimator or classifier was the one documented extension point that skipped it: <code>npe(prior, simulator, n_simulations = 100000, density_estimator = my_fitter)</code> with a wrong-arity or typo’d <code>my_fitter</code> ran the full 100,000 simulations before failing deep inside training. <code><a href="../reference/npe.html">npe()</a></code> and <code><a href="../reference/nle.html">nle()</a></code> now call <code>check_function(density_estimator, "density_estimator", ...)</code>, and <code><a href="../reference/nre.html">nre()</a></code> calls the analogous check on <code>classifier</code>, alongside the other pre-simulation checks; the built-in string options (<code>"maf"</code>/<code>"mdn"</code>/<code>"nsf"</code>/<code>"resnet"</code>/etc.) are untouched (<a href="https://github.com/pedroliman/neuralsbi/issues/259" class="external-link">#259</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/261" class="external-link">#261</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.27" id="neuralsbi-0627">neuralsbi 0.6.27<a class="anchor" aria-label="anchor" href="#neuralsbi-0627"></a></h2>
 <ul><li>

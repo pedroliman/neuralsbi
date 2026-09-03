@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.28
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  now validate a caller-supplied `density_estimator`/`classifier`
+  function before running the simulator, instead of only discovering it
+  is broken at the very end of
+  `fit_density_estimator()`/[`fit_ratio_estimator()`](https://neuralsbi.pedrodelima.com/reference/fit_ratio_estimator.md).**
+  Every other argument to these three functions is checked before
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  spends the simulation budget
+  ([\#250](https://github.com/pedroliman/neuralsbi/issues/250)), and
+  [`check_function()`](https://neuralsbi.pedrodelima.com/reference/check_function.md)
+  already exists for exactly this, used for `simulator` and for
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)’s
+  `sample_fn`/`log_prob_fn`. A caller-supplied estimator or classifier
+  was the one documented extension point that skipped it:
+  `npe(prior, simulator, n_simulations = 100000, density_estimator = my_fitter)`
+  with a wrong-arity or typo’d `my_fitter` ran the full 100,000
+  simulations before failing deep inside training.
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) and
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) now call
+  `check_function(density_estimator, "density_estimator", ...)`, and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) calls
+  the analogous check on `classifier`, alongside the other
+  pre-simulation checks; the built-in string options
+  (`"maf"`/`"mdn"`/`"nsf"`/`"resnet"`/etc.) are untouched
+  ([\#259](https://github.com/pedroliman/neuralsbi/issues/259))
+  ([\#261](https://github.com/pedroliman/neuralsbi/issues/261)).
+
 ## neuralsbi 0.6.27
 
 - **[`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
