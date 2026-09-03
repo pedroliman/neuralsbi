@@ -112,6 +112,14 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
         cand[, d] <- rep(pos0, depth) + rep(sgn, depth) * shift
         lp <- matrix(log_prob_fn(cand), nrow = edges)
         n_evals <- n_evals + nrow(cand)
+        # A candidate outside the density estimator's training distribution
+        # can come back NaN even inside the prior's support (#221/#234/#244).
+        # Left unguarded, NaN survives the `<=` comparison below as NA, and
+        # rowSums()/max.col() on an NA-tainted matrix corrupt every edge in
+        # the call, not just the offending one. Treating it as -Inf instead
+        # matches how the rest of the package already handles a non-finite
+        # estimator output: the candidate is simply outside the slice.
+        lp[!is.finite(lp)] <- -Inf
 
         # The edge stops at the first position whose density falls below the
         # level; an edge that never does stays open, one width past the last.
@@ -160,6 +168,10 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
         cand[, d] <- as.vector(prop)
         lp <- matrix(log_prob_fn(cand), nrow = np)
         n_evals <- n_evals + nrow(cand)
+        # Same guard as the stepping-out loop above: a NaN log-density must
+        # not reach the `>` comparison below, or rowSums()/max.col() corrupt
+        # the whole row and an accepted state_lp can carry NaN forward.
+        lp[!is.finite(lp)] <- -Inf
 
         accept <- lp > level[pending]
         hit <- rowSums(accept) > 0
