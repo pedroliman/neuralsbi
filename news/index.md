@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.27
+
+- **[`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  (`R/mcmc.R`) now coerces a non-finite log-density to `-Inf` for every
+  candidate it proposes, not just the chains’ initial state.** The
+  initial state was checked for finiteness up front, but the
+  stepping-out loop and the shrinkage loop each fed
+  `log_prob_fn(cand)`’s output straight into `<=`/`>` comparisons and
+  [`rowSums()`](https://rdrr.io/r/base/colSums.html)/[`max.col()`](https://rdrr.io/r/base/maxCol.html),
+  with no guard. `log_prob_fn` here is
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  closure, which adds a trained MAF/NSF/MDN/NRE network’s output
+  straight into the log-density – an out-of-distribution `theta` inside
+  the prior’s support but outside the estimator’s training distribution
+  can make that `NaN`, the same failure mode `posterior.R` and
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  already guard against
+  ([\#221](https://github.com/pedroliman/neuralsbi/issues/221)/#234/#244).
+  Left unguarded here, a single `NaN` corrupted an entire batch of
+  candidates at once via `NA`-tainted
+  [`rowSums()`](https://rdrr.io/r/base/colSums.html)/[`max.col()`](https://rdrr.io/r/base/maxCol.html),
+  surfacing as a bare “NAs are not allowed in subscripted assignments”
+  or as `NaN` silently carried into the retained chain state – hitting
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md) on
+  an `nsbi_nle`/`nsbi_nre` posterior, and any
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)/[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)
+  run against one, since every trial starts a fresh chain. Both loops
+  now coerce `lp[!is.finite(lp)] <- -Inf` right after each
+  `log_prob_fn()` call, the same treatment the package already gives
+  non-finite draws elsewhere
+  ([\#258](https://github.com/pedroliman/neuralsbi/issues/258))
+  ([\#260](https://github.com/pedroliman/neuralsbi/issues/260)).
+
 ## neuralsbi 0.6.26
 
 - **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)

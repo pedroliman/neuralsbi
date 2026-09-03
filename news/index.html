@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.26</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.27</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.27" id="neuralsbi-0627">neuralsbi 0.6.27<a class="anchor" aria-label="anchor" href="#neuralsbi-0627"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/slice_sample_run.html">slice_sample_run()</a></code> (<code>R/mcmc.R</code>) now coerces a non-finite log-density to <code>-Inf</code> for every candidate it proposes, not just the chains’ initial state.</strong> The initial state was checked for finiteness up front, but the stepping-out loop and the shrinkage loop each fed <code>log_prob_fn(cand)</code>’s output straight into <code>&lt;=</code>/<code>&gt;</code> comparisons and <code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums()</a></code>/<code><a href="https://rdrr.io/r/base/maxCol.html" class="external-link">max.col()</a></code>, with no guard. <code>log_prob_fn</code> here is <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s closure, which adds a trained MAF/NSF/MDN/NRE network’s output straight into the log-density – an out-of-distribution <code>theta</code> inside the prior’s support but outside the estimator’s training distribution can make that <code>NaN</code>, the same failure mode <code>posterior.R</code> and <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> already guard against (<a href="https://github.com/pedroliman/neuralsbi/issues/221" class="external-link">#221</a>/#234/#244). Left unguarded here, a single <code>NaN</code> corrupted an entire batch of candidates at once via <code>NA</code>-tainted <code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums()</a></code>/<code><a href="https://rdrr.io/r/base/maxCol.html" class="external-link">max.col()</a></code>, surfacing as a bare “NAs are not allowed in subscripted assignments” or as <code>NaN</code> silently carried into the retained chain state – hitting <code><a href="../reference/sample.html">sample()</a></code> on an <code>nsbi_nle</code>/<code>nsbi_nre</code> posterior, and any <code><a href="../reference/sbc.html">sbc()</a></code>/<code><a href="../reference/tarp.html">tarp()</a></code> run against one, since every trial starts a fresh chain. Both loops now coerce <code>lp[!is.finite(lp)] &lt;- -Inf</code> right after each <code>log_prob_fn()</code> call, the same treatment the package already gives non-finite draws elsewhere (<a href="https://github.com/pedroliman/neuralsbi/issues/258" class="external-link">#258</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/260" class="external-link">#260</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.26" id="neuralsbi-0626">neuralsbi 0.6.26<a class="anchor" aria-label="anchor" href="#neuralsbi-0626"></a></h2>
 <ul><li>
