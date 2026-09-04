@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.30
+
+- **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)/[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  on an `nsbi_nle`/`nsbi_nre` fit now diagnoses an improper
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  correctly, instead of pointing at the wrong fix.**
+  `prior_uniform(low = -Inf, high = Inf)` (or any infinite bound) is
+  documented and supported specifically so it can be bounded later with
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md);
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  already refuses to draw from it directly, with a message naming
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md).
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  prior-log-density probe called
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  to check the prior works, caught that correct error in a
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html), and turned it
+  into `NA_real_` – so `all(is.na(probe))` fired and told the user to
+  rebuild the prior with `prior_custom(..., log_prob_fn = )`, which is
+  not the problem:
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)’s
+  `log_prob_fn` works fine, the prior is just unbounded. `R/stan.R`
+  already refused this same case for the
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)/[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  path ([\#252](https://github.com/pedroliman/neuralsbi/issues/252));
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  now runs the same check (factored into `is_improper_uniform_prior()`,
+  shared by both call sites) before the probe, and reports the actual
+  fix,
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
+  ([\#263](https://github.com/pedroliman/neuralsbi/issues/263))
+  ([\#266](https://github.com/pedroliman/neuralsbi/issues/266)).
+
 ## neuralsbi 0.6.29
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)

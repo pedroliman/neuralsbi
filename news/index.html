@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.30</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.30" id="neuralsbi-0630">neuralsbi 0.6.30<a class="anchor" aria-label="anchor" href="#neuralsbi-0630"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/posterior.html">posterior()</a></code>/<code><a href="../reference/sample.html">sample()</a></code> on an <code>nsbi_nle</code>/<code>nsbi_nre</code> fit now diagnoses an improper <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> correctly, instead of pointing at the wrong fix.</strong> <code>prior_uniform(low = -Inf, high = Inf)</code> (or any infinite bound) is documented and supported specifically so it can be bounded later with <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code>; <code><a href="../reference/sample_prior.html">sample_prior()</a></code> already refuses to draw from it directly, with a message naming <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code>. <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s prior-log-density probe called <code><a href="../reference/sample_prior.html">sample_prior()</a></code> to check the prior works, caught that correct error in a <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>, and turned it into <code>NA_real_</code> – so <code>all(is.na(probe))</code> fired and told the user to rebuild the prior with <code>prior_custom(..., log_prob_fn = )</code>, which is not the problem: <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code>’s <code>log_prob_fn</code> works fine, the prior is just unbounded. <code>R/stan.R</code> already refused this same case for the <code><a href="../reference/stan_export.html">stan_code()</a></code>/<code><a href="../reference/stan_export.html">stan_data()</a></code> path (<a href="https://github.com/pedroliman/neuralsbi/issues/252" class="external-link">#252</a>); <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code> now runs the same check (factored into <code>is_improper_uniform_prior()</code>, shared by both call sites) before the probe, and reports the actual fix, <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/263" class="external-link">#263</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/266" class="external-link">#266</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.29" id="neuralsbi-0629">neuralsbi 0.6.29<a class="anchor" aria-label="anchor" href="#neuralsbi-0629"></a></h2>
 <ul><li>
