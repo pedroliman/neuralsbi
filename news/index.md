@@ -1,5 +1,46 @@
 # Changelog
 
+## neuralsbi 0.6.31
+
+- **`is_improper_uniform_prior()` now sees an improper
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  nested inside
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md),
+  instead of only checking the joint prior’s own top-level `type`.**
+  [\#263](https://github.com/pedroliman/neuralsbi/issues/263) taught
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  to detect an infinite-bound
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  and point at
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)
+  before probing the prior, but the check only fired when `prior$type`
+  was literally `"uniform"`.
+  `prior_independent(mu = prior_uniform(-Inf, Inf), nu = prior_normal(0, 1))`
+  has `type = "independent"` regardless of what is inside it, and an
+  improper component forces
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  off its marginals fast path, so the resulting joint prior carried no
+  bounds of its own to inspect either – `is_improper_uniform_prior()`
+  returned `FALSE`,
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  fell through to the old probe, and
+  [\#263](https://github.com/pedroliman/neuralsbi/issues/263)’s exact
+  misdiagnosis (pointing at `prior_custom(..., log_prob_fn = )` instead
+  of
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md))
+  reappeared one level of composition away.
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  now keeps its component priors themselves in `params$components`
+  (previously just their type names, discarded once the fast path was
+  skipped), and `is_improper_uniform_prior()` recurses into them, so the
+  same check covers a
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  at any depth of
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  nesting without special-casing composite shapes
+  ([\#267](https://github.com/pedroliman/neuralsbi/issues/267))
+  ([\#268](https://github.com/pedroliman/neuralsbi/issues/268)).
+
 ## neuralsbi 0.6.30
 
 - **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)/[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)

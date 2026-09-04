@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.30</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.31</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.31" id="neuralsbi-0631">neuralsbi 0.6.31<a class="anchor" aria-label="anchor" href="#neuralsbi-0631"></a></h2>
+<ul><li>
+<strong><code>is_improper_uniform_prior()</code> now sees an improper <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> nested inside <code><a href="../reference/prior_independent.html">prior_independent()</a></code>, instead of only checking the joint prior’s own top-level <code>type</code>.</strong> <a href="https://github.com/pedroliman/neuralsbi/issues/263" class="external-link">#263</a> taught <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code> to detect an infinite-bound <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> and point at <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code> before probing the prior, but the check only fired when <code>prior$type</code> was literally <code>"uniform"</code>. <code>prior_independent(mu = prior_uniform(-Inf, Inf), nu = prior_normal(0, 1))</code> has <code>type = "independent"</code> regardless of what is inside it, and an improper component forces <code><a href="../reference/prior_independent.html">prior_independent()</a></code> off its marginals fast path, so the resulting joint prior carried no bounds of its own to inspect either – <code>is_improper_uniform_prior()</code> returned <code>FALSE</code>, <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code> fell through to the old probe, and <a href="https://github.com/pedroliman/neuralsbi/issues/263" class="external-link">#263</a>’s exact misdiagnosis (pointing at <code>prior_custom(..., log_prob_fn = )</code> instead of <code><a href="../reference/prior_truncated.html">prior_truncated()</a></code>) reappeared one level of composition away. <code><a href="../reference/prior_independent.html">prior_independent()</a></code> now keeps its component priors themselves in <code>params$components</code> (previously just their type names, discarded once the fast path was skipped), and <code>is_improper_uniform_prior()</code> recurses into them, so the same check covers a <code><a href="../reference/prior_uniform.html">prior_uniform()</a></code> at any depth of <code><a href="../reference/prior_independent.html">prior_independent()</a></code> nesting without special-casing composite shapes (<a href="https://github.com/pedroliman/neuralsbi/issues/267" class="external-link">#267</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/268" class="external-link">#268</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.30" id="neuralsbi-0630">neuralsbi 0.6.30<a class="anchor" aria-label="anchor" href="#neuralsbi-0630"></a></h2>
 <ul><li>
