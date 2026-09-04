@@ -129,6 +129,23 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
                        npe_arg("patience"), npe_arg("n_restarts"),
                        npe_arg("clip_grad_norm"))
   check_device_arg(npe_arg("device"))
+  # Mirrors npe()'s own resolution (R/npe.R): a caller-supplied fitter
+  # function is checked for arity, a string choice is matched against the
+  # same four names npe() accepts. Until now `density_estimator` was only
+  # forwarded through `...` to the npe() call at the bottom of the round
+  # loop, so a typo'd name (or "maf"/"mdn"/"nsf" without torch installed)
+  # only surfaced after round 1's whole simulation budget was already spent
+  # (#262). Resolving it here, once, also means the per-round npe() calls
+  # below get the matched value directly instead of re-running match.arg()
+  # every round.
+  if (is.function(density_estimator)) {
+    check_function(density_estimator, "density_estimator",
+                   what = "theta and x matrices")
+  } else {
+    density_estimator <- match.arg(density_estimator)
+  }
+  check_torch_for_estimator(density_estimator, c("maf", "mdn", "nsf"),
+                            npe_arg("device"))
   if (!is.null(seed)) set.seed(seed)
   budgets <- rep_len(n_simulations, n_rounds)
 

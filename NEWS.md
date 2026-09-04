@@ -1,6 +1,10 @@
-# neuralsbi 0.6.29
+# neuralsbi 0.6.30
 
 * **`posterior()`/`sample()` on an `nsbi_nle`/`nsbi_nre` fit now refuses an infinite-bound `prior_uniform()` with the same `prior_truncated()` fix `stan_data()`/`stan_code()` already give it (#255), instead of misdiagnosing the problem.** `surrogate_potential()` (`R/likelihood.R`) probed the prior with `tryCatch(prior$log_prob(sample_prior(prior, 2L)), error = function(e) NA_real_)`; for `prior_uniform(low = -Inf, high = Inf)`, `sample_prior()` throws its own correct "wrap it in `prior_truncated()`" error, but the `tryCatch` swallowed that into `NA_real_` and let the "no log-density at all" branch fire instead, telling the user to rebuild the prior with `prior_custom(..., log_prob_fn = )` -- the prior already has a `log_prob`; bounding it is the actual fix. `surrogate_potential()` now checks a `"uniform"`-type prior's bounds before the probe, reusing `check_finite_uniform_bounds()` (generalized to take an `action` string so its message names the real caller, Stan export or MCMC sampling, rather than always saying "Stan") (#263) (#265).
+
+# neuralsbi 0.6.29
+
+* **`npe_sequential()` now validates `density_estimator` before round 1 simulates.** `npe()`, `nle()` and `nre()` all resolve `density_estimator`/`classifier` with `match.arg()` and call `check_torch_for_estimator()` before `prepare_simulations()` runs the simulator (#250) -- but `npe_sequential()` only ever forwarded `density_estimator` through `...` to the `npe()` call at the end of round 1, so a typo'd name or a `"maf"`/`"mdn"`/`"nsf"` choice with torch unavailable was only caught after round 1's whole simulation budget was already spent. `npe_sequential()` now resolves `density_estimator` and calls `check_torch_for_estimator()` in the same pre-flight block that already checks `n_bins`, `device`, and the rest of round 1's `npe()` arguments (#251), and passes the resolved value to each round's `npe()` call rather than re-running `match.arg()` every round (#262).
 
 # neuralsbi 0.6.28
 
