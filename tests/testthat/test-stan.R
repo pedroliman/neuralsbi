@@ -125,6 +125,29 @@ test_that("stan_data() and stan_code() refuse an improper uniform prior", {
   expect_error(stan_data(fit), "prior_truncated")
 })
 
+test_that("posterior()/sample() on an nle fit refuses an improper uniform prior with the same fix (#263)", {
+  # surrogate_potential() used to probe the prior with
+  # tryCatch(prior$log_prob(sample_prior(prior, 2L)), error = function(e) NA_real_).
+  # sample_prior() throws the correct "wrap it in prior_truncated()" error for
+  # this prior, but the tryCatch swallowed it into NA_real_, so the "no
+  # log_prob at all" branch fired instead and told the user to rebuild the
+  # prior with prior_custom() -- the prior already has a log_prob; bounding it
+  # is what is actually needed. Precomputed theta/x (as above) keeps nle()
+  # itself from calling sample_prior() and failing before sample() gets a
+  # chance to reach surrogate_potential()'s own diagnosis.
+  prior <- prior_uniform(c(mu = -Inf, nu = -3), c(mu = Inf, nu = 3))
+  theta <- sample_prior(stan_prior(), 500)
+  x <- t(apply(theta, 1, function(r) stan_sim(r[["mu"]], r[["nu"]])))
+  fit <- nle(prior, theta = theta, x = x, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 8)
+  post <- posterior(fit, matrix(stan_sim(0, 0), nrow = 1))
+
+  err <- tryCatch(sample(post, 50), error = function(e) conditionMessage(e))
+  expect_match(err, "improper distribution")
+  expect_match(err, "prior_truncated")
+  expect_false(grepl("prior_custom", err, fixed = TRUE))
+})
+
 test_that("stan_data()/stan_code() still work for a finite-bound uniform prior from pre-computed theta/x", {
   theta <- sample_prior(stan_prior(), 500)
   x <- t(apply(theta, 1, function(r) stan_sim(r[["mu"]], r[["nu"]])))

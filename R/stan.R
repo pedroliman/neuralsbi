@@ -162,26 +162,29 @@ check_exportable_fit <- function(fit) {
        paste(class(fit), collapse = "/"), ".", call. = FALSE)
 }
 
-#' Refuse to write an improper uniform prior out to Stan
+#' Refuse to use an improper uniform prior where a finite one is needed
 #'
 #' [prior_uniform()] allows an infinite `low`/`high` bound so it can be handed
 #' to [prior_truncated()]; [sample_prior()] already refuses to draw from that
 #' prior directly, because there is no density to sample from. An [nle()] fit
 #' built from pre-computed `theta`/`x` never calls [sample_prior()], so an
-#' improper uniform can otherwise reach here untouched, from either
-#' [stan_data()] or [stan_prior_blocks()], and come out as `nsbi_low = -Inf`,
-#' `nsbi_high = Inf` and an unconstrained `vector[...] theta;` -- silently
-#' wrong rather than refused, with the failure (if any) surfacing later inside
-#' Stan.
+#' improper uniform can otherwise reach a caller untouched -- as
+#' `nsbi_low = -Inf`, `nsbi_high = Inf` and an unconstrained
+#' `vector[...] theta;` for [stan_data()]/[stan_prior_blocks()], or as a prior
+#' log-density that looks merely absent to [surrogate_potential()] -- silently
+#' wrong, or wrongly diagnosed, rather than refused with the actual cause.
 #' @param lower,upper The prior's bounds.
+#' @param action What the caller was trying to do, named in the error (e.g.
+#'   `"write this prior out to Stan"`, `"sample this posterior"`).
 #' @keywords internal
-check_finite_uniform_bounds <- function(lower, upper) {
+check_finite_uniform_bounds <- function(lower, upper,
+                                        action = "write this prior out to Stan") {
   if (all(is.finite(lower)) && all(is.finite(upper))) return(invisible(TRUE))
   stop(paste0(
-    "Cannot write this prior out to Stan: it is a uniform prior with an ",
-    "infinite `low`/`high` bound, which is an improper distribution with no ",
-    "finite support to declare.\nBound it first with prior_truncated(), or ",
-    "build the prior with finite bounds."), call. = FALSE)
+    "Cannot ", action, ": it is a uniform prior with an infinite `low`/",
+    "`high` bound, which is an improper distribution with no finite ",
+    "support.\nBound it first with prior_truncated(), or build the prior ",
+    "with finite bounds."), call. = FALSE)
 }
 
 # ---- weight packing -------------------------------------------------------

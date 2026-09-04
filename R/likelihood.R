@@ -580,6 +580,17 @@ surrogate_potential <- function(fit, x_obs, max_batch = 1e5) {
   evaluator <- ops$evaluator
   log_jac <- ops$log_jac
   prior <- fit$prior
+  # An infinite-bound prior_uniform() is legal (it exists so prior_truncated()
+  # can bound it later) but has no density, so sample_prior() below refuses to
+  # draw from it. Left unchecked, that refusal is exactly what the tryCatch
+  # below is for, and gets swallowed into the same NA the "no log_prob at all"
+  # branch checks for -- misdiagnosing a bounds problem as a missing
+  # log_prob_fn and pointing the user at prior_custom() instead of the actual
+  # fix, prior_truncated() (#263).
+  if (identical(prior$type, "uniform")) {
+    check_finite_uniform_bounds(prior$lower, prior$upper,
+                                action = "sample this posterior")
+  }
   # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
   # only way to find out is to ask it. Better here than as a puzzling
   # initialization failure a few hundred lines later.
