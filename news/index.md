@@ -1,5 +1,37 @@
 # Changelog
 
+## neuralsbi 0.6.29
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now validates `density_estimator` before round 1 simulates.**
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) all
+  resolve `density_estimator`/`classifier` with
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) and call
+  `check_torch_for_estimator()` before
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  runs the simulator
+  ([\#250](https://github.com/pedroliman/neuralsbi/issues/250)) – but
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  only ever forwarded `density_estimator` through `...` to the
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) call at
+  the end of round 1, so a typo’d name or a `"maf"`/`"mdn"`/`"nsf"`
+  choice with torch unavailable was only caught after round 1’s whole
+  simulation budget was already spent.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now resolves `density_estimator` and calls
+  `check_torch_for_estimator()` in the same pre-flight block that
+  already checks `n_bins`, `device`, and the rest of round 1’s
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+  arguments
+  ([\#251](https://github.com/pedroliman/neuralsbi/issues/251)), and
+  passes the resolved value to each round’s
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) call
+  rather than re-running
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) every round
+  ([\#262](https://github.com/pedroliman/neuralsbi/issues/262)).
+
 ## neuralsbi 0.6.28
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)

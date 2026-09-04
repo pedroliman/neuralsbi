@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.29" id="neuralsbi-0629">neuralsbi 0.6.29<a class="anchor" aria-label="anchor" href="#neuralsbi-0629"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now validates <code>density_estimator</code> before round 1 simulates.</strong> <code><a href="../reference/npe.html">npe()</a></code>, <code><a href="../reference/nle.html">nle()</a></code> and <code><a href="../reference/nre.html">nre()</a></code> all resolve <code>density_estimator</code>/<code>classifier</code> with <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code> and call <code>check_torch_for_estimator()</code> before <code><a href="../reference/prepare_simulations.html">prepare_simulations()</a></code> runs the simulator (<a href="https://github.com/pedroliman/neuralsbi/issues/250" class="external-link">#250</a>) – but <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> only ever forwarded <code>density_estimator</code> through <code>...</code> to the <code><a href="../reference/npe.html">npe()</a></code> call at the end of round 1, so a typo’d name or a <code>"maf"</code>/<code>"mdn"</code>/<code>"nsf"</code> choice with torch unavailable was only caught after round 1’s whole simulation budget was already spent. <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now resolves <code>density_estimator</code> and calls <code>check_torch_for_estimator()</code> in the same pre-flight block that already checks <code>n_bins</code>, <code>device</code>, and the rest of round 1’s <code><a href="../reference/npe.html">npe()</a></code> arguments (<a href="https://github.com/pedroliman/neuralsbi/issues/251" class="external-link">#251</a>), and passes the resolved value to each round’s <code><a href="../reference/npe.html">npe()</a></code> call rather than re-running <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code> every round (<a href="https://github.com/pedroliman/neuralsbi/issues/262" class="external-link">#262</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.28" id="neuralsbi-0628">neuralsbi 0.6.28<a class="anchor" aria-label="anchor" href="#neuralsbi-0628"></a></h2>
 <ul><li>
