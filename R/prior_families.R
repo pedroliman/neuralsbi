@@ -514,8 +514,11 @@ prior_independent <- function(...) {
             lower = if (all(lower == -Inf)) NULL else lower,
             upper = if (all(upper == Inf)) NULL else upper,
             type = "independent", param_names = param_names,
-            params = list(components = vapply(parts, function(p) p$type,
-                                              character(1))))
+            # The components themselves, not just their type names: this is
+            # what lets is_improper_uniform_prior() (R/prior.R) recurse into
+            # a composed prior instead of only checking the top-level type,
+            # which is "independent" here regardless of what is inside.
+            params = list(components = unname(parts)))
 }
 
 #' Parameter names for a product prior

@@ -243,6 +243,27 @@ test_that("sampling points to prior_truncated(), not prior_custom(), for an impr
   expect_false(grepl("prior_custom", conditionMessage(err), fixed = TRUE))
 })
 
+test_that("sampling points to prior_truncated(), not prior_custom(), for an improper uniform nested in prior_independent() (#267)", {
+  # prior_independent()'s own type is "independent", not "uniform", and an
+  # improper component forces it off the marginals fast path (see
+  # prior_independent()), so the joint prior carries no bounds of its own
+  # either. is_improper_uniform_prior() has to recurse into the components to
+  # find the infinite `low`/`high` bound at all; without that, this reproduces
+  # #263's misdiagnosis one level of composition away.
+  set.seed(22)
+  prior <- prior_independent(mu = prior_uniform(-Inf, Inf),
+                             nu = prior_normal(0, 1))
+  theta <- cbind(mu = stats::rnorm(300), nu = stats::rnorm(300))
+  x <- cbind(y = theta[, "mu"] + theta[, "nu"] + stats::rnorm(300, sd = 0.1))
+  fit <- nle(prior, theta = theta, x = x, density_estimator = "linear_gaussian",
+             seed = 23)
+  post <- posterior(fit, matrix(1, ncol = 1), n_chains = 4)
+
+  expect_error(sample(post, 50), "prior_truncated")
+  err <- tryCatch(sample(post, 50), error = function(e) e)
+  expect_false(grepl("prior_custom", conditionMessage(err), fixed = TRUE))
+})
+
 test_that("a single chain is refused, since it cannot be diagnosed", {
   prior <- prior_uniform(c(mu = -2), c(mu = 2))
   fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),

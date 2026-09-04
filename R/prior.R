@@ -55,11 +55,24 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
 #' `R/stan.R`) and the surrogate-potential path that backs MCMC sampling
 #' (`surrogate_potential()` in `R/likelihood.R`). The check lives here once so
 #' neither reimplements it.
+#'
+#' A [prior_independent()] built from a mix of proper and improper components
+#' takes `prior_independent()`'s closures-only fallback (see there), so its own
+#' `type` is `"independent"` and it carries no bounds of its own to inspect --
+#' the impropriety is only visible on the component that has it. `params$components`
+#' holds those components (the actual `nsbi_prior` objects passed to
+#' `prior_independent()`, not just their type names) for exactly this reason,
+#' so this function recurses into them rather than trying to reconstruct the
+#' answer from what the joint prior discards.
 #' @param prior An `nsbi_prior`.
 #' @keywords internal
 is_improper_uniform_prior <- function(prior) {
-  identical(prior$type, "uniform") &&
-    !(all(is.finite(prior$lower)) && all(is.finite(prior$upper)))
+  if (identical(prior$type, "uniform")) {
+    return(!(all(is.finite(prior$lower)) && all(is.finite(prior$upper))))
+  }
+  components <- prior$params$components
+  !is.null(components) &&
+    any(vapply(components, is_improper_uniform_prior, logical(1)))
 }
 
 #' Box-uniform (independent uniform) prior
