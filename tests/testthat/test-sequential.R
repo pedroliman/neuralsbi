@@ -333,6 +333,40 @@ test_that("npe_sequential checks round 1's estimator/training args before round 
   expect_s3_class(fit, "nsbi_snpe")
 })
 
+test_that("npe_sequential rejects an unknown density estimator before round 1 simulates (#262)", {
+  # density_estimator was only ever forwarded through `...` to the npe() call
+  # at the end of round 1, so match.arg()'s "'arg' should be one of" error
+  # used to surface only after round 1's whole simulation budget was spent.
+  # The same class of bug #251 fixed for n_bins/device/etc.
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "spline"),
+    "'arg' should be one of")
+  expect_identical(n_calls, 0L)
+})
+
+test_that("npe_sequential rejects a malformed caller-supplied density_estimator before round 1 simulates (#262)", {
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  # Wrong arity: a niladic fitter can never be called as fitter(theta_z, x_z).
+  bad_fitter <- function() stop("never reached")
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = bad_fitter),
+    "`density_estimator` must be a function")
+  expect_identical(n_calls, 0L)
+})
+
 test_that("npe_sequential rejects an n_simulations vector whose length doesn't match n_rounds", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
