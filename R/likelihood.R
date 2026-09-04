@@ -580,6 +580,17 @@ surrogate_potential <- function(fit, x_obs, max_batch = 1e5) {
   evaluator <- ops$evaluator
   log_jac <- ops$log_jac
   prior <- fit$prior
+  # An infinite-bound prior_uniform() is deliberately improper until it is
+  # wrapped in prior_truncated() (see ?prior_uniform); probing it below would
+  # call sample_prior(), which throws its own correct error for exactly this
+  # case, get swallowed by the tryCatch, and misdiagnose it as "no log_prob"
+  # below. Catch it here, first, with the right fix named.
+  if (is_improper_uniform_prior(prior)) {
+    stop("Sampling this posterior needs a bounded prior: this is a uniform ",
+         "prior with an infinite `low`/`high` bound, which is an improper ",
+         "distribution with no density to sample from.\nBound it first with ",
+         "prior_truncated().", call. = FALSE)
+  }
   # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
   # only way to find out is to ask it. Better here than as a puzzling
   # initialization failure a few hundred lines later.
