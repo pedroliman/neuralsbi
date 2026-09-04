@@ -135,5 +135,5 @@ Macke, J. H. (2021). Benchmarking simulation-based inference. *AISTATS*.
 a <- matrix(rnorm(400), ncol = 2)
 b <- matrix(rnorm(400), ncol = 2)
 c2st(a, b, classifier = "logistic", seed = 1)$accuracy
-#> [1] 0.5175
+#> [1] 0.5325
 ```

@@ -48,5 +48,5 @@ fit <- nle(prior, function(mu) c(y = rnorm(1, mu, 0.5)),
 
 loglik <- likelihood_fn(fit, matrix(rnorm(20, 1, 0.5), ncol = 1))
 optimize(function(m) loglik(m), c(-3, 3), maximum = TRUE)$maximum
-#> [1] 0.9387752
+#> [1] 0.9550394
 ```

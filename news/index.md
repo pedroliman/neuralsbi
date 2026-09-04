@@ -1,5 +1,29 @@
 # Changelog
 
+## neuralsbi 0.6.32
+
+- **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
+  stratifies its cross-validation folds by class, instead of shuffling
+  one fold assignment over both sample sets together.** Its docstring
+  claims to reproduce `sbibm/metrics/c2st.py`, which reaches `sklearn`’s
+  default `StratifiedKFold` through `cross_val_score()` – but the fold
+  assignment was plain unstratified shuffling
+  (`base::sample(rep_len(seq_len(n_folds), n))`), so at small sample
+  sizes or with an unlucky shuffle, a fold’s test set could land with
+  zero rows of one class.
+  [`roc_auc()`](https://neuralsbi.pedrodelima.com/reference/roc_auc.md)
+  already returns `NA_real_` for such a fold (nothing to rank), and
+  `mean(aucs)` carries no `na.rm`, so `c2st()$auc` came back `NA` with
+  no warning; a 200-seed repro at `n_each = 6`, `n_folds = 5`,
+  `classifier = "logistic"` hit this on 173 seeds. Folds are now
+  assigned within the x-rows and within the y-rows separately
+  (`c2st_stratified_folds()`), then concatenated, which is what
+  `StratifiedKFold` guarantees for a two-class target and keeps every
+  fold’s test set at least one draw of each class for any `n_folds` the
+  existing validation allows
+  ([\#269](https://github.com/pedroliman/neuralsbi/issues/269))
+  ([\#270](https://github.com/pedroliman/neuralsbi/issues/270)).
+
 ## neuralsbi 0.6.31
 
 - **`is_improper_uniform_prior()` now sees an improper

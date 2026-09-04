@@ -68,5 +68,5 @@ prior_truncated(prior_normal(mean = 0, sd = 1), lower = 0)
 prior <- prior_truncated(prior_lognormal(log(0.4), 0.5),
                          lower = 0.1, upper = 2)
 range(sample_prior(prior, 100))
-#> [1] 0.1345519 1.2312555
+#> [1] 0.1397014 1.4725125
 ```
