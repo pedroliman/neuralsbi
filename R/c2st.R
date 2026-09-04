@@ -11,8 +11,10 @@
 #' the mean and standard deviation of `x`, fit a two-hidden-layer ReLU network
 #' of `10 * d` units per layer (`d` = number of columns) with Adam, L2 penalty
 #' `1e-4`, minibatches of 200 and a learning rate of `1e-3`, and average the
-#' accuracy over 5 shuffled cross-validation folds. Training stops when the
-#' epoch loss fails to improve by `1e-4` for 10 epochs in a row, which is what
+#' accuracy over 5 shuffled cross-validation folds, stratified by class the way
+#' `sklearn`'s default `StratifiedKFold` is (`sbibm` reaches it via
+#' `cross_val_score()`). Training stops when the epoch loss fails to improve
+#' by `1e-4` for 10 epochs in a row, which is what
 #' ends the fit long before `max_epochs`. `sbibm` passes reference draws first,
 #' so pass the reference as `x`: that is the set whose moments set the scale.
 #'
@@ -117,10 +119,12 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
   }
   n_each <- min(nrow(x), nrow(y))
   if (n_folds >= n_each) {
-    # Folds are cut over both sample sets together, so n_folds up to n_each
-    # still leaves each training fit some draws from each class. Past that the
-    # test folds thin out and empty ones score NaN, which propagates to the
-    # accuracy with nothing said about why.
+    # Folds are cut within x and within y separately (see
+    # c2st_stratified_folds()), so n_folds up to n_each still leaves every
+    # fold's test set at least one draw of each class. Past that the per-class
+    # folds thin out and an empty one scores NA (roc_auc()'s n1 == 0 or
+    # n0 == 0 guard), which propagates through mean(aucs) with nothing said
+    # about why.
     stop(sprintf(paste0("`n_folds` is %d, but the smaller sample set has only ",
                         "%s. It must be fewer, so that every fold has draws to ",
                         "test on."),
@@ -164,8 +168,7 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
   # AUC does, so keep the convention.
   label <- c(rep(0, nrow(x)), rep(1, nrow(y)))
   n <- nrow(data)
-  # base::sample again: sample() is an S3 generic in this package.
-  fold <- base::sample(rep_len(seq_len(n_folds), n))
+  fold <- c2st_stratified_folds(nrow(x), nrow(y), n_folds)
   accs <- numeric(n_folds)
   aucs <- numeric(n_folds)
   for (k in seq_len(n_folds)) {
@@ -187,6 +190,32 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
        n = n_each, classifier = classifier,
        interpretation = if (mean(accs) < 0.55)
          "indistinguishable (good)" else "distinguishable")
+}
+
+#' Class-stratified cross-validation folds for [c2st()]
+#'
+#' Assigns fold labels to the x-rows and the y-rows of `data <- rbind(x, y)`
+#' separately, then concatenates the two, rather than shuffling one fold
+#' assignment over both classes at once. Unstratified shuffling can hand a
+#' fold's test set zero rows of one class whenever a class is small or the
+#' shuffle is unlucky, and [roc_auc()] returns `NA_real_` for that fold, so
+#' `c2st()$auc` silently comes back `NA` (#269). This is what `sklearn`'s
+#' `StratifiedKFold` guarantees for a two-class target, which is what `sbibm`
+#' gets from `cross_val_score()`'s default cv for a classification estimator.
+#'
+#' `n_folds < min(n_x, n_y)` (enforced by the caller) keeps every per-class
+#' `rep_len()` split at one row or more per fold, so every fold's test set
+#' still has at least one draw of each class.
+#'
+#' @param n_x,n_y Number of draws in each class; x-rows come first in `data`.
+#' @param n_folds Number of folds.
+#' @return A length-`n_x + n_y` vector of fold indices in `seq_len(n_folds)`.
+#' @keywords internal
+c2st_stratified_folds <- function(n_x, n_y, n_folds) {
+  # base::sample, not the package's sample() generic, which dispatches on its
+  # first argument.
+  c(base::sample(rep_len(seq_len(n_folds), n_x)),
+    base::sample(rep_len(seq_len(n_folds), n_y)))
 }
 
 #' Cross-validated logistic regression for [c2st()]
