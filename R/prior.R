@@ -45,6 +45,23 @@ new_prior <- function(sample_fn, log_prob_fn, dim, lower = NULL, upper = NULL,
   )
 }
 
+#' Does this prior need bounding before it can be sampled or exported?
+#'
+#' [prior_uniform()] allows an infinite `low`/`high` bound so the result can
+#' be handed to [prior_truncated()] later; until then it is an improper
+#' distribution with no density over the whole real line. Two call sites need
+#' to detect that and refuse it, each with a message suited to its own entry
+#' point: the Stan export path (`check_finite_uniform_bounds()` in
+#' `R/stan.R`) and the surrogate-potential path that backs MCMC sampling
+#' (`surrogate_potential()` in `R/likelihood.R`). The check lives here once so
+#' neither reimplements it.
+#' @param prior An `nsbi_prior`.
+#' @keywords internal
+is_improper_uniform_prior <- function(prior) {
+  identical(prior$type, "uniform") &&
+    !(all(is.finite(prior$lower)) && all(is.finite(prior$upper)))
+}
+
 #' Box-uniform (independent uniform) prior
 #'
 #' @param low Numeric vector of lower bounds (one per parameter). Naming the

@@ -133,7 +133,7 @@ stan_data <- function(fit, x_obs = NULL) {
   }
   prior <- fit$prior
   if (identical(prior$type, "uniform")) {
-    check_finite_uniform_bounds(prior$lower, prior$upper)
+    check_finite_uniform_bounds(prior)
     out$nsbi_low <- as.numeric(prior$lower)
     out$nsbi_high <- as.numeric(prior$upper)
   } else if (identical(prior$type, "normal")) {
@@ -173,10 +173,10 @@ check_exportable_fit <- function(fit) {
 #' `nsbi_high = Inf` and an unconstrained `vector[...] theta;` -- silently
 #' wrong rather than refused, with the failure (if any) surfacing later inside
 #' Stan.
-#' @param lower,upper The prior's bounds.
+#' @param prior The fit's prior.
 #' @keywords internal
-check_finite_uniform_bounds <- function(lower, upper) {
-  if (all(is.finite(lower)) && all(is.finite(upper))) return(invisible(TRUE))
+check_finite_uniform_bounds <- function(prior) {
+  if (!is_improper_uniform_prior(prior)) return(invisible(TRUE))
   stop(paste0(
     "Cannot write this prior out to Stan: it is a uniform prior with an ",
     "infinite `low`/`high` bound, which is an improper distribution with no ",
@@ -609,7 +609,7 @@ stan_model_blocks <- function(fit, name, packed) {
 stan_prior_blocks <- function(prior, Q) {
   type <- prior$type %||% "custom"
   if (identical(type, "uniform")) {
-    check_finite_uniform_bounds(prior$lower, prior$upper)
+    check_finite_uniform_bounds(prior)
     return(list(
       data = sprintf("  vector[%d] nsbi_low;\n  vector[%d] nsbi_high;\n", Q, Q),
       parameters = sprintf(

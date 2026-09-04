@@ -218,6 +218,31 @@ test_that("sampling refuses a prior with no density", {
   expect_error(sample(post, 100), "log_prob_fn")
 })
 
+test_that("sampling points to prior_truncated(), not prior_custom(), for an improper uniform prior (#263)", {
+  # prior_uniform(-Inf, Inf) is legal -- it exists so prior_truncated() can
+  # bound it -- and sample_prior() already refuses to draw from it directly.
+  # A fit built from pre-computed theta/x never calls sample_prior() during
+  # training, so the infinite bound used to reach surrogate_potential()'s
+  # probe untouched, where the tryCatch() around sample_prior() swallowed its
+  # correct error and misdiagnosed the prior as having no log_prob at all,
+  # pointing the user at the wrong fix (prior_custom() instead of
+  # prior_truncated()).
+  set.seed(20)
+  finite_prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  theta <- sample_prior(finite_prior, 500)
+  x <- matrix(apply(theta, 1, function(r) stats::rnorm(1, r[["mu"]], 0.5)),
+              ncol = 1)
+
+  improper_prior <- prior_uniform(c(mu = -Inf), c(mu = Inf))
+  fit <- nle(improper_prior, theta = theta, x = x, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 21)
+  post <- posterior(fit, matrix(0, nrow = 1), n_chains = 4)
+
+  expect_error(sample(post, 100), "prior_truncated")
+  err <- tryCatch(sample(post, 100), error = function(e) e)
+  expect_false(grepl("prior_custom", conditionMessage(err), fixed = TRUE))
+})
+
 test_that("a single chain is refused, since it cannot be diagnosed", {
   prior <- prior_uniform(c(mu = -2), c(mu = 2))
   fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
