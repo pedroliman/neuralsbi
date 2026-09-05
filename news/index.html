@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.33</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.34</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.34" id="neuralsbi-0634">neuralsbi 0.6.34<a class="anchor" aria-label="anchor" href="#neuralsbi-0634"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_prob.html">log_prob()</a></code> on an NLE/NRE posterior no longer mutates the caller’s RNG stream, and no longer rebuilds <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code> on every call.</strong> <code><a href="../reference/mcmc_log_prob.html">mcmc_log_prob()</a></code> called <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code> fresh on every <code><a href="../reference/log_prob.html">log_prob()</a></code> call, unlike <code><a href="../reference/slice_sample_surrogate.html">slice_sample_surrogate()</a></code>, which builds it once per chain and reuses it for every MCMC step; <code><a href="../reference/map_estimate.html">map_estimate()</a></code>’s optimizer calls <code><a href="../reference/log_prob.html">log_prob()</a></code> once per evaluation against the same <code>x_obs</code>, so a Nelder-Mead/BFGS run of a few hundred iterations rebuilt the whole evaluator that many times, re-tensorizing <code>x_obs</code> and never letting an MDN’s JIT trace warm up. Inside <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>, the prior-log_prob probe (<code>prior$log_prob(sample_prior(prior, 2L))</code>) also drew from the global RNG stream and never restored it, unlike every other RNG touch point in the package – so <code>set.seed(42); log_prob(post, theta);</code> left <code>.Random.seed</code> different from what <code>set.seed(42)</code> alone would give, breaking reproducibility for any code that called <code><a href="../reference/log_prob.html">log_prob()</a></code> in between two seeded random draws. The potential closure is now cached on the posterior (<code><a href="../reference/cached_surrogate_potential.html">cached_surrogate_potential()</a></code>, rebuilt only when <code>x_obs</code>/<code>max_batch</code> changes), and the probe runs under <code><a href="../reference/with_fixed_seed.html">with_fixed_seed()</a></code>, the same save/restore pattern <code><a href="../reference/rng_streams.html">rng_streams()</a></code> and <code><a href="../reference/with_rng_stream.html">with_rng_stream()</a></code> already use (<a href="https://github.com/pedroliman/neuralsbi/issues/272" class="external-link">#272</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/274" class="external-link">#274</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.33" id="neuralsbi-0633">neuralsbi 0.6.33<a class="anchor" aria-label="anchor" href="#neuralsbi-0633"></a></h2>
 <ul><li>

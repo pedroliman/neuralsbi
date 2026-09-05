@@ -1,5 +1,49 @@
 # Changelog
 
+## neuralsbi 0.6.34
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an NLE/NRE posterior no longer mutates the caller’s RNG stream, and
+  no longer rebuilds
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  on every call.**
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)
+  called
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)
+  fresh on every
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  call, unlike
+  [`slice_sample_surrogate()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_surrogate.md),
+  which builds it once per chain and reuses it for every MCMC step;
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)’s
+  optimizer calls
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  once per evaluation against the same `x_obs`, so a Nelder-Mead/BFGS
+  run of a few hundred iterations rebuilt the whole evaluator that many
+  times, re-tensorizing `x_obs` and never letting an MDN’s JIT trace
+  warm up. Inside
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md),
+  the prior-log_prob probe (`prior$log_prob(sample_prior(prior, 2L))`)
+  also drew from the global RNG stream and never restored it, unlike
+  every other RNG touch point in the package – so
+  `set.seed(42); log_prob(post, theta);` left `.Random.seed` different
+  from what `set.seed(42)` alone would give, breaking reproducibility
+  for any code that called
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  in between two seeded random draws. The potential closure is now
+  cached on the posterior
+  ([`cached_surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/cached_surrogate_potential.md),
+  rebuilt only when `x_obs`/`max_batch` changes), and the probe runs
+  under
+  [`with_fixed_seed()`](https://neuralsbi.pedrodelima.com/reference/with_fixed_seed.md),
+  the same save/restore pattern
+  [`rng_streams()`](https://neuralsbi.pedrodelima.com/reference/rng_streams.md)
+  and
+  [`with_rng_stream()`](https://neuralsbi.pedrodelima.com/reference/with_rng_stream.md)
+  already use
+  ([\#272](https://github.com/pedroliman/neuralsbi/issues/272))
+  ([\#274](https://github.com/pedroliman/neuralsbi/issues/274)).
+
 ## neuralsbi 0.6.33
 
 - **A zero-row `x`/`x_obs` no longer crashes

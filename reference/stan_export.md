@@ -140,9 +140,9 @@ cat(substr(stan_code(fit), 1, 400))
 str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
 #> List of 6
 #>  $ nsbi_nw  : int 3
-#>  $ nsbi_w   : num [1:3] -2.59e-17 9.61e-01 2.78e-01
+#>  $ nsbi_w   : num [1:3] 9.32e-18 9.59e-01 2.83e-01
 #>  $ N        : int 10
-#>  $ x        : num [1:10, 1] 0.277 0.596 0.811 -1.586 -0.975 ...
+#>  $ x        : num [1:10, 1] 0.811 -1.586 -0.975 -0.782 1.202 ...
 #>  $ nsbi_low : num -3
 #>  $ nsbi_high: num 3
 ```
