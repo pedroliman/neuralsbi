@@ -179,6 +179,48 @@ test_that("cross_iid() chunks observations, not just theta, under max_batch (#24
   expect_equal(iid_matrix(NULL, x, theta, 1e5, counting_score), expected)
 })
 
+test_that("iid_evaluator()/iid_matrix() handle a zero-row x instead of crashing (#271)", {
+  # cross_iid() computed obs_chunk >= 1 and called seq.int(1L, n_obs, by =
+  # obs_chunk); with n_obs = 0 that becomes seq.int(1, 0, by = 1), which R
+  # rejects with "wrong sign in 'by' argument" -- an error naming neither the
+  # package nor the actual problem. This is the exact reproduction from the
+  # issue. score() is never expected to run: zero observations means zero
+  # (theta, x) pairs to score.
+  x <- matrix(numeric(0), nrow = 0, ncol = 1)
+  theta <- matrix(seq_len(4), ncol = 1)
+  fake_score <- function(de, x, theta) stop("score() must not run with no observations")
+
+  ev <- iid_evaluator(NULL, x, max_batch = 1e5, score = fake_score)
+  # An empty product is 1, so the summed log-likelihood over zero observations
+  # is 0 for every theta -- the convention de_iid_evaluator.nsbi_de_lingauss()
+  # already follows.
+  expect_equal(ev(theta), rep(0, nrow(theta)))
+
+  m <- iid_matrix(NULL, x, theta, max_batch = 1e5, score = fake_score)
+  expect_equal(dim(m), c(nrow(theta), 0L))
+})
+
+test_that("log_lik() returns the empty-product log-likelihood for a zero-row x (#271)", {
+  # linear_gaussian already gets this right (dmvnorm_chol() sums to 0 over no
+  # rows); every other estimator now matches it instead of crashing.
+  theta <- rbind(c(0.5, -0.5), c(1, 1))
+  x0 <- matrix(numeric(0), ncol = 2)
+
+  fit <- lingauss_fit()
+  expect_equal(log_lik(fit, theta, x0), c(0, 0))
+  expect_equal(dim(log_lik(fit, theta, x0, sum_iid = FALSE)), c(2L, 0L))
+
+  for (estimator in c("mdn", "maf")) {
+    skip_if_no_torch()
+    fit <- nle(gauss_prior(), gauss_sim, n_simulations = 300,
+               density_estimator = estimator, hidden = c(8L, 8L),
+               n_components = 2L, max_epochs = 5L, seed = 1)
+    expect_equal(log_lik(fit, theta, x0), c(0, 0), label = estimator)
+    expect_equal(dim(log_lik(fit, theta, x0, sum_iid = FALSE)), c(2L, 0L),
+                 label = estimator)
+  }
+})
+
 test_that("blocking does not change a neural estimator's answer either", {
   # The MDN chunks over observations and the flow over parameters, and both
   # reuse a constant block that a short final block has to truncate. A batch

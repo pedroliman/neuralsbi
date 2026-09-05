@@ -253,11 +253,22 @@ de_sample.nsbi_de_lingauss <- function(de, x, n) {
 #' Always returns the log density: every call site wants `log_prob()`'s
 #' contract, none of `dnorm()`'s `log = FALSE`, so there is no `log` argument
 #' to forget to set.
+#'
+#' A zero-row `x` is a real caller, not just a degenerate input: it is how
+#' `de_iid_evaluator.nsbi_de_lingauss()` (`R/likelihood.R`) reduces to the
+#' correct empty-product log-likelihood when [nle()]/[nre()] condition on no
+#' observations. `matrix(mean, nrow = 0, ...)` recycles a non-empty `mean`
+#' into that shape and R warns "non-empty data for zero-extent matrix" every
+#' time, even though the result -- an empty matrix -- is exactly right; the
+#' zero-row case is built directly instead so the correct answer arrives
+#' without the noise (#271).
 #' @keywords internal
 dmvnorm_chol <- function(x, mean, R) {
   x <- as_theta_matrix(x)
-  if (is.null(dim(mean))) mean <- matrix(mean, nrow = nrow(x), ncol = ncol(x),
-                                         byrow = TRUE)
+  if (is.null(dim(mean))) {
+    mean <- if (nrow(x) == 0L) matrix(numeric(0), nrow = 0L, ncol = ncol(x))
+            else matrix(mean, nrow = nrow(x), ncol = ncol(x), byrow = TRUE)
+  }
   d <- ncol(x)
   dev <- x - mean
   # Solve R' z = dev'  =>  quadratic form = colSums(z^2)
