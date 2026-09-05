@@ -161,7 +161,10 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
                            min_lr, seed, verbose, device = "cpu") {
   require_torch()
   device <- resolve_device(device)
-  if (!is.null(seed)) torch::torch_manual_seed(seed)
+  if (!is.null(seed)) {
+    old_torch_rng <- set_torch_seed(seed)
+    on.exit(torch::torch_set_rng_state(old_torch_rng), add = TRUE)
+  }
   theta <- as_theta_matrix(theta)
   x <- as_theta_matrix(x)
   n <- nrow(theta)
