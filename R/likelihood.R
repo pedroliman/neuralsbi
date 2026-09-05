@@ -593,9 +593,15 @@ surrogate_potential <- function(fit, x_obs, max_batch = 1e5) {
   }
   # prior_custom() without a log_prob_fn returns NA rather than nothing, so the
   # only way to find out is to ask it. Better here than as a puzzling
-  # initialization failure a few hundred lines later.
-  probe <- tryCatch(prior$log_prob(sample_prior(prior, 2L)),
-                    error = function(e) NA_real_)
+  # initialization failure a few hundred lines later. sample_prior() draws
+  # from the caller's RNG stream, and this probe has no business spending any
+  # of it -- with_fixed_seed() runs the draw on a fixed, throwaway stream and
+  # restores the caller's .Random.seed afterwards, the same as every other
+  # RNG touch point in the package (#272).
+  probe <- with_fixed_seed(1L, tryCatch(
+    prior$log_prob(sample_prior(prior, 2L)),
+    error = function(e) NA_real_
+  ))
   if (is.null(prior$log_prob) || all(is.na(probe))) {
     stop("Sampling this posterior needs a prior log-density, and this prior ",
          "does not have one.\nRebuild it with prior_custom(..., log_prob_fn = ).",

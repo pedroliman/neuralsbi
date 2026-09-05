@@ -292,6 +292,37 @@ log_prob.nsbi_mcmc_posterior <- function(post, theta, x = NULL,
   mcmc_log_prob(post, theta, x, !missing(normalize) && isTRUE(normalize), what)
 }
 
+#' Get (or build and cache) the surrogate potential behind an MCMC posterior
+#'
+#' [surrogate_potential()] standardizes `x_obs` and lets the estimator
+#' precompute whatever it can from the observation alone (see its own docs) --
+#' work meant to be paid once per observation, not once per evaluation.
+#' [slice_sample_surrogate()] already gets this for free because it builds the
+#' closure once and calls it for every MCMC step of a whole chain, but
+#' [mcmc_log_prob()] used to rebuild the closure on every single [log_prob()]
+#' call. That is expensive on its own, and ruinous for [map_estimate()], whose
+#' optimizer calls `log_prob()` once per evaluation against the same `x_obs`
+#' (#272). The closure is cached here on the posterior's cache environment and
+#' only rebuilt when `x_obs` or `max_batch` changes.
+#'
+#' @param post An `nsbi_mcmc_posterior` object.
+#' @param x_obs The (already resolved) observation to condition on.
+#' @param max_batch Largest batch size to pass to [surrogate_potential()].
+#' @return `function(theta)`, the cached (or freshly built) potential.
+#' @keywords internal
+cached_surrogate_potential <- function(post, x_obs, max_batch) {
+  cache <- post$cache
+  stale <- is.null(cache$potential) ||
+    !identical(cache$potential_x_obs, x_obs) ||
+    !identical(cache$potential_max_batch, max_batch)
+  if (stale) {
+    cache$potential <- surrogate_potential(post$fit, x_obs, max_batch = max_batch)
+    cache$potential_x_obs <- x_obs
+    cache$potential_max_batch <- max_batch
+  }
+  cache$potential
+}
+
 #' The unnormalized log density behind an MCMC posterior's [log_prob()] method
 #'
 #' Neither surrogate gives the evidence \eqn{p(x)}, so `normalize = TRUE` has
@@ -326,8 +357,8 @@ mcmc_log_prob <- function(post, theta, x, warn, what) {
   check_finite(theta, "theta", allow_inf = TRUE)
   theta <- check_matrix(theta, post$fit$dim_theta, "theta",
                         "one parameter per column")
-  potential <- surrogate_potential(post$fit, resolve_x_iid(post, x, "x"),
-                                   max_batch = post$control$max_batch)
+  potential <- cached_surrogate_potential(post, resolve_x_iid(post, x, "x"),
+                                          post$control$max_batch)
   potential(theta)
 }
 
