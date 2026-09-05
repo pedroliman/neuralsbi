@@ -402,10 +402,21 @@ mdn_trace <- function(de, xt, tt) {
 #' accumulated into that vector before `collect()` runs, so callers are
 #' untouched. [mdn_iid_blocks()] already chunked both sides for the MDN path;
 #' this brings the flow/NRE path in line with it.
+#'
+#' A zero-row `theta` or `x` needs no chunking at all, and every caller's
+#' pre-allocated output is already correct without one: [iid_matrix()] starts
+#' from an `nrow(theta) x n_obs` matrix of zeros, already empty in whichever
+#' dimension is zero, and [iid_evaluator()] starts from `nrow(theta)` zeros,
+#' already the right summed log-likelihood over zero observations (an empty
+#' product is 1, so its log is 0) -- the convention
+#' `de_iid_evaluator.nsbi_de_lingauss()` already follows. Neither `seq.int(1,
+#' 0, by = ...)` below can express "zero chunks", so this is checked first
+#' rather than left to underflow into it (#271).
 #' @keywords internal
 cross_iid <- function(de, x, theta, max_batch, collect, score = de_log_prob) {
   n_theta <- nrow(theta)
   n_obs <- nrow(x)
+  if (n_theta == 0L || n_obs == 0L) return(invisible(NULL))
   theta_chunk <- max(1L, min(n_theta, floor(max_batch / max(n_obs, 1L))))
   for (s in seq.int(1L, n_theta, by = theta_chunk)) {
     idx <- seq.int(s, min(s + theta_chunk - 1L, n_theta))
@@ -449,10 +460,16 @@ mdn_theta_chunk_size <- function(n_theta, n_obs, max_batch) {
 #' blocked first ([mdn_theta_chunk_size()]), so `max_batch` bounds
 #' [mdn_mixture()]'s output the same way [cross_iid()] bounds a flow's forward
 #' pass, rather than only chunking the observation side (#240).
+#'
+#' A zero-row `theta` or `x` short-circuits here the same way it does in
+#' [cross_iid()], and for the same reason: `seq.int(1, 0, by = ...)` cannot
+#' express zero chunks, and both callers' pre-allocated outputs are already
+#' correct with `collect()` never called (#271).
 #' @keywords internal
 mdn_iid_blocks <- function(de, xt, theta, max_batch, collect) {
   n_theta <- nrow(theta)
   n_obs <- xt$shape[1]
+  if (n_theta == 0L || n_obs == 0L) return(invisible(NULL))
   per_pair <- de$n_components * de$dim_theta
   theta_chunk <- mdn_theta_chunk_size(n_theta, n_obs, max_batch)
   tt_all <- torch::torch_tensor(theta, dtype = torch::torch_float(),
