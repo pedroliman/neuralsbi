@@ -432,3 +432,52 @@ test_that("sample() checks n before it reaches mcmc_draws()", {
   expect_error(sample(post, n = 0), "`n` must be a single whole number")
   expect_error(sample(post, size = 2.5), "`n` must be a single whole number")
 })
+
+# GitHub #272: surrogate_potential()'s prior-log_prob probe drew from the
+# global RNG stream via sample_prior() and never restored it, so any
+# log_prob() call on an NLE/NRE posterior silently burned a draw from the
+# caller's own random stream -- code that set.seed()s and expects the next
+# random draw to be reproducible got platform- and timing-dependent results
+# if a log_prob() call happened first.
+test_that("log_prob() on an NLE posterior does not mutate the caller's RNG stream", {
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 500, density_estimator = "linear_gaussian",
+             seed = 27)
+  post <- posterior(fit, matrix(0.5, ncol = 1), n_chains = 2, warmup = 10,
+                    seed = 28)
+
+  set.seed(42)
+  before <- .Random.seed
+  log_prob(post, matrix(1, ncol = 1), normalize = FALSE)
+  expect_identical(.Random.seed, before)
+})
+
+# GitHub #272: mcmc_log_prob() rebuilt surrogate_potential() from scratch on
+# every log_prob() call instead of reusing a cached closure the way
+# slice_sample_surrogate() already does within one chain. That defeats
+# map_estimate(), whose Nelder-Mead/BFGS loop calls log_prob() once per
+# evaluation against the same x_obs.
+test_that("log_prob() reuses a cached surrogate potential across calls with the same x_obs", {
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 500, density_estimator = "linear_gaussian",
+             seed = 29)
+  post <- posterior(fit, matrix(0.5, ncol = 1), n_chains = 2, warmup = 10,
+                    seed = 30)
+
+  log_prob(post, matrix(1, ncol = 1), normalize = FALSE)
+  first <- post$cache$potential
+  expect_type(first, "closure")
+
+  # Same x_obs (posterior's own): the cached closure must be reused, not
+  # rebuilt -- identical() on a function compares its enclosing environment,
+  # so a freshly built closure would not pass this even with identical logic.
+  log_prob(post, matrix(-1, ncol = 1), normalize = FALSE)
+  expect_identical(post$cache$potential, first)
+
+  # A different x_obs invalidates the cache and rebuilds the closure.
+  log_prob(post, matrix(1.5, ncol = 1), x = matrix(0.8, ncol = 1),
+           normalize = FALSE)
+  expect_false(identical(post$cache$potential, first))
+})
