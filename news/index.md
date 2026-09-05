@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.35
+
+- **Seeded training and
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) calls
+  no longer permanently reseed torch’s global RNG for the rest of the R
+  session.**
+  [`train_restarts()`](https://neuralsbi.pedrodelima.com/reference/train_restarts.md)
+  and [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)’s
+  MLP path both called `torch::torch_manual_seed(seed)` directly
+  whenever a caller passed `seed`, and neither saved nor restored the
+  generator’s prior state afterward – unlike every other RNG touch point
+  in the package, and unlike what
+  [\#272](https://github.com/pedroliman/neuralsbi/issues/272)/#274
+  already fixed for R’s own RNG. Since torch has one global generator
+  with no way to ask for an independent stream, a single seeded
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  fit or a seeded
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) call
+  left every later *unseeded* torch call in the same session – another
+  fit, `de_sample()`, an unseeded
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) –
+  drawing from wherever the seeded call left the generator, instead of
+  from a fresh stream. Both call sites now go through
+  [`set_torch_seed()`](https://neuralsbi.pedrodelima.com/reference/set_torch_seed.md),
+  which saves
+  [`torch::torch_get_rng_state()`](https://torch.mlverse.org/docs/reference/torch_get_rng_state.html)
+  before reseeding so the caller can restore it with
+  [`on.exit()`](https://rdrr.io/r/base/on.exit.html), the torch analogue
+  of
+  [`with_fixed_seed()`](https://neuralsbi.pedrodelima.com/reference/with_fixed_seed.md)
+  ([\#275](https://github.com/pedroliman/neuralsbi/issues/275))
+  ([\#276](https://github.com/pedroliman/neuralsbi/issues/276)).
+
 ## neuralsbi 0.6.34
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)

@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.35" id="neuralsbi-0635">neuralsbi 0.6.35<a class="anchor" aria-label="anchor" href="#neuralsbi-0635"></a></h2>
+<ul><li>
+<strong>Seeded training and <code><a href="../reference/c2st.html">c2st()</a></code> calls no longer permanently reseed torch’s global RNG for the rest of the R session.</strong> <code><a href="../reference/train_restarts.html">train_restarts()</a></code> and <code><a href="../reference/c2st.html">c2st()</a></code>’s MLP path both called <code>torch::torch_manual_seed(seed)</code> directly whenever a caller passed <code>seed</code>, and neither saved nor restored the generator’s prior state afterward – unlike every other RNG touch point in the package, and unlike what <a href="https://github.com/pedroliman/neuralsbi/issues/272" class="external-link">#272</a>/#274 already fixed for R’s own RNG. Since torch has one global generator with no way to ask for an independent stream, a single seeded <code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> fit or a seeded <code><a href="../reference/c2st.html">c2st()</a></code> call left every later <em>unseeded</em> torch call in the same session – another fit, <code>de_sample()</code>, an unseeded <code><a href="../reference/c2st.html">c2st()</a></code> – drawing from wherever the seeded call left the generator, instead of from a fresh stream. Both call sites now go through <code><a href="../reference/set_torch_seed.html">set_torch_seed()</a></code>, which saves <code><a href="https://torch.mlverse.org/docs/reference/torch_get_rng_state.html" class="external-link">torch::torch_get_rng_state()</a></code> before reseeding so the caller can restore it with <code><a href="https://rdrr.io/r/base/on.exit.html" class="external-link">on.exit()</a></code>, the torch analogue of <code><a href="../reference/with_fixed_seed.html">with_fixed_seed()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/275" class="external-link">#275</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/276" class="external-link">#276</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.34" id="neuralsbi-0634">neuralsbi 0.6.34<a class="anchor" aria-label="anchor" href="#neuralsbi-0634"></a></h2>
 <ul><li>
