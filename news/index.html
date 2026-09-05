@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.33" id="neuralsbi-0633">neuralsbi 0.6.33<a class="anchor" aria-label="anchor" href="#neuralsbi-0633"></a></h2>
+<ul><li>
+<strong>A zero-row <code>x</code>/<code>x_obs</code> no longer crashes <code><a href="../reference/cross_iid.html">cross_iid()</a></code>/<code><a href="../reference/mdn_iid_blocks.html">mdn_iid_blocks()</a></code> with a bare base-R error, for every neural estimator and NRE.</strong> <code><a href="../reference/check_matrix.html">check_matrix()</a></code> accepts a <code>0 x d</code> matrix untouched, and it reaches <code><a href="../reference/log_lik.html">log_lik()</a></code>, <code><a href="../reference/log_ratio.html">log_ratio()</a></code>, and <code>posterior(fit, x_obs = ...)</code> for MAF, NSF, MDN, and NRE alike – a user who filters an observation set down to nothing, or subsets <code>x_obs</code> by mistake, hit this every time. <code><a href="../reference/cross_iid.html">cross_iid()</a></code> computed <code>obs_chunk &gt;= 1</code> and called <code>seq.int(1L, n_obs, by = obs_chunk)</code>; with <code>n_obs = 0</code> that becomes <code>seq.int(1, 0, by = 1)</code>, which R rejects with “wrong sign in ‘by’ argument”, naming neither the package nor the actual problem. <code><a href="../reference/mdn_iid_blocks.html">mdn_iid_blocks()</a></code> had the identical pattern independently. <code>linear_gaussian</code>’s own <code>de_iid_evaluator.nsbi_de_lingauss()</code> already got this right and returns a log-likelihood of 0, the correct empty-product value; <code><a href="../reference/cross_iid.html">cross_iid()</a></code> and <code><a href="../reference/mdn_iid_blocks.html">mdn_iid_blocks()</a></code> now short-circuit on a zero-row <code>theta</code> or <code>x</code> before either <code><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq.int()</a></code> call runs, since every caller’s pre-allocated output is already zero, or already the right shape, and needs no further work. <code><a href="../reference/dmvnorm_chol.html">dmvnorm_chol()</a></code> (<code>R/density_estimator.R</code>) had a related, non-crashing bug in the same corner: recycling a non-empty conditional mean into a zero-row matrix triggered R’s “non-empty data for zero-extent matrix” warning on every call, even though the resulting empty matrix was correct; it now builds that shape directly (<a href="https://github.com/pedroliman/neuralsbi/issues/271" class="external-link">#271</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/273" class="external-link">#273</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.32" id="neuralsbi-0632">neuralsbi 0.6.32<a class="anchor" aria-label="anchor" href="#neuralsbi-0632"></a></h2>
 <ul><li>

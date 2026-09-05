@@ -1,5 +1,42 @@
 # Changelog
 
+## neuralsbi 0.6.33
+
+- **A zero-row `x`/`x_obs` no longer crashes
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)/[`mdn_iid_blocks()`](https://neuralsbi.pedrodelima.com/reference/mdn_iid_blocks.md)
+  with a bare base-R error, for every neural estimator and NRE.**
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  accepts a `0 x d` matrix untouched, and it reaches
+  [`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md),
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md),
+  and `posterior(fit, x_obs = ...)` for MAF, NSF, MDN, and NRE alike – a
+  user who filters an observation set down to nothing, or subsets
+  `x_obs` by mistake, hit this every time.
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  computed `obs_chunk >= 1` and called
+  `seq.int(1L, n_obs, by = obs_chunk)`; with `n_obs = 0` that becomes
+  `seq.int(1, 0, by = 1)`, which R rejects with “wrong sign in ‘by’
+  argument”, naming neither the package nor the actual problem.
+  [`mdn_iid_blocks()`](https://neuralsbi.pedrodelima.com/reference/mdn_iid_blocks.md)
+  had the identical pattern independently. `linear_gaussian`’s own
+  `de_iid_evaluator.nsbi_de_lingauss()` already got this right and
+  returns a log-likelihood of 0, the correct empty-product value;
+  [`cross_iid()`](https://neuralsbi.pedrodelima.com/reference/cross_iid.md)
+  and
+  [`mdn_iid_blocks()`](https://neuralsbi.pedrodelima.com/reference/mdn_iid_blocks.md)
+  now short-circuit on a zero-row `theta` or `x` before either
+  [`seq.int()`](https://rdrr.io/r/base/seq.html) call runs, since every
+  caller’s pre-allocated output is already zero, or already the right
+  shape, and needs no further work.
+  [`dmvnorm_chol()`](https://neuralsbi.pedrodelima.com/reference/dmvnorm_chol.md)
+  (`R/density_estimator.R`) had a related, non-crashing bug in the same
+  corner: recycling a non-empty conditional mean into a zero-row matrix
+  triggered R’s “non-empty data for zero-extent matrix” warning on every
+  call, even though the resulting empty matrix was correct; it now
+  builds that shape directly
+  ([\#271](https://github.com/pedroliman/neuralsbi/issues/271))
+  ([\#273](https://github.com/pedroliman/neuralsbi/issues/273)).
+
 ## neuralsbi 0.6.32
 
 - **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
