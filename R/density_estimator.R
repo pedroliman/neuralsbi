@@ -231,6 +231,13 @@ lingauss_mean <- function(de, x) {
 #' @export
 de_log_prob.nsbi_de_lingauss <- function(de, theta, x) {
   theta <- as_theta_matrix(theta, de$dim_theta)
+  # A zero-row theta has no broadcast target: nrow(mu) == 1L && nrow(theta) >
+  # 1L below is false, so mu never gets stretched, and dmvnorm_chol() would
+  # see a 1-row mu against a 0-row theta and fail with "non-conformable
+  # arrays" (#279). The right answer is the empty vector, computed directly.
+  if (nrow(theta) == 0L) {
+    return(numeric(0))
+  }
   mu <- lingauss_mean(de, x)
   if (nrow(mu) == 1L && nrow(theta) > 1L) {
     mu <- matrix(mu, nrow = nrow(theta), ncol = ncol(mu), byrow = TRUE)

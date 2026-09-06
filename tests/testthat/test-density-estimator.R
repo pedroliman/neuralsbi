@@ -186,6 +186,32 @@ test_that("de_sample.nsbi_de_lingauss() draws from the fitted conditional", {
   expect_equal(stats::cov(draws), de$Sigma, tolerance = 0.05)
 })
 
+test_that("de_log_prob() on a zero-row theta returns numeric(0) instead of erroring", {
+  # mu stays a 1-row matrix here (nrow(theta) > 1L is false for a 0-row
+  # theta), so it never gets broadcast, and dmvnorm_chol(theta, mu, chol) used
+  # to hit "non-conformable arrays" against x's single observation (#279).
+  set.seed(26)
+  theta <- matrix(stats::rnorm(400), ncol = 2)
+  x <- theta + matrix(stats::rnorm(400, sd = 0.5), ncol = 2)
+  de <- fit_linear_gaussian(theta, x)
+  x_obs <- c(0.4, -0.9)
+
+  empty_theta <- matrix(numeric(0), ncol = 2)
+  lp <- de_log_prob(de, empty_theta, x_obs)
+  expect_length(lp, 0L)
+  expect_type(lp, "double")
+
+  # Normal, non-empty cases still work: a single theta row, and many.
+  one_row <- matrix(c(0.1, -0.2), nrow = 1)
+  expect_length(de_log_prob(de, one_row, x_obs), 1L)
+
+  many_rows <- matrix(stats::rnorm(20), ncol = 2)
+  lp_many <- de_log_prob(de, many_rows, x_obs)
+  expect_length(lp_many, 10L)
+  expect_equal(lp_many, de_log_prob(de, many_rows,
+    matrix(x_obs, nrow = 10L, ncol = 2, byrow = TRUE)))
+})
+
 test_that("an estimator fitted before dim_x existed still evaluates", {
   # Serialized fits carry no dim_x, and de_rebuild_net() has no lingauss
   # branch to add one, so the methods must not require it.
