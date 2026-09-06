@@ -223,14 +223,26 @@ c2st_stratified_folds <- function(n_x, n_y, n_folds) {
 
 #' Cross-validated logistic regression for [c2st()]
 #'
+#' `data.frame()` names a lone unnamed column after the deparsed argument it
+#' was given, so a single-column `x_train` became a column called `x_train`
+#' and `x_test` a column called `x_test`. `glm()` then fit a coefficient named
+#' after whichever column reached the training frame, and `predict()` could
+#' not find it under the prediction frame's different name (#278). Naming both
+#' matrices' columns explicitly and identically keeps the fitted formula and
+#' `newdata` aligned regardless of column count or the matrices' own names.
+#'
 #' @param x_train,y_train Training draws and their 0/1 labels.
 #' @param x_test Draws to score.
 #' @return Predicted probability of class 1 for each row of `x_test`.
 #' @keywords internal
 c2st_logistic_prob <- function(x_train, y_train, x_test) {
-  df <- data.frame(y = y_train, x_train)
+  cols <- paste0("v", seq_len(ncol(x_train)))
+  colnames(x_train) <- cols
+  colnames(x_test) <- cols
+  df <- data.frame(y = y_train, x_train, check.names = FALSE)
   fit <- suppressWarnings(stats::glm(y ~ ., data = df, family = stats::binomial()))
-  stats::predict(fit, newdata = data.frame(x_test), type = "response")
+  stats::predict(fit, newdata = data.frame(x_test, check.names = FALSE),
+                 type = "response")
 }
 
 #' Build `sbibm`'s C2ST classifier as a torch module
