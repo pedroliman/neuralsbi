@@ -1,5 +1,28 @@
 # Changelog
 
+## neuralsbi 0.6.37
+
+- **`de_log_prob()` on a `linear_gaussian` estimator no longer crashes
+  on a zero-row `theta`.** Its broadcast check only stretched the
+  single-observation conditional mean `mu` up to `theta`’s row count
+  when `nrow(mu) == 1L && nrow(theta) > 1L`; with a zero-row `theta`
+  that condition is false, so `mu` stayed a 1-row matrix and
+  `dmvnorm_chol(theta, mu, chol)` computed `theta - mu` between a 0-row
+  and a 1-row matrix, failing with “non-conformable arrays”. This is the
+  same corner
+  [\#271](https://github.com/pedroliman/neuralsbi/issues/271) fixed
+  inside
+  [`dmvnorm_chol()`](https://neuralsbi.pedrodelima.com/reference/dmvnorm_chol.md)
+  itself (a non-empty `mean` arriving as a plain vector); here `mu` is
+  already a matrix, so that fix did not cover it.
+  `de_log_prob.nsbi_de_lingauss()` now returns `numeric(0)` for a
+  zero-row `theta` directly, before
+  [`lingauss_mean()`](https://neuralsbi.pedrodelima.com/reference/lingauss_mean.md)/[`dmvnorm_chol()`](https://neuralsbi.pedrodelima.com/reference/dmvnorm_chol.md)
+  ever run – the torch estimators (MDN/MAF/NSF) never hit this, since
+  PyTorch’s broadcasting already expands a size-1 dimension against
+  size-0 ([\#279](https://github.com/pedroliman/neuralsbi/issues/279))
+  ([\#281](https://github.com/pedroliman/neuralsbi/issues/281)).
+
 ## neuralsbi 0.6.36
 
 - **`c2st(..., classifier = "logistic")` no longer errors on a

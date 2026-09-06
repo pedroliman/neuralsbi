@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.36</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.37</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.37" id="neuralsbi-0637">neuralsbi 0.6.37<a class="anchor" aria-label="anchor" href="#neuralsbi-0637"></a></h2>
+<ul><li>
+<strong><code>de_log_prob()</code> on a <code>linear_gaussian</code> estimator no longer crashes on a zero-row <code>theta</code>.</strong> Its broadcast check only stretched the single-observation conditional mean <code>mu</code> up to <code>theta</code>’s row count when <code>nrow(mu) == 1L &amp;&amp; nrow(theta) &gt; 1L</code>; with a zero-row <code>theta</code> that condition is false, so <code>mu</code> stayed a 1-row matrix and <code>dmvnorm_chol(theta, mu, chol)</code> computed <code>theta - mu</code> between a 0-row and a 1-row matrix, failing with “non-conformable arrays”. This is the same corner <a href="https://github.com/pedroliman/neuralsbi/issues/271" class="external-link">#271</a> fixed inside <code><a href="../reference/dmvnorm_chol.html">dmvnorm_chol()</a></code> itself (a non-empty <code>mean</code> arriving as a plain vector); here <code>mu</code> is already a matrix, so that fix did not cover it. <code>de_log_prob.nsbi_de_lingauss()</code> now returns <code>numeric(0)</code> for a zero-row <code>theta</code> directly, before <code><a href="../reference/lingauss_mean.html">lingauss_mean()</a></code>/<code><a href="../reference/dmvnorm_chol.html">dmvnorm_chol()</a></code> ever run – the torch estimators (MDN/MAF/NSF) never hit this, since PyTorch’s broadcasting already expands a size-1 dimension against size-0 (<a href="https://github.com/pedroliman/neuralsbi/issues/279" class="external-link">#279</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/281" class="external-link">#281</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.36" id="neuralsbi-0636">neuralsbi 0.6.36<a class="anchor" aria-label="anchor" href="#neuralsbi-0636"></a></h2>
 <ul><li>
