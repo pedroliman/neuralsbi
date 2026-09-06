@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.6.36
+
+- **`c2st(..., classifier = "logistic")` no longer errors on a
+  single-column comparison.**
+  [`c2st_logistic_prob()`](https://neuralsbi.pedrodelima.com/reference/c2st_logistic_prob.md)
+  built the training frame as `data.frame(y = y_train, x_train)` and the
+  prediction frame as `data.frame(x_test)`.
+  [`data.frame()`](https://rdrr.io/r/base/data.frame.html) names a lone
+  unnamed column after the deparsed argument it was given, so an
+  unnamed, one-column `x_train`/`x_test` pair landed under different
+  names in the two frames – `x_train` in one, `x_test` in the other.
+  [`glm()`](https://rdrr.io/r/stats/glm.html) fit a coefficient under
+  whichever name reached the training frame, and
+  `predict(fit, newdata = ...)` then failed to find it under the
+  prediction frame’s name. Both frames now get the same,
+  argument-independent column names before
+  [`glm()`](https://rdrr.io/r/stats/glm.html)/[`predict()`](https://rdrr.io/r/stats/predict.html)
+  run, so the fitted formula and `newdata` line up regardless of column
+  count or the input matrices’ own names
+  ([\#278](https://github.com/pedroliman/neuralsbi/issues/278))
+  ([\#280](https://github.com/pedroliman/neuralsbi/issues/280)).
+
 ## neuralsbi 0.6.35
 
 - **Seeded training and
