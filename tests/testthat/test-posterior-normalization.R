@@ -295,3 +295,25 @@ test_that("log_prob() warns when the acceptance estimate hits the floor, like sa
     "leaking mass outside the prior"
   )
 })
+
+# GitHub #282: normalize = TRUE's acceptance-constant draw called de_sample()
+# straight against the caller's RNG stream with nothing to save or restore it
+# afterward -- the same bug class as #272 (surrogate_potential()'s prior
+# probe), just in log_prob.nsbi_posterior() instead. log_prob() reads as a
+# pure evaluation function, unlike sample(), which is documented to consume
+# randomness, so calling it on a bounded-prior posterior should leave the
+# caller's next random draw exactly as reproducible as if log_prob() had
+# never been called.
+test_that("log_prob() on a bounded-prior NPE posterior does not mutate the caller's RNG stream", {
+  set.seed(21)
+  prior <- prior_uniform(-1, 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.8)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  set.seed(42)
+  before <- .Random.seed
+  log_prob(post, 0.3, n_normalization = 500)
+  expect_identical(.Random.seed, before)
+})

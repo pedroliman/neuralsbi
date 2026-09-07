@@ -34,6 +34,27 @@ test_that("a seeded c2st() MLP call does not mutate torch's global RNG stream", 
   expect_identical(after, before)
 })
 
+# GitHub #282: log_prob.nsbi_posterior()'s normalize = TRUE branch called
+# de_sample() to estimate the acceptance constant with no save/restore
+# around it, so on a neural (maf/nsf/mdn) fit it silently burned torch's
+# global RNG too -- the same bug class #275 fixed for a seeded fit/c2st().
+test_that("log_prob() on a bounded-prior neural posterior does not mutate torch's global RNG stream", {
+  skip_if_no_torch()
+  prior <- prior_uniform(-1, 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 200, density_estimator = "mdn",
+             n_components = 1L, hidden = c(10L), max_epochs = 5L, seed = 99)
+  post <- posterior(fit, x_obs = 0.5)
+
+  torch::torch_manual_seed(123)
+  before <- torch::as_array(torch::torch_get_rng_state())
+
+  log_prob(post, 0.3, n_normalization = 200)
+
+  after <- torch::as_array(torch::torch_get_rng_state())
+  expect_identical(after, before)
+})
+
 test_that("set_torch_seed() returns the state needed to restore torch's RNG", {
   skip_if_no_torch()
   torch::torch_manual_seed(7)

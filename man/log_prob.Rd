@@ -35,7 +35,10 @@ probability and return \code{-Inf} outside the prior support.}
 (acceptance) constant when \code{normalize = TRUE}. If none of them land
 inside the prior support, the estimate is floored at \code{1 / n_normalization}
 to avoid \code{log(0)} and a warning says so -- the same warning \code{\link[=sample]{sample()}}
-raises when rejection sampling comes up empty.}
+raises when rejection sampling comes up empty. These draws are internal to
+the estimate (always taken from a fixed, throwaway stream) and never
+advance the caller's own RNG, unlike \code{\link[=sample]{sample()}}, which is documented to
+consume randomness.}
 }
 \value{
 Numeric vector of log posterior densities. For a posterior built
