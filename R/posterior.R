@@ -220,7 +220,10 @@ standardized_obs <- function(post, obs) {
 #'   (acceptance) constant when `normalize = TRUE`. If none of them land
 #'   inside the prior support, the estimate is floored at `1 / n_normalization`
 #'   to avoid `log(0)` and a warning says so -- the same warning [sample()]
-#'   raises when rejection sampling comes up empty.
+#'   raises when rejection sampling comes up empty. These draws are internal to
+#'   the estimate (always taken from a fixed, throwaway stream) and never
+#'   advance the caller's own RNG, unlike [sample()], which is documented to
+#'   consume randomness.
 #' @param ... Passed to methods.
 #' @return Numeric vector of log posterior densities. For a posterior built
 #'   from an [nle()] or [nre()] fit the value is **unnormalized** -- the
@@ -253,8 +256,24 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
   prior <- fit$prior
   bounded <- !is.null(prior$lower) || !is.null(prior$upper)
   if (normalize && bounded) {
-    draw_std <- de_sample(fit$de, xo_std, n_normalization)
-    draw <- invert_standardizer(fit$std_theta, draw_std)
+    # This draw exists only to estimate the acceptance constant below -- the
+    # caller asked for a density, not a random draw -- so, like
+    # surrogate_potential()'s prior probe (#274), it must not leave a trace on
+    # the caller's RNG stream. with_fixed_seed() parks and restores R's RNG;
+    # a torch-backed estimator (maf/nsf/mdn) also spends torch's global RNG
+    # inside de_sample(), so that needs the same save/restore set_torch_seed()
+    # gives c2st() (#276). linear_gaussian has no `net` and never touches
+    # torch's RNG, so the guard is conditional on the estimator actually
+    # having one.
+    has_torch_de <- !is.null(fit$de$net)
+    if (has_torch_de) {
+      old_torch_rng <- set_torch_seed(1L)
+      on.exit(torch::torch_set_rng_state(old_torch_rng), add = TRUE)
+    }
+    draw <- with_fixed_seed(1L, {
+      draw_std <- de_sample(fit$de, xo_std, n_normalization)
+      invert_standardizer(fit$std_theta, draw_std)
+    })
     # As in sample.nsbi_posterior(), draw comes from the density estimator
     # rather than the user, so a NaN row's NA from within_support() must be
     # coerced to FALSE -- otherwise acc becomes NA and the comparison below
