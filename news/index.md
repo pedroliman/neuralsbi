@@ -1,5 +1,31 @@
 # Changelog
 
+## neuralsbi 0.6.39
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)’s
+  shortfall warning no longer blames prior leakage for an unbounded
+  prior.** When a density estimator’s draws come up short of the
+  requested count,
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  warned “Only X/Y samples inside prior support … The estimator is
+  leaking mass outside the prior” regardless of whether the prior was
+  bounded. For a bounded prior
+  ([`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md),
+  or
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md)
+  with `lower`/`upper`) that wording is correct: the shortfall comes
+  from rejection-sampling draws outside the prior’s actual support. For
+  an unbounded prior
+  ([`prior_normal()`](https://neuralsbi.pedrodelima.com/reference/prior_normal.md)
+  and the like) there is no support boundary to leak past – the
+  shortfall there is the finite-row filter dropping NaN/Inf draws that
+  `de_sample()` itself produced, and the warning was pointing at the
+  wrong fix. The warning now branches on `bounded`: the bounded wording
+  is unchanged, and the unbounded wording says the density estimator
+  produced non-finite draws
+  ([\#284](https://github.com/pedroliman/neuralsbi/issues/284))
+  ([\#286](https://github.com/pedroliman/neuralsbi/issues/286)).
+
 ## neuralsbi 0.6.38
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
