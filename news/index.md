@@ -1,5 +1,30 @@
 # Changelog
 
+## neuralsbi 0.6.40
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  no longer reports round 1’s acceptance as a hardcoded 1.00 when the
+  simulator fails on some prior draws.** The main loop initialized
+  `acceptance <- 1` for round 1 and only recomputed it from what
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  actually kept when `r > 1L`, even though
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  runs – and can shrink `theta_new`/`x_new` by dropping non-finite rows
+  – for round 1 too. A simulator that routinely fails on some parameter
+  draws (an ODE solver that diverges for certain values, say) then
+  printed a self-contradictory verbose log, e.g. “Round 1/3: 850 new
+  simulations (850 total), proposal acceptance 1.00” after 1000 were
+  requested, and left the wrong value in the returned
+  `fit$rounds[[1]]$acceptance` and in `print.nsbi_snpe()`’s
+  acceptance-per-round line.
+  `acceptance <- nrow(theta_new) / max(tried, 1L)` now runs
+  unconditionally after
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md),
+  with `tried` set to round 1’s full simulation budget since round 1 has
+  no rejection-sampling stage to have already tried fewer draws
+  ([\#285](https://github.com/pedroliman/neuralsbi/issues/285))
+  ([\#287](https://github.com/pedroliman/neuralsbi/issues/287)).
+
 ## neuralsbi 0.6.39
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)’s
