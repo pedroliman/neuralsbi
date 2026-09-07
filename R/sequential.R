@@ -157,7 +157,7 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   for (r in seq_len(n_rounds)) {
     if (r == 1L) {
       theta_new <- sample_prior(prior, budgets[r])
-      acceptance <- 1
+      tried <- budgets[r]
       threshold <- -Inf
     } else {
       post <- posterior(fit, x_obs = x_obs)
@@ -221,8 +221,10 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
     x_new <- kept$x
     # Report acceptance against what the simulator could actually use, not
     # just what passed the truncation threshold before drop_failed_sims()
-    # removed rows with non-finite parameters or output.
-    if (r > 1L) acceptance <- nrow(theta_new) / max(tried, 1L)
+    # removed rows with non-finite parameters or output. This applies to
+    # round 1 too: `tried` is its full prior-draw budget, since round 1 has
+    # no rejection-sampling stage to have already tried fewer.
+    acceptance <- nrow(theta_new) / max(tried, 1L)
     theta_all <- rbind(theta_all, theta_new)
     x_all <- rbind(x_all, x_new)
     # the simulator's output width is only known once it has run, so this is
