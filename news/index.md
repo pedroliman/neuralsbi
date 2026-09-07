@@ -1,5 +1,37 @@
 # Changelog
 
+## neuralsbi 0.6.38
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on a bounded-prior posterior no longer mutates the caller’s RNG
+  stream.** `normalize = TRUE`’s acceptance-constant estimate draws
+  `n_normalization` samples from the density estimator via
+  `de_sample()`, and that draw had no save/restore around it – the same
+  bug class [\#274](https://github.com/pedroliman/neuralsbi/issues/274)
+  fixed in
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  prior probe, just in
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  instead.
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  reads as a pure evaluation function, unlike
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  which is documented to consume randomness, so calling it on a bounded
+  prior silently perturbed R’s RNG and, for a neural (MAF/NSF/MDN)
+  estimator, torch’s global RNG too
+  ([`de_sample_flow()`](https://neuralsbi.pedrodelima.com/reference/de_sample_flow.md)
+  draws with `torch_randn()`). The draw now runs under
+  [`with_fixed_seed()`](https://neuralsbi.pedrodelima.com/reference/with_fixed_seed.md),
+  and, only when the density estimator actually has a torch network
+  (`linear_gaussian` does not), torch’s RNG is saved and restored with
+  [`set_torch_seed()`](https://neuralsbi.pedrodelima.com/reference/set_torch_seed.md)/`torch_set_rng_state()`,
+  the same pattern
+  [\#276](https://github.com/pedroliman/neuralsbi/issues/276)
+  established for a seeded fit or
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) call
+  ([\#282](https://github.com/pedroliman/neuralsbi/issues/282))
+  ([\#283](https://github.com/pedroliman/neuralsbi/issues/283)).
+
 ## neuralsbi 0.6.37
 
 - **`de_log_prob()` on a `linear_gaussian` estimator no longer crashes

@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.37</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.38</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.38" id="neuralsbi-0638">neuralsbi 0.6.38<a class="anchor" aria-label="anchor" href="#neuralsbi-0638"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_prob.html">log_prob()</a></code> on a bounded-prior posterior no longer mutates the caller’s RNG stream.</strong> <code>normalize = TRUE</code>’s acceptance-constant estimate draws <code>n_normalization</code> samples from the density estimator via <code>de_sample()</code>, and that draw had no save/restore around it – the same bug class <a href="https://github.com/pedroliman/neuralsbi/issues/274" class="external-link">#274</a> fixed in <code><a href="../reference/surrogate_potential.html">surrogate_potential()</a></code>’s prior probe, just in <code><a href="../reference/log_prob.html">log_prob.nsbi_posterior()</a></code> instead. <code><a href="../reference/log_prob.html">log_prob()</a></code> reads as a pure evaluation function, unlike <code><a href="../reference/sample.html">sample()</a></code>, which is documented to consume randomness, so calling it on a bounded prior silently perturbed R’s RNG and, for a neural (MAF/NSF/MDN) estimator, torch’s global RNG too (<code><a href="../reference/de_sample_flow.html">de_sample_flow()</a></code> draws with <code>torch_randn()</code>). The draw now runs under <code><a href="../reference/with_fixed_seed.html">with_fixed_seed()</a></code>, and, only when the density estimator actually has a torch network (<code>linear_gaussian</code> does not), torch’s RNG is saved and restored with <code><a href="../reference/set_torch_seed.html">set_torch_seed()</a></code>/<code>torch_set_rng_state()</code>, the same pattern <a href="https://github.com/pedroliman/neuralsbi/issues/276" class="external-link">#276</a> established for a seeded fit or <code><a href="../reference/c2st.html">c2st()</a></code> call (<a href="https://github.com/pedroliman/neuralsbi/issues/282" class="external-link">#282</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/283" class="external-link">#283</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.37" id="neuralsbi-0637">neuralsbi 0.6.37<a class="anchor" aria-label="anchor" href="#neuralsbi-0637"></a></h2>
 <ul><li>

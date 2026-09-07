@@ -51,7 +51,11 @@ log_prob(
   support, the estimate is floored at `1 / n_normalization` to avoid
   `log(0)` and a warning says so – the same warning
   [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
-  raises when rejection sampling comes up empty.
+  raises when rejection sampling comes up empty. These draws are
+  internal to the estimate (always taken from a fixed, throwaway stream)
+  and never advance the caller's own RNG, unlike
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  which is documented to consume randomness.
 
 ## Value
 
