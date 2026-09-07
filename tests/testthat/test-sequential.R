@@ -29,6 +29,28 @@ test_that("npe_sequential recovers the analytic posterior at x_obs", {
   if (has_torch()) expect_lt(c2st(analytic_draws, draws, seed = 2)$accuracy, 0.6)
 })
 
+test_that("round 1's acceptance reflects simulations dropped by drop_failed_sims(), not a hardcoded 1 (#285)", {
+  set.seed(70)
+  # A simulator that fails deterministically on every 5th prior draw mimics an
+  # ODE solver that diverges for some parameter values: round 1 requests 200
+  # simulations but only 160 survive drop_failed_sims(), so acceptance must
+  # come out to 0.8, not the hardcoded 1 that shipped before the fix.
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    if (n_calls %% 5L == 0L) return(NaN)
+    theta + rnorm(1, sd = 0.3)
+  }
+  expect_warning(
+    fit <- npe_sequential(prior_normal(mean = 0, sd = 1), simulator,
+                          x_obs = 0.2, n_rounds = 1, n_simulations = 200,
+                          density_estimator = "linear_gaussian", seed = 71),
+    "Dropped 40 of 200 simulations"
+  )
+  expect_equal(fit$rounds[[1]]$n_new, 160L)
+  expect_equal(fit$rounds[[1]]$acceptance, 0.8)
+})
+
 test_that("later rounds actually truncate the proposal", {
   set.seed(22)
   prior <- prior_normal(mean = 0, sd = 2)
