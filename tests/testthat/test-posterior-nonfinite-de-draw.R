@@ -17,6 +17,13 @@
 # and attr(draws, "acceptance_rate") still reported 1.0. The tests below
 # repeat the sample() case with prior_normal() instead of prior_uniform() to
 # cover the unbounded path.
+#
+# GitHub #284: the shortfall warning below still said "samples inside prior
+# support" and "leaking mass outside the prior" even when bounded is FALSE --
+# an unbounded prior has no support boundary to leak past, so that wording
+# pointed at the wrong cause. The real cause with no prior box is the density
+# estimator itself emitting non-finite draws, so the unbounded branch now says
+# that instead.
 
 test_that("sample() rejects a NaN draw from the density estimator instead of returning it", {
   set.seed(30)
@@ -136,8 +143,10 @@ test_that("sample()'s acceptance_rate reflects a dropped non-finite row with an 
 
   # Every draw in the one and only batch is corrupted, so n_needed rows are
   # tried and none survive the filter -- acceptance_rate must report that
-  # rather than the pre-fix 1.0, and sample() should warn about the shortfall
-  # the same way it does for a bounded prior leaking mass.
+  # rather than the pre-fix 1.0. sample() should still warn about the
+  # shortfall, but -- unlike the bounded case -- an unbounded prior has no
+  # support to leak past, so the wording blames the estimator's non-finite
+  # draws instead of prior leakage (#284).
   real_de_sample <- de_sample
   local_mocked_bindings(
     de_sample = function(de, x, n) {
@@ -149,7 +158,7 @@ test_that("sample()'s acceptance_rate reflects a dropped non-finite row with an 
 
   expect_warning(
     draws <- sample(post, n = 20, max_sampling_batches = 1),
-    "0/20 samples inside prior support"
+    "0/20 samples were finite.*density estimator produced non-finite draws"
   )
   expect_equal(nrow(draws), 0L)
   expect_equal(attr(draws, "acceptance_rate"), 0)

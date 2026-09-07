@@ -189,11 +189,24 @@ sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
     collected <- rbind(collected, draw)
   }
   if (nrow(collected) < n) {
-    warning(sprintf(
-      "Only %d/%d samples inside prior support after %d batches (acceptance %.2f). ",
-      nrow(collected), n, batch, nrow(collected) / max(n_tried, 1)),
-      "The estimator is leaking mass outside the prior; consider more simulations.",
-      call. = FALSE)
+    if (bounded) {
+      warning(sprintf(
+        "Only %d/%d samples inside prior support after %d batches (acceptance %.2f). ",
+        nrow(collected), n, batch, nrow(collected) / max(n_tried, 1)),
+        "The estimator is leaking mass outside the prior; consider more simulations.",
+        call. = FALSE)
+    } else {
+      # No prior boundary to leak past here (prior_normal() and friends have
+      # no lower/upper), so the shortfall can only be the finite-row filter
+      # above dropping NaN/Inf draws from de_sample() itself -- an
+      # under-trained MAF/NSF/MDN, not a leakage problem. Say so instead of
+      # blaming the prior (#284).
+      warning(sprintf(
+        "Only %d/%d samples were finite after %d batches (%.2f finite). ",
+        nrow(collected), n, batch, nrow(collected) / max(n_tried, 1)),
+        "The density estimator produced non-finite draws; consider more simulations or checking training diagnostics.",
+        call. = FALSE)
+    }
   }
   out <- collected[seq_len(min(n, nrow(collected))), , drop = FALSE]
   if (is.null(colnames(out)) && !is.null(fit$param_names)) {
