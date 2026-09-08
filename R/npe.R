@@ -227,7 +227,9 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
   } else {
     # pre-computed simulations get the same type and finiteness checks, so the
     # rules do not depend on who ran the simulator
-    theta <- as_theta_matrix(check_numeric(theta, "theta"), prior$dim)
+    theta <- check_numeric(theta, "theta")
+    check_precomputed_theta(theta, prior$dim, "theta")
+    theta <- as_theta_matrix(theta, prior$dim)
     x <- as_theta_matrix(check_numeric(x, "x"))
     if (nrow(theta) != nrow(x)) {
       stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
