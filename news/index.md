@@ -1,6 +1,46 @@
 # Changelog
 
-## neuralsbi 0.6.40
+## neuralsbi 0.6.41
+
+- **A wrong-length `theta`/`x_obs` no longer gets silently reshaped into
+  several parameter sets or observations.**
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)’s
+  `theta`,
+  [`resolve_obs()`](https://neuralsbi.pedrodelima.com/reference/resolve_obs.md)’s
+  `x`/`obs` (backing
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  and
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)),
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)’s
+  `x_obs` (shared by
+  [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)/[`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)),
+  [`likelihood_fn()`](https://neuralsbi.pedrodelima.com/reference/likelihood_fn.md)’s
+  `x_obs`, and
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)’s
+  `x_obs` all handed their checked value to
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md),
+  which reshapes whatever length it is given rather than checking it
+  matches the fit’s dimension – so
+  `log_prob(post, theta = c(0.1, 0.2, 0.3, 0.4))` against a
+  two-parameter fit silently became a 2-row `theta` and returned a
+  plausible-looking length-2 answer instead of an error. This was worse
+  for NLE/NRE posteriors:
+  [`resolve_x_iid()`](https://neuralsbi.pedrodelima.com/reference/resolve_x_iid.md)
+  treats every row as an independent observation with no row-count check
+  to catch the reshape at all, so
+  `sample(nle_post, obs = c(0.1, 0.2, 0.9, 0.9))` on a `dim_x = 2` fit
+  silently conditioned on 2 fabricated observations. All five call sites
+  now go through
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md),
+  which
+  [`check_x_obs()`](https://neuralsbi.pedrodelima.com/reference/check_x_obs.md)
+  already used for
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md):
+  a bare vector is read as a single row and must have exactly the fit’s
+  dimension, and a mismatched length errors instead of recycling
+  ([\#288](https://github.com/pedroliman/neuralsbi/issues/288))
+  ([\#289](https://github.com/pedroliman/neuralsbi/issues/289)).
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
   no longer reports round 1’s acceptance as a hardcoded 1.00 when the
