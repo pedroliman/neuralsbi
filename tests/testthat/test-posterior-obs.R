@@ -76,3 +76,61 @@ test_that("no observation supplied errors, naming the caller's own argument", {
   expect_error(sample(post_nle, 10), "Pass `obs = ...`")
   expect_error(log_prob(post_nle, 0.3), "Pass `obs = ...`")
 })
+
+# GitHub #288: a wrong-length theta/x/obs used to be silently reshaped by
+# as_theta_matrix() into a matrix of the right width -- turning one mistyped
+# vector into several rows and a plausible-looking answer instead of an error.
+# check_matrix() closes that gap at every entry point below.
+
+test_that("log_prob() errors on a wrong-length theta instead of reshaping it", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+
+  expect_error(log_prob(post, theta = c(0.1, 0.2, 0.3, 0.4), x = c(0, 0)),
+               "`theta` must have 2 columns")
+})
+
+test_that("log_prob() errors on a wrong-length x instead of reshaping it", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+
+  expect_error(log_prob(post, theta = c(0, 0), x = c(0.1, 0.2, 0.3)),
+               "`x` must have 2 columns")
+})
+
+test_that("sample() errors on a wrong-length obs instead of reshaping it", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+
+  # resolve_x() always names the observation "x" (matching the "Pass `x =
+  # ...`" message for the no-observation case above), even though sample()'s
+  # own parameter is called `obs`.
+  expect_error(sample(post, 10, obs = c(0.1, 0.2, 0.3)),
+               "`x` must have 2 columns")
+})
+
+test_that("posterior() on an nle fit errors on a wrong-length x_obs instead of reshaping it", {
+  set.seed(6)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(2, sd = 0.5)
+  fit <- nle(prior, simulator, n_simulations = 400,
+             density_estimator = "linear_gaussian", seed = 6)
+
+  expect_error(posterior(fit, x_obs = c(0.1, 0.2, 0.3)),
+               "`x_obs` must have 2 columns")
+})
+
+test_that("sample() on an nle posterior errors on a wrong-length obs instead of treating it as several observations", {
+  # This is the resolve_x_iid() path: rows of obs are independent
+  # observations, so there was no row-count check to catch a mistyped vector
+  # at all before #288.
+  set.seed(7)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(2, sd = 0.5)
+  fit <- nle(prior, simulator, n_simulations = 400,
+             density_estimator = "linear_gaussian", seed = 7)
+  post <- posterior(fit, n_chains = 2, warmup = 5, thin = 1, seed = 8)
+
+  expect_error(sample(post, 10, obs = c(0.1, 0.2, 0.9, 0.9)),
+               "`obs` must have 2 columns")
+})

@@ -432,6 +432,15 @@ test_that("likelihood_fn() is a vectorized closure over theta", {
   expect_equal(attr(loglik, "x_obs"), x_obs)
 })
 
+test_that("likelihood_fn() errors on a wrong-length x_obs instead of reshaping it (#288)", {
+  # A length-3 x_obs against dim_x = 2 used to fold into a matrix with the
+  # right width instead of erroring, silently changing how many observations
+  # the returned closure conditions on.
+  fit <- lingauss_fit()
+
+  expect_error(likelihood_fn(fit, c(0.1, 0.2, 0.3)), "`x_obs` must have 2 columns")
+})
+
 test_that("likelihood_fn() drops into optim() without adaptation", {
   # The point of the closure: nothing downstream needs to know about neuralsbi.
   set.seed(10)

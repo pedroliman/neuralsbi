@@ -565,7 +565,10 @@ mdn_chunk_size <- function(n_theta, max_batch, per_pair) {
 #' @export
 likelihood_fn <- function(fit, x_obs, ...) {
   stopifnot(inherits(fit, "nsbi_nle"))
-  x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+  x_obs <- check_numeric(x_obs, "x_obs")
+  check_finite(x_obs, "x_obs")
+  x_obs <- check_matrix(x_obs, fit$dim_x, "x_obs",
+                        "one row per independent observation")
   force(x_obs)
   dots <- list(...)
   f <- function(theta) {

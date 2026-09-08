@@ -126,7 +126,8 @@ stan_data <- function(fit, x_obs = NULL) {
   if (!is.null(x_obs)) {
     x_obs <- check_numeric(x_obs, "x_obs")
     check_finite(x_obs, "x_obs")
-    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+    x_obs <- check_matrix(x_obs, fit$dim_x, "x_obs",
+                          "one row per independent observation")
     out$N <- nrow(x_obs)
     out$x <- x_obs
     dimnames(out$x) <- NULL

@@ -267,6 +267,17 @@ test_that("posterior() rejects a non-finite max_batch instead of an opaque rep()
   expect_error(posterior(fit, x_obs, max_batch = 0), "`max_batch`")
 })
 
+test_that("sample() on an nre posterior errors on a wrong-length obs instead of treating it as several observations (#288)", {
+  # resolve_x_iid() treats every row of obs as an independent observation, so
+  # a mistyped length-4 vector against dim_x = 2 used to become 2 fabricated
+  # observations with nothing to say about it.
+  fit <- logistic_fit(n = 500, seed = 2)
+  post <- posterior(fit, n_chains = 2, warmup = 5, seed = 3)
+
+  expect_error(sample(post, 10, obs = c(0.1, 0.2, 0.9, 0.9)),
+               "`obs` must have 2 columns")
+})
+
 test_that("nre() checks its arguments before the simulator runs", {
   calls <- 0L
   counting_simulator <- function(mu, nu) {

@@ -96,7 +96,11 @@ mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
   if (!is.null(x_obs)) {
     x_obs <- check_numeric(x_obs, "x_obs")
     check_finite(x_obs, "x_obs")
-    x_obs <- as_theta_matrix(x_obs, fit$dim_x)
+    # resolve_x_iid() keeps every row as an independent observation, so a
+    # wrong-length x_obs must error here rather than reshape into a plausible
+    # but fabricated set of observations (#288).
+    x_obs <- check_matrix(x_obs, fit$dim_x, "x_obs",
+                          "one row per independent observation")
   }
   n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
                                "so convergence can be diagnosed")
