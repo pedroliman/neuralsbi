@@ -1,6 +1,6 @@
 # neuralsbi 0.6.42
 
-* **`posterior()` on an `npe` fit no longer silently reshapes a wrong-length `x_obs`.** `posterior.nsbi_npe()` handed `x_obs` to `as_theta_matrix()`, which reshapes whatever length it is given rather than checking it matches `fit$dim_x` -- the exact bug class #288/#289 fixed at five other call sites, in a spot that fix missed. `posterior(fit, x_obs = c(10, 20, 30, 40))` against a `dim_x = 2` fit silently became a 2-row `x_obs` with no warning at all, since length 4 is a clean multiple of 2. `mcmc_posterior()`, the sibling path for NLE/NRE, already used `check_matrix()` for this; `posterior.nsbi_npe()` now does too, matching the error `posterior()` on an NLE/NRE fit already gives for the same shape mistake (#290).
+* **`posterior()` on an `npe` fit no longer silently reshapes a wrong-length `x_obs`.** `posterior.nsbi_npe()` handed `x_obs` to `as_theta_matrix()`, which reshapes whatever length it is given rather than checking it matches `fit$dim_x` -- the exact bug class #288/#289 fixed at five other call sites, in a spot that fix missed. `posterior(fit, x_obs = c(10, 20, 30, 40))` against a `dim_x = 2` fit silently became a 2-row `x_obs` with no warning at all, since length 4 is a clean multiple of 2. `mcmc_posterior()`, the sibling path for NLE/NRE, already used `check_matrix()` for this; `posterior.nsbi_npe()` now does too, matching the error `posterior()` on an NLE/NRE fit already gives for the same shape mistake (#290) (#294).
 
 # neuralsbi 0.6.41
 
