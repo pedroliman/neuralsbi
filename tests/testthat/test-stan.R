@@ -70,6 +70,15 @@ test_that("stan_data() rejects a non-finite x_obs instead of passing it to Stan"
   expect_error(stan_data(fit, x_obs), "`x_obs` contains")
 })
 
+test_that("stan_data() errors on a wrong-length x_obs instead of reshaping it (#288)", {
+  # A length-3 x_obs against dim_x = 2 used to fold into a matrix with the
+  # right width instead of erroring, so the generated `N`/`x` data silently
+  # described the wrong number of observations.
+  fit <- stan_lingauss_fit()
+
+  expect_error(stan_data(fit, c(0.1, 0.2, 0.3)), "`x_obs` must have 2 columns")
+})
+
 test_that("stan_data() rejects a non-numeric x_obs instead of passing it to Stan", {
   # storage.mode(x) <- "double" turns a character column into all NA, so
   # without check_numeric() this failure would be reported as non-finite data

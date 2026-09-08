@@ -106,7 +106,8 @@ resolve_obs <- function(post, x, first_row, arg = if (first_row) "x" else "obs")
   }
   x <- check_numeric(x, check_arg)
   check_finite(x, check_arg)
-  x <- as_theta_matrix(x, post$fit$dim_x)
+  x <- check_matrix(x, post$fit$dim_x, check_arg,
+                    "one row per independent observation")
   if (!first_row) return(x)
   if (nrow(x) > 1L) {
     warning(sprintf(
@@ -261,7 +262,7 @@ log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
   # allow_inf = TRUE precedent in mcmc_log_prob() for the same "posterior
   # log_prob" contract.
   check_finite(theta, "theta", allow_inf = TRUE)
-  theta <- as_theta_matrix(theta, fit$dim_theta)
+  theta <- check_matrix(theta, fit$dim_theta, "theta", "one parameter per column")
   xo_std <- standardized_obs(post, x)
   theta_z <- apply_standardizer(fit$std_theta, theta)
   lp <- de_log_prob(fit$de, theta_z, xo_std) + standardizer_log_jac(fit$std_theta)
