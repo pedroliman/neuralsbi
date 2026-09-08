@@ -94,7 +94,10 @@ test_that("bounded families set the support that drives leakage correction", {
   expect_null(prior_cauchy(0, 1)$lower)
   expect_null(prior_cauchy(0, 1)$upper)
 
-  expect_equal(within_support(prior_beta(2, 15), c(0.1, 1.5, -0.2)),
+  # A bare vector is read as a single row (see within_support()'s own
+  # wrong-length checks in test-prior.R), so several 1-d draws need an
+  # explicit column matrix rather than a plain vector.
+  expect_equal(within_support(prior_beta(2, 15), matrix(c(0.1, 1.5, -0.2), ncol = 1)),
                c(TRUE, FALSE, FALSE))
   expect_equal(prior_beta(2, 15)$log_prob(c(0.1, 1.5))[2], -Inf)
 })

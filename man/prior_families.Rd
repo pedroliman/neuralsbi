@@ -88,7 +88,9 @@ theta <- sample_prior(prior, 5)
 prior_gamma(shape = c(2, 5, 9), rate = 3)
 
 # Support bounds come from the family, and drive the leakage correction.
-within_support(prior_beta(2, 15), c(0.1, 1.5))
+# A bare vector is read as a single row, so several 1-d draws need an
+# explicit column matrix.
+within_support(prior_beta(2, 15), matrix(c(0.1, 1.5), ncol = 1))
 }
 \seealso{
 \code{\link[=prior_independent]{prior_independent()}} to combine several of these into one joint

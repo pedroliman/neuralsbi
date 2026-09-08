@@ -311,7 +311,7 @@ sample_prior <- function(prior, n) {
 #' @return Logical vector, one entry per row of `theta`.
 #' @export
 within_support <- function(prior, theta) {
-  theta <- as_theta_matrix(theta, prior$dim)
+  theta <- check_matrix(theta, prior$dim, "theta", "one parameter per column")
   if (is.null(prior$lower) && is.null(prior$upper)) {
     return(rep(TRUE, nrow(theta)))
   }
