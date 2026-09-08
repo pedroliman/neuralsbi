@@ -39,6 +39,20 @@ test_that("unbounded prior treats everything as in-support", {
   expect_true(all(within_support(prior, matrix(rnorm(20), ncol = 2))))
 })
 
+test_that("within_support() errors on a wrong-length theta instead of reshaping it (#292)", {
+  # A length-3 theta against dim = 2 used to fold into a matrix with the
+  # right width instead of erroring, silently turning one mistyped parameter
+  # vector into a plausible-looking length-2 answer.
+  prior <- prior_uniform(low = c(-2, -2), high = c(2, 2))
+
+  expect_error(within_support(prior, c(0.1, 0.2, 0.3)),
+               "`theta` must have 2 columns")
+  # Length 4 is a clean multiple of dim = 2, so this used to reshape into 2
+  # rows with no warning at all rather than erroring.
+  expect_error(within_support(prior, c(0.1, 0.2, 5.0, 0.3)),
+               "`theta` must have 2 columns")
+})
+
 test_that("prior_uniform rejects bounds that do not describe an interval", {
   expect_error(prior_uniform(low = 2, high = 1),
                "Every `high` must be strictly greater than the matching `low`")
