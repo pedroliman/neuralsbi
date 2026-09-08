@@ -109,6 +109,13 @@ test_that("sample() errors on a wrong-length obs instead of reshaping it", {
                "`x` must have 2 columns")
 })
 
+test_that("posterior() on an npe fit errors on a wrong-length x_obs instead of reshaping it", {
+  fit <- npe_fit_2d()
+
+  expect_error(posterior(fit, x_obs = c(10, 20, 30, 40)),
+               "`x_obs` must have 2 columns")
+})
+
 test_that("posterior() on an nle fit errors on a wrong-length x_obs instead of reshaping it", {
   set.seed(6)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
