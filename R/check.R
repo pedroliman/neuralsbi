@@ -167,6 +167,40 @@ check_matrix <- function(value, d = NULL, arg, what = NULL) {
   value
 }
 
+#' Reject an ambiguous bare-vector `theta` on the pre-computed simulations path
+#'
+#' [as_theta_matrix()] treats a bare vector that isn't already a single row as
+#' a stacked column, built with `matrix(x, ncol = d, byrow = TRUE)`. That is
+#' exactly right when `d == 1` -- there is only one column, so row-major and
+#' column-major agree -- but for `d > 1` it silently assumes the vector lists
+#' parameter sets row-major, while R's own `as.vector()` on a matrix flattens
+#' column-major. Someone who does `theta_flat <- as.vector(theta_matrix)` and
+#' passes `theta_flat` back in as `theta =` gets a plausible-looking fit
+#' trained on scrambled parameter values, with nothing said about it. A single
+#' simulation (`length(value) == d`) is not ambiguous -- there is only one row
+#' either way -- so [as_theta_matrix()] still handles that case unchanged;
+#' this only closes the guess for everything else.
+#'
+#' @param value `theta`, already run through [check_numeric()].
+#' @param d `prior$dim`.
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @return `value`, invisibly and unchanged. Callers still pass it through
+#'   [as_theta_matrix()] to build the actual matrix.
+#' @keywords internal
+check_precomputed_theta <- function(value, d, arg) {
+  if (d > 1L && is.null(dim(value)) && length(value) != d) {
+    stop(sprintf(paste0(
+      "`%s` must be a matrix or data frame with %s (one row per simulation), ",
+      "not a length-%d vector. A bare vector cannot say whether it lists ",
+      "parameter sets row-major or column-major (R's own as.vector() on a ",
+      "matrix is column-major), so pass the matrix itself instead of ",
+      "flattening it."),
+      arg, n_things(d, "column"), length(value)),
+      call. = FALSE)
+  }
+  invisible(value)
+}
+
 #' Validate a count argument
 #'
 #' One finite whole number, at least `min`. `as.integer()` on its own accepts

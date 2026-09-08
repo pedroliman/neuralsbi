@@ -61,6 +61,57 @@ test_that("pre-computed simulations can be passed directly", {
   expect_equal(fit$n_simulations, 500L)
 })
 
+test_that("npe() errors on a flattened multi-column theta instead of guessing its layout (#291)", {
+  # A column-major as.vector() flatten of an n x d theta matrix is a valid
+  # multiple of d, so it slipped past both check_numeric() and the old
+  # as_theta_matrix() call: matrix(theta_flat, ncol = d, byrow = TRUE)
+  # silently reinterpreted it as a row-major layout, training on scrambled
+  # parameter values with no warning at all.
+  set.seed(1)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  n <- 50
+  theta_true <- matrix(c(rnorm(n, 0), rnorm(n, 5)), ncol = 2)
+  theta_flat <- as.vector(theta_true)
+  x <- theta_true + matrix(rnorm(n * 2, sd = 0.1), ncol = 2)
+
+  expect_error(
+    npe(prior, theta = theta_flat, x = x, density_estimator = "linear_gaussian"),
+    "`theta` must be a matrix or data frame with 2 columns.*length-100 vector"
+  )
+  # nle() shares the same prepare_simulations() path.
+  expect_error(
+    nle(prior, theta = theta_flat, x = x, density_estimator = "linear_gaussian"),
+    "`theta` must be a matrix or data frame with 2 columns"
+  )
+})
+
+test_that("npe() still accepts a real theta matrix for a multi-parameter prior", {
+  # The fix for #291 must not touch legitimate matrix input: an actual n x d
+  # matrix carries no row-major/column-major ambiguity and should keep working.
+  set.seed(2)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  n <- 50
+  theta <- matrix(c(rnorm(n, 0), rnorm(n, 5)), ncol = 2)
+  x <- theta + matrix(rnorm(n * 2, sd = 0.1), ncol = 2)
+
+  fit <- npe(prior, theta = theta, x = x, density_estimator = "linear_gaussian")
+  expect_s3_class(fit, "nsbi_npe")
+  expect_equal(unname(fit$std_theta$center), colMeans(theta), tolerance = 1e-8)
+})
+
+test_that("npe() still accepts a bare theta vector for a single-parameter prior", {
+  # d == 1 has no row-major/column-major ambiguity (there is only one
+  # column), so a bare vector must keep working exactly as before.
+  set.seed(3)
+  prior <- prior_normal(mean = 0, sd = 1)
+  theta <- rnorm(200)
+  x <- theta + rnorm(200, sd = 0.1)
+
+  fit <- npe(prior, theta = theta, x = x, density_estimator = "linear_gaussian")
+  expect_s3_class(fit, "nsbi_npe")
+  expect_equal(fit$n_simulations, 200L)
+})
+
 test_that("a non-finite theta is dropped on the pre-computed path", {
   set.seed(11)
   prior <- prior_normal(mean = 0, sd = 1)
