@@ -226,8 +226,11 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
     n_dropped <- sims$n_dropped
   } else {
     # pre-computed simulations get the same type and finiteness checks, so the
-    # rules do not depend on who ran the simulator
-    theta <- as_theta_matrix(check_numeric(theta, "theta"), prior$dim)
+    # rules do not depend on who ran the simulator. theta goes through
+    # check_precomputed_matrix() rather than as_theta_matrix(): for
+    # prior$dim > 1 a bare vector's row-major-vs-column-major layout is
+    # ambiguous, so it is rejected instead of guessed (GitHub #291).
+    theta <- check_precomputed_matrix(theta, prior$dim, "theta")
     x <- as_theta_matrix(check_numeric(x, "x"))
     if (nrow(theta) != nrow(x)) {
       stop("`theta` and `x` must have the same number of rows.", call. = FALSE)

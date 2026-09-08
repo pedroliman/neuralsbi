@@ -167,6 +167,51 @@ check_matrix <- function(value, d = NULL, arg, what = NULL) {
   value
 }
 
+#' Validate the pre-computed `theta` argument to [prepare_simulations()]
+#'
+#' A different shape convention from [check_matrix()]: here a bare vector
+#' means one 1-D draw per entry (`n` simulations, stacked as a column), not a
+#' single row of `d` parameters. For `d == 1` that reading is unambiguous. For
+#' `d > 1` it is not -- flattening an `n x d` matrix the way R's own
+#' `as.vector()` does is column-major, but [as_theta_matrix()] used to fold a
+#' bare vector back up `byrow = TRUE`, silently assuming row-major. A vector
+#' whose length happens to be an exact multiple of `d` accepted that guess
+#' with no way for the caller to tell it disagreed with `as.vector()`'s own
+#' convention. So for `d > 1` a bare vector is rejected outright: the caller
+#' must pass a matrix or data frame, which carries its layout unambiguously.
+#'
+#' @param value The user's pre-computed `theta` (or `x`, once its target
+#'   dimension is known).
+#' @param d Required number of columns.
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @return `value` as a numeric matrix with `d` columns.
+#' @keywords internal
+check_precomputed_matrix <- function(value, d, arg) {
+  bad <- function(fmt, ...) {
+    stop(sprintf("`%s` %s", arg, sprintf(fmt, ...)), call. = FALSE)
+  }
+  value <- check_numeric(value, arg)
+  if (is.null(dim(value))) {
+    if (d > 1L) {
+      bad(paste0("must be a matrix or data frame with %s, one row per ",
+                 "simulation. A plain vector is ambiguous when %s has more ",
+                 "than one column: there is no way to tell whether it is ",
+                 "laid out row-major or column-major, so it is not guessed."),
+          n_things(d, "column"), arg)
+    }
+    return(matrix(value, ncol = 1L))
+  }
+  if (length(dim(value)) > 2L) {
+    bad("must be a vector, matrix or data frame, but it is a %d-dimensional array.",
+        length(dim(value)))
+  }
+  if (ncol(value) != d) {
+    bad("must have %s, but it has %d.", n_things(d, "column"), ncol(value))
+  }
+  storage.mode(value) <- "double"
+  value
+}
+
 #' Validate a count argument
 #'
 #' One finite whole number, at least `min`. `as.integer()` on its own accepts

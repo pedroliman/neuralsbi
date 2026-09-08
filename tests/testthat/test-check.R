@@ -54,6 +54,36 @@ test_that("check_matrix() suggests a transpose when the rows match", {
   expect_false(grepl("transpose", msg))
 })
 
+test_that("check_precomputed_matrix() rejects a bare vector when d > 1 instead of guessing its layout (#291)", {
+  # Length is a clean multiple of d = 2, so as_theta_matrix() used to fold
+  # this into a 2 x 2 matrix byrow = TRUE with no warning at all -- silently
+  # disagreeing with as.vector()'s own column-major convention for the exact
+  # matrix a caller is most likely to have flattened.
+  expect_error(check_precomputed_matrix(c(1, 2, 3, 4), 2L, "theta"),
+               "`theta` must be a matrix or data frame with 2 columns")
+  # A length that is not even a multiple of d used to warn (base R recycling)
+  # rather than error; this now errors the same way.
+  expect_error(check_precomputed_matrix(c(1, 2, 3), 2L, "theta"),
+               "`theta` must be a matrix or data frame with 2 columns")
+})
+
+test_that("check_precomputed_matrix() reads a bare vector as a column when d == 1", {
+  # No row-major/column-major ambiguity for a single column: each entry is
+  # its own 1-D draw.
+  out <- check_precomputed_matrix(c(1, 2, 3), 1L, "theta")
+  expect_equal(out, matrix(c(1, 2, 3), ncol = 1))
+})
+
+test_that("check_precomputed_matrix() passes a correctly shaped matrix or data frame through", {
+  m <- matrix(1:6, ncol = 2)
+  expect_equal(check_precomputed_matrix(m, 2L, "theta"),
+               matrix(as.double(1:6), ncol = 2))
+  expect_equal(check_precomputed_matrix(data.frame(a = 1:3, b = 4:6), 2L, "theta"),
+               matrix(as.double(1:6), ncol = 2, dimnames = list(NULL, c("a", "b"))))
+  expect_error(check_precomputed_matrix(matrix(1:6, ncol = 3), 2L, "theta"),
+               "`theta` must have 2 columns, but it has 3")
+})
+
 test_that("check_numeric() names the offending columns and leaves shape alone", {
   expect_error(check_numeric(data.frame(a = 1:3, b = letters[1:3]), "x"),
                "`x` has non-numeric columns: b")

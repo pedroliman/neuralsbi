@@ -146,6 +146,40 @@ test_that("npe() leaves a valid call alone", {
                   "nsbi_npe")
 })
 
+test_that("npe()/nle() error on a flattened pre-computed theta vector instead of silently scrambling it (#291)", {
+  set.seed(1)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  n <- 50
+  theta_true <- matrix(c(stats::rnorm(n, 0), stats::rnorm(n, 5)), ncol = 2)
+  # as.vector() on a matrix is column-major: the first 50 entries are column
+  # 1, the next 50 are column 2. as_theta_matrix() used to fold this back up
+  # byrow = TRUE instead, silently reading it as row-major -- a completely
+  # different, garbled theta with zero diagnostic output.
+  theta_flat <- as.vector(theta_true)
+  x <- theta_true + matrix(stats::rnorm(n * 2, sd = 0.1), ncol = 2)
+
+  expect_error(npe(prior, theta = theta_flat, x = x,
+                   density_estimator = "linear_gaussian"),
+               "`theta` must be a matrix or data frame with 2 columns")
+  expect_error(nle(prior, theta = theta_flat, x = x,
+                   density_estimator = "linear_gaussian"),
+               "`theta` must be a matrix or data frame with 2 columns")
+
+  # A properly shaped matrix is unaffected and recovers the true parameters.
+  fit <- npe(prior, theta = theta_true, x = x,
+             density_estimator = "linear_gaussian")
+  expect_equal(unname(fit$std_theta$center), colMeans(theta_true), tolerance = 1e-8)
+
+  # dim == 1 has no row-major/column-major ambiguity, so a bare theta vector
+  # is still accepted there.
+  prior_1d <- prior_normal(mean = 0, sd = 1)
+  theta_1d <- stats::rnorm(n)
+  x_1d <- theta_1d + stats::rnorm(n, sd = 0.1)
+  expect_s3_class(npe(prior_1d, theta = theta_1d, x = x_1d,
+                      density_estimator = "linear_gaussian"),
+                  "nsbi_npe")
+})
+
 test_that("fit_density_estimator() forwards only the args linear_gaussian's signature accepts", {
   # fit_linear_gaussian() only takes theta/x/ridge/verbose. npe()/nle() always
   # pass n_components, hidden, embedding_net and the rest regardless of which
