@@ -2,6 +2,29 @@
 
 ## neuralsbi 0.6.42
 
+- **[`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  no longer silently reshapes a wrong-length `theta` into several
+  parameter sets.** It handed `theta` to
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md),
+  which reshapes whatever length it is given rather than checking it
+  matches `prior$dim` – so
+  `within_support(prior_uniform(low = c(-2, -2), high = c(2, 2)), c(0.1, 0.2, 0.3))`
+  recycled the length-3 vector into a 2-row matrix with a cryptic
+  recycling warning, and `within_support(prior, c(0.1, 0.2, 5.0, 0.3))`
+  (length 4, a clean multiple of `dim = 2`) silently became 2 rows with
+  no warning at all. This is the same bug class
+  [\#289](https://github.com/pedroliman/neuralsbi/issues/289) fixed at
+  five other call sites;
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  was scoped out of that PR for separate consideration. It now goes
+  through
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  like the rest: a bare vector is read as a single row and must have
+  exactly `prior$dim` entries, and a mismatched length errors instead of
+  recycling
+  ([\#292](https://github.com/pedroliman/neuralsbi/issues/292))
+  ([\#293](https://github.com/pedroliman/neuralsbi/issues/293)).
+
 - **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
   on an `npe` fit no longer silently reshapes a wrong-length `x_obs`.**
   [`posterior.nsbi_npe()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)

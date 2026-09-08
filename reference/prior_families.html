@@ -202,7 +202,9 @@ prior, <code><a href="prior_truncated.html">prior_truncated()</a></code> to boun
 <span class="r-out co"><span class="r-pr">#&gt;</span>   theta[3] ~ gamma(9, 3)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Support bounds come from the family, and drive the leakage correction.</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="within_support.html">within_support</a></span><span class="op">(</span><span class="fu">prior_beta</span><span class="op">(</span><span class="fl">2</span>, <span class="fl">15</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># A bare vector is read as a single row, so several 1-d draws need an</span></span></span>
+<span class="r-in"><span><span class="co"># explicit column matrix.</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="within_support.html">within_support</a></span><span class="op">(</span><span class="fu">prior_beta</span><span class="op">(</span><span class="fl">2</span>, <span class="fl">15</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">1.5</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1]  TRUE FALSE</span>
 </code></pre></div>
     </div>
