@@ -2,6 +2,25 @@
 
 ## neuralsbi 0.6.42
 
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  no longer guess the layout of a flattened multi-parameter `theta` on
+  the pre-computed `theta =`/`x =` path.**
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  passed a bare `theta` vector straight to
+  [`as_theta_matrix()`](https://neuralsbi.pedrodelima.com/reference/as_theta_matrix.md),
+  which reshapes anything that isn’t a single row with
+  `matrix(theta, ncol = d, byrow = TRUE)` – silently assuming row-major
+  order. When `length(theta)` happened to be an exact multiple of
+  `prior$dim`, that assumption was never checked against anything:
+  `theta_flat <- as.vector(theta_matrix)`, the ordinary column-major way
+  to flatten an `n x d` matrix in R, came back scrambled, and training
+  proceeded on the wrong parameter values with no warning or error. A
+  single simulation (`length(theta) == prior$dim`) stays unambiguous and
+  keeps working as before; for a multi-parameter prior, any other bare
+  vector now errors and asks for a matrix or data frame instead of
+  guessing ([\#291](https://github.com/pedroliman/neuralsbi/issues/291))
+  ([\#295](https://github.com/pedroliman/neuralsbi/issues/295)).
+
 - **[`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
   no longer silently reshapes a wrong-length `theta` into several
   parameter sets.** It handed `theta` to
