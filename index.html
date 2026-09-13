@@ -78,7 +78,7 @@
 
     <a class="navbar-brand me-2" href="index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.43</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -170,7 +170,7 @@
 <span>  <span class="co"># Let's use just a deterministic ODE, so there's no randomness in transmission:</span></span>
 <span>  <span class="co"># WE could make it fully stochastic if we want. </span></span>
 <span>  <span class="co"># I just want to make this as fast as it can be for this vignette build</span></span>
-<span>  <span class="va">ode_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/deSolve/man/ode.html" class="external-link">ode</a></span><span class="op">(</span>y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>S <span class="op">=</span> <span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>, I <span class="op">=</span> <span class="va">I0</span>, CumInfections <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  <span class="va">ode_result</span> <span class="op">&lt;-</span> <span class="fu">ode</span><span class="op">(</span>y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>S <span class="op">=</span> <span class="va">N</span> <span class="op">-</span> <span class="va">I0</span>, I <span class="op">=</span> <span class="va">I0</span>, CumInfections <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>                    times <span class="op">=</span> <span class="va">times</span>,</span>
 <span>                    func <span class="op">=</span> <span class="va">ode_model</span>,</span>
 <span>                    parms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">theta</span><span class="op">[[</span><span class="st">"beta"</span><span class="op">]</span><span class="op">]</span>,</span>

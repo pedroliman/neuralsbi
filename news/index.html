@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.43</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.43" id="neuralsbi-0643">neuralsbi 0.6.43<a class="anchor" aria-label="anchor" href="#neuralsbi-0643"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/stan_export.html">stan_data()</a></code> now takes a <code>model</code> argument and requires <code>x_obs</code> when it is <code>TRUE</code>.</strong> <code><a href="../reference/stan_export.html">stan_code()</a></code>’s default (<code>model = TRUE</code>) always emits a <code>data</code> block that declares <code>N</code> and <code>x</code> as required, but <code><a href="../reference/stan_export.html">stan_data()</a></code> made <code>x_obs</code> optional and, when it was omitted, returned a list with neither field. Pairing that program with that data list compiled fine in R and then failed deep inside <code>cmdstanr</code>/<code>rstan</code> with an opaque “variable does not exist” error instead of a message from this package. <code><a href="../reference/stan_export.html">stan_data()</a></code> now mirrors <code><a href="../reference/stan_export.html">stan_code()</a></code>’s <code>model</code> argument (default <code>TRUE</code>) and errors up front, naming <code>x_obs</code>, when <code>model = TRUE</code> and <code>x_obs</code> is <code>NULL</code>; pass <code>model = FALSE</code> to build a data list for a functions-only export, which has no <code>N</code>/<code>x</code> to fill (<a href="https://github.com/pedroliman/neuralsbi/issues/298" class="external-link">#298</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/299" class="external-link">#299</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.42" id="neuralsbi-0642">neuralsbi 0.6.42<a class="anchor" aria-label="anchor" href="#neuralsbi-0642"></a></h2>
 <ul><li><p><strong><code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> no longer guess the layout of a flattened multi-parameter <code>theta</code> on the pre-computed <code>theta =</code>/<code>x =</code> path.</strong> <code><a href="../reference/prepare_simulations.html">prepare_simulations()</a></code> passed a bare <code>theta</code> vector straight to <code><a href="../reference/as_theta_matrix.html">as_theta_matrix()</a></code>, which reshapes anything that isn’t a single row with <code>matrix(theta, ncol = d, byrow = TRUE)</code> – silently assuming row-major order. When <code>length(theta)</code> happened to be an exact multiple of <code>prior$dim</code>, that assumption was never checked against anything: <code>theta_flat &lt;- as.vector(theta_matrix)</code>, the ordinary column-major way to flatten an <code>n x d</code> matrix in R, came back scrambled, and training proceeded on the wrong parameter values with no warning or error. A single simulation (<code>length(theta) == prior$dim</code>) stays unambiguous and keeps working as before; for a multi-parameter prior, any other bare vector now errors and asks for a matrix or data frame instead of guessing (<a href="https://github.com/pedroliman/neuralsbi/issues/291" class="external-link">#291</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/295" class="external-link">#295</a>).</p></li>

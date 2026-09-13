@@ -15,7 +15,7 @@ stan_code(fit, name = "nsbi_log_lik", model = TRUE)
 
 write_stan_model(fit, file, name = "nsbi_log_lik", model = TRUE)
 
-stan_data(fit, x_obs = NULL)
+stan_data(fit, x_obs = NULL, model = TRUE)
 ```
 
 ## Arguments
@@ -32,7 +32,12 @@ stan_data(fit, x_obs = NULL)
 - model:
 
   Generate a complete, runnable model (the default) or only the
-  `functions` block, for `#include`-ing into a model of your own.
+  `functions` block, for `#include`-ing into a model of your own. In
+  `stan_data()`, this must agree with the `model` a paired `stan_code()`
+  call used: `model = TRUE` requires `x_obs`, because the generated
+  model's data block declares `N` and `x` and there is nothing to fill
+  them with otherwise; `model = FALSE` matches a functions-only export,
+  which has no `N`/`x` to fill, so `x_obs` is optional there.
 
 - file:
 
@@ -41,7 +46,7 @@ stan_data(fit, x_obs = NULL)
 - x_obs:
 
   Observation to put in the data list. Rows are independent
-  observations.
+  observations. Required when `model = TRUE`.
 
 ## Value
 
@@ -143,6 +148,12 @@ str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
 #>  $ nsbi_w   : num [1:3] 9.32e-18 9.59e-01 2.83e-01
 #>  $ N        : int 10
 #>  $ x        : num [1:10, 1] 0.811 -1.586 -0.975 -0.782 1.202 ...
+#>  $ nsbi_low : num -3
+#>  $ nsbi_high: num 3
+str(stan_data(fit, model = FALSE), max.level = 1)
+#> List of 4
+#>  $ nsbi_nw  : int 3
+#>  $ nsbi_w   : num [1:3] 9.32e-18 9.59e-01 2.83e-01
 #>  $ nsbi_low : num -3
 #>  $ nsbi_high: num 3
 ```
