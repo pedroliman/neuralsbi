@@ -381,5 +381,5 @@ test_that("stan_code() puts the generated prior into a whole program", {
   expect_match(code, "theta_2 ~ normal\\(0, 1\\) T\\[0,\\];")
   expect_match(code, "x ~ nsbi_log_lik_sum\\(theta, nsbi_w\\);")
   # Nothing extra to ship: the prior is in the source, not in the data.
-  expect_named(stan_data(fit), c("nsbi_nw", "nsbi_w"))
+  expect_named(stan_data(fit, model = FALSE), c("nsbi_nw", "nsbi_w"))
 })
