@@ -59,6 +59,35 @@ test_that("stan_data() carries the weights, the data and the prior", {
   expect_null(dimnames(data$x))
 })
 
+test_that("stan_data() requires x_obs when model = TRUE, matching stan_code()'s default (#298)", {
+  # stan_code(fit)'s default model always declares N/x as required data; a
+  # data list with neither, paired with that program, used to fail deep
+  # inside cmdstanr/rstan instead of with a message from this package.
+  fit <- stan_lingauss_fit()
+
+  expect_error(stan_data(fit), "`x_obs` is required")
+  expect_error(stan_data(fit, model = TRUE), "`x_obs` is required")
+})
+
+test_that("stan_data(fit, model = FALSE) still works without x_obs (#298)", {
+  fit <- stan_lingauss_fit()
+  data <- stan_data(fit, model = FALSE)
+
+  expect_named(data, c("nsbi_nw", "nsbi_w", "nsbi_low", "nsbi_high"))
+  expect_null(data$N)
+  expect_null(data$x)
+})
+
+test_that("stan_data() with x_obs and model = TRUE still works as before (#298)", {
+  fit <- stan_lingauss_fit()
+  x_obs <- matrix(stats::rnorm(12), ncol = 2)
+  data <- stan_data(fit, x_obs, model = TRUE)
+
+  expect_named(data, c("nsbi_nw", "nsbi_w", "N", "x", "nsbi_low", "nsbi_high"))
+  expect_equal(data$N, 6L)
+  expect_equal(dim(data$x), c(6L, 2L))
+})
+
 test_that("stan_data() rejects a non-finite x_obs instead of passing it to Stan", {
   # Without check_finite(), an NA here reaches as_theta_matrix() unnoticed and
   # then cmdstan_model()$sample()/rstan::sampling(), surfacing as an opaque
@@ -96,7 +125,7 @@ test_that("a normal prior is written out as a sampling statement", {
   code <- stan_code(fit)
 
   expect_match(code, "theta ~ normal\\(nsbi_prior_mean, nsbi_prior_sd\\);")
-  expect_equal(stan_data(fit)$nsbi_prior_sd, c(1, 2))
+  expect_equal(stan_data(fit, model = FALSE)$nsbi_prior_sd, c(1, 2))
 })
 
 test_that("a custom prior cannot be written out, and the error says why", {
@@ -127,11 +156,11 @@ test_that("stan_data() and stan_code() refuse an improper uniform prior", {
   fit <- nle(prior, theta = theta, x = x, n_simulations = 500,
              density_estimator = "linear_gaussian", seed = 5)
 
-  expect_error(stan_data(fit), "improper distribution")
+  expect_error(stan_data(fit, model = FALSE), "improper distribution")
   expect_error(stan_code(fit), "improper distribution")
   # The escape hatch a custom prior gets still names the real cause here:
   # this is not arbitrary R code, it is a named family with no finite support.
-  expect_error(stan_data(fit), "prior_truncated")
+  expect_error(stan_data(fit, model = FALSE), "prior_truncated")
 })
 
 test_that("stan_data()/stan_code() still work for a finite-bound uniform prior from pre-computed theta/x", {
@@ -202,10 +231,10 @@ test_that("stan_data() points a dead fit at save_npe(), as stan_code() does", {
                    function(x, name) stop("external pointer is not valid"))
   fit$de$net <- dead
 
-  expect_error(stan_data(fit), "save_npe")
+  expect_error(stan_data(fit, model = FALSE), "save_npe")
   expect_error(stan_code(fit), "save_npe")
   # A live fit is untouched by the check.
-  expect_type(stan_data(stan_lingauss_fit(400))$nsbi_w, "double")
+  expect_type(stan_data(stan_lingauss_fit(400), model = FALSE)$nsbi_w, "double")
 })
 
 test_that("stan_code() refuses an NPE fit", {

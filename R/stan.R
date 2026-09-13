@@ -68,10 +68,15 @@
 #' @param fit An `nsbi_nle` object from [nle()].
 #' @param name Prefix for the generated functions.
 #' @param model Generate a complete, runnable model (the default) or only the
-#'   `functions` block, for `#include`-ing into a model of your own.
+#'   `functions` block, for `#include`-ing into a model of your own. In
+#'   `stan_data()`, this must agree with the `model` a paired [stan_code()]
+#'   call used: `model = TRUE` requires `x_obs`, because the generated model's
+#'   data block declares `N` and `x` and there is nothing to fill them with
+#'   otherwise; `model = FALSE` matches a functions-only export, which has no
+#'   `N`/`x` to fill, so `x_obs` is optional there.
 #' @param file Path to write to.
 #' @param x_obs Observation to put in the data list. Rows are independent
-#'   observations.
+#'   observations. Required when `model = TRUE`.
 #'
 #' @return `stan_code()` returns the Stan program as a single string;
 #'   `write_stan_model()` returns `file` invisibly; `stan_data()` returns a
@@ -84,6 +89,7 @@
 #'
 #' cat(substr(stan_code(fit), 1, 400))
 #' str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
+#' str(stan_data(fit, model = FALSE), max.level = 1)
 #' @name stan_export
 NULL
 
@@ -114,13 +120,21 @@ write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
 
 #' @rdname stan_export
 #' @export
-stan_data <- function(fit, x_obs = NULL) {
+stan_data <- function(fit, x_obs = NULL, model = TRUE) {
   check_exportable_fit(fit)
   # Both halves of the export read the weights, so both need a live network.
   # Without this, a fit restored by readRDS() gets the "save with save_npe()"
   # message from stan_code() and a dangling-pointer error from net_param()
   # here, for the same fit and the same cause.
   check_fit_alive(fit)
+  if (isTRUE(model) && is.null(x_obs)) {
+    stop("`x_obs` is required when `model = TRUE`: stan_code()'s default ",
+         "model declares `N` and `x` in its data block, and stan_data() has ",
+         "nothing to put there without an observation.\nPass `x_obs`, or ",
+         "call stan_data(fit, model = FALSE) to build a data list for a ",
+         "functions-only export (stan_code(fit, model = FALSE)) that has no ",
+         "`N`/`x` to fill.", call. = FALSE)
+  }
   packed <- stan_pack(fit)
   out <- list(nsbi_nw = length(packed$w), nsbi_w = packed$w)
   if (!is.null(x_obs)) {
