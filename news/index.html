@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.43</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.44" id="neuralsbi-0644">neuralsbi 0.6.44<a class="anchor" aria-label="anchor" href="#neuralsbi-0644"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/embedding_mlp.html">embedding_mlp()</a></code> no longer silently truncates a non-integer <code>output_dim</code> or <code>hidden</code> width.</strong> Its manual checks tested <code>output_dim</code> against <code>&lt; 1</code> but never against <code><a href="https://rdrr.io/r/base/Round.html" class="external-link">trunc()</a></code>, so a fractional value passed the guard and was silently floored by <code><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer()</a></code> two lines below; <code>hidden</code> was coerced with <code><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer()</a></code> before its own check ran, so a fractional entry was truncated first and the check never saw the original number. <code>embedding_mlp(output_dim = 2.7, hidden = c(10.9, 5.2))</code> used to return <code>output_dim = 2L, hidden = c(10L, 5L)</code> with no warning. Both arguments now go through <code><a href="../reference/check_count.html">check_count()</a></code>/<code><a href="../reference/check_counts.html">check_counts()</a></code>, the same helpers every other size argument in the package uses, so a fractional value errors instead of being rounded away. An empty <code>hidden</code> still means a single linear map to <code>output_dim</code>, unchanged (<a href="https://github.com/pedroliman/neuralsbi/issues/302" class="external-link">#302</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/303" class="external-link">#303</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.43" id="neuralsbi-0643">neuralsbi 0.6.43<a class="anchor" aria-label="anchor" href="#neuralsbi-0643"></a></h2>
 <ul><li>

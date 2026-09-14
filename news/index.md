@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.6.44
+
+- **[`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md)
+  no longer silently truncates a non-integer `output_dim` or `hidden`
+  width.** Its manual checks tested `output_dim` against `< 1` but never
+  against [`trunc()`](https://rdrr.io/r/base/Round.html), so a
+  fractional value passed the guard and was silently floored by
+  [`as.integer()`](https://rdrr.io/r/base/integer.html) two lines below;
+  `hidden` was coerced with
+  [`as.integer()`](https://rdrr.io/r/base/integer.html) before its own
+  check ran, so a fractional entry was truncated first and the check
+  never saw the original number.
+  `embedding_mlp(output_dim = 2.7, hidden = c(10.9, 5.2))` used to
+  return `output_dim = 2L, hidden = c(10L, 5L)` with no warning. Both
+  arguments now go through
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md)/[`check_counts()`](https://neuralsbi.pedrodelima.com/reference/check_counts.md),
+  the same helpers every other size argument in the package uses, so a
+  fractional value errors instead of being rounded away. An empty
+  `hidden` still means a single linear map to `output_dim`, unchanged
+  ([\#302](https://github.com/pedroliman/neuralsbi/issues/302))
+  ([\#303](https://github.com/pedroliman/neuralsbi/issues/303)).
+
 ## neuralsbi 0.6.43
 
 - **[`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
