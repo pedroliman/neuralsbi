@@ -389,6 +389,34 @@ test_that("npe_sequential rejects a malformed caller-supplied density_estimator 
   expect_identical(n_calls, 0L)
 })
 
+test_that("npe_sequential rejects a malformed embedding_net before round 1 simulates (#301)", {
+  # embedding_net reaches round 1 through `...`, same as n_bins/device above,
+  # and used to be checked only inside the inner npe() call at the end of the
+  # round -- after prepare_simulations() had already spent round 1's whole
+  # simulation budget.
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  seq_call <- function(...) {
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "linear_gaussian",
+                   ...)
+  }
+  expect_error(seq_call(embedding_net = list(bogus = TRUE)),
+              "`embedding_net` must be built with embedding_mlp\\(\\)\\.")
+  expect_equal(n_calls, 0L)
+
+  # A valid spec passes the check; linear_gaussian ignores it downstream (with
+  # its own warning, unrelated to this check), so the round still runs.
+  expect_warning(
+    fit <- seq_call(embedding_net = embedding_mlp(output_dim = 2)),
+    "`embedding_net` is ignored by the linear_gaussian estimator")
+  expect_s3_class(fit, "nsbi_snpe")
+})
+
 test_that("npe_sequential rejects an n_simulations vector whose length doesn't match n_rounds", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta + stats::rnorm(1, sd = 0.5)
