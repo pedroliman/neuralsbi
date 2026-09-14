@@ -60,6 +60,25 @@ test_that("npe warns and ignores an embedding for linear_gaussian", {
   expect_identical(fit_abbrev$density_estimator, "linear_gaussian")
 })
 
+test_that("npe warns and ignores an embedding for a function-valued density_estimator", {
+  # identical(density_estimator, "linear_gaussian") above is FALSE for a
+  # function, so that check alone would never fire here -- the bug reported
+  # in #300. A custom fitter still receives only theta_z/x_z
+  # (fit_density_estimator()), so embedding_net is dropped just as silently
+  # as the linear_gaussian case unless this warns too.
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.3)
+  my_fitter <- function(theta, x) fit_linear_gaussian(theta, x)
+  expect_warning(
+    fit <- npe(prior, simulator, n_simulations = 200,
+               density_estimator = my_fitter,
+               embedding_net = embedding_mlp(output_dim = 2)),
+    "function-valued `density_estimator`"
+  )
+  expect_null(fit$de$embedding)
+  expect_identical(fit$density_estimator, "custom")
+})
+
 test_that("npe rejects a non-spec embedding_net", {
   prior <- prior_normal(mean = 0, sd = 1)
   simulator <- function(theta) theta
