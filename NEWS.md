@@ -1,6 +1,10 @@
-# neuralsbi 0.6.44
+# neuralsbi 0.6.45
 
 * **`npe()`/`nre()` now warn when `embedding_net` is supplied alongside a function-valued `density_estimator`/`classifier`.** The existing check only fired for `identical(density_estimator, "linear_gaussian")`, which is `FALSE` for a function value, so a caller-supplied fitter passed to `npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))` silently dropped the embedding: `fit_density_estimator()`/`fit_ratio_estimator()` forward only `theta`/`x` to a custom function, never `embedding_net`. Both entry points now warn in that case too, symmetric with the `"linear_gaussian"`/`"logistic"` cases (#300) (#304).
+
+# neuralsbi 0.6.44
+
+* **`embedding_mlp()` no longer silently truncates a non-integer `output_dim` or `hidden` width.** Its manual checks tested `output_dim` against `< 1` but never against `trunc()`, so a fractional value passed the guard and was silently floored by `as.integer()` two lines below; `hidden` was coerced with `as.integer()` before its own check ran, so a fractional entry was truncated first and the check never saw the original number. `embedding_mlp(output_dim = 2.7, hidden = c(10.9, 5.2))` used to return `output_dim = 2L, hidden = c(10L, 5L)` with no warning. Both arguments now go through `check_count()`/`check_counts()`, the same helpers every other size argument in the package uses, so a fractional value errors instead of being rounded away. An empty `hidden` still means a single linear map to `output_dim`, unchanged (#302) (#303).
 
 # neuralsbi 0.6.43
 

@@ -34,15 +34,17 @@
 #' @seealso [npe()]
 #' @export
 embedding_mlp <- function(output_dim = 16L, hidden = c(64L, 64L)) {
-  if (length(output_dim) != 1L || !is.finite(output_dim) || output_dim < 1L) {
-    stop("`output_dim` must be a single positive integer.", call. = FALSE)
-  }
-  hidden <- as.integer(hidden)
-  if (length(hidden) && any(!is.finite(hidden) | hidden < 1L)) {
-    stop("`hidden` must be positive integers.", call. = FALSE)
+  output_dim <- check_count(output_dim, "output_dim")
+  # check_counts() requires length >= 1, but an empty `hidden` is a documented,
+  # valid spec (a single linear map straight to output_dim), so that case is
+  # handled before check_counts() ever sees it.
+  hidden <- if (length(hidden)) {
+    check_counts(hidden, "hidden", what = "one hidden-layer width per entry")
+  } else {
+    integer(0)
   }
   structure(
-    list(type = "mlp", output_dim = as.integer(output_dim), hidden = hidden),
+    list(type = "mlp", output_dim = output_dim, hidden = hidden),
     class = "nsbi_embedding"
   )
 }

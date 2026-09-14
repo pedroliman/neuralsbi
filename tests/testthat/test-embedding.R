@@ -17,6 +17,26 @@ test_that("embedding_mlp validates its arguments", {
   expect_error(embedding_mlp(hidden = c(8, -1)), "hidden")
 })
 
+test_that("embedding_mlp rejects non-integer output_dim and hidden entries", {
+  # GitHub #302: a fractional value used to pass the guard and get silently
+  # floored by as.integer() instead of being rejected.
+  expect_error(embedding_mlp(output_dim = 2.7), "output_dim")
+  expect_error(embedding_mlp(hidden = c(10.9, 5.2)), "hidden")
+  expect_error(embedding_mlp(output_dim = 2.7, hidden = c(10.9, 5.2)),
+               "output_dim")
+})
+
+test_that("embedding_mlp keeps its documented defaults and empty-hidden case", {
+  emb <- embedding_mlp()
+  expect_identical(emb$output_dim, 16L)
+  expect_identical(emb$hidden, c(64L, 64L))
+
+  # an empty hidden vector is a single linear map to output_dim
+  emb_linear <- embedding_mlp(output_dim = 5, hidden = integer(0))
+  expect_identical(emb_linear$output_dim, 5L)
+  expect_identical(emb_linear$hidden, integer(0))
+})
+
 test_that("npe warns and ignores an embedding for linear_gaussian", {
   prior <- prior_normal(mean = c(0, 0), sd = 1)
   simulator <- function(theta) theta + rnorm(length(theta), sd = 0.3)
