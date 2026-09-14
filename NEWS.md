@@ -1,6 +1,10 @@
-# neuralsbi 0.6.45
+# neuralsbi 0.6.46
 
 * **`npe_sequential()` now validates `embedding_net` before round 1 simulates.** The up-front validation block added by #251 re-runs `npe()`'s own pre-simulation checks (architecture, training controls, device, `density_estimator`) so a bad argument fails before round 1 spends any of the simulation budget, but it never checked `embedding_net`. `npe_sequential(prior, simulator, n_rounds = 3, n_simulations = 500, embedding_net = list(bogus = TRUE))` used to run the simulator for the full round-1 budget and only then fail inside the round-1 `npe()` call. The block now rejects anything that isn't built with `embedding_mlp()`, with the same error message `npe()` already gives (#301) (#306).
+
+# neuralsbi 0.6.45
+
+* **`npe()`/`nre()` now warn when `embedding_net` is supplied alongside a function-valued `density_estimator`/`classifier`.** The existing check only fired for `identical(density_estimator, "linear_gaussian")`, which is `FALSE` for a function value, so a caller-supplied fitter passed to `npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))` silently dropped the embedding: `fit_density_estimator()`/`fit_ratio_estimator()` forward only `theta`/`x` to a custom function, never `embedding_net`. Both entry points now warn in that case too, symmetric with the `"linear_gaussian"`/`"logistic"` cases (#300) (#304).
 
 # neuralsbi 0.6.44
 
