@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.44</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.45</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.45" id="neuralsbi-0645">neuralsbi 0.6.45<a class="anchor" aria-label="anchor" href="#neuralsbi-0645"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> now warn when <code>embedding_net</code> is supplied alongside a function-valued <code>density_estimator</code>/<code>classifier</code>.</strong> The existing check only fired for <code>identical(density_estimator, "linear_gaussian")</code>, which is <code>FALSE</code> for a function value, so a caller-supplied fitter passed to <code>npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))</code> silently dropped the embedding: <code>fit_density_estimator()</code>/<code><a href="../reference/fit_ratio_estimator.html">fit_ratio_estimator()</a></code> forward only <code>theta</code>/<code>x</code> to a custom function, never <code>embedding_net</code>. Both entry points now warn in that case too, symmetric with the <code>"linear_gaussian"</code>/<code>"logistic"</code> cases (<a href="https://github.com/pedroliman/neuralsbi/issues/300" class="external-link">#300</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/304" class="external-link">#304</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.44" id="neuralsbi-0644">neuralsbi 0.6.44<a class="anchor" aria-label="anchor" href="#neuralsbi-0644"></a></h2>
 <ul><li>

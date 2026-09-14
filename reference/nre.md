@@ -114,7 +114,9 @@ nre(
   Optional summary network built with
   [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md).
   The classifier then sees \\(\theta, f\_\psi(x))\\, with the embedding
-  trained jointly. Ignored (with a warning) by `"logistic"`.
+  trained jointly. Ignored (with a warning) by `"logistic"` and by a
+  function-valued `classifier`, since a custom fitter only ever receives
+  `theta` and `x`.
 
 - max_epochs, batch_size, lr, validation_fraction, patience:
 

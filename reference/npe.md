@@ -105,7 +105,9 @@ npe(
   [`embedding_mlp()`](https://neuralsbi.pedrodelima.com/reference/embedding_mlp.md).
   When supplied, the neural estimators condition on the learned features
   \\f\_\psi(x)\\ instead of the raw data, training the embedding
-  jointly. Ignored (with a warning) by `"linear_gaussian"`.
+  jointly. Ignored (with a warning) by `"linear_gaussian"` and by a
+  function-valued `density_estimator`, since a custom fitter only ever
+  receives `theta` and `x`.
 
 - max_epochs, batch_size, lr, validation_fraction, patience:
 

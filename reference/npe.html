@@ -55,7 +55,7 @@ once, you can condition on any observation without re-simulating."><meta propert
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.44</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.45</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -193,7 +193,9 @@ transform is the identity).</p></dd>
 <dd><p>Optional summary network built with <code><a href="embedding_mlp.html">embedding_mlp()</a></code>.
 When supplied, the neural estimators condition on the learned features
 \(f_\psi(x)\) instead of the raw data, training the embedding jointly.
-Ignored (with a warning) by <code>"linear_gaussian"</code>.</p></dd>
+Ignored (with a warning) by <code>"linear_gaussian"</code> and by a function-valued
+<code>density_estimator</code>, since a custom fitter only ever receives <code>theta</code>
+and <code>x</code>.</p></dd>
 
 
 <dt id="arg-max-epochs-batch-size-lr-validation-fraction-patience">max_epochs, batch_size, lr, validation_fraction, patience<a class="anchor" aria-label="anchor" href="#arg-max-epochs-batch-size-lr-validation-fraction-patience"></a></dt>
