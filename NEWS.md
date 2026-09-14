@@ -1,3 +1,7 @@
+# neuralsbi 0.6.44
+
+* **`npe()`/`nre()` now warn when `embedding_net` is supplied alongside a function-valued `density_estimator`/`classifier`.** The existing check only fired for `identical(density_estimator, "linear_gaussian")`, which is `FALSE` for a function value, so a caller-supplied fitter passed to `npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))` silently dropped the embedding: `fit_density_estimator()`/`fit_ratio_estimator()` forward only `theta`/`x` to a custom function, never `embedding_net`. Both entry points now warn in that case too, symmetric with the `"linear_gaussian"`/`"logistic"` cases (#300).
+
 # neuralsbi 0.6.43
 
 * **`stan_data()` now takes a `model` argument and requires `x_obs` when it is `TRUE`.** `stan_code()`'s default (`model = TRUE`) always emits a `data` block that declares `N` and `x` as required, but `stan_data()` made `x_obs` optional and, when it was omitted, returned a list with neither field. Pairing that program with that data list compiled fine in R and then failed deep inside `cmdstanr`/`rstan` with an opaque "variable does not exist" error instead of a message from this package. `stan_data()` now mirrors `stan_code()`'s `model` argument (default `TRUE`) and errors up front, naming `x_obs`, when `model = TRUE` and `x_obs` is `NULL`; pass `model = FALSE` to build a data list for a functions-only export, which has no `N`/`x` to fill (#298) (#299).

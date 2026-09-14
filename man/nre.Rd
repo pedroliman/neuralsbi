@@ -74,7 +74,9 @@ the residual net; here the one argument sets both.}
 
 \item{embedding_net}{Optional summary network built with \code{\link[=embedding_mlp]{embedding_mlp()}}.
 The classifier then sees \eqn{(\theta, f_\psi(x))}, with the embedding
-trained jointly. Ignored (with a warning) by \code{"logistic"}.}
+trained jointly. Ignored (with a warning) by \code{"logistic"} and by a
+function-valued \code{classifier}, since a custom fitter only ever receives
+\code{theta} and \code{x}.}
 
 \item{max_epochs, batch_size, lr, validation_fraction, patience}{Neural training
 controls (Adam optimizer, early stopping on validation loss). The defaults
