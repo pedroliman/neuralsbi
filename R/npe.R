@@ -38,7 +38,9 @@
 #' @param embedding_net Optional summary network built with [embedding_mlp()].
 #'   When supplied, the neural estimators condition on the learned features
 #'   \eqn{f_\psi(x)} instead of the raw data, training the embedding jointly.
-#'   Ignored (with a warning) by `"linear_gaussian"`.
+#'   Ignored (with a warning) by `"linear_gaussian"` and by a function-valued
+#'   `density_estimator`, since a custom fitter only ever receives `theta`
+#'   and `x`.
 #' @param max_epochs,batch_size,lr,validation_fraction,patience Neural training
 #'   controls (Adam optimizer, early stopping on validation loss). The defaults
 #'   (`batch_size = 200`, `lr = 5e-4`, `validation_fraction = 0.1`,
@@ -118,6 +120,15 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
                                            "linear_gaussian")) {
     warning("`embedding_net` is ignored by the linear_gaussian estimator.",
             call. = FALSE)
+  }
+  # fit_density_estimator() forwards only theta_z/x_z to a caller-supplied
+  # function, so embedding_net never reaches it either -- the same silent
+  # drop as linear_gaussian above, just for a function value instead of a
+  # string (#300).
+  if (!is.null(embedding_net) && is.function(density_estimator)) {
+    warning("`embedding_net` is ignored by a function-valued ",
+            "`density_estimator`; forward it yourself inside your custom ",
+            "function if needed.", call. = FALSE)
   }
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
