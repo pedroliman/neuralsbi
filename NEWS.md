@@ -1,6 +1,6 @@
 # neuralsbi 0.6.44
 
-* **`npe()`/`nre()` now warn when `embedding_net` is supplied alongside a function-valued `density_estimator`/`classifier`.** The existing check only fired for `identical(density_estimator, "linear_gaussian")`, which is `FALSE` for a function value, so a caller-supplied fitter passed to `npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))` silently dropped the embedding: `fit_density_estimator()`/`fit_ratio_estimator()` forward only `theta`/`x` to a custom function, never `embedding_net`. Both entry points now warn in that case too, symmetric with the `"linear_gaussian"`/`"logistic"` cases (#300).
+* **`npe()`/`nre()` now warn when `embedding_net` is supplied alongside a function-valued `density_estimator`/`classifier`.** The existing check only fired for `identical(density_estimator, "linear_gaussian")`, which is `FALSE` for a function value, so a caller-supplied fitter passed to `npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))` silently dropped the embedding: `fit_density_estimator()`/`fit_ratio_estimator()` forward only `theta`/`x` to a custom function, never `embedding_net`. Both entry points now warn in that case too, symmetric with the `"linear_gaussian"`/`"logistic"` cases (#300) (#304).
 
 # neuralsbi 0.6.43
 
