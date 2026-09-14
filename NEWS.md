@@ -1,6 +1,6 @@
 # neuralsbi 0.6.45
 
-* **`npe_sequential()` now validates `embedding_net` before round 1 simulates.** The up-front validation block added by #251 re-runs `npe()`'s own pre-simulation checks (architecture, training controls, device, `density_estimator`) so a bad argument fails before round 1 spends any of the simulation budget, but it never checked `embedding_net`. `npe_sequential(prior, simulator, n_rounds = 3, n_simulations = 500, embedding_net = list(bogus = TRUE))` used to run the simulator for the full round-1 budget and only then fail inside the round-1 `npe()` call. The block now rejects anything that isn't built with `embedding_mlp()`, with the same error message `npe()` already gives (#301) (#PR_NUMBER_PLACEHOLDER).
+* **`npe_sequential()` now validates `embedding_net` before round 1 simulates.** The up-front validation block added by #251 re-runs `npe()`'s own pre-simulation checks (architecture, training controls, device, `density_estimator`) so a bad argument fails before round 1 spends any of the simulation budget, but it never checked `embedding_net`. `npe_sequential(prior, simulator, n_rounds = 3, n_simulations = 500, embedding_net = list(bogus = TRUE))` used to run the simulator for the full round-1 budget and only then fail inside the round-1 `npe()` call. The block now rejects anything that isn't built with `embedding_mlp()`, with the same error message `npe()` already gives (#301) (#306).
 
 # neuralsbi 0.6.44
 
