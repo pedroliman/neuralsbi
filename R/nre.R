@@ -501,7 +501,9 @@ nre_atomic_log_prob <- function(num_atoms) {
 #' signal -- breaking early stopping when it is the validation side (GitHub
 #' #188), and training on zero gradient with no error when it is the training
 #' side (GitHub #239). `check_train_controls()` enforces `min_val_rows` on
-#' both sides of the split for exactly this reason.
+#' both sides of the split for exactly this reason, and on `batch_size` itself
+#' (GitHub #307): a `batch_size` of 1 gives every interior minibatch the same
+#' one-row shape all epoch, every one of them scoring zero gradient.
 #' @keywords internal
 fit_nre_net <- function(theta, x, classifier = "resnet", hidden = 50L,
                         n_blocks = 2L, num_atoms = 10L,

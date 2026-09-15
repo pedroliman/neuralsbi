@@ -81,6 +81,14 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
 #' side, and unlike a genuine simulation-budget error it trains silently to
 #' `patience` epochs instead of raising one.
 #'
+#' `min_val_rows` also floors `batch_size`, independently of `n`. GitHub #307:
+#' [minibatches()] only merges the *trailing* short batch, so a `batch_size`
+#' below the floor is not a one-off -- it is every interior minibatch of every
+#' epoch, each of them scoring the same "not enough rows" zero gradient
+#' [fit_nre_net()]'s objective returns below `min_val_rows`. That trains almost
+#' entirely on the one merged batch instead of erroring, so it is caught here
+#' rather than left to run.
+#'
 #' @inheritParams npe
 #' @param n Number of training rows, or `NULL` when they do not exist yet.
 #' @param min_val_rows Smallest split -- training or validation -- this call
@@ -98,6 +106,17 @@ check_train_controls <- function(max_epochs, batch_size, lr,
   check_count(patience, "patience")
   check_count(n_restarts, "n_restarts", why = "since the best of them is kept")
   check_positive(clip_grad_norm, "clip_grad_norm", allow_inf = TRUE)
+
+  if (batch_size < min_val_rows) {
+    stop(sprintf(paste0(
+      "`batch_size` of %d is too small: this estimator needs at least %s to ",
+      "score its objective on. minibatches() only merges the single trailing ",
+      "short batch, so every other minibatch would stay this size and train ",
+      "on zero gradient every epoch. Use a `batch_size` of at least %s."),
+      batch_size, n_things(as.integer(min_val_rows), "row"),
+      n_things(as.integer(min_val_rows), "row")),
+      call. = FALSE)
+  }
 
   if (!is.null(n)) {
     n_val <- max(1L, floor(validation_fraction * n))
