@@ -1,5 +1,29 @@
 # Changelog
 
+## neuralsbi 0.6.47
+
+- **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) now
+  rejects `batch_size` below what its atomic loss needs, instead of
+  training on it silently.**
+  [`minibatches()`](https://neuralsbi.pedrodelima.com/reference/minibatches.md)
+  only ever merges the *trailing* short batch into the one before it, so
+  a `batch_size` below the 2-row floor
+  [`nre_atomic_log_prob()`](https://neuralsbi.pedrodelima.com/reference/nre_atomic_log_prob.md)
+  needs is not a one-off: every interior minibatch of every epoch stays
+  that small, and the atomic loss returns a constant zero gradient below
+  2 rows. With `batch_size = 1`, that is every minibatch but the one
+  merged trailing batch, so training ran almost entirely on the signal
+  from that one batch, with no error or warning to say so.
+  [`check_train_controls()`](https://neuralsbi.pedrodelima.com/reference/check_train_controls.md)
+  now checks `batch_size` against `min_val_rows`, the same floor it
+  already enforces on both sides of the train/validation split
+  ([\#188](https://github.com/pedroliman/neuralsbi/issues/188),
+  [\#239](https://github.com/pedroliman/neuralsbi/issues/239)), and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) reports
+  it before simulating rather than after
+  ([\#307](https://github.com/pedroliman/neuralsbi/issues/307))
+  ([\#309](https://github.com/pedroliman/neuralsbi/issues/309)).
+
 ## neuralsbi 0.6.46
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
