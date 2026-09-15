@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.47</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.48</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.48" id="neuralsbi-0648">neuralsbi 0.6.48<a class="anchor" aria-label="anchor" href="#neuralsbi-0648"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/expected_coverage.html">expected_coverage()</a></code> no longer excludes SBC ranks that land exactly on the credible-interval boundary.</strong> Ranks are integers in <code>{0, ..., L}</code> (<code>L = n_posterior_samples</code>); <code>u &lt;- rank / L</code> approximates the posterior CDF at truth, and a trial was counted as covered only when <code>lo &lt; u &lt; hi</code>, strict on both ends. Whenever <code>lo * L</code> or <code>hi * L</code> is itself an integer – the default <code>L = 1000</code> and <code>alpha = 0.9</code> give <code>lo = 0.05</code>, <code>hi = 0.95</code>, so <code>lo * L = 50</code> and <code>hi * L = 950</code> – a rank landing exactly on that boundary is genuinely inside the central interval but was thrown out, biasing empirical coverage down by about <code>O(1/L)</code> for a perfectly calibrated posterior (899 covered trials read as 0.898 instead of 0.9 out of 1000, say). The bias was systematic, not sampling noise, so it didn’t shrink with more SBC trials. The comparison is now closed on both ends (<code>lo &lt;= u &lt;= hi</code>). <code><a href="../reference/plot_coverage.html">plot_coverage()</a></code> calls <code><a href="../reference/expected_coverage.html">expected_coverage()</a></code> directly and picks up the fix with no change of its own (<a href="https://github.com/pedroliman/neuralsbi/issues/308" class="external-link">#308</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/310" class="external-link">#310</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.47" id="neuralsbi-0647">neuralsbi 0.6.47<a class="anchor" aria-label="anchor" href="#neuralsbi-0647"></a></h2>
 <ul><li>

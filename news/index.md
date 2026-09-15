@@ -1,5 +1,28 @@
 # Changelog
 
+## neuralsbi 0.6.48
+
+- **[`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  no longer excludes SBC ranks that land exactly on the
+  credible-interval boundary.** Ranks are integers in `{0, ..., L}`
+  (`L = n_posterior_samples`); `u <- rank / L` approximates the
+  posterior CDF at truth, and a trial was counted as covered only when
+  `lo < u < hi`, strict on both ends. Whenever `lo * L` or `hi * L` is
+  itself an integer – the default `L = 1000` and `alpha = 0.9` give
+  `lo = 0.05`, `hi = 0.95`, so `lo * L = 50` and `hi * L = 950` – a rank
+  landing exactly on that boundary is genuinely inside the central
+  interval but was thrown out, biasing empirical coverage down by about
+  `O(1/L)` for a perfectly calibrated posterior (899 covered trials read
+  as 0.898 instead of 0.9 out of 1000, say). The bias was systematic,
+  not sampling noise, so it didn’t shrink with more SBC trials. The
+  comparison is now closed on both ends (`lo <= u <= hi`).
+  [`plot_coverage()`](https://neuralsbi.pedrodelima.com/reference/plot_coverage.md)
+  calls
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  directly and picks up the fix with no change of its own
+  ([\#308](https://github.com/pedroliman/neuralsbi/issues/308))
+  ([\#310](https://github.com/pedroliman/neuralsbi/issues/310)).
+
 ## neuralsbi 0.6.47
 
 - **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) now
