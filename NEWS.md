@@ -1,6 +1,22 @@
-# neuralsbi 0.6.43
+# neuralsbi 0.6.47
 
 * **`nre()` now rejects `batch_size` below what its atomic loss needs, instead of training on it silently.** `minibatches()` only ever merges the *trailing* short batch into the one before it, so a `batch_size` below the 2-row floor `nre_atomic_log_prob()` needs is not a one-off: every interior minibatch of every epoch stays that small, and the atomic loss returns a constant zero gradient below 2 rows. With `batch_size = 1`, that is every minibatch but the one merged trailing batch, so training ran almost entirely on the signal from that one batch, with no error or warning to say so. `check_train_controls()` now checks `batch_size` against `min_val_rows`, the same floor it already enforces on both sides of the train/validation split (#188, #239), and `nre()` reports it before simulating rather than after (#307) (#309).
+
+# neuralsbi 0.6.46
+
+* **`npe_sequential()` now validates `embedding_net` before round 1 spends its simulation budget.** `embedding_net` reaches round 1 through `...`, alongside `n_bins`, `device`, and the rest of `npe()`'s estimator/training-control arguments, and #251/#262 already moved those checks up front so a bad value fails before `prepare_simulations()` spends round 1's draws. `embedding_net` was left out of that pass: `npe_sequential(prior, simulator, n_rounds = 3, n_simulations = 500, embedding_net = list(bogus = TRUE))` ran the full round-1 simulation budget and only then failed inside the round-1 `npe()` call with `` `embedding_net` must be built with embedding_mlp(). `` The same check `npe()` already runs now also runs up front in `npe_sequential()`, so the error is identical but arrives before any simulation happens (#301) (#305).
+
+# neuralsbi 0.6.45
+
+* **`npe()`/`nre()` now warn when `embedding_net` is supplied alongside a function-valued `density_estimator`/`classifier`.** The existing check only fired for `identical(density_estimator, "linear_gaussian")`, which is `FALSE` for a function value, so a caller-supplied fitter passed to `npe(..., density_estimator = my_fitter, embedding_net = embedding_mlp(4))` silently dropped the embedding: `fit_density_estimator()`/`fit_ratio_estimator()` forward only `theta`/`x` to a custom function, never `embedding_net`. Both entry points now warn in that case too, symmetric with the `"linear_gaussian"`/`"logistic"` cases (#300) (#304).
+
+# neuralsbi 0.6.44
+
+* **`embedding_mlp()` no longer silently truncates a non-integer `output_dim` or `hidden` width.** Its manual checks tested `output_dim` against `< 1` but never against `trunc()`, so a fractional value passed the guard and was silently floored by `as.integer()` two lines below; `hidden` was coerced with `as.integer()` before its own check ran, so a fractional entry was truncated first and the check never saw the original number. `embedding_mlp(output_dim = 2.7, hidden = c(10.9, 5.2))` used to return `output_dim = 2L, hidden = c(10L, 5L)` with no warning. Both arguments now go through `check_count()`/`check_counts()`, the same helpers every other size argument in the package uses, so a fractional value errors instead of being rounded away. An empty `hidden` still means a single linear map to `output_dim`, unchanged (#302) (#303).
+
+# neuralsbi 0.6.43
+
+* **`stan_data()` now takes a `model` argument and requires `x_obs` when it is `TRUE`.** `stan_code()`'s default (`model = TRUE`) always emits a `data` block that declares `N` and `x` as required, but `stan_data()` made `x_obs` optional and, when it was omitted, returned a list with neither field. Pairing that program with that data list compiled fine in R and then failed deep inside `cmdstanr`/`rstan` with an opaque "variable does not exist" error instead of a message from this package. `stan_data()` now mirrors `stan_code()`'s `model` argument (default `TRUE`) and errors up front, naming `x_obs`, when `model = TRUE` and `x_obs` is `NULL`; pass `model = FALSE` to build a data list for a functions-only export, which has no `N`/`x` to fill (#298) (#299).
 
 # neuralsbi 0.6.42
 

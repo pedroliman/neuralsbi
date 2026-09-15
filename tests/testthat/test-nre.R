@@ -458,6 +458,22 @@ test_that("an embedding net is rejected by the logistic classifier", {
     "must be built with embedding_mlp")
 })
 
+test_that("an embedding net is rejected by a function-valued classifier", {
+  # identical(classifier, "logistic") above is FALSE for a function, so that
+  # check alone would never fire here -- the bug reported in #300.
+  # fit_ratio_estimator() forwards only theta_z/x_z to a custom classifier
+  # function, so embedding_net is dropped just as silently as the logistic
+  # case unless this warns too.
+  my_classifier <- function(theta, x) fit_logistic_ratio(theta, x)
+  expect_warning(
+    fit <- nre(gauss_prior(), gauss_sim, n_simulations = 200,
+              classifier = my_classifier,
+              embedding_net = embedding_mlp(output_dim = 2L)),
+    "function-valued `classifier`"
+  )
+  expect_identical(fit$classifier, "custom")
+})
+
 test_that("the logistic fit is deterministic given the same simulations", {
   # Contrasts are cyclic shifts, not random draws, so no RNG enters the fit.
   sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 800, seed = 9)
