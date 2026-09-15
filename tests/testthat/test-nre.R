@@ -399,6 +399,43 @@ test_that("fit_nre_net() rejects a training split too small for the atomic loss"
     "needs at least .* to score its objective on")
 })
 
+# GitHub #307: minibatches() only ever merges the *trailing* short batch into
+# the one before it, so a batch_size below the atomic loss's 2-row floor is
+# not a one-off short batch -- every interior minibatch of every epoch stays
+# that size, and nre_atomic_log_prob() returns a constant zero loss below 2
+# rows. With batch_size = 1 that is every minibatch but the merged trailing
+# one, so training ran almost entirely on zero gradient with no error or
+# warning. Like #188/#239, this is a pure argument-validation check: no torch
+# involved, since check_train_controls() catches it before nre() simulates.
+test_that("nre() fails before simulating rather than train on batch_size = 1", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        batch_size = 1L, classifier = "resnet"),
+    "`batch_size` of 1 is too small.*needs at least 2 rows")
+  expect_identical(calls, 0L)
+
+  # The closed-form logistic classifier never splits into minibatches
+  # (min_val_rows = 1L), so batch_size = 1 must not trip this floor for it.
+  expect_no_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        batch_size = 1L, classifier = "logistic"))
+  expect_identical(calls, 100L)
+})
+
+test_that("fit_nre_net() rejects a batch_size too small for the atomic loss", {
+  theta <- matrix(stats::rnorm(100), ncol = 1)
+  x <- matrix(stats::rnorm(100), ncol = 1)
+
+  expect_error(
+    fit_nre_net(theta, x, classifier = "resnet", batch_size = 1L),
+    "`batch_size` of 1 is too small.*needs at least 2 rows")
+})
+
 test_that("nre() defers to prepare_simulations() when n_simulations can't hint a row count", {
   # An invalid n_simulations (not >= 1) and no pre-computed theta/x means the
   # early min_val_rows check has nothing to check against yet, so it must not
