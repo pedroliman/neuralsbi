@@ -241,7 +241,12 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
   emp <- vapply(levels, function(a) {
     lo <- (1 - a) / 2
     hi <- 1 - lo
-    colMeans(u > lo & u < hi)
+    # Closed interval: lo*L and hi*L are integers whenever L is a multiple of
+    # 1/lo's denominator (e.g. L = 1000, a = 0.9 gives lo*L = 50, hi*L = 950),
+    # and a rank landing exactly on that boundary is genuinely inside the
+    # central interval. Excluding it with a strict `<`/`>` biased empirical
+    # coverage down by O(1/L), systematically, not as noise (#308).
+    colMeans(u >= lo & u <= hi)
   }, numeric(ncol(u)))
   # vapply drops the params x levels matrix to a plain length(levels) vector
   # when ncol(u) == 1 (a single-parameter fit), since each call's own return

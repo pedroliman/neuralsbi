@@ -101,7 +101,30 @@ test_that("expected_coverage() keeps the right shape for a single-parameter fit"
   # cross-check the 50% row directly against the same ranks the sbc() result
   # carries, independent of expected_coverage()'s own reshaping
   u <- res$ranks / res$n_posterior_samples
-  expect_equal(cov$param1[1], mean(u > 0.25 & u < 0.75))
+  expect_equal(cov$param1[1], mean(u >= 0.25 & u <= 0.75))
+})
+
+test_that("expected_coverage() counts ranks exactly on the interval boundary as covered", {
+  # #308: with L = n_posterior_samples and alpha = 0.9, lo = 0.05 and hi =
+  # 0.95, so lo * L and hi * L are integers whenever L is a multiple of 20 --
+  # e.g. L = 1000 gives lo * L = 50 and hi * L = 950. A rank landing exactly on
+  # either boundary is inside the central 90% interval and should count as
+  # covered; the strict `u > lo & u < hi` used to exclude it, biasing
+  # empirical coverage down by O(1/L) even for a perfectly calibrated
+  # posterior. Build ranks directly (no need to fit anything) so the boundary
+  # cases are exact rather than incidental.
+  L <- 1000L
+  ranks <- matrix(c(0, 50, 500, 950, L), ncol = 1)
+  res <- structure(
+    list(ranks = ranks, n_posterior_samples = L, n_sbc = nrow(ranks),
+         n_dropped = 0L, uniformity_pvalue = c(param1 = 1)),
+    class = "nsbi_sbc"
+  )
+  cov <- expected_coverage(res, levels = 0.9)
+  # 50 and 950 sit exactly on the 90% interval's boundary (u = 0.05 and
+  # u = 0.95) and belong inside it; only 0 and L fall outside. The old strict
+  # `u > lo & u < hi` counted just the middle rank as covered (1 / 5 = 0.2).
+  expect_equal(cov$param1, 3 / 5)
 })
 
 test_that("expected_coverage() refuses levels outside (0, 1)", {
