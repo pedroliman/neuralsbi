@@ -1,6 +1,10 @@
-# neuralsbi 0.6.47
+# neuralsbi 0.6.48
 
 * **`expected_coverage()` no longer excludes SBC ranks that land exactly on the credible-interval boundary.** Ranks are integers in `{0, ..., L}` (`L = n_posterior_samples`); `u <- rank / L` approximates the posterior CDF at truth, and a trial was counted as covered only when `lo < u < hi`, strict on both ends. Whenever `lo * L` or `hi * L` is itself an integer -- the default `L = 1000` and `alpha = 0.9` give `lo = 0.05`, `hi = 0.95`, so `lo * L = 50` and `hi * L = 950` -- a rank landing exactly on that boundary is genuinely inside the central interval but was thrown out, biasing empirical coverage down by about `O(1/L)` for a perfectly calibrated posterior (899 covered trials read as 0.898 instead of 0.9 out of 1000, say). The bias was systematic, not sampling noise, so it didn't shrink with more SBC trials. The comparison is now closed on both ends (`lo <= u <= hi`). `plot_coverage()` calls `expected_coverage()` directly and picks up the fix with no change of its own (#308) (#310).
+
+# neuralsbi 0.6.47
+
+* **`nre()` now rejects `batch_size` below what its atomic loss needs, instead of training on it silently.** `minibatches()` only ever merges the *trailing* short batch into the one before it, so a `batch_size` below the 2-row floor `nre_atomic_log_prob()` needs is not a one-off: every interior minibatch of every epoch stays that small, and the atomic loss returns a constant zero gradient below 2 rows. With `batch_size = 1`, that is every minibatch but the one merged trailing batch, so training ran almost entirely on the signal from that one batch, with no error or warning to say so. `check_train_controls()` now checks `batch_size` against `min_val_rows`, the same floor it already enforces on both sides of the train/validation split (#188, #239), and `nre()` reports it before simulating rather than after (#307) (#309).
 
 # neuralsbi 0.6.46
 

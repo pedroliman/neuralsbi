@@ -99,6 +99,29 @@ test_that("min_val_rows also raises check_train_controls()'s training-split floo
     "needs at least .* to score its objective on")
 })
 
+test_that("min_val_rows also floors batch_size", {
+  # GitHub #307: minibatches() only merges the trailing short batch, so
+  # batch_size below min_val_rows is not a one-off -- every interior
+  # minibatch of every epoch stays that small, and an objective like NRE's
+  # atomic loss (min_val_rows = 2L) scores zero gradient on every one of
+  # them. The default min_val_rows = 1L never trips this, since check_count()
+  # already requires batch_size >= 1.
+  expect_no_error(
+    check_train_controls(2000L, 1L, 5e-4, 0.1, 20L, 1L, 5, n = 15))
+  expect_error(
+    check_train_controls(2000L, 1L, 5e-4, 0.1, 20L, 1L, 5, n = 15,
+                         min_val_rows = 2L),
+    "`batch_size` of 1 is too small.*needs at least 2 rows")
+
+  fifteen <- matrix(stats::rnorm(15), ncol = 1)
+  expect_error(
+    train_conditional_de(build_net = function() stop("not reached"),
+                         log_prob_fn = function(...) stop("not reached"),
+                         theta = fifteen, x = fifteen, batch_size = 1L,
+                         min_val_rows = 2L),
+    "`batch_size` of 1 is too small.*needs at least 2 rows")
+})
+
 test_that("minibatches() covers every row and never leaves one on its own", {
   order <- seq_len(21L)
 
