@@ -48,6 +48,30 @@ test_that("tarp supports prior reference points and prints", {
   expect_output(print(res), "nsbi_tarp")
 })
 
+test_that("tarp rejects n_tarp below 2", {
+  set.seed(11)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+
+  expect_error(
+    tarp(fit, simulator, n_tarp = 1L, n_posterior_samples = 50L, seed = 5),
+    "n_tarp.*at least 2"
+  )
+
+  # n_tarp = 2 is the floor and must still work, for both reference modes
+  res_uniform <- tarp(fit, simulator, n_tarp = 2L, n_posterior_samples = 50L,
+                       seed = 5, references = "uniform")
+  expect_s3_class(res_uniform, "nsbi_tarp")
+  expect_length(res_uniform$coverage_values, 2L)
+
+  res_prior <- tarp(fit, simulator, n_tarp = 2L, n_posterior_samples = 50L,
+                     seed = 6, references = "prior")
+  expect_s3_class(res_prior, "nsbi_tarp")
+  expect_length(res_prior$coverage_values, 2L)
+})
+
 test_that("plot_tarp runs and returns the ECP curve", {
   skip_if_no_ggplot2()
   set.seed(10)
