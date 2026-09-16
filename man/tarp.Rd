@@ -32,7 +32,9 @@ the default is what tests this fit; another prior tests how the fit does on
 parameters it was not calibrated against. It must cover the same
 parameters as the fit.}
 
-\item{n_tarp}{Number of TARP trials (fresh (theta, x) pairs).}
+\item{n_tarp}{Number of TARP trials (fresh (theta, x) pairs). At least 2:
+the true draws are standardized by their own spread before distances are
+computed, and a single draw leaves that spread undefined.}
 
 \item{n_posterior_samples}{Posterior draws per trial.}
 

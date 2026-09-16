@@ -296,7 +296,9 @@ expected_coverage <- function(sbc_result, levels = seq(0.05, 0.95, by = 0.05)) {
 #'   parameters as the fit.
 #' @param ... Passed to [posterior()], which is how the MCMC controls
 #'   (`n_chains`, `warmup`, `thin`, `sampler`) reach an NLE or NRE fit.
-#' @param n_tarp Number of TARP trials (fresh (theta, x) pairs).
+#' @param n_tarp Number of TARP trials (fresh (theta, x) pairs). At least 2:
+#'   the true draws are standardized by their own spread before distances are
+#'   computed, and a single draw leaves that spread undefined.
 #' @param n_posterior_samples Posterior draws per trial.
 #' @param references How to draw reference points: `"uniform"` (default, uniform
 #'   over the hyper-rectangle spanned by the true parameter draws, as in the
@@ -315,7 +317,9 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                  references = c("uniform", "prior"), sim_args = list(),
                  seed = NULL, ...) {
   references <- match.arg(references)
-  n_tarp <- check_count(n_tarp, "n_tarp")
+  n_tarp <- check_count(n_tarp, "n_tarp", min = 2L,
+    why = paste("since the true draws are standardized by their own spread,",
+                "and one draw leaves that spread undefined"))
   n_posterior_samples <- check_count(n_posterior_samples,
                                      "n_posterior_samples")
   if (!is.null(seed)) set.seed(seed)
