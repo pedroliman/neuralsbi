@@ -55,7 +55,9 @@ tarp(
 
 - n_tarp:
 
-  Number of TARP trials (fresh (theta, x) pairs).
+  Number of TARP trials (fresh (theta, x) pairs). At least 2: the true
+  draws are standardized by their own spread before distances are
+  computed, and a single draw leaves that spread undefined.
 
 - n_posterior_samples:
 

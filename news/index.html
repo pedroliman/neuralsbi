@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.48</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.49</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.49" id="neuralsbi-0649">neuralsbi 0.6.49<a class="anchor" aria-label="anchor" href="#neuralsbi-0649"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/tarp.html">tarp()</a></code> now rejects <code>n_tarp</code> below 2 instead of silently returning a degenerate coverage curve.</strong> Distances are computed after z-scoring the true parameter draws by their own spread (<code>fit_standardizer(theta_true)</code>), but <code><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd()</a></code> of a single value is <code>NA</code>, and <code><a href="../reference/fit_standardizer.html">fit_standardizer()</a></code>’s guard against zero-spread columns quietly resets that <code>NA</code> to a scale of 1 with no warning, since it was never told which argument <code>theta_true</code> came from. With <code>n_tarp = 1</code> that leaves <code>theta_z</code> at exactly zero for the one trial. Under the default <code>references = "uniform"</code>, the reference box is <code>range(theta_z)</code> per parameter, which collapses to that same zero point, forcing <code>d_truth = 0</code> and every trial to read as uncovered until the last level – an ECP curve that jumps from 0 to 1 at the first step, indistinguishable from a badly miscalibrated posterior regardless of fit quality. <code>references = "prior"</code> sidesteps the forced-zero distance but still standardizes by the same degenerate, unscaled <code>std</code>, so its distances are not comparable across parameters either. <code>n_tarp</code> now goes through <code>check_count(n_tarp, "n_tarp", min = 2)</code>, the same guard used elsewhere in the package, so both reference modes get a real spread to standardize by (<a href="https://github.com/pedroliman/neuralsbi/issues/311" class="external-link">#311</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/312" class="external-link">#312</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.48" id="neuralsbi-0648">neuralsbi 0.6.48<a class="anchor" aria-label="anchor" href="#neuralsbi-0648"></a></h2>
 <ul><li>
