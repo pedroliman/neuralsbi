@@ -568,12 +568,17 @@ stan_fn_maf <- function(fit, name, packed) {
       P, k, stan_mat_of(b, sprintf("Wmu%d", k)), prev,
       stan_vec_of(b, sprintf("bmu%d", k))))
     # The clamp mirrors made_module()'s torch_clamp on alpha; without it a
-    # saturating transform would disagree with the R fit in the tails.
+    # saturating transform would disagree with the R fit in the tails. The
+    # matrix-vector product is built once as al_raw, then only the per-element
+    # clamp loops -- mirroring mu%d above, so the O(P x hidden) product isn't
+    # recomputed on each of the P clamp iterations.
     steps <- paste0(steps, sprintf(
-      "    vector[%d] al%d;\n", P, k), sprintf(
-      "    for (i in 1:%d) al%d[i] = fmin(fmax((%s * %s + %s)[i], -8.0), 8.0);\n",
+      "    vector[%d] al_raw%d = %s * %s + %s;\n",
       P, k, stan_mat_of(b, sprintf("Walpha%d", k)), prev,
-      stan_vec_of(b, sprintf("balpha%d", k))))
+      stan_vec_of(b, sprintf("balpha%d", k))),
+      sprintf("    vector[%d] al%d;\n", P, k), sprintf(
+      "    for (i in 1:%d) al%d[i] = fmin(fmax(al_raw%d[i], -8.0), 8.0);\n",
+      P, k, k))
     steps <- paste0(steps, sprintf(
       "    z = (z - mu%d) .* exp(-al%d);\n    logdet -= sum(al%d);\n", k, k, k))
   }

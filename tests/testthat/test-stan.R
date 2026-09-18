@@ -304,6 +304,16 @@ test_that("stan_code() generates the MDN and MAF _sum_lpdf block without cmdstan
                 label = paste(estimator, "sum_lpdf signature"))
     expect_match(code, "for \\(n in 1:rows\\(x\\)\\) \\{", label = paste(estimator, "loop"))
     expect_match(code, "real total = 0;", label = paste(estimator, "accumulator"))
+
+    if (estimator == "maf") {
+      # The alpha clamp's matrix-vector product is built once as al_raw<k>,
+      # outside the per-element fmin/fmax loop; a regression back to
+      # recomputing it inside the loop would drop this line entirely.
+      expect_match(code, "vector[2] al_raw1 = ", fixed = TRUE,
+                   label = "maf al_raw precompute")
+      expect_no_match(code, "for \\(i in 1:2\\) al1\\[i\\] = fmin\\(fmax\\(\\(",
+                       label = "maf clamp no longer recomputes the product per element")
+    }
   }
 })
 
