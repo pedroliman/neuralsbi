@@ -1,5 +1,25 @@
 # Changelog
 
+## neuralsbi 0.6.51
+
+- **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)’s
+  generated MAF likelihood now builds the alpha-clamp matrix-vector
+  product once per transform, instead of once per element.**
+  `stan_fn_maf()` emitted the log-scale head as
+  `for (i in 1:P) al_k[i] = fmin(fmax((Walpha_k * prev + balpha_k)[i], -8.0), 8.0);`,
+  which recomputes the full `Walpha_k * prev + balpha_k` product – O(P x
+  hidden) work – on every one of its `P` loop iterations, even though
+  `mu_k` two lines above builds the analogous product once as a plain
+  `vector[P] mu_k = W * prev + b;`. That waste compounds across
+  `n_transforms` stacked MADE transforms (5 by default) and runs on
+  every leapfrog evaluation of every NUTS iteration for any NLE-MAF fit
+  exported to Stan. The product is now built once as
+  `vector[P] al_raw_k`, and the loop only applies
+  `fmin(fmax(al_raw_k[i], -8.0), 8.0)`; the clamped values are
+  unchanged, this is a performance fix
+  ([\#314](https://github.com/pedroliman/neuralsbi/issues/314))
+  ([\#316](https://github.com/pedroliman/neuralsbi/issues/316)).
+
 ## neuralsbi 0.6.50
 
 - **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)’s
