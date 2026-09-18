@@ -476,13 +476,15 @@ stan_fn_mdn <- function(fit, name, packed) {
   tril_lines <- vapply(seq_len(Tn), function(m) {
     src <- sprintf("tflat[(k - 1) * %d + %d]", Tn, m)
     val <- if (tri$is_diag[m]) sprintf("log1p_exp(%s) + 1e-6", src) else src
-    sprintf("        L[%d, %d] = %s;\n", tri$row[m], tri$col[m], val)
+    sprintf("        Lk[%d, %d] = %s;\n", tri$row[m], tri$col[m], val)
   }, character(1))
 
   paste0(
     "  // MLP head: mixture logits, means and Cholesky factors, all functions\n",
-    "  // of theta alone. Returned packed so the i.i.d. sum can hoist it out\n",
-    "  // of the observation loop.\n",
+    "  // of theta alone. Split from the K-component assembly below so a\n",
+    "  // caller with N i.i.d. rows builds each mu[k]/L[k] once and reuses\n",
+    "  // them, instead of rebuilding every component's Cholesky factor on\n",
+    "  // every row.\n",
     sprintf("  vector %s_head(vector ts, vector w) {\n", name),
     trunk,
     sprintf("    return append_row(append_row(%s * %s + %s, %s * %s + %s), %s * %s + %s);\n",
@@ -490,29 +492,49 @@ stan_fn_mdn <- function(fit, name, packed) {
             stan_mat_of(b, "W_means"), prev, stan_vec_of(b, "b_means"),
             stan_mat_of(b, "W_tril"), prev, stan_vec_of(b, "b_tril")),
     "  }\n\n",
-    sprintf("  real %s_from_head(vector xs, vector head) {\n", name),
-    sprintf("    vector[%d] logits = head[1:%d];\n", K, K),
+    sprintf("  array[] vector %s_mu(vector head) {\n", name),
     sprintf("    vector[%d] mflat = head[%d:%d];\n", K * P, K + 1L, K + K * P),
+    sprintf("    array[%d] vector[%d] mu;\n", K, P),
+    sprintf("    for (k in 1:%d) mu[k] = mflat[((k - 1) * %d + 1):(k * %d)];\n", K, P, P),
+    "    return mu;\n",
+    "  }\n\n",
+    sprintf("  array[] matrix %s_L(vector head) {\n", name),
     sprintf("    vector[%d] tflat = head[%d:%d];\n", K * Tn, K + K * P + 1L, head_len),
-    sprintf("    vector[%d] lp;\n", K),
+    sprintf("    array[%d] matrix[%d, %d] L;\n", K, P, P),
     sprintf("    for (k in 1:%d) {\n", K),
-    sprintf("      matrix[%d, %d] L = rep_matrix(0.0, %d, %d);\n", P, P, P, P),
-    sprintf("      vector[%d] mu = mflat[((k - 1) * %d + 1):(k * %d)];\n", P, P, P),
+    sprintf("      matrix[%d, %d] Lk = rep_matrix(0.0, %d, %d);\n", P, P, P, P),
     "      {\n", paste(tril_lines, collapse = ""), "      }\n",
-    "      lp[k] = logits[k] + multi_normal_cholesky_lpdf(xs | mu, L);\n",
+    "      L[k] = Lk;\n",
     "    }\n",
+    "    return L;\n",
+    "  }\n\n",
+    "  // Log density of one observation from already-built components: the\n",
+    "  // piece every entry point shares once mu/L/logits exist.\n",
+    sprintf("  real %s_from_components(vector xs, array[] vector mu, array[] matrix L, vector logits) {\n",
+            name),
+    sprintf("    vector[%d] lp;\n", K),
+    sprintf("    for (k in 1:%d) lp[k] = logits[k] + multi_normal_cholesky_lpdf(xs | mu[k], L[k]);\n", K),
     "    return log_sum_exp(lp) - log_sum_exp(logits);\n",
     "  }\n\n",
     sprintf("  real %s_lpdf(vector x, vector theta, vector w) {\n", name),
     stan_standardize_lines(fit),
-    sprintf("    return %s_from_head(xs, %s_head(ts, w)) %s;\n",
-            name, name, stan_addend(standardizer_log_jac(fit$std_x))),
+    sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name),
+    sprintf("    return %s_from_components(xs, %s_mu(head), %s_L(head), head[1:%d]) %s;\n",
+            name, name, name, K, stan_addend(standardizer_log_jac(fit$std_x))),
     "  }\n\n",
     sprintf("  real %s_sum_lpdf(matrix x, vector theta, vector w) {\n", name),
     stan_sum_lines(
       fit, P,
-      body = sprintf("%s_from_head((x[n]' - xc) ./ xsc, head)", name),
-      precompute = sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name)
+      body = sprintf("%s_from_components((x[n]' - xc) ./ xsc, mu, L, logits)", name),
+      # The MLP head, and every component's mean/Cholesky factor built from
+      # it, depend on theta alone, so all three are built once and reused
+      # for every observation.
+      precompute = paste0(
+        sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name),
+        sprintf("    array[%d] vector[%d] mu = %s_mu(head);\n", K, P, name),
+        sprintf("    array[%d] matrix[%d, %d] L = %s_L(head);\n", K, P, P, name),
+        sprintf("    vector[%d] logits = head[1:%d];\n", K, K)
+      )
     ),
     "  }\n"
   )
