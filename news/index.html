@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.49</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.50</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.50" id="neuralsbi-0650">neuralsbi 0.6.50<a class="anchor" aria-label="anchor" href="#neuralsbi-0650"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/stan_export.html">stan_code()</a></code>’s generated MDN likelihood now builds each mixture component once per <code>_sum_lpdf</code> call, instead of once per observation.</strong> <code>stan_fn_mdn()</code>’s <code>&lt;name&gt;_from_head()</code> took the MLP’s flat output and rebuilt every component’s mean and full Cholesky factor – softplus on the diagonal, a <code>rep_matrix()</code> plus per-entry assignment for each of the <code>K</code> components – on every call, even inside the i.i.d. loop where <code>head</code> (and so every component) is identical across all <code>N</code> rows: <code><a href="../reference/stan_sum_lines.html">stan_sum_lines()</a></code> already hoisted the MLP forward pass out of that loop, but the Cholesky assembly downstream of it still ran <code>N</code> times, on every leapfrog step of every NUTS iteration. <code>&lt;name&gt;_head()</code> is now followed by <code>&lt;name&gt;_mu()</code>/<code>&lt;name&gt;_L()</code>, which build the <code>K</code> means and Cholesky factors as Stan arrays, and <code>&lt;name&gt;_from_components()</code> evaluates the mixture log density from those prebuilt arrays; <code>&lt;name&gt;_sum_lpdf()</code> calls <code>_mu()</code>/<code>_L()</code> once in its precompute block (the same mechanism <code>stan_fn_lingauss()</code> already used) and reuses the result across all <code>N</code> rows, and <code>&lt;name&gt;_lpdf()</code> calls the same three functions for its one observation. The generated log density is unchanged (<a href="https://github.com/pedroliman/neuralsbi/issues/313" class="external-link">#313</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/315" class="external-link">#315</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.49" id="neuralsbi-0649">neuralsbi 0.6.49<a class="anchor" aria-label="anchor" href="#neuralsbi-0649"></a></h2>
 <ul><li>
