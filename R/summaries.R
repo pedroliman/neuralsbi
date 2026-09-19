@@ -40,7 +40,18 @@ summary.nsbi_samples <- function(object,
             "The posterior returned no draws inside the prior support; ",
             "see ?sample.nsbi_posterior.", call. = FALSE)
   }
-  q <- t(apply(m, 2, stats::quantile, probs = probs))
+  # quantile() itself allows the endpoints (they are the min and max), so
+  # unlike expected_coverage()'s open interval of credible levels, probs is
+  # validated over the closed [0, 1] range.
+  probs <- check_probs(probs, "probs", open = FALSE)
+  q <- apply(m, 2, stats::quantile, probs = probs)
+  # apply() returns a length(probs) x ncol(m) matrix in general, which t()
+  # fixes up to ncol(m) x length(probs) -- except when length(probs) == 1,
+  # where apply() simplifies its result to a plain length-ncol(m) vector.
+  # Restore the dropped dimension before transposing, the same guard
+  # expected_coverage() uses for the analogous vapply() drop.
+  if (is.null(dim(q))) dim(q) <- c(length(probs), ncol(m))
+  q <- t(q)
   colnames(q) <- paste0("q", 100 * probs)
   out <- data.frame(
     parameter = colnames(m) %||% paste0("theta", seq_len(ncol(m))),

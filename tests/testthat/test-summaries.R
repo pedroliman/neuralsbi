@@ -29,6 +29,29 @@ test_that("samples convert to data frames and summarize per parameter", {
   expect_equal(nrow(s2), 2L)
 })
 
+test_that("summary() with a single-element probs does not crash (#318)", {
+  fit <- fit_lg()
+  post <- posterior(fit, x_obs = c(1, -0.5))
+  draws <- sample(post, 500)
+
+  s <- summary(draws, probs = 0.5)
+  expect_s3_class(s, "data.frame")
+  expect_equal(nrow(s), 2L)
+  expect_equal(names(s), c("parameter", "mean", "sd", "q50"))
+
+  s2 <- summary(post, n = 500, probs = 0.5)
+  expect_equal(nrow(s2), 2L)
+  expect_equal(names(s2), c("parameter", "mean", "sd", "q50"))
+})
+
+test_that("summary() rejects an out-of-range probs value", {
+  fit <- fit_lg()
+  draws <- sample(posterior(fit, x_obs = c(1, -0.5)), 500)
+
+  expect_error(summary(draws, probs = 1.5), "probs")
+  expect_error(summary(draws, probs = -0.1), "probs")
+})
+
 test_that("summary of a fit returns training info invisibly", {
   fit <- fit_lg()
   info <- withVisible(summary(fit))
