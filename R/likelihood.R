@@ -91,6 +91,10 @@ surrogate_score <- function(fit, theta, x, sum_iid, max_batch) {
   # and fail with a bare "invalid 'times' argument", naming neither this
   # argument nor log_lik()/log_ratio() (#230).
   check_positive(max_batch, "max_batch", allow_inf = TRUE)
+  # sum_iid was only ever tested with isTRUE(), so "yes" or 1 took the "don't
+  # sum" branch and silently returned the wrong shape instead of erroring
+  # (#321).
+  check_flag(sum_iid, "sum_iid")
   # check_matrix() only enforces type and shape, so an NA/NaN/Inf entry used to
   # standardize into another NA and come back as a silent NA log-lik or
   # log-ratio instead of an error (#202). Checked explicitly here, as

@@ -406,6 +406,28 @@ check_positive <- function(x, arg, allow_inf = FALSE) {
   as.double(x)
 }
 
+#' Validate a flag argument
+#'
+#' One `TRUE` or `FALSE`. Branching on a flag with `isTRUE()` alone accepts the
+#' value silently but only ever takes its "false" branch for anything that
+#' is not the literal value `TRUE` -- `"yes"`, `1`, or `"TRUE"` as a string all
+#' pass through and flip what the caller gets back with no error (#321).
+#' [check_flag()] rejects those up front so the mistake is caught at the call
+#' that made it rather than read off a wrong-shaped result.
+#'
+#' @param x The user's value.
+#' @param arg Name of the argument.
+#' @return `x`, unchanged.
+#' @keywords internal
+check_flag <- function(x, arg) {
+  ok <- is.logical(x) && length(x) == 1L && !is.na(x)
+  if (!ok) {
+    stop(sprintf("`%s` must be TRUE or FALSE, not %s.", arg, describe_value(x)),
+         call. = FALSE)
+  }
+  x
+}
+
 #' Validate a callback argument
 #'
 #' A function stored now and called later fails at the call site, which can be

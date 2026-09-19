@@ -170,6 +170,18 @@ test_that("check_positive() takes one finite number above zero", {
   expect_error(check_positive(NULL, "lr"), "not NULL")
 })
 
+test_that("check_flag() takes one TRUE or FALSE", {
+  expect_identical(check_flag(TRUE, "sum_iid"), TRUE)
+  expect_identical(check_flag(FALSE, "sum_iid"), FALSE)
+
+  expect_error(check_flag("yes", "sum_iid"),
+               "`sum_iid` must be TRUE or FALSE, not a character value")
+  expect_error(check_flag(1, "sum_iid"), "`sum_iid` must be TRUE or FALSE, not 1")
+  expect_error(check_flag(NA, "sum_iid"), "not NA")
+  expect_error(check_flag(c(TRUE, FALSE), "sum_iid"), "a length-2 logical vector")
+  expect_error(check_flag(NULL, "sum_iid"), "not NULL")
+})
+
 test_that("check_prior() checks the class and the dimension", {
   prior <- prior_uniform(c(a = 0, b = 0), c(a = 1, b = 1))
   expect_identical(check_prior(prior, dim = 2L), prior)
