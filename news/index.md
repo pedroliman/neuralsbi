@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.55
+
+- **The slice sampler’s `width` argument now rejects a length that
+  doesn’t match the number of parameters, instead of being silently
+  recycled or truncated.**
+  [`slice_sample_run()`](https://neuralsbi.pedrodelima.com/reference/slice_sample_run.md)
+  fed `width` straight into `rep_len(as.numeric(width), dim)` under
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html), which
+  accepts any length: an over-long vector was truncated and a short one
+  recycled, both with no warning.
+  [`posterior.nsbi_nle()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nle.md)/[`posterior.nsbi_nre()`](https://neuralsbi.pedrodelima.com/reference/posterior.nsbi_nre.md)
+  document `width` as one value per parameter dimension (or a single
+  value to broadcast), so a mis-sized vector silently sized the initial
+  slice interval for the wrong coordinate, the only symptom being a
+  slow- or badly-mixing chain with nothing pointing back to the cause.
+  This is the same class of bug
+  [\#288](https://github.com/pedroliman/neuralsbi/issues/288)/#289/#290/#292
+  already fixed for `theta`, `x_obs`, `obs`, and
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)’s
+  bounds, all routed through
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)/[`check_bound()`](https://neuralsbi.pedrodelima.com/reference/check_bound.md)
+  for exactly this reason; `width` was the one per-parameter vector in
+  the MCMC path left checking only its values, never its length.
+  `check_slice_width_length()` now checks `length(width) %in% c(1, dim)`
+  before [`rep_len()`](https://rdrr.io/r/base/rep.html) runs, and errors
+  naming the expected length otherwise
+  ([\#320](https://github.com/pedroliman/neuralsbi/issues/320))
+  ([\#325](https://github.com/pedroliman/neuralsbi/issues/325)).
+
 ## neuralsbi 0.6.54
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)

@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.54</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.55</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.55" id="neuralsbi-0655">neuralsbi 0.6.55<a class="anchor" aria-label="anchor" href="#neuralsbi-0655"></a></h2>
+<ul><li>
+<strong>The slice sampler’s <code>width</code> argument now rejects a length that doesn’t match the number of parameters, instead of being silently recycled or truncated.</strong> <code><a href="../reference/slice_sample_run.html">slice_sample_run()</a></code> fed <code>width</code> straight into <code>rep_len(as.numeric(width), dim)</code> under <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code>, which accepts any length: an over-long vector was truncated and a short one recycled, both with no warning. <code><a href="../reference/posterior.nsbi_nle.html">posterior.nsbi_nle()</a></code>/<code><a href="../reference/posterior.nsbi_nre.html">posterior.nsbi_nre()</a></code> document <code>width</code> as one value per parameter dimension (or a single value to broadcast), so a mis-sized vector silently sized the initial slice interval for the wrong coordinate, the only symptom being a slow- or badly-mixing chain with nothing pointing back to the cause. This is the same class of bug <a href="https://github.com/pedroliman/neuralsbi/issues/288" class="external-link">#288</a>/#289/#290/#292 already fixed for <code>theta</code>, <code>x_obs</code>, <code>obs</code>, and <code><a href="../reference/within_support.html">within_support()</a></code>’s bounds, all routed through <code><a href="../reference/check_matrix.html">check_matrix()</a></code>/<code><a href="../reference/check_bound.html">check_bound()</a></code> for exactly this reason; <code>width</code> was the one per-parameter vector in the MCMC path left checking only its values, never its length. <code>check_slice_width_length()</code> now checks <code>length(width) %in% c(1, dim)</code> before <code><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep_len()</a></code> runs, and errors naming the expected length otherwise (<a href="https://github.com/pedroliman/neuralsbi/issues/320" class="external-link">#320</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/325" class="external-link">#325</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.54" id="neuralsbi-0654">neuralsbi 0.6.54<a class="anchor" aria-label="anchor" href="#neuralsbi-0654"></a></h2>
 <ul><li>
