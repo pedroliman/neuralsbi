@@ -481,3 +481,23 @@ test_that("log_prob() reuses a cached surrogate potential across calls with the 
            normalize = FALSE)
   expect_false(identical(post$cache$potential, first))
 })
+
+# GitHub #319: mcmc_draws() called set.seed(ctl$seed) directly with no
+# save/restore, unlike every other RNG touch point in the package. sample()
+# on a seeded NLE/NRE posterior therefore permanently reseeded the caller's
+# global RNG stream instead of only making that one chain reproducible --
+# the same bug class #272/#274 fixed for surrogate_potential()'s prior probe
+# and #282/#283 fixed for log_prob()'s acceptance-constant draw.
+test_that("sample() on a seeded NLE posterior does not mutate the caller's RNG stream", {
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 500, density_estimator = "linear_gaussian",
+             seed = 42)
+  post <- posterior(fit, matrix(0.5, ncol = 1), n_chains = 2, warmup = 10,
+                    seed = 43)
+
+  set.seed(99)
+  before <- .Random.seed
+  sample(post, 50)
+  expect_identical(.Random.seed, before)
+})
