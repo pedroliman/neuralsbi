@@ -444,3 +444,37 @@ test_that("npe_sequential accepts n_simulations as a scalar or as a full-length 
   expect_equal(vector_fit$rounds[[1]]$n_new, 150L)
   expect_equal(vector_fit$rounds[[2]]$n_new, 50L)
 })
+
+test_that("a seeded run draws fresh proposals each round instead of repeating round 1's (#317)", {
+  # Regression test for GitHub #317. npe_sequential() passed the caller's
+  # `seed` straight to the per-round npe() call, and npe() calls
+  # set.seed(seed) at the top of its own call, so every round after the first
+  # opened from a byte-identical RNG state and sample_prior() handed it the
+  # same candidate matrix. With linear_gaussian, which consumes no R-level
+  # randomness while fitting, 3 rounds of 200 left 516 unique rows out of 600.
+  prior <- prior_normal(mean = c(mu = 0, nu = 0), sd = 1)
+  # The simulator sees every parameter set that reaches training, which is the
+  # only place the accumulated draws are visible from outside the fit.
+  run <- function() {
+    seen <- NULL
+    simulator <- function(mu, nu) {
+      seen <<- rbind(seen, c(mu, nu))
+      c(mu, nu) + stats::rnorm(2, sd = 0.3)
+    }
+    fit <- npe_sequential(prior, simulator, x_obs = c(0.5, -0.5),
+                          n_rounds = 3, n_simulations = 200, seed = 42,
+                          density_estimator = "linear_gaussian")
+    list(theta = seen, fit = fit)
+  }
+
+  first <- run()
+  expect_equal(nrow(first$theta), 600L)
+  expect_gt(nrow(unique(first$theta)) / nrow(first$theta), 0.99)
+
+  # The same `seed` still has to give the same run end to end: the per-round
+  # seeds are derived from the stream seeded at the top of npe_sequential().
+  second <- run()
+  expect_identical(first$theta, second$theta)
+  expect_identical(first$fit$de, second$fit$de)
+  expect_identical(first$fit$rounds, second$fit$rounds)
+})
