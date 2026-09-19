@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.52
+
+- **`npe_sequential(seed = ...)` no longer spends part of every round
+  after the first re-simulating round 1’s parameter draws.** The round
+  loop passed the caller’s `seed` straight through to the per-round
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) call,
+  and [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+  calls `set.seed(seed)` at the top of its own call. For an estimator
+  that consumes no R-level randomness while fitting, which covers
+  `linear_gaussian` and any caller-supplied `density_estimator`
+  function, R’s RNG was therefore left in the same state at the end of
+  every round: round r + 1 opened from the state round r opened from,
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  handed it the same candidate matrix, and only the acceptance threshold
+  differed. Three rounds of 200 simulations produced 600 training rows
+  of which 516 were unique; four rounds produced 800 rows and 634
+  unique. Nothing reported this, so a run that asked for reproducibility
+  quietly threw away a large part of its simulation budget and
+  over-weighted whatever region cleared the threshold in two consecutive
+  rounds, the opposite of what the truncation is for. Each round now
+  derives its own seed from the stream
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  seeds at the top of the call, which keeps the whole run reproducible
+  from the top-level `seed` and keeps torch’s generator seeded for the
+  neural estimators as
+  [\#215](https://github.com/pedroliman/neuralsbi/issues/215) requires
+  ([\#317](https://github.com/pedroliman/neuralsbi/issues/317))
+  ([\#322](https://github.com/pedroliman/neuralsbi/issues/322)).
+
 ## neuralsbi 0.6.51
 
 - **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)’s

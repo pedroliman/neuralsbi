@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.51</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.52</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.52" id="neuralsbi-0652">neuralsbi 0.6.52<a class="anchor" aria-label="anchor" href="#neuralsbi-0652"></a></h2>
+<ul><li>
+<strong><code>npe_sequential(seed = ...)</code> no longer spends part of every round after the first re-simulating round 1’s parameter draws.</strong> The round loop passed the caller’s <code>seed</code> straight through to the per-round <code><a href="../reference/npe.html">npe()</a></code> call, and <code><a href="../reference/npe.html">npe()</a></code> calls <code>set.seed(seed)</code> at the top of its own call. For an estimator that consumes no R-level randomness while fitting, which covers <code>linear_gaussian</code> and any caller-supplied <code>density_estimator</code> function, R’s RNG was therefore left in the same state at the end of every round: round r + 1 opened from the state round r opened from, <code><a href="../reference/sample_prior.html">sample_prior()</a></code> handed it the same candidate matrix, and only the acceptance threshold differed. Three rounds of 200 simulations produced 600 training rows of which 516 were unique; four rounds produced 800 rows and 634 unique. Nothing reported this, so a run that asked for reproducibility quietly threw away a large part of its simulation budget and over-weighted whatever region cleared the threshold in two consecutive rounds, the opposite of what the truncation is for. Each round now derives its own seed from the stream <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> seeds at the top of the call, which keeps the whole run reproducible from the top-level <code>seed</code> and keeps torch’s generator seeded for the neural estimators as <a href="https://github.com/pedroliman/neuralsbi/issues/215" class="external-link">#215</a> requires (<a href="https://github.com/pedroliman/neuralsbi/issues/317" class="external-link">#317</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/322" class="external-link">#322</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.51" id="neuralsbi-0651">neuralsbi 0.6.51<a class="anchor" aria-label="anchor" href="#neuralsbi-0651"></a></h2>
 <ul><li>
