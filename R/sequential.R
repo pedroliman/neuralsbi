@@ -238,9 +238,23 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
       "Round %d/%d: %d new simulations (%d total), proposal acceptance %.2f\n",
       r, n_rounds, nrow(theta_new), nrow(theta_all), acceptance))
 
+    # A fresh seed per round, drawn from the stream this call already seeded
+    # above. Passing the caller's `seed` straight through reset R's RNG to the
+    # same state at the end of every round (npe() calls set.seed(seed) at the
+    # top of its own call), so with an estimator that consumes no R-level
+    # randomness while fitting -- linear_gaussian, or any caller-supplied
+    # fitter -- round r + 1 opened from the state round r opened from and
+    # sample_prior() handed it the same candidate matrix. Only the acceptance
+    # threshold differed, so a large fraction of each round's budget after
+    # round 1 went on parameter draws already trained on (#317). Deriving the
+    # per-round seed here keeps the whole run reproducible from the top-level
+    # `seed` and keeps torch's generator seeded for the neural estimators,
+    # which `seed = NULL` would not.
+    round_seed <- if (is.null(seed)) NULL else
+      base::sample.int(.Machine$integer.max, 1L)
     fit <- npe(prior, theta = theta_all, x = x_all,
                density_estimator = density_estimator, verbose = verbose,
-               seed = seed, ...)
+               seed = round_seed, ...)
     rounds[[r]] <- list(n_new = nrow(theta_new), acceptance = acceptance,
                         threshold = threshold)
   }
