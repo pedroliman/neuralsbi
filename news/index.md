@@ -1,5 +1,44 @@
 # Changelog
 
+## neuralsbi 0.6.54
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  on an NLE/NRE posterior with `seed = ...` no longer permanently
+  reseeds the caller’s global RNG stream.**
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)
+  called `set.seed(ctl$seed)` directly with no save/restore, unlike
+  every other RNG touch point in the package
+  ([`with_fixed_seed()`](https://neuralsbi.pedrodelima.com/reference/with_fixed_seed.md),
+  [`set_torch_seed()`](https://neuralsbi.pedrodelima.com/reference/set_torch_seed.md),
+  [`rng_streams()`](https://neuralsbi.pedrodelima.com/reference/rng_streams.md),
+  [`with_rng_stream()`](https://neuralsbi.pedrodelima.com/reference/with_rng_stream.md)).
+  A seeded
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  call therefore left `.Random.seed` at whatever `set.seed(ctl$seed)`
+  produced, so any later random draw in the same session became a
+  deterministic function of `ctl$seed` alone regardless of the caller’s
+  own RNG state – the same bug class
+  [\#272](https://github.com/pedroliman/neuralsbi/issues/272)/#274 fixed
+  for
+  [`surrogate_potential()`](https://neuralsbi.pedrodelima.com/reference/surrogate_potential.md)’s
+  prior probe and
+  [\#282](https://github.com/pedroliman/neuralsbi/issues/282)/#283 fixed
+  for
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)’s
+  acceptance-constant draw.
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  and
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)
+  call
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  internally and inherited the same leak. The sampler call now runs
+  under `with_fixed_seed(ctl$seed, ...)`, which parks R’s RNG at the
+  seed only for that call and restores the caller’s prior state
+  afterward, so `seed` still makes the run reproducible without leaving
+  a trace on anything the caller does next
+  ([\#319](https://github.com/pedroliman/neuralsbi/issues/319))
+  ([\#324](https://github.com/pedroliman/neuralsbi/issues/324)).
+
 ## neuralsbi 0.6.53
 
 - **[`summary()`](https://rdrr.io/r/base/summary.html) on posterior
