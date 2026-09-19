@@ -220,13 +220,21 @@ mcmc_draws <- function(post, n, obs, refresh, verbose) {
   }
 
   ctl <- post$control
-  if (!is.null(ctl$seed)) set.seed(ctl$seed)
-
-  run <- if (post$sampler == "stan") {
-    stan_sample_nle(fit, x_obs, ctl, n, verbose = verbose)
-  } else {
-    slice_sample_surrogate(fit, x_obs, ctl, n, verbose = verbose)
+  # A bare set.seed(ctl$seed) here used to permanently reseed the caller's
+  # RNG stream for the rest of the session (#319) -- the same bug class
+  # #272/#274 fixed for the prior-log_prob probe in surrogate_potential() and
+  # #282/#283 fixed for log_prob()'s acceptance-constant draw. with_fixed_seed()
+  # parks R's RNG at ctl$seed only for the sampler call below and restores the
+  # caller's prior state afterward, so ctl$seed makes this one run reproducible
+  # without perturbing anything the caller does next.
+  run_sampler <- function() {
+    if (post$sampler == "stan") {
+      stan_sample_nle(fit, x_obs, ctl, n, verbose = verbose)
+    } else {
+      slice_sample_surrogate(fit, x_obs, ctl, n, verbose = verbose)
+    }
   }
+  run <- if (is.null(ctl$seed)) run_sampler() else with_fixed_seed(ctl$seed, run_sampler())
 
   post$cache$draws <- run$draws
   post$cache$diagnostics <- run$diagnostics
