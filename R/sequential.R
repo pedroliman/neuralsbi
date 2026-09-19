@@ -129,6 +129,10 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
                        npe_arg("patience"), npe_arg("n_restarts"),
                        npe_arg("clip_grad_norm"))
   check_device_arg(npe_arg("device"))
+  embedding_net <- npe_arg("embedding_net")
+  if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
+    stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
+  }
   # Mirrors npe()'s own resolution (R/npe.R): a caller-supplied fitter
   # function is checked for arity, a string choice is matched against the
   # same four names npe() accepts. Until now `density_estimator` was only

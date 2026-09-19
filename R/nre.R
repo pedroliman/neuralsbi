@@ -74,7 +74,9 @@
 #'   the residual net; here the one argument sets both.
 #' @param embedding_net Optional summary network built with [embedding_mlp()].
 #'   The classifier then sees \eqn{(\theta, f_\psi(x))}, with the embedding
-#'   trained jointly. Ignored (with a warning) by `"logistic"`.
+#'   trained jointly. Ignored (with a warning) by `"logistic"` and by a
+#'   function-valued `classifier`, since a custom fitter only ever receives
+#'   `theta` and `x`.
 #'
 #' @return An object of class `nsbi_nre`. Evaluate the learned ratio with
 #'   [log_ratio()] or turn it into a posterior with [posterior()].
@@ -125,6 +127,15 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
   }
   if (!is.null(embedding_net) && identical(classifier, "logistic")) {
     warning("`embedding_net` is ignored by the logistic classifier.",
+            call. = FALSE)
+  }
+  # fit_ratio_estimator() forwards only theta_z/x_z to a caller-supplied
+  # function, so embedding_net never reaches it either -- the same silent
+  # drop as logistic above, just for a function value instead of a string
+  # (#300).
+  if (!is.null(embedding_net) && is.function(classifier)) {
+    warning("`embedding_net` is ignored by a function-valued `classifier`; ",
+            "forward it yourself inside your custom function if needed.",
             call. = FALSE)
   }
   hidden <- check_count(hidden, "hidden")
@@ -490,7 +501,9 @@ nre_atomic_log_prob <- function(num_atoms) {
 #' signal -- breaking early stopping when it is the validation side (GitHub
 #' #188), and training on zero gradient with no error when it is the training
 #' side (GitHub #239). `check_train_controls()` enforces `min_val_rows` on
-#' both sides of the split for exactly this reason.
+#' both sides of the split for exactly this reason, and on `batch_size` itself
+#' (GitHub #307): a `batch_size` of 1 gives every interior minibatch the same
+#' one-row shape all epoch, every one of them scoring zero gradient.
 #' @keywords internal
 fit_nre_net <- function(theta, x, classifier = "resnet", hidden = 50L,
                         n_blocks = 2L, num_atoms = 10L,

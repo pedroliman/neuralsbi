@@ -11,7 +11,7 @@ stan_code(fit, name = "nsbi_log_lik", model = TRUE)
 
 write_stan_model(fit, file, name = "nsbi_log_lik", model = TRUE)
 
-stan_data(fit, x_obs = NULL)
+stan_data(fit, x_obs = NULL, model = TRUE)
 }
 \arguments{
 \item{fit}{An \code{nsbi_nle} object from \code{\link[=nle]{nle()}}.}
@@ -19,12 +19,17 @@ stan_data(fit, x_obs = NULL)
 \item{name}{Prefix for the generated functions.}
 
 \item{model}{Generate a complete, runnable model (the default) or only the
-\code{functions} block, for \verb{#include}-ing into a model of your own.}
+\code{functions} block, for \verb{#include}-ing into a model of your own. In
+\code{stan_data()}, this must agree with the \code{model} a paired \code{\link[=stan_code]{stan_code()}}
+call used: \code{model = TRUE} requires \code{x_obs}, because the generated model's
+data block declares \code{N} and \code{x} and there is nothing to fill them with
+otherwise; \code{model = FALSE} matches a functions-only export, which has no
+\code{N}/\code{x} to fill, so \code{x_obs} is optional there.}
 
 \item{file}{Path to write to.}
 
 \item{x_obs}{Observation to put in the data list. Rows are independent
-observations.}
+observations. Required when \code{model = TRUE}.}
 }
 \value{
 \code{stan_code()} returns the Stan program as a single string;
@@ -113,4 +118,5 @@ fit <- nle(prior, function(mu) c(y = rnorm(1, mu, 0.5)),
 
 cat(substr(stan_code(fit), 1, 400))
 str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
+str(stan_data(fit, model = FALSE), max.level = 1)
 }

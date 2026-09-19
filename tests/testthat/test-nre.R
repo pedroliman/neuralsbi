@@ -399,6 +399,43 @@ test_that("fit_nre_net() rejects a training split too small for the atomic loss"
     "needs at least .* to score its objective on")
 })
 
+# GitHub #307: minibatches() only ever merges the *trailing* short batch into
+# the one before it, so a batch_size below the atomic loss's 2-row floor is
+# not a one-off short batch -- every interior minibatch of every epoch stays
+# that size, and nre_atomic_log_prob() returns a constant zero loss below 2
+# rows. With batch_size = 1 that is every minibatch but the merged trailing
+# one, so training ran almost entirely on zero gradient with no error or
+# warning. Like #188/#239, this is a pure argument-validation check: no torch
+# involved, since check_train_controls() catches it before nre() simulates.
+test_that("nre() fails before simulating rather than train on batch_size = 1", {
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        batch_size = 1L, classifier = "resnet"),
+    "`batch_size` of 1 is too small.*needs at least 2 rows")
+  expect_identical(calls, 0L)
+
+  # The closed-form logistic classifier never splits into minibatches
+  # (min_val_rows = 1L), so batch_size = 1 must not trip this floor for it.
+  expect_no_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        batch_size = 1L, classifier = "logistic"))
+  expect_identical(calls, 100L)
+})
+
+test_that("fit_nre_net() rejects a batch_size too small for the atomic loss", {
+  theta <- matrix(stats::rnorm(100), ncol = 1)
+  x <- matrix(stats::rnorm(100), ncol = 1)
+
+  expect_error(
+    fit_nre_net(theta, x, classifier = "resnet", batch_size = 1L),
+    "`batch_size` of 1 is too small.*needs at least 2 rows")
+})
+
 test_that("nre() defers to prepare_simulations() when n_simulations can't hint a row count", {
   # An invalid n_simulations (not >= 1) and no pre-computed theta/x means the
   # early min_val_rows check has nothing to check against yet, so it must not
@@ -419,6 +456,22 @@ test_that("an embedding net is rejected by the logistic classifier", {
   expect_error(
     nre(gauss_prior(), gauss_sim, n_simulations = 200, embedding_net = "no"),
     "must be built with embedding_mlp")
+})
+
+test_that("an embedding net is rejected by a function-valued classifier", {
+  # identical(classifier, "logistic") above is FALSE for a function, so that
+  # check alone would never fire here -- the bug reported in #300.
+  # fit_ratio_estimator() forwards only theta_z/x_z to a custom classifier
+  # function, so embedding_net is dropped just as silently as the logistic
+  # case unless this warns too.
+  my_classifier <- function(theta, x) fit_logistic_ratio(theta, x)
+  expect_warning(
+    fit <- nre(gauss_prior(), gauss_sim, n_simulations = 200,
+              classifier = my_classifier,
+              embedding_net = embedding_mlp(output_dim = 2L)),
+    "function-valued `classifier`"
+  )
+  expect_identical(fit$classifier, "custom")
 })
 
 test_that("the logistic fit is deterministic given the same simulations", {

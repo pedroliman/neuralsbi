@@ -68,10 +68,15 @@
 #' @param fit An `nsbi_nle` object from [nle()].
 #' @param name Prefix for the generated functions.
 #' @param model Generate a complete, runnable model (the default) or only the
-#'   `functions` block, for `#include`-ing into a model of your own.
+#'   `functions` block, for `#include`-ing into a model of your own. In
+#'   `stan_data()`, this must agree with the `model` a paired [stan_code()]
+#'   call used: `model = TRUE` requires `x_obs`, because the generated model's
+#'   data block declares `N` and `x` and there is nothing to fill them with
+#'   otherwise; `model = FALSE` matches a functions-only export, which has no
+#'   `N`/`x` to fill, so `x_obs` is optional there.
 #' @param file Path to write to.
 #' @param x_obs Observation to put in the data list. Rows are independent
-#'   observations.
+#'   observations. Required when `model = TRUE`.
 #'
 #' @return `stan_code()` returns the Stan program as a single string;
 #'   `write_stan_model()` returns `file` invisibly; `stan_data()` returns a
@@ -84,6 +89,7 @@
 #'
 #' cat(substr(stan_code(fit), 1, 400))
 #' str(stan_data(fit, matrix(rnorm(10), ncol = 1)), max.level = 1)
+#' str(stan_data(fit, model = FALSE), max.level = 1)
 #' @name stan_export
 NULL
 
@@ -114,13 +120,21 @@ write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
 
 #' @rdname stan_export
 #' @export
-stan_data <- function(fit, x_obs = NULL) {
+stan_data <- function(fit, x_obs = NULL, model = TRUE) {
   check_exportable_fit(fit)
   # Both halves of the export read the weights, so both need a live network.
   # Without this, a fit restored by readRDS() gets the "save with save_npe()"
   # message from stan_code() and a dangling-pointer error from net_param()
   # here, for the same fit and the same cause.
   check_fit_alive(fit)
+  if (isTRUE(model) && is.null(x_obs)) {
+    stop("`x_obs` is required when `model = TRUE`: stan_code()'s default ",
+         "model declares `N` and `x` in its data block, and stan_data() has ",
+         "nothing to put there without an observation.\nPass `x_obs`, or ",
+         "call stan_data(fit, model = FALSE) to build a data list for a ",
+         "functions-only export (stan_code(fit, model = FALSE)) that has no ",
+         "`N`/`x` to fill.", call. = FALSE)
+  }
   packed <- stan_pack(fit)
   out <- list(nsbi_nw = length(packed$w), nsbi_w = packed$w)
   if (!is.null(x_obs)) {
@@ -462,13 +476,15 @@ stan_fn_mdn <- function(fit, name, packed) {
   tril_lines <- vapply(seq_len(Tn), function(m) {
     src <- sprintf("tflat[(k - 1) * %d + %d]", Tn, m)
     val <- if (tri$is_diag[m]) sprintf("log1p_exp(%s) + 1e-6", src) else src
-    sprintf("        L[%d, %d] = %s;\n", tri$row[m], tri$col[m], val)
+    sprintf("        Lk[%d, %d] = %s;\n", tri$row[m], tri$col[m], val)
   }, character(1))
 
   paste0(
     "  // MLP head: mixture logits, means and Cholesky factors, all functions\n",
-    "  // of theta alone. Returned packed so the i.i.d. sum can hoist it out\n",
-    "  // of the observation loop.\n",
+    "  // of theta alone. Split from the K-component assembly below so a\n",
+    "  // caller with N i.i.d. rows builds each mu[k]/L[k] once and reuses\n",
+    "  // them, instead of rebuilding every component's Cholesky factor on\n",
+    "  // every row.\n",
     sprintf("  vector %s_head(vector ts, vector w) {\n", name),
     trunk,
     sprintf("    return append_row(append_row(%s * %s + %s, %s * %s + %s), %s * %s + %s);\n",
@@ -476,29 +492,49 @@ stan_fn_mdn <- function(fit, name, packed) {
             stan_mat_of(b, "W_means"), prev, stan_vec_of(b, "b_means"),
             stan_mat_of(b, "W_tril"), prev, stan_vec_of(b, "b_tril")),
     "  }\n\n",
-    sprintf("  real %s_from_head(vector xs, vector head) {\n", name),
-    sprintf("    vector[%d] logits = head[1:%d];\n", K, K),
+    sprintf("  array[] vector %s_mu(vector head) {\n", name),
     sprintf("    vector[%d] mflat = head[%d:%d];\n", K * P, K + 1L, K + K * P),
+    sprintf("    array[%d] vector[%d] mu;\n", K, P),
+    sprintf("    for (k in 1:%d) mu[k] = mflat[((k - 1) * %d + 1):(k * %d)];\n", K, P, P),
+    "    return mu;\n",
+    "  }\n\n",
+    sprintf("  array[] matrix %s_L(vector head) {\n", name),
     sprintf("    vector[%d] tflat = head[%d:%d];\n", K * Tn, K + K * P + 1L, head_len),
-    sprintf("    vector[%d] lp;\n", K),
+    sprintf("    array[%d] matrix[%d, %d] L;\n", K, P, P),
     sprintf("    for (k in 1:%d) {\n", K),
-    sprintf("      matrix[%d, %d] L = rep_matrix(0.0, %d, %d);\n", P, P, P, P),
-    sprintf("      vector[%d] mu = mflat[((k - 1) * %d + 1):(k * %d)];\n", P, P, P),
+    sprintf("      matrix[%d, %d] Lk = rep_matrix(0.0, %d, %d);\n", P, P, P, P),
     "      {\n", paste(tril_lines, collapse = ""), "      }\n",
-    "      lp[k] = logits[k] + multi_normal_cholesky_lpdf(xs | mu, L);\n",
+    "      L[k] = Lk;\n",
     "    }\n",
+    "    return L;\n",
+    "  }\n\n",
+    "  // Log density of one observation from already-built components: the\n",
+    "  // piece every entry point shares once mu/L/logits exist.\n",
+    sprintf("  real %s_from_components(vector xs, array[] vector mu, array[] matrix L, vector logits) {\n",
+            name),
+    sprintf("    vector[%d] lp;\n", K),
+    sprintf("    for (k in 1:%d) lp[k] = logits[k] + multi_normal_cholesky_lpdf(xs | mu[k], L[k]);\n", K),
     "    return log_sum_exp(lp) - log_sum_exp(logits);\n",
     "  }\n\n",
     sprintf("  real %s_lpdf(vector x, vector theta, vector w) {\n", name),
     stan_standardize_lines(fit),
-    sprintf("    return %s_from_head(xs, %s_head(ts, w)) %s;\n",
-            name, name, stan_addend(standardizer_log_jac(fit$std_x))),
+    sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name),
+    sprintf("    return %s_from_components(xs, %s_mu(head), %s_L(head), head[1:%d]) %s;\n",
+            name, name, name, K, stan_addend(standardizer_log_jac(fit$std_x))),
     "  }\n\n",
     sprintf("  real %s_sum_lpdf(matrix x, vector theta, vector w) {\n", name),
     stan_sum_lines(
       fit, P,
-      body = sprintf("%s_from_head((x[n]' - xc) ./ xsc, head)", name),
-      precompute = sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name)
+      body = sprintf("%s_from_components((x[n]' - xc) ./ xsc, mu, L, logits)", name),
+      # The MLP head, and every component's mean/Cholesky factor built from
+      # it, depend on theta alone, so all three are built once and reused
+      # for every observation.
+      precompute = paste0(
+        sprintf("    vector[%d] head = %s_head(ts, w);\n", head_len, name),
+        sprintf("    array[%d] vector[%d] mu = %s_mu(head);\n", K, P, name),
+        sprintf("    array[%d] matrix[%d, %d] L = %s_L(head);\n", K, P, P, name),
+        sprintf("    vector[%d] logits = head[1:%d];\n", K, K)
+      )
     ),
     "  }\n"
   )
@@ -532,12 +568,17 @@ stan_fn_maf <- function(fit, name, packed) {
       P, k, stan_mat_of(b, sprintf("Wmu%d", k)), prev,
       stan_vec_of(b, sprintf("bmu%d", k))))
     # The clamp mirrors made_module()'s torch_clamp on alpha; without it a
-    # saturating transform would disagree with the R fit in the tails.
+    # saturating transform would disagree with the R fit in the tails. The
+    # matrix-vector product is built once as al_raw, then only the per-element
+    # clamp loops -- mirroring mu%d above, so the O(P x hidden) product isn't
+    # recomputed on each of the P clamp iterations.
     steps <- paste0(steps, sprintf(
-      "    vector[%d] al%d;\n", P, k), sprintf(
-      "    for (i in 1:%d) al%d[i] = fmin(fmax((%s * %s + %s)[i], -8.0), 8.0);\n",
+      "    vector[%d] al_raw%d = %s * %s + %s;\n",
       P, k, stan_mat_of(b, sprintf("Walpha%d", k)), prev,
-      stan_vec_of(b, sprintf("balpha%d", k))))
+      stan_vec_of(b, sprintf("balpha%d", k))),
+      sprintf("    vector[%d] al%d;\n", P, k), sprintf(
+      "    for (i in 1:%d) al%d[i] = fmin(fmax(al_raw%d[i], -8.0), 8.0);\n",
+      P, k, k))
     steps <- paste0(steps, sprintf(
       "    z = (z - mu%d) .* exp(-al%d);\n    logdet -= sum(al%d);\n", k, k, k))
   }

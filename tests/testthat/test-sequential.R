@@ -355,6 +355,25 @@ test_that("npe_sequential checks round 1's estimator/training args before round 
   expect_s3_class(fit, "nsbi_snpe")
 })
 
+test_that("npe_sequential rejects a malformed embedding_net before round 1 simulates (#301)", {
+  # embedding_net reaches round 1 through `...` just like n_bins/device/etc,
+  # and was left out when #251 added npe()'s other pre-simulation checks
+  # here -- so a bad value only failed inside round 1's npe() call, after
+  # prepare_simulations() had already spent round 1's simulation budget.
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "linear_gaussian",
+                   embedding_net = list(bogus = TRUE)),
+    "`embedding_net` must be built with embedding_mlp\\(\\)")
+  expect_identical(n_calls, 0L)
+})
+
 test_that("npe_sequential rejects an unknown density estimator before round 1 simulates (#262)", {
   # density_estimator was only ever forwarded through `...` to the npe() call
   # at the end of round 1, so match.arg()'s "'arg' should be one of" error
