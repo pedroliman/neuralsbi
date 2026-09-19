@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.6.56
+
+- **[`log_lik()`](https://neuralsbi.pedrodelima.com/reference/log_lik.md)
+  and
+  [`log_ratio()`](https://neuralsbi.pedrodelima.com/reference/log_ratio.md)
+  now reject a non-logical `sum_iid` instead of silently changing what
+  they return.** Both functions branch on `sum_iid` through
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)’s
+  `if (!isTRUE(sum_iid))`, and
+  [`isTRUE()`](https://rdrr.io/r/base/Logic.html) only recognizes the
+  literal value `TRUE`: `sum_iid = "yes"` or `sum_iid = 1` took the
+  “don’t sum” branch with no error, returning an `n_theta x n_obs`
+  matrix instead of the documented per-`theta` vector.
+  [`surrogate_score()`](https://neuralsbi.pedrodelima.com/reference/surrogate_score.md)
+  now validates `sum_iid` with a new
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  helper (`R/check.R`), matching how `max_batch` is already checked in
+  the same function, so a typo is caught at the call rather than read
+  off a wrong-shaped result
+  ([\#321](https://github.com/pedroliman/neuralsbi/issues/321))
+  ([\#326](https://github.com/pedroliman/neuralsbi/issues/326)).
+
 ## neuralsbi 0.6.55
 
 - **The slice sampler’s `width` argument now rejects a length that

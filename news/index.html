@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.55</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.56</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.56" id="neuralsbi-0656">neuralsbi 0.6.56<a class="anchor" aria-label="anchor" href="#neuralsbi-0656"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/log_lik.html">log_lik()</a></code> and <code><a href="../reference/log_ratio.html">log_ratio()</a></code> now reject a non-logical <code>sum_iid</code> instead of silently changing what they return.</strong> Both functions branch on <code>sum_iid</code> through <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code>’s <code>if (!isTRUE(sum_iid))</code>, and <code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE()</a></code> only recognizes the literal value <code>TRUE</code>: <code>sum_iid = "yes"</code> or <code>sum_iid = 1</code> took the “don’t sum” branch with no error, returning an <code>n_theta x n_obs</code> matrix instead of the documented per-<code>theta</code> vector. <code><a href="../reference/surrogate_score.html">surrogate_score()</a></code> now validates <code>sum_iid</code> with a new <code><a href="../reference/check_flag.html">check_flag()</a></code> helper (<code>R/check.R</code>), matching how <code>max_batch</code> is already checked in the same function, so a typo is caught at the call rather than read off a wrong-shaped result (<a href="https://github.com/pedroliman/neuralsbi/issues/321" class="external-link">#321</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/326" class="external-link">#326</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.55" id="neuralsbi-0655">neuralsbi 0.6.55<a class="anchor" aria-label="anchor" href="#neuralsbi-0655"></a></h2>
 <ul><li>
