@@ -83,6 +83,24 @@ test_that("sum_iid = FALSE returns the per-observation matrix", {
   expect_equal(rowSums(per_obs), log_ratio(fit, theta, x))
 })
 
+test_that("log_ratio() rejects a non-logical sum_iid instead of silently flipping shape", {
+  # sum_iid used to be tested with isTRUE() alone, so anything that was not
+  # the literal value TRUE silently took the "don't sum" branch (#321).
+  fit <- logistic_fit()
+  theta <- rbind(c(0.5, -0.5), c(1, 1))
+  x <- matrix(stats::rnorm(4), ncol = 2)
+
+  expect_error(log_ratio(fit, theta, x, sum_iid = "yes"),
+               "`sum_iid` must be TRUE or FALSE")
+  expect_error(log_ratio(fit, theta, x, sum_iid = 1),
+               "`sum_iid` must be TRUE or FALSE")
+  expect_error(log_ratio(fit, theta, x, sum_iid = NA), "`sum_iid` must be TRUE or FALSE")
+
+  # TRUE/FALSE keep working exactly as before.
+  expect_length(log_ratio(fit, theta, x, sum_iid = TRUE), 2L)
+  expect_equal(dim(log_ratio(fit, theta, x, sum_iid = FALSE)), c(2L, 2L))
+})
+
 test_that("the shape is right at every corner of the cross product", {
   fit <- logistic_fit(n = 1000)
   for (n_theta in c(1L, 5L)) {
