@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.53
+
+- **[`summary()`](https://rdrr.io/r/base/summary.html) on posterior
+  draws no longer crashes when `probs` has a single element.**
+  [`summary.nsbi_samples()`](https://neuralsbi.pedrodelima.com/reference/summaries.md)
+  built its quantile columns with
+  `t(apply(m, 2, stats::quantile, probs = probs))`:
+  [`apply()`](https://rdrr.io/r/base/apply.html) returns a
+  `length(probs) x ncol(m)` matrix in general, which
+  [`t()`](https://rdrr.io/r/base/t.html) fixes up to
+  `ncol(m) x length(probs)`, but simplifies its result to a plain
+  length-`ncol(m)` vector when `length(probs) == 1`, so
+  [`t()`](https://rdrr.io/r/base/t.html) produced a `1 x ncol(m)` matrix
+  and the following `colnames<-` (length 1) failed with “length of
+  ‘dimnames’ \[2\] not equal to array extent”.
+  `summary(draws, probs = 0.5)` and `summary(post, probs = 0.5)`
+  therefore crashed on any fit with more than one parameter – an obvious
+  way to ask for just the median. The dropped dimension is now restored
+  before transposing, the same guard
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  already used for the analogous
+  [`vapply()`](https://rdrr.io/r/base/lapply.html) drop, and `probs` is
+  validated with
+  [`check_probs()`](https://neuralsbi.pedrodelima.com/reference/check_probs.md)
+  so an out-of-range value errors clearly instead of failing inside
+  [`quantile()`](https://rdrr.io/r/stats/quantile.html)
+  ([\#318](https://github.com/pedroliman/neuralsbi/issues/318))
+  ([\#323](https://github.com/pedroliman/neuralsbi/issues/323)).
+
 ## neuralsbi 0.6.52
 
 - **`npe_sequential(seed = ...)` no longer spends part of every round
