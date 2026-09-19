@@ -140,6 +140,38 @@ test_that("a non-finite or non-positive width is refused, not left to crash the 
   )
 })
 
+test_that("a wrong-length width errors instead of being silently recycled or truncated", {
+  # GitHub #320: rep_len() under suppressWarnings() accepts any length,
+  # truncating an over-long width and recycling a short one, so a mis-sized
+  # width used to size the slice interval for the wrong coordinate with no
+  # warning at all.
+  lp <- function(theta) rowSums(stats::dnorm(theta, log = TRUE))
+  init <- matrix(0, nrow = 4, ncol = 2)
+
+  expect_error(
+    slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1,
+                 width = c(0.5, 1, 99)),
+    "`width` must have length 1.*or length 2"
+  )
+
+  init4 <- matrix(0, nrow = 4, ncol = 4)
+  lp4 <- function(theta) rowSums(stats::dnorm(theta, log = TRUE))
+  expect_error(
+    slice_sample(lp4, init4, n_draws = 10, warmup = 1, thin = 1,
+                 width = c(1, 2)),
+    "`width` must have length 1.*or length 4"
+  )
+
+  # A scalar (the broadcast case rep_len() exists for) and a correctly-sized
+  # vector both still work.
+  res_scalar <- slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1,
+                             width = 0.5)
+  expect_equal(ncol(res_scalar$draws), 2L)
+  res_vec <- slice_sample(lp, init, n_draws = 10, warmup = 1, thin = 1,
+                          width = c(0.5, 1))
+  expect_equal(ncol(res_vec$draws), 2L)
+})
+
 test_that("a NaN/Inf log-density from log_prob_fn is treated as -Inf, not left to corrupt the chain", {
   # GitHub #258: a candidate can land outside the region a trained NLE/NRE
   # estimator was fit on and come back NaN even though the prior still
