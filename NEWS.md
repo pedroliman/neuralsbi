@@ -1,6 +1,6 @@
 # neuralsbi 0.6.53
 
-* **`log_lik()` and `log_ratio()` now reject a non-logical `sum_iid` instead of silently changing what they return.** Both functions branch on `sum_iid` through `surrogate_score()`'s `if (!isTRUE(sum_iid))`, and `isTRUE()` only recognizes the literal value `TRUE`: `sum_iid = "yes"` or `sum_iid = 1` took the "don't sum" branch with no error, returning an `n_theta x n_obs` matrix instead of the documented per-`theta` vector. `surrogate_score()` now validates `sum_iid` with a new `check_flag()` helper (`R/check.R`), matching how `max_batch` is already checked in the same function, so a typo is caught at the call rather than read off a wrong-shaped result (#321).
+* **`log_lik()` and `log_ratio()` now reject a non-logical `sum_iid` instead of silently changing what they return.** Both functions branch on `sum_iid` through `surrogate_score()`'s `if (!isTRUE(sum_iid))`, and `isTRUE()` only recognizes the literal value `TRUE`: `sum_iid = "yes"` or `sum_iid = 1` took the "don't sum" branch with no error, returning an `n_theta x n_obs` matrix instead of the documented per-`theta` vector. `surrogate_score()` now validates `sum_iid` with a new `check_flag()` helper (`R/check.R`), matching how `max_batch` is already checked in the same function, so a typo is caught at the call rather than read off a wrong-shaped result (#321) (#326).
 
 # neuralsbi 0.6.52
 
