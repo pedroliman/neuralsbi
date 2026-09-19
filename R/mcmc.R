@@ -55,6 +55,7 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
   init <- as_theta_matrix(init)
   n_chains <- nrow(init)
   dim <- ncol(init)
+  width <- check_slice_width_length(width, dim)
   width <- check_slice_width(suppressWarnings(rep_len(as.numeric(width), dim)))
   max_steps <- check_count(max_steps, "max_steps", min = 1L,
                            why = "since slice_sample() uses it to cap the stepping-out loop")
@@ -218,6 +219,32 @@ slice_sample_run <- function(log_prob_fn, init, n_draws, warmup, thin, width,
   draws <- matrix(aperm(kept, c(2, 1, 3)), ncol = dim)
   draws <- draws[seq_len(min(n_draws, nrow(draws))), , drop = FALSE]
   list(draws = draws, chains = kept, n_evals = n_evals)
+}
+
+#' Validate the slice sampler's width length, before `rep_len()` recycles it
+#'
+#' `rep_len()`'s only legitimate use here is broadcasting a scalar to every
+#' dimension; any other length is a mistake, not a request to recycle. Left
+#' unchecked (and wrapped in `suppressWarnings()`, since `rep_len()` itself
+#' only warns), an over-long `width` is silently truncated and a short one is
+#' silently recycled into a pattern that lines up with the wrong coordinates
+#' -- the same class of shape bug [check_matrix()] and [check_bound()] exist
+#' to catch for `theta`, `x_obs`, `obs`, `within_support()`'s bounds, and now
+#' this one remaining per-parameter vector in the MCMC path (GitHub #320).
+#'
+#' @param width The user's value, as passed to [slice_sample()].
+#' @param dim Number of parameters.
+#' @return `width`, unchanged (not yet recycled).
+#' @keywords internal
+check_slice_width_length <- function(width, dim) {
+  if (!length(width) %in% c(1L, dim)) {
+    stop(sprintf(paste0("`width` must have length 1 (recycled across all ",
+                        "parameters) or length %d (one value per ",
+                        "parameter), not %s."),
+                 dim, describe_value(width)),
+         call. = FALSE)
+  }
+  width
 }
 
 #' Validate the slice sampler's width, once it has been recycled to `dim`
