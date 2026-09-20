@@ -69,6 +69,27 @@ test_that("draws are cached, and a seeded posterior is reproducible", {
   expect_equal(sample(post, 400, refresh = TRUE), first, ignore_attr = TRUE)
 })
 
+test_that("sample() rejects a non-logical refresh instead of silently serving the cache", {
+  # refresh was only ever tested with isTRUE(), so refresh = 1 or "yes"
+  # silently took the "serve the cache" branch instead of forcing a new run
+  # (#329).
+  set.seed(35)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 800, density_estimator = "linear_gaussian",
+             seed = 36)
+  post <- posterior(fit, matrix(0.5, nrow = 1), n_chains = 4, warmup = 20,
+                    seed = 37)
+
+  expect_error(sample(post, 100, refresh = 1), "`refresh` must be TRUE or FALSE")
+  expect_error(sample(post, 100, refresh = "yes"),
+               "`refresh` must be TRUE or FALSE")
+
+  # TRUE/FALSE keep working exactly as before.
+  first <- sample(post, 100, refresh = FALSE)
+  expect_equal(sample(post, 100, refresh = TRUE), first, ignore_attr = TRUE)
+})
+
 test_that("refresh re-runs the chain when the posterior is unseeded", {
   set.seed(30)
   prior <- prior_uniform(c(mu = -3), c(mu = 3))
