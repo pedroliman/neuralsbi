@@ -209,6 +209,10 @@ sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
 #' @param verbose Report sampling progress.
 #' @keywords internal
 mcmc_draws <- function(post, n, obs, refresh, verbose) {
+  # refresh was only ever tested with isTRUE(), so refresh = 1 or "yes"
+  # silently took the "serve the cache" branch instead of forcing a new run
+  # (#329).
+  check_flag(refresh, "refresh")
   fit <- post$fit
   x_obs <- resolve_x_iid(post, obs)
 
