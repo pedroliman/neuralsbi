@@ -92,6 +92,10 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
     hidden <- check_counts(hidden, "hidden", what = "hidden units")
   }
   if (!is.null(noise_scale)) noise_scale <- check_positive(noise_scale, "noise_scale")
+  # z_score was only ever tested with isTRUE(), so "TRUE" or 1 took the
+  # "don't z-score" branch and silently trained on the wrong scale instead of
+  # erroring (#327).
+  check_flag(z_score, "z_score")
   if (!is.null(seed)) set.seed(seed)
   # A row is one draw here, so a bare vector is a column of 1-D draws rather
   # than check_matrix()'s single row. That is the pre-computed (theta, x) rule
