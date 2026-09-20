@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.59
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  on an NLE posterior now rejects a non-logical `refresh` instead of
+  silently serving stale cached draws.**
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)
+  branched on `refresh` through `if (!isTRUE(refresh) && ...)`, and
+  [`isTRUE()`](https://rdrr.io/r/base/Logic.html) only recognizes the
+  literal value `TRUE`: `refresh = 1` or `refresh = "yes"` took the
+  “serve the cache” branch with no error, so a caller trying to force a
+  new MCMC run got the old cached draws back instead, with nothing said
+  about it. This is the same bug class already fixed for `sum_iid`
+  ([\#321](https://github.com/pedroliman/neuralsbi/issues/321))
+  ([\#326](https://github.com/pedroliman/neuralsbi/issues/326)),
+  `z_score` in
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  ([\#327](https://github.com/pedroliman/neuralsbi/issues/327))
+  ([\#330](https://github.com/pedroliman/neuralsbi/issues/330)), and
+  `model` in the Stan export functions
+  ([\#328](https://github.com/pedroliman/neuralsbi/issues/328))
+  ([\#331](https://github.com/pedroliman/neuralsbi/issues/331)).
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)
+  now validates `refresh` with the existing
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  helper (`R/check.R`), right before it branches on it, so a typo is
+  caught at the call rather than read off stale draws
+  ([\#329](https://github.com/pedroliman/neuralsbi/issues/329))
+  ([\#332](https://github.com/pedroliman/neuralsbi/issues/332)).
+
 ## neuralsbi 0.6.58
 
 - **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md),
