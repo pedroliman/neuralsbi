@@ -85,6 +85,25 @@ test_that("refresh re-runs the chain when the posterior is unseeded", {
                                 unname(unclass(first)))))
 })
 
+test_that("sample() rejects a non-logical refresh instead of silently serving the cache", {
+  # refresh was only ever tested with isTRUE(), so "TRUE" or 1 left
+  # !isTRUE(refresh) at TRUE and silently returned stale cached draws instead
+  # of forcing a fresh run (#329).
+  set.seed(31)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 1500, density_estimator = "linear_gaussian",
+             seed = 5)
+  post <- posterior(fit, matrix(stats::rnorm(20, 1, 0.5), ncol = 1),
+                    n_chains = 4, warmup = 50, thin = 2, seed = 6)
+  sample(post, 400)
+
+  expect_error(sample(post, 400, refresh = "TRUE"),
+               "`refresh` must be TRUE or FALSE")
+  expect_error(sample(post, 400, refresh = 1),
+               "`refresh` must be TRUE or FALSE")
+})
+
 test_that("a new observation is not served from the cache", {
   set.seed(4)
   prior <- prior_uniform(c(mu = -3), c(mu = 3))

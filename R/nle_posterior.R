@@ -212,6 +212,11 @@ mcmc_draws <- function(post, n, obs, refresh, verbose) {
   fit <- post$fit
   x_obs <- resolve_x_iid(post, obs)
 
+  # refresh was only ever tested with isTRUE(), so "TRUE" or 1 left
+  # !isTRUE(refresh) at TRUE and silently returned the stale cache instead of
+  # forcing a fresh run (#329).
+  check_flag(refresh, "refresh")
+
   cached <- post$cache$draws
   if (!isTRUE(refresh) && !is.null(cached) &&
       identical(post$cache$x_obs, x_obs) && nrow(cached) >= n) {
