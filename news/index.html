@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.56</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.57</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.57" id="neuralsbi-0657">neuralsbi 0.6.57<a class="anchor" aria-label="anchor" href="#neuralsbi-0657"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/c2st.html">c2st()</a></code> now rejects a non-logical <code>z_score</code> instead of silently disabling standardization.</strong> <code><a href="../reference/c2st.html">c2st()</a></code> branched on <code>z_score</code> through <code>if (isTRUE(z_score))</code>, and <code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE()</a></code> only recognizes the literal value <code>TRUE</code>: <code>z_score = 1</code> or <code>z_score = "TRUE"</code> took the “don’t z-score” branch with no error, training the classifier on the raw scale of <code>x</code> and <code>y</code> instead of the <code>sbibm</code>-matching standardized scale the default promises. <code><a href="../reference/c2st.html">c2st()</a></code> now validates <code>z_score</code> with the <code><a href="../reference/check_flag.html">check_flag()</a></code> helper added for the same bug class in <code>sum_iid</code> (<a href="https://github.com/pedroliman/neuralsbi/issues/321" class="external-link">#321</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/326" class="external-link">#326</a>), so a typo is caught at the call rather than showing up as an unexplained accuracy number (<a href="https://github.com/pedroliman/neuralsbi/issues/327" class="external-link">#327</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/330" class="external-link">#330</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.56" id="neuralsbi-0656">neuralsbi 0.6.56<a class="anchor" aria-label="anchor" href="#neuralsbi-0656"></a></h2>
 <ul><li>
