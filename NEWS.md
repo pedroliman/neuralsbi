@@ -1,6 +1,6 @@
 # neuralsbi 0.6.57
 
-* **`c2st()` now rejects a non-logical `z_score` instead of silently disabling standardization.** `c2st()` branched on `z_score` through `if (isTRUE(z_score))`, and `isTRUE()` only recognizes the literal value `TRUE`: `z_score = 1` or `z_score = "TRUE"` took the "don't z-score" branch with no error, training the classifier on the raw scale of `x` and `y` instead of the `sbibm`-matching standardized scale the default promises. `c2st()` now validates `z_score` with the `check_flag()` helper added for the same bug class in `sum_iid` (#321) (#326), so a typo is caught at the call rather than showing up as an unexplained accuracy number (#327) (#PRNUM).
+* **`c2st()` now rejects a non-logical `z_score` instead of silently disabling standardization.** `c2st()` branched on `z_score` through `if (isTRUE(z_score))`, and `isTRUE()` only recognizes the literal value `TRUE`: `z_score = 1` or `z_score = "TRUE"` took the "don't z-score" branch with no error, training the classifier on the raw scale of `x` and `y` instead of the `sbibm`-matching standardized scale the default promises. `c2st()` now validates `z_score` with the `check_flag()` helper added for the same bug class in `sum_iid` (#321) (#326), so a typo is caught at the call rather than showing up as an unexplained accuracy number (#327) (#330).
 
 # neuralsbi 0.6.56
 
