@@ -45,6 +45,29 @@ test_that("code generation is deterministic", {
   expect_identical(stan_code(fit), stan_code(fit))
 })
 
+test_that("stan_code() and write_stan_model() reject a non-logical model instead of silently mishandling it", {
+  # model was only ever tested with isTRUE(), so "TRUE" or 1 took the
+  # functions-only branch with no error instead of the runnable model the
+  # default promises (#328).
+  fit <- stan_lingauss_fit()
+  path <- tempfile(fileext = ".stan")
+  on.exit(unlink(path), add = TRUE)
+
+  expect_error(stan_code(fit, model = "TRUE"), "`model` must be TRUE or FALSE")
+  expect_error(stan_code(fit, model = 1), "`model` must be TRUE or FALSE")
+  expect_error(write_stan_model(fit, path, model = "TRUE"),
+               "`model` must be TRUE or FALSE")
+  expect_error(write_stan_model(fit, path, model = 1),
+               "`model` must be TRUE or FALSE")
+})
+
+test_that("stan_code() still works with model = TRUE and model = FALSE", {
+  fit <- stan_lingauss_fit()
+
+  expect_match(stan_code(fit, model = TRUE), "parameters \\{")
+  expect_false(grepl("parameters \\{", stan_code(fit, model = FALSE)))
+})
+
 test_that("stan_data() carries the weights, the data and the prior", {
   fit <- stan_lingauss_fit()
   x_obs <- matrix(stats::rnorm(12), ncol = 2)
@@ -67,6 +90,16 @@ test_that("stan_data() requires x_obs when model = TRUE, matching stan_code()'s 
 
   expect_error(stan_data(fit), "`x_obs` is required")
   expect_error(stan_data(fit, model = TRUE), "`x_obs` is required")
+})
+
+test_that("stan_data() rejects a non-logical model instead of silently mishandling x_obs (#328)", {
+  # model was only ever tested with isTRUE(), so "TRUE" or 1 took the
+  # "x_obs is optional" branch with no error instead of the "x_obs is
+  # required" check the model = TRUE default promises.
+  fit <- stan_lingauss_fit()
+
+  expect_error(stan_data(fit, model = "TRUE"), "`model` must be TRUE or FALSE")
+  expect_error(stan_data(fit, model = 1), "`model` must be TRUE or FALSE")
 })
 
 test_that("stan_data(fit, model = FALSE) still works without x_obs (#298)", {

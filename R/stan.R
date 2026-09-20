@@ -98,6 +98,10 @@ NULL
 stan_code <- function(fit, name = "nsbi_log_lik", model = TRUE) {
   check_exportable_fit(fit)
   check_fit_alive(fit)
+  # model was only ever tested with isTRUE(), so "TRUE" or 1 took the
+  # functions-only branch with no error instead of the runnable model the
+  # default promises (#328).
+  check_flag(model, "model")
   if (!grepl("^[A-Za-z][A-Za-z0-9_]*$", name)) {
     stop("`name` must be a valid Stan identifier.", call. = FALSE)
   }
@@ -114,6 +118,7 @@ write_stan_model <- function(fit, file, name = "nsbi_log_lik", model = TRUE) {
   # destination is work thrown away, and writeLines() takes a connection as
   # well as a path, so a wrong value gets some distance before it complains.
   check_path(file, "file")
+  check_flag(model, "model")
   writeLines(stan_code(fit, name = name, model = model), file)
   invisible(file)
 }
@@ -127,6 +132,9 @@ stan_data <- function(fit, x_obs = NULL, model = TRUE) {
   # message from stan_code() and a dangling-pointer error from net_param()
   # here, for the same fit and the same cause.
   check_fit_alive(fit)
+  # model was only ever tested with isTRUE(), so "TRUE" or 1 silently took
+  # the "x_obs is optional" branch instead of erroring (#328).
+  check_flag(model, "model")
   if (isTRUE(model) && is.null(x_obs)) {
     stop("`x_obs` is required when `model = TRUE`: stan_code()'s default ",
          "model declares `N` and `x` in its data block, and stan_data() has ",
