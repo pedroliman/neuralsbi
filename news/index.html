@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.57</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.58</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.58" id="neuralsbi-0658">neuralsbi 0.6.58<a class="anchor" aria-label="anchor" href="#neuralsbi-0658"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/stan_export.html">stan_code()</a></code>, <code><a href="../reference/stan_export.html">write_stan_model()</a></code> and <code><a href="../reference/stan_export.html">stan_data()</a></code> now reject a non-logical <code>model</code> instead of silently mishandling the Stan export.</strong> All three branched on <code>model</code> through an unguarded <code>isTRUE(model)</code> (or <code>!isTRUE(model)</code>), and <code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE()</a></code> only recognizes the literal value <code>TRUE</code>: <code>model = "TRUE"</code> or <code>model = 1</code> took the “functions block only” branch in <code><a href="../reference/stan_export.html">stan_code()</a></code>/<code><a href="../reference/stan_export.html">write_stan_model()</a></code>, or the “<code>x_obs</code> is optional” branch in <code><a href="../reference/stan_export.html">stan_data()</a></code>, with no error, instead of the runnable model and the required-<code>x_obs</code> check the <code>model = TRUE</code> default promises. This is the same bug class already fixed for <code>sum_iid</code> (<a href="https://github.com/pedroliman/neuralsbi/issues/321" class="external-link">#321</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/326" class="external-link">#326</a>) and for <code>z_score</code> in <code><a href="../reference/c2st.html">c2st()</a></code> (<a href="https://github.com/pedroliman/neuralsbi/issues/327" class="external-link">#327</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/330" class="external-link">#330</a>). All three functions now validate <code>model</code> with the existing <code><a href="../reference/check_flag.html">check_flag()</a></code> helper (<code>R/check.R</code>), right before they branch on it, so a typo is caught at the call rather than read off a silently wrong export (<a href="https://github.com/pedroliman/neuralsbi/issues/328" class="external-link">#328</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/331" class="external-link">#331</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.57" id="neuralsbi-0657">neuralsbi 0.6.57<a class="anchor" aria-label="anchor" href="#neuralsbi-0657"></a></h2>
 <ul><li>

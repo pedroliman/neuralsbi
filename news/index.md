@@ -1,5 +1,36 @@
 # Changelog
 
+## neuralsbi 0.6.58
+
+- **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md),
+  [`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  and
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  now reject a non-logical `model` instead of silently mishandling the
+  Stan export.** All three branched on `model` through an unguarded
+  `isTRUE(model)` (or `!isTRUE(model)`), and
+  [`isTRUE()`](https://rdrr.io/r/base/Logic.html) only recognizes the
+  literal value `TRUE`: `model = "TRUE"` or `model = 1` took the
+  “functions block only” branch in
+  [`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)/[`write_stan_model()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md),
+  or the “`x_obs` is optional” branch in
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md),
+  with no error, instead of the runnable model and the required-`x_obs`
+  check the `model = TRUE` default promises. This is the same bug class
+  already fixed for `sum_iid`
+  ([\#321](https://github.com/pedroliman/neuralsbi/issues/321))
+  ([\#326](https://github.com/pedroliman/neuralsbi/issues/326)) and for
+  `z_score` in
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  ([\#327](https://github.com/pedroliman/neuralsbi/issues/327))
+  ([\#330](https://github.com/pedroliman/neuralsbi/issues/330)). All
+  three functions now validate `model` with the existing
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  helper (`R/check.R`), right before they branch on it, so a typo is
+  caught at the call rather than read off a silently wrong export
+  ([\#328](https://github.com/pedroliman/neuralsbi/issues/328))
+  ([\#331](https://github.com/pedroliman/neuralsbi/issues/331)).
+
 ## neuralsbi 0.6.57
 
 - **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
