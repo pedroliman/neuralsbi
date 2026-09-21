@@ -78,6 +78,22 @@ test_that("de_rebuild_net refuses an estimator it cannot rebuild", {
                "Cannot rebuild")
 })
 
+test_that("save_npe rejects a torch-backed fit with an unrecognized estimator class before writing anything", {
+  fit <- fit_toy(100)
+  # stand in for a custom density_estimator (documented extension point): a
+  # class de_rebuild_net() does not know, with a $net that reports itself
+  # alive (torch_net_alive() only reads $parameters) so the check under test
+  # -- the class check, not the dangling-pointer check -- is what fires.
+  fit$de <- structure(list(net = list(parameters = list())),
+                       class = c("my_custom_mdn", "nsbi_de"))
+
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path), add = TRUE)
+  expect_error(save_npe(fit, path), "my_custom_mdn")
+  expect_error(save_npe(fit, path), "not one.*load_npe\\(\\) knows how to rebuild")
+  expect_false(file.exists(path))
+})
+
 test_that("a torch-backed fit survives save_npe() but not saveRDS()", {
   skip_if_no_torch()
   set.seed(3)
