@@ -90,6 +90,25 @@ test_that("sample() rejects a non-logical refresh instead of silently serving th
   expect_equal(sample(post, 100, refresh = TRUE), first, ignore_attr = TRUE)
 })
 
+test_that("sample() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  set.seed(38)
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 800, density_estimator = "linear_gaussian",
+             seed = 39)
+  post <- posterior(fit, matrix(0.5, nrow = 1), n_chains = 4, warmup = 20,
+                    seed = 40)
+
+  expect_error(sample(post, 100, verbose = 1), "`verbose` must be TRUE or FALSE")
+  expect_error(sample(post, 100, verbose = "yes"),
+               "`verbose` must be TRUE or FALSE")
+
+  # TRUE/FALSE keep working exactly as before.
+  expect_s3_class(sample(post, 100, verbose = FALSE), "nsbi_samples")
+})
+
 test_that("refresh re-runs the chain when the posterior is unseeded", {
   set.seed(30)
   prior <- prior_uniform(c(mu = -3), c(mu = 3))

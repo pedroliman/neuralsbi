@@ -59,6 +59,27 @@ test_that("npe() checks the controls before running the simulator", {
   expect_identical(env$calls, 0L)
 })
 
+test_that("npe() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  env <- new.env(parent = emptyenv())
+  env$calls <- 0L
+  sim <- counting_simulator(env)
+
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = "linear_gaussian", verbose = 1),
+               "`verbose` must be TRUE or FALSE")
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = "linear_gaussian", verbose = "yes"),
+               "`verbose` must be TRUE or FALSE")
+  expect_identical(env$calls, 0L)
+
+  # TRUE/FALSE keep working exactly as before.
+  expect_s3_class(npe(toy_prior(), sim, n_simulations = 100,
+                      density_estimator = "linear_gaussian", verbose = FALSE),
+                  "nsbi_npe")
+})
+
 test_that("npe() rejects a malformed caller-supplied density_estimator before simulating (#259)", {
   env <- new.env(parent = emptyenv())
   env$calls <- 0L
@@ -215,6 +236,15 @@ test_that("simulate_for_sbi() checks n and the prior", {
                "`prior` must be an nsbi_prior object")
   expect_equal(nrow(simulate_for_sbi(toy_simulator, toy_prior(), n = 5)$theta),
                5L)
+})
+
+test_that("simulate_for_sbi() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  expect_error(simulate_for_sbi(toy_simulator, toy_prior(), n = 5, verbose = 1),
+               "`verbose` must be TRUE or FALSE")
+  expect_error(simulate_for_sbi(toy_simulator, toy_prior(), n = 5, verbose = "yes"),
+               "`verbose` must be TRUE or FALSE")
 })
 
 test_that("print.nsbi_npe() prints the ordinary summary, not just the dead-network path", {

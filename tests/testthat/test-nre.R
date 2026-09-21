@@ -321,6 +321,25 @@ test_that("nre() checks its arguments before the simulator runs", {
   expect_identical(calls, 0L)
 })
 
+test_that("nre() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", verbose = 1),
+    "`verbose` must be TRUE or FALSE")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", verbose = "yes"),
+    "`verbose` must be TRUE or FALSE")
+  expect_identical(calls, 0L)
+})
+
 test_that("a malformed caller-supplied classifier errors before the simulator runs (#259)", {
   calls <- 0L
   counting_simulator <- function(mu, nu) {

@@ -112,6 +112,9 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   }
   device <- check_device_arg(device)
   check_prior(prior)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
@@ -366,6 +369,9 @@ simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
   check_function(simulator, "simulator", what = "one parameter set per call")
   check_prior(prior)
   n <- check_count(n, "n")
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   if (!is.null(seed)) set.seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))

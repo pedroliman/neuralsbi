@@ -82,6 +82,10 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
          call. = FALSE)
   }
   check_x_obs(x_obs)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat()'s per-round progress line
+  # with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   # Every round simulates, so the counts are checked once, up front, rather
   # than when round r first reads one.
   n_rounds <- check_count(n_rounds, "n_rounds",

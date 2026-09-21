@@ -355,6 +355,29 @@ test_that("npe_sequential checks round 1's estimator/training args before round 
   expect_s3_class(fit, "nsbi_snpe")
 })
 
+test_that("npe_sequential rejects a non-logical verbose before round 1 simulates", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat()'s
+  # per-round progress line, so verbose = 1 or "yes" took the "stay quiet"
+  # branch with no error (#336).
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "linear_gaussian",
+                   verbose = 1),
+    "`verbose` must be TRUE or FALSE")
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "linear_gaussian",
+                   verbose = "yes"),
+    "`verbose` must be TRUE or FALSE")
+  expect_equal(n_calls, 0L)
+})
+
 test_that("npe_sequential rejects a malformed embedding_net before round 1 simulates (#301)", {
   # embedding_net reaches round 1 through `...` just like n_bins/device/etc,
   # and was left out when #251 added npe()'s other pre-simulation checks

@@ -83,6 +83,9 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   }
   device <- check_device_arg(device)
   check_prior(prior)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   check_architecture(n_components, n_transforms, hidden, n_bins, tail_bound)
   check_train_controls(max_epochs, batch_size, lr, validation_fraction,
                        patience, n_restarts, clip_grad_norm)

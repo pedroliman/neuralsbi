@@ -192,6 +192,9 @@ resolve_x_iid <- function(post, x, arg = "obs") {
 sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
                                        refresh = FALSE, verbose = FALSE, ...) {
   n <- check_count(n, "n", why = "since it is the number of posterior draws")
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   mcmc_draws(x, n, obs, refresh, verbose)
 }
 
