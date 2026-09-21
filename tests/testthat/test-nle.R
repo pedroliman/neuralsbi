@@ -428,6 +428,25 @@ test_that("a malformed caller-supplied density_estimator errors before the simul
   expect_identical(calls, 0L)
 })
 
+test_that("nle() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nle(gauss_prior(), counting_simulator, n_simulations = 100,
+        density_estimator = "linear_gaussian", verbose = 1),
+    "`verbose` must be TRUE or FALSE")
+  expect_error(
+    nle(gauss_prior(), counting_simulator, n_simulations = 100,
+        density_estimator = "linear_gaussian", verbose = "yes"),
+    "`verbose` must be TRUE or FALSE")
+  expect_identical(calls, 0L)
+})
+
 test_that("pre-computed simulations give the same fit as running the simulator", {
   sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 800, seed = 9)
   from_sims <- nle(gauss_prior(), theta = sims$theta, x = sims$x,

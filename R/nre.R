@@ -122,6 +122,9 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
   }
   device <- check_device_arg(device)
   check_prior(prior)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
