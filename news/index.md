@@ -1,5 +1,48 @@
 # Changelog
 
+## neuralsbi 0.6.61
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md),
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md),
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md) on
+  an NLE/NRE MCMC posterior, and
+  [`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md)
+  now reject a non-logical `verbose` instead of silently staying
+  quiet.** `verbose_cat()` branched on `verbose` through
+  `if (isTRUE(verbose)) cat(...)`, and
+  [`isTRUE()`](https://rdrr.io/r/base/Logic.html) only recognizes the
+  literal value `TRUE`: `verbose = 1` or `verbose = "yes"` took the
+  “stay quiet” branch with no error, so a caller trying to turn on
+  progress output got silence instead, with nothing said about the typo.
+  This is the same bug class already fixed for `sum_iid`
+  ([\#321](https://github.com/pedroliman/neuralsbi/issues/321))
+  ([\#326](https://github.com/pedroliman/neuralsbi/issues/326)),
+  `z_score` in
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  ([\#327](https://github.com/pedroliman/neuralsbi/issues/327))
+  ([\#330](https://github.com/pedroliman/neuralsbi/issues/330)), `model`
+  in the Stan export functions
+  ([\#328](https://github.com/pedroliman/neuralsbi/issues/328))
+  ([\#331](https://github.com/pedroliman/neuralsbi/issues/331)),
+  `refresh` in
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)
+  ([\#329](https://github.com/pedroliman/neuralsbi/issues/329))
+  ([\#332](https://github.com/pedroliman/neuralsbi/issues/332)), and the
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  estimator-class check
+  ([\#334](https://github.com/pedroliman/neuralsbi/issues/334))
+  ([\#335](https://github.com/pedroliman/neuralsbi/issues/335)). Every
+  public entry point that takes a `verbose` argument now validates it
+  with the existing
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  helper (`R/check.R`) before it is used or forwarded, so a typo is
+  caught at the call that made it rather than read off unexplained
+  silence ([\#336](https://github.com/pedroliman/neuralsbi/issues/336))
+  ([\#337](https://github.com/pedroliman/neuralsbi/issues/337)).
+
 ## neuralsbi 0.6.60
 
 - **[`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
