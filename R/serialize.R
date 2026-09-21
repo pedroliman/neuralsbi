@@ -19,6 +19,14 @@
 #' `saveRDS()` unharmed; `save_npe()` accepts it anyway, so saving code does
 #' not have to know which estimator was used.
 #'
+#' `npe()`/`nle()`/`nre()` accept a custom `density_estimator`/`classifier`
+#' function that returns its own S3-classed object around a torch module.
+#' `save_npe()` only knows how to rebuild the estimators shipped with this
+#' package (`"mdn"`, `"maf"`, `"nsf"`, and the ratio-estimation network), so it
+#' errors immediately, naming the offending class, on a torch-backed fit whose
+#' estimator is none of those, rather than writing a file that only fails
+#' later, in `load_npe()`, possibly in a different session.
+#'
 #' Weights are saved, not code. A fit saved by one version of `neuralsbi` loads
 #' into a later one as long as the estimator's architecture has not changed;
 #' `load_npe()` reports the version that wrote the file when the rebuild fails.
@@ -68,6 +76,17 @@ save_npe <- function(fit, path) {
       stop("This fit's network is a dangling external pointer, so there are ",
            "no weights to save. It came from readRDS(); refit, or reload the ",
            "original with load_npe().", call. = FALSE)
+    }
+    kind <- class(fit$de)[1L]
+    if (!kind %in% de_rebuildable_classes()) {
+      stop(sprintf(
+        paste0("Cannot save this fit: its estimator class '%s' is not one ",
+               "load_npe() knows how to rebuild.\nSupported: %s. This looks ",
+               "like a custom torch-backed density_estimator; save_npe() can ",
+               "only round-trip the built-in estimators de_rebuild_net() ",
+               "knows how to reconstruct."),
+        kind, paste(sprintf('"%s"', de_rebuildable_classes()), collapse = ", ")),
+        call. = FALSE)
     }
     require_torch()
     tmp <- tempfile(fileext = ".pt")
@@ -157,11 +176,24 @@ de_drop_net <- function(fit) {
   fit
 }
 
+#' Estimator classes `de_rebuild_net()` knows how to rebuild
+#'
+#' The single source of truth for which torch-backed estimators round-trip
+#' through [save_npe()]/[load_npe()]. `save_npe()` checks a fit's estimator
+#' class against this list up front, before writing anything, so an
+#' unsupported class (a custom `density_estimator` wrapping a torch module) is
+#' rejected at save time instead of failing inside [de_rebuild_net()] at load
+#' time, in a later session, after the original fit is gone.
+#' @keywords internal
+de_rebuildable_classes <- function() {
+  c("nsbi_de_mdn", "nsbi_de_maf", "nsbi_de_nsf", "nsbi_re_net")
+}
+
 #' Rebuild an estimator's network from the architecture recorded on the fit
 #'
 #' The one place that knows how to turn a stored estimator back into a torch
 #' module. Every field it reads is set by the matching `fit_*()`, so adding an
-#' estimator means adding a branch here.
+#' estimator means adding a branch here and to [de_rebuildable_classes()].
 #' @keywords internal
 de_rebuild_net <- function(de) {
   kind <- class(de)[1L]
@@ -176,8 +208,10 @@ de_rebuild_net <- function(de) {
                              de$embedding)(),
     nsbi_re_net = nre_module(de$dim_x, de$dim_theta, de$classifier, de$hidden,
                              de$n_blocks, de$embedding)(),
-    stop(sprintf("Cannot rebuild a network for estimator class '%s'.", kind),
-         call. = FALSE)
+    stop(sprintf(
+      "Cannot rebuild a network for estimator class '%s'.\nSupported: %s.",
+      kind, paste(sprintf('"%s"', de_rebuildable_classes()), collapse = ", ")),
+      call. = FALSE)
   )
 }
 

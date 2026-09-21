@@ -52,6 +52,14 @@ A \code{"linear_gaussian"} fit holds no torch objects and round-trips through
 \code{saveRDS()} unharmed; \code{save_npe()} accepts it anyway, so saving code does
 not have to know which estimator was used.
 
+\code{npe()}/\code{nle()}/\code{nre()} accept a custom \code{density_estimator}/\code{classifier}
+function that returns its own S3-classed object around a torch module.
+\code{save_npe()} only knows how to rebuild the estimators shipped with this
+package (\code{"mdn"}, \code{"maf"}, \code{"nsf"}, and the ratio-estimation network), so it
+errors immediately, naming the offending class, on a torch-backed fit whose
+estimator is none of those, rather than writing a file that only fails
+later, in \code{load_npe()}, possibly in a different session.
+
 Weights are saved, not code. A fit saved by one version of \code{neuralsbi} loads
 into a later one as long as the estimator's architecture has not changed;
 \code{load_npe()} reports the version that wrote the file when the rebuild fails.
