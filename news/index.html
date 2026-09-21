@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.59</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.60</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.60" id="neuralsbi-0660">neuralsbi 0.6.60<a class="anchor" aria-label="anchor" href="#neuralsbi-0660"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/save_npe.html">save_npe()</a></code> now rejects a torch-backed fit whose estimator class it cannot rebuild, instead of writing a file <code><a href="../reference/save_npe.html">load_npe()</a></code> can never read back.</strong> <code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code>/<code><a href="../reference/nre.html">nre()</a></code> accept a custom <code>density_estimator</code>/<code>classifier</code> function as a documented extension point, and that function can return any S3-classed object wrapping a torch module. <code><a href="../reference/save_npe.html">save_npe()</a></code> only checked <code>is.null(fit$de$net)</code> before serializing weights, so it wrote a bundle for a custom torch-backed estimator with no complaint; <code><a href="../reference/save_npe.html">load_npe()</a></code> then called <code><a href="../reference/de_rebuild_net.html">de_rebuild_net()</a></code>, whose <code><a href="https://rdrr.io/r/base/switch.html" class="external-link">switch()</a></code> on <code>class(de)[1L]</code> only recognizes the four built-in estimator classes and errored for anything else, so the round trip failed only at load time, potentially in a later session after the original fit was gone. <code><a href="../reference/save_npe.html">save_npe()</a></code> now checks the estimator’s class against the same list <code><a href="../reference/de_rebuild_net.html">de_rebuild_net()</a></code> switches on (<code>de_rebuildable_classes()</code>, the one place both now read) before doing any work, and errors immediately naming the offending class and what is supported, mirroring <code><a href="../reference/stan_pack.html">stan_pack()</a></code>’s existing check for the Stan export path. A <code>"linear_gaussian"</code> fit is unaffected: it carries no torch net, so it never reaches this check (<a href="https://github.com/pedroliman/neuralsbi/issues/334" class="external-link">#334</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/335" class="external-link">#335</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.59" id="neuralsbi-0659">neuralsbi 0.6.59<a class="anchor" aria-label="anchor" href="#neuralsbi-0659"></a></h2>
 <ul><li>

@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.60
+
+- **[`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  now rejects a torch-backed fit whose estimator class it cannot
+  rebuild, instead of writing a file
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  can never read back.**
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  accept a custom `density_estimator`/`classifier` function as a
+  documented extension point, and that function can return any
+  S3-classed object wrapping a torch module.
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  only checked `is.null(fit$de$net)` before serializing weights, so it
+  wrote a bundle for a custom torch-backed estimator with no complaint;
+  [`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  then called
+  [`de_rebuild_net()`](https://neuralsbi.pedrodelima.com/reference/de_rebuild_net.md),
+  whose [`switch()`](https://rdrr.io/r/base/switch.html) on
+  `class(de)[1L]` only recognizes the four built-in estimator classes
+  and errored for anything else, so the round trip failed only at load
+  time, potentially in a later session after the original fit was gone.
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  now checks the estimator’s class against the same list
+  [`de_rebuild_net()`](https://neuralsbi.pedrodelima.com/reference/de_rebuild_net.md)
+  switches on (`de_rebuildable_classes()`, the one place both now read)
+  before doing any work, and errors immediately naming the offending
+  class and what is supported, mirroring
+  [`stan_pack()`](https://neuralsbi.pedrodelima.com/reference/stan_pack.md)’s
+  existing check for the Stan export path. A `"linear_gaussian"` fit is
+  unaffected: it carries no torch net, so it never reaches this check
+  ([\#334](https://github.com/pedroliman/neuralsbi/issues/334))
+  ([\#335](https://github.com/pedroliman/neuralsbi/issues/335)).
+
 ## neuralsbi 0.6.59
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)

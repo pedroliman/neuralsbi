@@ -61,6 +61,15 @@ A `"linear_gaussian"` fit holds no torch objects and round-trips through
 `save_npe()` accepts it anyway, so saving code does not have to know
 which estimator was used.
 
+[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+accept a custom `density_estimator`/`classifier` function that returns
+its own S3-classed object around a torch module. `save_npe()` only knows
+how to rebuild the estimators shipped with this package (`"mdn"`,
+`"maf"`, `"nsf"`, and the ratio-estimation network), so it errors
+immediately, naming the offending class, on a torch-backed fit whose
+estimator is none of those, rather than writing a file that only fails
+later, in `load_npe()`, possibly in a different session.
+
 Weights are saved, not code. A fit saved by one version of `neuralsbi`
 loads into a later one as long as the estimator's architecture has not
 changed; `load_npe()` reports the version that wrote the file when the

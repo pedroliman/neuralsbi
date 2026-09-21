@@ -57,7 +57,7 @@ round trip that works.'><meta property="og:image" content="https://neuralsbi.ped
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.59</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.60</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -147,6 +147,13 @@ the one you trained.</p>
 <p>A <code>"linear_gaussian"</code> fit holds no torch objects and round-trips through
 <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code> unharmed; <code>save_npe()</code> accepts it anyway, so saving code does
 not have to know which estimator was used.</p>
+<p><code><a href="npe.html">npe()</a></code>/<code><a href="nle.html">nle()</a></code>/<code><a href="nre.html">nre()</a></code> accept a custom <code>density_estimator</code>/<code>classifier</code>
+function that returns its own S3-classed object around a torch module.
+<code>save_npe()</code> only knows how to rebuild the estimators shipped with this
+package (<code>"mdn"</code>, <code>"maf"</code>, <code>"nsf"</code>, and the ratio-estimation network), so it
+errors immediately, naming the offending class, on a torch-backed fit whose
+estimator is none of those, rather than writing a file that only fails
+later, in <code>load_npe()</code>, possibly in a different session.</p>
 <p>Weights are saved, not code. A fit saved by one version of <code>neuralsbi</code> loads
 into a later one as long as the estimator's architecture has not changed;
 <code>load_npe()</code> reports the version that wrote the file when the rebuild fails.</p>
