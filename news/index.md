@@ -1,5 +1,58 @@
 # Changelog
 
+## neuralsbi 0.6.65
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an NLE/NRE MCMC posterior now rejects a non-logical `normalize`
+  instead of misreading it.**
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  tested `normalize` with `!missing(normalize) && isTRUE(normalize)`,
+  and [`isTRUE()`](https://rdrr.io/r/base/Logic.html) only recognizes
+  the literal value `TRUE`: `normalize = 1` or `normalize = "yes"`
+  silently took the “unnormalized, no warning” branch instead of raising
+  the “`normalize` must be TRUE/FALSE” error its sibling
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  already raises for the same typo. This is the same bug class already
+  fixed for `normalize` on
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  and `standardize` in
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  ([\#340](https://github.com/pedroliman/neuralsbi/issues/340))
+  ([\#342](https://github.com/pedroliman/neuralsbi/issues/342)), and,
+  before that, for `sum_iid`
+  ([\#321](https://github.com/pedroliman/neuralsbi/issues/321))
+  ([\#326](https://github.com/pedroliman/neuralsbi/issues/326)),
+  `z_score` in
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  ([\#327](https://github.com/pedroliman/neuralsbi/issues/327))
+  ([\#330](https://github.com/pedroliman/neuralsbi/issues/330)), `model`
+  in the Stan export functions
+  ([\#328](https://github.com/pedroliman/neuralsbi/issues/328))
+  ([\#331](https://github.com/pedroliman/neuralsbi/issues/331)),
+  `refresh` in
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)
+  ([\#329](https://github.com/pedroliman/neuralsbi/issues/329))
+  ([\#332](https://github.com/pedroliman/neuralsbi/issues/332)),
+  `verbose` across the package
+  ([\#336](https://github.com/pedroliman/neuralsbi/issues/336))
+  ([\#337](https://github.com/pedroliman/neuralsbi/issues/337)), and the
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  estimator-class check
+  ([\#334](https://github.com/pedroliman/neuralsbi/issues/334))
+  ([\#335](https://github.com/pedroliman/neuralsbi/issues/335)).
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  now validates any explicitly supplied `normalize` with the existing
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  helper (`R/check.R`) before deciding whether to warn, so a typo is
+  caught at the call that made it and named in the error; the default
+  (`normalize` left unset, which stays silently unnormalized) is
+  unaffected, since
+  [`mcmc_log_prob()`](https://neuralsbi.pedrodelima.com/reference/mcmc_log_prob.md)’s
+  “no normalizing constant” warning was only ever meant to fire when the
+  caller explicitly asks for normalization
+  ([\#344](https://github.com/pedroliman/neuralsbi/issues/344))
+  ([\#345](https://github.com/pedroliman/neuralsbi/issues/345)).
+
 ## neuralsbi 0.6.64
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
