@@ -251,6 +251,11 @@ log_prob <- function(post, theta, x = NULL, ...) UseMethod("log_prob")
 #' @export
 log_prob.nsbi_posterior <- function(post, theta, x = NULL, normalize = TRUE,
                                     n_normalization = 10000L, ...) {
+  # normalize was only ever tested with `&&`, which errors outright for a
+  # non-logical right-hand side but coerces a numeric one silently, so
+  # normalize = 1/0 worked by luck while normalize = NA or "yes" surfaced an
+  # unnamed base-R error instead of naming the argument (#340).
+  normalize <- check_flag(normalize, "normalize")
   n_normalization <- check_count(n_normalization, "n_normalization")
   fit <- post$fit
   theta <- check_numeric(theta, "theta")
