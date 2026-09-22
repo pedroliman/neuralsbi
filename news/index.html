@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.65</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.66</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.66" id="neuralsbi-0666">neuralsbi 0.6.66<a class="anchor" aria-label="anchor" href="#neuralsbi-0666"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now rejects a non-logical <code>standardize</code> before round 1 simulates, instead of after burning its whole simulation budget.</strong> <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> pre-checks several of the <code><a href="../reference/npe.html">npe()</a></code> arguments passed through <code>...</code> – <code>n_components</code>/<code>n_transforms</code>/<code>hidden</code>/<code>n_bins</code>/<code>tail_bound</code>, the training controls, <code>device</code>, <code>embedding_net</code>, <code>density_estimator</code> – for exactly this reason: a typo should fail immediately rather than after <code><a href="../reference/sample_prior.html">sample_prior()</a></code> and the user’s <code>simulator</code> have already run round 1’s full budget. <code>standardize</code> is validated inside <code><a href="../reference/npe.html">npe()</a></code> itself with <code><a href="../reference/check_flag.html">check_flag()</a></code>, but that call only runs once <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> reaches the <code><a href="../reference/npe.html">npe()</a></code> call at the bottom of round 1’s loop, so it was left out of the pre-check battery that <code>verbose</code> and the rest already get. <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now validates <code>standardize</code> with <code><a href="../reference/check_flag.html">check_flag()</a></code> alongside the other <code>npe_arg(...)</code> pre-checks, the same pattern <code>verbose</code> already uses (<a href="https://github.com/pedroliman/neuralsbi/issues/346" class="external-link">#346</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/347" class="external-link">#347</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.65" id="neuralsbi-0665">neuralsbi 0.6.65<a class="anchor" aria-label="anchor" href="#neuralsbi-0665"></a></h2>
 <ul><li>

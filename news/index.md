@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.66
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now rejects a non-logical `standardize` before round 1 simulates,
+  instead of after burning its whole simulation budget.**
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  pre-checks several of the
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)
+  arguments passed through `...` –
+  `n_components`/`n_transforms`/`hidden`/`n_bins`/`tail_bound`, the
+  training controls, `device`, `embedding_net`, `density_estimator` –
+  for exactly this reason: a typo should fail immediately rather than
+  after
+  [`sample_prior()`](https://neuralsbi.pedrodelima.com/reference/sample_prior.md)
+  and the user’s `simulator` have already run round 1’s full budget.
+  `standardize` is validated inside
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) itself
+  with
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md),
+  but that call only runs once
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  reaches the
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md) call at
+  the bottom of round 1’s loop, so it was left out of the pre-check
+  battery that `verbose` and the rest already get.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now validates `standardize` with
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  alongside the other `npe_arg(...)` pre-checks, the same pattern
+  `verbose` already uses
+  ([\#346](https://github.com/pedroliman/neuralsbi/issues/346))
+  ([\#347](https://github.com/pedroliman/neuralsbi/issues/347)).
+
 ## neuralsbi 0.6.65
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
