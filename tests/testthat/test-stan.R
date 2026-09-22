@@ -211,10 +211,15 @@ test_that("stan_data()/stan_code() still work for a finite-bound uniform prior f
 test_that("an improper uniform nested in prior_independent() is also refused", {
   # The joint prior's own type is "independent" here, not "uniform": the
   # infinite bound means prior_independent() cannot use its marginals fast
-  # path, so it falls back to composing closures and stan_prior_blocks()
-  # never sees a bare "uniform" type. It refuses anyway, through the
-  # existing prior_custom()-style rejection -- confirming the two paths
-  # together leave no way for an infinite bound to reach generated Stan code.
+  # path, so it falls back to composing closures, and prior$params$marginals
+  # is NULL on the composed prior. stan_prior_blocks() used to only call
+  # check_finite_uniform_bounds() inside its "uniform" branch, so a composed
+  # prior fell straight through to the generic is.null(marginals) branch and
+  # reported "arbitrary R code with no Stan counterpart" -- true of a
+  # prior_custom(), not of this one. check_finite_uniform_bounds() (and the
+  # is_improper_uniform_prior() recursion behind it) now runs unconditionally,
+  # so the composed prior gets the same "improper... prior_truncated()"
+  # message a bare prior_uniform(-Inf, Inf) already got (#338).
   prior <- prior_independent(mu = prior_uniform(-Inf, Inf),
                              nu = prior_normal(0, 1))
   theta <- cbind(mu = stats::rnorm(500), nu = stats::rnorm(500))
@@ -222,7 +227,27 @@ test_that("an improper uniform nested in prior_independent() is also refused", {
   fit <- nle(prior, theta = theta, x = x, n_simulations = 500,
              density_estimator = "linear_gaussian", seed = 7)
 
-  expect_error(stan_code(fit), "no Stan counterpart")
+  expect_error(stan_code(fit), "improper distribution")
+  expect_error(stan_code(fit), "prior_truncated")
+  expect_error(stan_data(fit, model = FALSE), "improper distribution")
+  expect_no_match(tryCatch(stan_code(fit), error = conditionMessage),
+                  "no Stan counterpart")
+})
+
+test_that("a properly bounded prior_independent() still exports (#338 no-regression)", {
+  # Same shape as the improper case above, but every component has finite
+  # support, so prior_independent() takes its marginals fast path and the
+  # unconditional check_finite_uniform_bounds() call has to stay a no-op.
+  prior <- prior_independent(mu = prior_uniform(0, 1), nu = prior_normal(0, 1))
+  theta <- cbind(mu = stats::runif(500), nu = stats::rnorm(500))
+  x <- t(apply(theta, 1, function(r) stan_sim(r[[1]], r[[2]])))
+  fit <- nle(prior, theta = theta, x = x, n_simulations = 500,
+             density_estimator = "linear_gaussian", seed = 7)
+
+  code <- stan_code(fit)
+  expect_match(code, "parameters \\{")
+  expect_match(code, "nu ~ normal\\(0, 1\\)|theta_2 ~ normal\\(0, 1\\)")
+  expect_type(stan_data(fit, model = FALSE)$nsbi_w, "double")
 })
 
 test_that("write_stan_model() writes a file", {

@@ -155,8 +155,11 @@ stan_data <- function(fit, x_obs = NULL, model = TRUE) {
     dimnames(out$x) <- NULL
   }
   prior <- fit$prior
+  # Unconditional for the same reason as stan_prior_blocks(): an improper
+  # uniform buried inside a prior_independent() component has to be caught
+  # here too, not just when the composed prior's own type is "uniform" (#338).
+  check_finite_uniform_bounds(prior)
   if (identical(prior$type, "uniform")) {
-    check_finite_uniform_bounds(prior)
     out$nsbi_low <- as.numeric(prior$lower)
     out$nsbi_high <- as.numeric(prior$upper)
   } else if (identical(prior$type, "normal")) {
@@ -657,9 +660,13 @@ stan_model_blocks <- function(fit, name, packed) {
 #'   empty.
 #' @keywords internal
 stan_prior_blocks <- function(prior, Q) {
+  # Unconditional: an improper uniform component only reveals itself through
+  # is_improper_uniform_prior()'s recursion into prior_independent()'s
+  # components, and that recursion has to run even when the composed prior's
+  # own `type` is "independent", not "uniform" (#338).
+  check_finite_uniform_bounds(prior)
   type <- prior$type %||% "custom"
   if (identical(type, "uniform")) {
-    check_finite_uniform_bounds(prior)
     return(list(
       data = sprintf("  vector[%d] nsbi_low;\n  vector[%d] nsbi_high;\n", Q, Q),
       parameters = sprintf(
