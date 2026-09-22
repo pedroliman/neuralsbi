@@ -137,6 +137,13 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
+  # standardize reaches round 1 through `...` just like the other npe()
+  # arguments above, and is validated inside npe() itself with check_flag()
+  # (R/npe.R) -- but only once the npe() call at the bottom of the round loop
+  # runs, after prepare_simulations() had already spent round 1's whole
+  # simulation budget. verbose gets the immediate-failure treatment above;
+  # standardize was left out of this battery (#346).
+  standardize <- check_flag(npe_arg("standardize"), "standardize")
   # Mirrors npe()'s own resolution (R/npe.R): a caller-supplied fitter
   # function is checked for arity, a string choice is matched against the
   # same four names npe() accepts. Until now `density_estimator` was only
