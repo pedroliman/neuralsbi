@@ -397,6 +397,27 @@ test_that("npe_sequential rejects a malformed embedding_net before round 1 simul
   expect_identical(n_calls, 0L)
 })
 
+test_that("npe_sequential rejects a non-logical standardize before round 1 simulates (#346)", {
+  # standardize reaches round 1 through `...` just like embedding_net/n_bins/
+  # device/etc, and is validated inside npe() itself with check_flag() -- but
+  # only once the npe() call at the end of round 1 runs, after
+  # prepare_simulations() had already spent round 1's whole simulation
+  # budget. The same class of bug #251/#301 fixed for the other npe()
+  # arguments forwarded through `...`.
+  prior <- prior_normal(mean = 0, sd = 1)
+  n_calls <- 0L
+  simulator <- function(theta) {
+    n_calls <<- n_calls + 1L
+    theta + stats::rnorm(1, sd = 0.5)
+  }
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0, n_rounds = 2,
+                   n_simulations = 500, density_estimator = "linear_gaussian",
+                   standardize = "nope"),
+    "`standardize`")
+  expect_identical(n_calls, 0L)
+})
+
 test_that("npe_sequential rejects an unknown density estimator before round 1 simulates (#262)", {
   # density_estimator was only ever forwarded through `...` to the npe() call
   # at the end of round 1, so match.arg()'s "'arg' should be one of" error
