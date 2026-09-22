@@ -541,3 +541,27 @@ test_that("sample() on a seeded NLE posterior does not mutate the caller's RNG s
   sample(post, 50)
   expect_identical(.Random.seed, before)
 })
+
+# GitHub #341: check_fit_alive() is meant to fail at the door, not three calls
+# later, but mcmc_posterior() only ran it once, at posterior() construction.
+# A fit's torch network can die on the same object afterward (typically
+# saveRDS()/readRDS() across R sessions), and sample()/log_prob() reached the
+# dead pointer directly instead of pointing at save_npe()/load_npe().
+test_that("sample() and log_prob() on an NLE posterior re-check the fit's network after construction, not just at posterior()", {
+  dead <- structure(list(), class = "nsbi_dead_net_341_nle")
+  registerS3method("$", "nsbi_dead_net_341_nle",
+                   function(x, name) stop("external pointer is not valid"))
+
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  fit <- nle(prior, function(mu) c(y = stats::rnorm(1, mu, 0.5)),
+             n_simulations = 300, density_estimator = "linear_gaussian",
+             seed = 50)
+  post <- posterior(fit, matrix(0.5, ncol = 1), n_chains = 2, warmup = 10,
+                    seed = 51)
+  # the network dies after the posterior already exists
+  post$fit$de$net <- dead
+
+  expect_error(sample(post, n = 20), "save_npe")
+  expect_error(log_prob(post, matrix(0, ncol = 1), normalize = FALSE),
+               "save_npe")
+})

@@ -97,6 +97,16 @@ posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
 #'   otherwise.
 #' @keywords internal
 resolve_obs <- function(post, x, first_row, arg = if (first_row) "x" else "obs") {
+  # posterior()/mcmc_posterior() call check_fit_alive() once, at construction,
+  # but a fit's torch network can die later on the same object -- most often
+  # because it was saveRDS()'d and readRDS()'d back mid-session -- and every
+  # downstream call reached here without checking again, surfacing a raw
+  # torch "external pointer is not valid" error instead of this package's
+  # actionable one (#341). sample.nsbi_posterior(), log_prob.nsbi_posterior(),
+  # mcmc_draws() and mcmc_log_prob() all resolve their observation through
+  # this one function, so checking here catches all four at the door rather
+  # than repeating the call at each site.
+  check_fit_alive(post$fit)
   check_arg <- if (is.null(x)) "x_obs" else arg
   x <- x %||% post$x_obs
   if (is.null(x)) {

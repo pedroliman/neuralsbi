@@ -73,6 +73,26 @@ test_that("a fit whose network died points at save_npe(), not at a torch error",
   expect_output(print(fit), "network unusable")
 })
 
+test_that("sample() and log_prob() re-check a fit's network after posterior() construction, not just at construction (#341)", {
+  # check_fit_alive() is meant to fail at the door, not three calls later, but
+  # posterior.nsbi_npe() only ran it once, when the posterior object was
+  # built. A fit's torch network can die on the same object afterward --
+  # typically saveRDS()/readRDS() across R sessions -- and sample()/log_prob()
+  # reached the dead pointer directly, surfacing torch's raw "external
+  # pointer is not valid" instead of pointing at save_npe()/load_npe().
+  dead <- structure(list(), class = "nsbi_dead_net_341_npe")
+  registerS3method("$", "nsbi_dead_net_341_npe",
+                   function(x, name) stop("external pointer is not valid"))
+
+  fit <- fit_toy(200)
+  post <- posterior(fit, x_obs = c(0.4, -0.6))
+  # the network dies after the posterior already exists
+  post$fit$de$net <- dead
+
+  expect_error(sample(post, n = 10), "save_npe")
+  expect_error(log_prob(post, c(0, 0)), "save_npe")
+})
+
 test_that("de_rebuild_net refuses an estimator it cannot rebuild", {
   expect_error(de_rebuild_net(structure(list(), class = "nsbi_de_lingauss")),
                "Cannot rebuild")
