@@ -308,7 +308,14 @@ prior_scale <- function(prior) {
 log_prob.nsbi_mcmc_posterior <- function(post, theta, x = NULL,
                                          normalize = TRUE, ...) {
   what <- if (inherits(post$fit, "nsbi_nle")) "NLE" else "NRE"
-  mcmc_log_prob(post, theta, x, !missing(normalize) && isTRUE(normalize), what)
+  # mcmc_log_prob()'s `warn` only fires when normalize was explicitly supplied
+  # (see its own docs), so the default TRUE must stay silent -- but whatever
+  # the caller does supply still needs check_flag()'s validation, the same as
+  # every sibling log_prob() method, or normalize = 1/"yes" is silently read
+  # as FALSE by isTRUE() instead of raising a named error (#344).
+  supplied <- !missing(normalize)
+  if (supplied) normalize <- check_flag(normalize, "normalize")
+  mcmc_log_prob(post, theta, x, supplied && isTRUE(normalize), what)
 }
 
 #' Get (or build and cache) the surrogate potential behind an MCMC posterior

@@ -244,6 +244,10 @@ test_that("log_prob is the unnormalized posterior and says so", {
                  prior$log_prob(theta[1:2, , drop = FALSE]))
   expect_equal(lp[3], -Inf)               # outside the prior support
   expect_warning(log_prob(post, theta, normalize = TRUE), "unnormalized")
+  # #344: normalize must go through check_flag() like every sibling
+  # log_prob() method, not survive on isTRUE()'s silent coercion.
+  expect_error(log_prob(post, theta, normalize = 1), "`normalize`")
+  expect_error(log_prob(post, theta, normalize = "yes"), "`normalize`")
 })
 
 test_that("sampling refuses a prior with no density", {
