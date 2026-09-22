@@ -198,6 +198,9 @@ test_that("log_prob() on an NRE posterior is the unnormalized potential", {
                      as.numeric(fit$prior$log_prob(theta)))
   expect_warning(log_prob(post, theta, normalize = TRUE), "no normalizing")
   expect_equal(log_prob(post, rbind(c(9, 9))), -Inf)
+  # #344: a non-logical normalize must raise a named error, not be silently
+  # read as FALSE by isTRUE().
+  expect_error(log_prob(post, theta, normalize = 1), "`normalize`")
 })
 
 # GitHub #163: mcmc_log_prob() is shared by NLE and NRE posteriors, so the
