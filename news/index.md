@@ -1,5 +1,54 @@
 # Changelog
 
+## neuralsbi 0.6.63
+
+- **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an `nsbi_posterior` and
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  now reject a non-logical `normalize`/`standardize` instead of
+  misreading it.**
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  branched on `normalize` through `if (normalize && bounded)`: `&&`
+  coerces a numeric right-hand side silently, so `normalize = 1`/`0`
+  worked by luck, while `normalize = NA` raised base R’s unnamed
+  “missing value where TRUE/FALSE needed” and `normalize = "yes"` raised
+  “invalid ‘x’ type in ‘x && y’” – neither pointed at the argument.
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)’s
+  `if (standardize)` had the same problem, and it runs inside
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  only after the simulator has already spent the simulation budget. This
+  is the same bug class already fixed for `verbose`
+  ([\#336](https://github.com/pedroliman/neuralsbi/issues/336))
+  ([\#337](https://github.com/pedroliman/neuralsbi/issues/337)),
+  `sum_iid`
+  ([\#321](https://github.com/pedroliman/neuralsbi/issues/321))
+  ([\#326](https://github.com/pedroliman/neuralsbi/issues/326)),
+  `z_score` in
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  ([\#327](https://github.com/pedroliman/neuralsbi/issues/327))
+  ([\#330](https://github.com/pedroliman/neuralsbi/issues/330)), `model`
+  in the Stan export functions
+  ([\#328](https://github.com/pedroliman/neuralsbi/issues/328))
+  ([\#331](https://github.com/pedroliman/neuralsbi/issues/331)),
+  `refresh` in
+  [`mcmc_draws()`](https://neuralsbi.pedrodelima.com/reference/mcmc_draws.md)
+  ([\#329](https://github.com/pedroliman/neuralsbi/issues/329))
+  ([\#332](https://github.com/pedroliman/neuralsbi/issues/332)), and the
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)
+  estimator-class check
+  ([\#334](https://github.com/pedroliman/neuralsbi/issues/334))
+  ([\#335](https://github.com/pedroliman/neuralsbi/issues/335)). Both
+  arguments now validate with the existing
+  [`check_flag()`](https://neuralsbi.pedrodelima.com/reference/check_flag.md)
+  helper (`R/check.R`) – `normalize` at the top of
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  `standardize` in
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)/[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  before the simulator runs – so a typo is caught at the call that made
+  it and named in the error
+  ([\#340](https://github.com/pedroliman/neuralsbi/issues/340))
+  ([\#342](https://github.com/pedroliman/neuralsbi/issues/342)).
+
 ## neuralsbi 0.6.62
 
 - **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
