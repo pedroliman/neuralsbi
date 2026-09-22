@@ -1,5 +1,48 @@
 # Changelog
 
+## neuralsbi 0.6.62
+
+- **[`stan_code()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  and
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  now give the right error for an improper uniform prior nested inside
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md),
+  instead of claiming the whole prior is arbitrary R code.**
+  `check_finite_uniform_bounds()` correctly detects an infinite-bound
+  [`prior_uniform()`](https://neuralsbi.pedrodelima.com/reference/prior_uniform.md)
+  and points the caller at
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md),
+  but
+  [`stan_data()`](https://neuralsbi.pedrodelima.com/reference/stan_export.md)
+  and
+  [`stan_prior_blocks()`](https://neuralsbi.pedrodelima.com/reference/stan_prior_blocks.md)
+  only called it inside their `identical(prior$type, "uniform")` branch.
+  When the improper uniform is a component of
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md),
+  the composed prior cannot use its marginals fast path (an improper
+  marginal has no CDF to restate), so it falls back to closures with
+  `prior$type == "independent"` and `prior$params$marginals == NULL`.
+  [`stan_prior_blocks()`](https://neuralsbi.pedrodelima.com/reference/stan_prior_blocks.md)
+  then fell into its generic `is.null(marginals)` branch and reported
+  “arbitrary R code with no Stan counterpart” – a message written for
+  [`prior_custom()`](https://neuralsbi.pedrodelima.com/reference/prior_custom.md),
+  not for a named family with an unbounded side.
+  `is_improper_uniform_prior()` (`R/prior.R`) already recurses into
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)’s
+  components for exactly this case; nothing called it before the
+  composed-prior path gave up. Both functions now call
+  `check_finite_uniform_bounds()` unconditionally, before branching on
+  `prior$type`, so the recursive check runs for every prior shape and
+  the composed case gets the same “improper distribution…
+  [`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)”
+  message a bare `prior_uniform(-Inf, Inf)` already got. A properly
+  bounded
+  [`prior_independent()`](https://neuralsbi.pedrodelima.com/reference/prior_independent.md)
+  is unaffected: `is_improper_uniform_prior()` returns `FALSE` for it,
+  same as it always has for `"normal"` and the other named families
+  ([\#338](https://github.com/pedroliman/neuralsbi/issues/338))
+  ([\#339](https://github.com/pedroliman/neuralsbi/issues/339)).
+
 ## neuralsbi 0.6.61
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
