@@ -1,5 +1,43 @@
 # Changelog
 
+## neuralsbi 0.6.64
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  and
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on a posterior now re-check a torch-backed fit’s network on every
+  call, not only at
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  construction.**
+  [`check_fit_alive()`](https://neuralsbi.pedrodelima.com/reference/check_fit_alive.md)
+  exists to fail at the door rather than three calls later, but
+  [`posterior.nsbi_npe()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  and
+  [`mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/mcmc_posterior.md)
+  (the NLE/NRE path) only ran it once, when the posterior object was
+  built. A fit’s torch network can go stale on the same object afterward
+  – typically from
+  [`saveRDS()`](https://rdrr.io/r/base/readRDS.html)/[`readRDS()`](https://rdrr.io/r/base/readRDS.html)
+  across R sessions – and every downstream call reached the dead pointer
+  directly, surfacing torch’s raw “external pointer is not valid”
+  instead of this package’s message pointing at
+  [`save_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md)/[`load_npe()`](https://neuralsbi.pedrodelima.com/reference/save_npe.md).
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md),
+  [`log_prob.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  [`sample.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.md)
+  and
+  [`log_prob.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  all resolve their observation through the shared
+  [`resolve_obs()`](https://neuralsbi.pedrodelima.com/reference/resolve_obs.md)
+  helper, so the check now runs there instead of being pasted at each
+  call site;
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md)
+  gets the same protection for free since it calls
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)/[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  internally
+  ([\#341](https://github.com/pedroliman/neuralsbi/issues/341))
+  ([\#343](https://github.com/pedroliman/neuralsbi/issues/343)).
+
 ## neuralsbi 0.6.63
 
 - **[`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
