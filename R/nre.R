@@ -125,6 +125,10 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
   # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
   # the "stay quiet" branch inside verbose_cat() with no error (#336).
   verbose <- check_flag(verbose, "verbose")
+  # standardize was only ever tested with `if (standardize)`, which errors
+  # outright for most non-logical values but not before the simulator has
+  # already run inside prepare_simulations() (#340).
+  standardize <- check_flag(standardize, "standardize")
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }

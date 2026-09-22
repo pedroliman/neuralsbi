@@ -447,6 +447,26 @@ test_that("nle() rejects a non-logical verbose instead of silently staying quiet
   expect_identical(calls, 0L)
 })
 
+test_that("nle() rejects a non-logical standardize instead of misreading it (#340)", {
+  # standardize was only ever tested with `if (standardize)`, which errors
+  # outright for most non-logical values but only after prepare_simulations()
+  # had already spent the simulation budget.
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nle(gauss_prior(), counting_simulator, n_simulations = 100,
+        density_estimator = "linear_gaussian", standardize = NA),
+    "`standardize` must be TRUE or FALSE")
+  expect_error(
+    nle(gauss_prior(), counting_simulator, n_simulations = 100,
+        density_estimator = "linear_gaussian", standardize = "yes"),
+    "`standardize` must be TRUE or FALSE")
+  expect_identical(calls, 0L)
+})
+
 test_that("pre-computed simulations give the same fit as running the simulator", {
   sims <- simulate_for_sbi(gauss_sim, gauss_prior(), n = 800, seed = 9)
   from_sims <- nle(gauss_prior(), theta = sims$theta, x = sims$x,
