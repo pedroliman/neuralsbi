@@ -54,9 +54,9 @@ warn_constant_columns <- function(x, flat, what) {
   }, character(1))
   shown <- paste(labels, collapse = ", ")
   msg <- if (nrow(x) < 2L) {
-    sprintf(paste0("`%s` has one row, so the standard deviation of %s (%s) is ",
+    sprintf(paste0("`%s` has %s, so the standard deviation of %s (%s) is ",
                    "undefined. They are left unscaled; see ?standardize."),
-            what, n_things(sum(flat), "column"), shown)
+            what, n_things(nrow(x), "row"), n_things(sum(flat), "column"), shown)
   } else {
     advice <- if (identical(what, "x")) {
       paste("A summary statistic that does not vary carries no information",

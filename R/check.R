@@ -212,6 +212,37 @@ check_precomputed_theta <- function(value, d, arg) {
   invisible(value)
 }
 
+#' Require at least one row of precomputed data
+#'
+#' The simulator path floors `n_simulations` at 2 with [check_count()] before
+#' it ever draws a sample. Precomputed `theta`/`x` get no such floor: with
+#' zero rows, [fit_standardizer()] takes `colMeans()`/`sd()` of nothing, the
+#' resulting `NaN` center survives standardization, and the density estimator
+#' that follows fits silently on garbage instead of erroring (GitHub #348).
+#'
+#' This only closes the zero-row case, not one row. A single precomputed row
+#' already surfaces its own, more specific error or warning further down the
+#' pipeline -- [warn_constant_columns()] on the way past standardization, and
+#' (for a neural estimator) [train_conditional_de()]'s validation-split check
+#' once training starts -- so leave that path alone here.
+#'
+#' @param value The matrix to check (`theta` or `x`, already reshaped by
+#'   [as_theta_matrix()]).
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @return `value`, invisibly and unchanged.
+#' @keywords internal
+check_min_rows <- function(value, arg) {
+  n <- nrow(value)
+  if (n < 1L) {
+    stop(sprintf(paste0(
+      "`%s` has %s: at least 1 is needed to fit anything, and in practice ",
+      "an estimator needs several to be trained meaningfully."),
+      arg, n_things(n, "row")),
+      call. = FALSE)
+  }
+  invisible(value)
+}
+
 #' Validate a count argument
 #'
 #' One finite whole number, at least `min`. `as.integer()` on its own accepts
