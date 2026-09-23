@@ -4,7 +4,7 @@
 \alias{check_matrix}
 \title{Validate a matrix argument at a public boundary}
 \usage{
-check_matrix(value, d = NULL, arg, what = NULL)
+check_matrix(value, d = NULL, arg, what = NULL, min_rows = 0L)
 }
 \arguments{
 \item{value}{The user's value: a numeric vector, matrix or data frame.}
@@ -15,6 +15,14 @@ check_matrix(value, d = NULL, arg, what = NULL)
 
 \item{what}{Optional phrase describing what a column means, e.g.
 \code{"one parameter per column"}. Shown in parentheses.}
+
+\item{min_rows}{Smallest number of rows accepted. \code{0} (the default) accepts
+an empty matrix, which is right for most callers -- \code{within_support()} on
+zero draws is a legitimate, if odd, question. An observation argument is
+not: \code{resolve_obs()} passes \code{min_rows = 1} so a zero-row \code{obs}/\code{x} (a
+real-data filter that happened to drop every row) gets a named error here
+instead of reaching \code{x[1, , drop = FALSE]} and failing with a bare,
+unnamed "subscript out of bounds" (#349).}
 }
 \value{
 A numeric matrix with \code{d} columns, column names preserved.

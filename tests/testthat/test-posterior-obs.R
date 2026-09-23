@@ -141,3 +141,52 @@ test_that("sample() on an nle posterior errors on a wrong-length obs instead of 
   expect_error(sample(post, 10, obs = c(0.1, 0.2, 0.9, 0.9)),
                "`obs` must have 2 columns")
 })
+
+# GitHub #349: a zero-row obs/x (e.g. real data filtered down to nothing)
+# reached resolve_obs()'s `x[1, , drop = FALSE]` and crashed with a raw,
+# unnamed "subscript out of bounds" instead of check_matrix()'s named error.
+
+test_that("sample() errors on a zero-row obs instead of a raw subscript error", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+
+  err <- tryCatch(sample(post, 10, obs = matrix(numeric(0), 0, 2)),
+                  error = function(e) e)
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "^`x` must have at least 1 row")
+  expect_no_match(conditionMessage(err), "subscript out of bounds")
+})
+
+test_that("log_prob() errors on a zero-row x instead of a raw subscript error", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+
+  err <- tryCatch(log_prob(post, c(0, 0), x = matrix(numeric(0), 0, 2)),
+                  error = function(e) e)
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "^`x` must have at least 1 row")
+  expect_no_match(conditionMessage(err), "subscript out of bounds")
+})
+
+test_that("a zero-row x_obs stored on the posterior also errors instead of crashing later", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit, x_obs = matrix(numeric(0), 0, 2))
+
+  expect_error(sample(post, 10), "`x_obs` must have at least 1 row")
+  expect_error(log_prob(post, c(0, 0)), "`x_obs` must have at least 1 row")
+})
+
+test_that("sample() on an nle posterior errors on a zero-row obs instead of crashing", {
+  set.seed(9)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(2, sd = 0.5)
+  fit <- nle(prior, simulator, n_simulations = 400,
+             density_estimator = "linear_gaussian", seed = 9)
+  post <- posterior(fit, n_chains = 2, warmup = 5, thin = 1, seed = 10)
+
+  err <- tryCatch(sample(post, 10, obs = matrix(numeric(0), 0, 2)),
+                  error = function(e) e)
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "^`obs` must have at least 1 row")
+  expect_no_match(conditionMessage(err), "subscript out of bounds")
+})
