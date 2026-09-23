@@ -242,6 +242,13 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
     check_precomputed_theta(theta, prior$dim, "theta")
     theta <- as_theta_matrix(theta, prior$dim)
     x <- as_theta_matrix(check_numeric(x, "x"))
+    # Zero precomputed rows sail through to fit_standardizer() otherwise and
+    # produce a fit that looks normal but is garbage (NaN center, all-zero
+    # regression coefficients) instead of erroring -- see #348. One row is
+    # left alone: it already surfaces its own, more specific error/warning
+    # further down (see check_min_rows()).
+    check_min_rows(theta, "theta")
+    check_min_rows(x, "x")
     if (nrow(theta) != nrow(x)) {
       stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
     }

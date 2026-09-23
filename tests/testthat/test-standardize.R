@@ -87,7 +87,17 @@ test_that("fit_standardizer() falls back to the column index", {
 
 test_that("fit_standardizer() reports a single row as undefined, not constant", {
   expect_warning(fit_standardizer(matrix(0, 1, 2), what = "x"),
-                 "`x` has one row, so the standard deviation of 2 columns")
+                 "`x` has 1 row, so the standard deviation of 2 columns")
+})
+
+test_that("fit_standardizer() reports the row count generically for zero rows (#348)", {
+  # warn_constant_columns() used to hardcode "has one row" even when there
+  # were zero, which was actively wrong (and previously unreachable through
+  # npe()/nle()/nre() only because nothing floored the row count upstream --
+  # see check_min_rows(), R/check.R). Called directly, the message should
+  # still name the actual count.
+  expect_warning(fit_standardizer(matrix(0, 0, 2), what = "x"),
+                 "`x` has 0 rows, so the standard deviation of 2 columns")
 })
 
 test_that("a constant column still standardizes to zero", {
