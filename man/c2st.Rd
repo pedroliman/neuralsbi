@@ -23,8 +23,8 @@ must be the same width, since they are draws of the same quantity. Row
 counts need not match; the larger set is subsampled down to the smaller.
 Pass reference draws as \code{x}, following \code{sbibm}.}
 
-\item{n_folds}{Number of cross-validation folds. At least 2, and fewer than
-the number of draws in the smaller sample set.}
+\item{n_folds}{Number of cross-validation folds. At least 2, and no more
+than the number of draws in the smaller sample set.}
 
 \item{seed}{Optional seed. Fixes the fold split, the subsampling, the network
 initialization and the minibatch order.}
