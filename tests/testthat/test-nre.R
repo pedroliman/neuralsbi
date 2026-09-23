@@ -450,6 +450,32 @@ test_that("nre() fails before simulating rather than train on a 1-row training s
   expect_identical(calls, 4L)
 })
 
+# GitHub #348: npe()/nle() had no floor at all on precomputed theta/x with
+# zero rows, so they silently fit a garbage model instead of erroring (see
+# test-npe.R). nre() was never silent about it -- check_train_controls(n =
+# n_hint, ...) above already rejects nrow(theta) == 0 (n_hint comes from
+# `theta` alone, before prepare_simulations() runs) -- but the message talks
+# about validation_fraction rather than the empty argument. What nre() did
+# lack is prepare_simulations()'s own floor, which fires for a mismatched
+# empty `x` that check_train_controls(n = nrow(theta), ...) never looks at.
+test_that("nre() also floors precomputed theta/x at prepare_simulations() (#348)", {
+  # Both empty: already an error before this fix, via check_train_controls()
+  # noticing n_hint = nrow(theta) = 0. Confirms this fix does not weaken it.
+  expect_error(
+    nre(gauss_prior(), theta = matrix(numeric(0), 0, 2),
+        x = matrix(numeric(0), 0, 2), classifier = "logistic"),
+    "holds out")
+
+  # theta has rows but x does not: check_train_controls() only ever looks at
+  # nrow(theta), so this reached prepare_simulations() before the fix and hit
+  # the generic "must have the same number of rows" message. Now
+  # check_min_rows() names the empty one specifically.
+  expect_error(
+    nre(gauss_prior(), theta = matrix(rnorm(6), ncol = 2),
+        x = matrix(numeric(0), 0, 2), classifier = "logistic"),
+    "`x` has 0 rows")
+})
+
 test_that("fit_nre_net() rejects a training split too small for the atomic loss", {
   theta <- matrix(stats::rnorm(4), ncol = 1)
   x <- matrix(stats::rnorm(4), ncol = 1)
