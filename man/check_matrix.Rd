@@ -4,7 +4,7 @@
 \alias{check_matrix}
 \title{Validate a matrix argument at a public boundary}
 \usage{
-check_matrix(value, d = NULL, arg, what = NULL)
+check_matrix(value, d = NULL, arg, what = NULL, min_rows = NULL)
 }
 \arguments{
 \item{value}{The user's value: a numeric vector, matrix or data frame.}
@@ -15,6 +15,12 @@ check_matrix(value, d = NULL, arg, what = NULL)
 
 \item{what}{Optional phrase describing what a column means, e.g.
 \code{"one parameter per column"}. Shown in parentheses.}
+
+\item{min_rows}{Smallest number of rows to accept, or \code{NULL} (the default)
+to accept any row count including zero. A bare vector always becomes one
+row, so this only ever rejects a matrix or data frame input -- callers
+for which an empty input is a genuine no-op (evaluating \code{log_prob()} at
+zero \code{theta} values, say) leave this \code{NULL} and keep accepting it.}
 }
 \value{
 A numeric matrix with \code{d} columns, column names preserved.

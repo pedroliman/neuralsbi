@@ -119,9 +119,14 @@ check_numeric <- function(value, arg) {
 #' @param arg Name of the argument, as it appears in the user's call.
 #' @param what Optional phrase describing what a column means, e.g.
 #'   `"one parameter per column"`. Shown in parentheses.
+#' @param min_rows Smallest number of rows to accept, or `NULL` (the default)
+#'   to accept any row count including zero. A bare vector always becomes one
+#'   row, so this only ever rejects a matrix or data frame input -- callers
+#'   for which an empty input is a genuine no-op (evaluating `log_prob()` at
+#'   zero `theta` values, say) leave this `NULL` and keep accepting it.
 #' @return A numeric matrix with `d` columns, column names preserved.
 #' @keywords internal
-check_matrix <- function(value, d = NULL, arg, what = NULL) {
+check_matrix <- function(value, d = NULL, arg, what = NULL, min_rows = NULL) {
   bad <- function(fmt, ...) {
     stop(sprintf("`%s` %s", arg, sprintf(fmt, ...)), call. = FALSE)
   }
@@ -158,6 +163,11 @@ check_matrix <- function(value, d = NULL, arg, what = NULL) {
     # so plainly enough to be worth mentioning.
     hint <- if (nrow(value) == d) " Did you mean to transpose it?" else ""
     bad("%s, but it has %d.%s", width(), ncol(value), hint)
+  }
+
+  if (!is.null(min_rows) && nrow(value) < min_rows) {
+    bad("must have at least %s, but it has %d.",
+        n_things(min_rows, "row"), nrow(value))
   }
 
   storage.mode(value) <- "double"

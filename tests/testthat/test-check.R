@@ -46,6 +46,23 @@ test_that("check_matrix() passes matrices and data frames through", {
   expect_equal(dim(check_matrix(matrix(0, 0, 2), 2L, "theta")), c(0L, 2L))
 })
 
+test_that("check_matrix() accepts a zero-row matrix unless min_rows says otherwise", {
+  # Default behavior (min_rows = NULL) is unchanged: a zero-row theta is a
+  # legitimate degenerate request (evaluate log_prob() at no points) and
+  # de_log_prob() relies on it returning numeric(0) rather than erroring.
+  expect_equal(dim(check_matrix(matrix(0, 0, 2), 2L, "theta")), c(0L, 2L))
+
+  expect_error(check_matrix(matrix(numeric(0), 0, 2), 2L, "x_obs",
+                            min_rows = 1L),
+               "`x_obs` must have at least 1 row, but it has 0\\.")
+  # A bare vector always becomes exactly one row, so min_rows = 1 never
+  # rejects it.
+  expect_silent(check_matrix(c(1, 2), 2L, "theta", min_rows = 1L))
+  # A matrix with enough rows passes through unaffected.
+  expect_equal(dim(check_matrix(matrix(0, 3, 2), 2L, "x", min_rows = 1L)),
+               c(3L, 2L))
+})
+
 test_that("check_matrix() suggests a transpose when the rows match", {
   expect_error(check_matrix(matrix(0, 2, 100), 2L, "theta"),
                "Did you mean to transpose it")

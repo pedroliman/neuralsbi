@@ -141,3 +141,53 @@ test_that("sample() on an nle posterior errors on a wrong-length obs instead of 
   expect_error(sample(post, 10, obs = c(0.1, 0.2, 0.9, 0.9)),
                "`obs` must have 2 columns")
 })
+
+# GitHub #349: check_matrix() validated column count but never row count, so a
+# zero-row obs/x_obs reached `x[1, , drop = FALSE]` inside resolve_obs() and
+# crashed with a raw, unnamed "subscript out of bounds" instead of a clear
+# error naming the argument.
+
+test_that("sample() and log_prob() on an npe posterior name a zero-row obs/x", {
+  fit <- npe_fit_2d()
+  post <- posterior(fit)
+  empty <- matrix(numeric(0), 0, 2)
+
+  expect_error(sample(post, 10, obs = empty),
+               "`x` must have at least 1 row, but it has 0\\.")
+  expect_error(log_prob(post, theta = c(0, 0), x = empty),
+               "`x` must have at least 1 row, but it has 0\\.")
+
+  # Also when the empty observation was set at construction time rather than
+  # passed to the call.
+  post_empty <- posterior(fit, x_obs = empty)
+  expect_error(sample(post_empty, 10),
+               "`x_obs` must have at least 1 row, but it has 0\\.")
+  expect_error(log_prob(post_empty, theta = c(0, 0)),
+               "`x_obs` must have at least 1 row, but it has 0\\.")
+})
+
+test_that("sample() and log_prob() on an nle mcmc posterior name a zero-row obs/x", {
+  set.seed(9)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + stats::rnorm(2, sd = 0.5)
+  fit <- nle(prior, simulator, n_simulations = 400,
+             density_estimator = "linear_gaussian", seed = 9)
+  post <- posterior(fit, n_chains = 2, warmup = 5, thin = 1, seed = 10)
+  empty <- matrix(numeric(0), 0, 2)
+
+  expect_error(sample(post, 10, obs = empty),
+               "`obs` must have at least 1 row, but it has 0\\.")
+  expect_error(log_prob(post, theta = c(0, 0), x = empty),
+               "`x` must have at least 1 row, but it has 0\\.")
+})
+
+test_that("log_prob() still accepts a zero-row theta, since that is a legitimate no-op", {
+  # This is the argument the fix must not touch: check_matrix(theta, ...) is
+  # still called without min_rows, so asking for the log density of zero
+  # points stays a silent numeric(0) rather than becoming an error too.
+  fit <- npe_fit_2d()
+  post <- posterior(fit, x_obs = c(0.4, -0.4))
+
+  lp <- log_prob(post, theta = matrix(numeric(0), 0, 2))
+  expect_length(lp, 0L)
+})

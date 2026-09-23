@@ -117,8 +117,12 @@ resolve_obs <- function(post, x, first_row, arg = if (first_row) "x" else "obs")
   }
   x <- check_numeric(x, check_arg)
   check_finite(x, check_arg)
+  # min_rows = 1 catches a zero-row obs/x_obs (e.g. real data filtered down to
+  # nothing) here, with a named message, instead of letting it through to
+  # `x[1, , drop = FALSE]` below or to an NLE/NRE potential summed over zero
+  # observations -- both currently a raw "subscript out of bounds" (#349).
   x <- check_matrix(x, post$fit$dim_x, check_arg,
-                    "one row per independent observation")
+                    "one row per independent observation", min_rows = 1L)
   if (!first_row) return(x)
   if (nrow(x) > 1L) {
     warning(sprintf(
