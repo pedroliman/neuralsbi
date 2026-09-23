@@ -1,5 +1,35 @@
 # Changelog
 
+## neuralsbi 0.6.69
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  and
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md)
+  on an `nsbi_posterior` now reject a zero-row `obs`/`x` instead of
+  crashing with a raw “subscript out of bounds”.**
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  validated column count but enforced no minimum row count, so a
+  zero-row observation (real data filtered down to nothing, then passed
+  straight through as `x_obs`) sailed past it and reached
+  [`resolve_obs()`](https://neuralsbi.pedrodelima.com/reference/resolve_obs.md)’s
+  `x[1, , drop = FALSE]`, which R fails on with an unnamed indexing
+  error rather than anything pointing at the argument.
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  now takes an opt-in `min_rows` argument (default 0, so every other
+  caller –
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md),
+  `theta` checks, and the existing zero-row test for
+  [`check_matrix()`](https://neuralsbi.pedrodelima.com/reference/check_matrix.md)
+  itself – is unaffected);
+  [`resolve_obs()`](https://neuralsbi.pedrodelima.com/reference/resolve_obs.md)
+  passes `min_rows = 1`, so
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  and a zero-row `x_obs` stored on the posterior at construction all now
+  name the argument and say “must have at least 1 row” instead of
+  crashing ([\#349](https://github.com/pedroliman/neuralsbi/issues/349))
+  ([\#353](https://github.com/pedroliman/neuralsbi/issues/353)).
+
 ## neuralsbi 0.6.68
 
 - **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now

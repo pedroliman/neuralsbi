@@ -11,7 +11,7 @@ several parameter sets and a plausible-looking answer.
 ## Usage
 
 ``` r
-check_matrix(value, d = NULL, arg, what = NULL)
+check_matrix(value, d = NULL, arg, what = NULL, min_rows = 0L)
 ```
 
 ## Arguments
@@ -32,6 +32,19 @@ check_matrix(value, d = NULL, arg, what = NULL)
 
   Optional phrase describing what a column means, e.g.
   `"one parameter per column"`. Shown in parentheses.
+
+- min_rows:
+
+  Smallest number of rows accepted. `0` (the default) accepts an empty
+  matrix, which is right for most callers –
+  [`within_support()`](https://neuralsbi.pedrodelima.com/reference/within_support.md)
+  on zero draws is a legitimate, if odd, question. An observation
+  argument is not:
+  [`resolve_obs()`](https://neuralsbi.pedrodelima.com/reference/resolve_obs.md)
+  passes `min_rows = 1` so a zero-row `obs`/`x` (a real-data filter that
+  happened to drop every row) gets a named error here instead of
+  reaching `x[1, , drop = FALSE]` and failing with a bare, unnamed
+  "subscript out of bounds" (#349).
 
 ## Value
 

@@ -55,7 +55,7 @@ vector into several parameter sets and a plausible-looking answer."><meta proper
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.68</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.69</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,7 +101,7 @@ vector into several parameter sets and a plausible-looking answer.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_matrix</span><span class="op">(</span><span class="va">value</span>, d <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">arg</span>, what <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_matrix</span><span class="op">(</span><span class="va">value</span>, d <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">arg</span>, what <span class="op">=</span> <span class="cn">NULL</span>, min_rows <span class="op">=</span> <span class="fl">0L</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -123,6 +123,16 @@ vector into several parameter sets and a plausible-looking answer.</p>
 <dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
 <dd><p>Optional phrase describing what a column means, e.g.
 <code>"one parameter per column"</code>. Shown in parentheses.</p></dd>
+
+
+<dt id="arg-min-rows">min_rows<a class="anchor" aria-label="anchor" href="#arg-min-rows"></a></dt>
+<dd><p>Smallest number of rows accepted. <code>0</code> (the default) accepts
+an empty matrix, which is right for most callers – <code><a href="within_support.html">within_support()</a></code> on
+zero draws is a legitimate, if odd, question. An observation argument is
+not: <code><a href="resolve_obs.html">resolve_obs()</a></code> passes <code>min_rows = 1</code> so a zero-row <code>obs</code>/<code>x</code> (a
+real-data filter that happened to drop every row) gets a named error here
+instead of reaching <code>x[1, , drop = FALSE]</code> and failing with a bare,
+unnamed "subscript out of bounds" (#349).</p></dd>
 
 </dl></div>
     <div class="section level2">

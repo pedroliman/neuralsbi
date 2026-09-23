@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.68</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.69</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.69" id="neuralsbi-0669">neuralsbi 0.6.69<a class="anchor" aria-label="anchor" href="#neuralsbi-0669"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sample.html">sample()</a></code> and <code><a href="../reference/log_prob.html">log_prob()</a></code> on an <code>nsbi_posterior</code> now reject a zero-row <code>obs</code>/<code>x</code> instead of crashing with a raw “subscript out of bounds”.</strong> <code><a href="../reference/check_matrix.html">check_matrix()</a></code> validated column count but enforced no minimum row count, so a zero-row observation (real data filtered down to nothing, then passed straight through as <code>x_obs</code>) sailed past it and reached <code><a href="../reference/resolve_obs.html">resolve_obs()</a></code>’s <code>x[1, , drop = FALSE]</code>, which R fails on with an unnamed indexing error rather than anything pointing at the argument. <code><a href="../reference/check_matrix.html">check_matrix()</a></code> now takes an opt-in <code>min_rows</code> argument (default 0, so every other caller – <code><a href="../reference/within_support.html">within_support()</a></code>, <code>theta</code> checks, and the existing zero-row test for <code><a href="../reference/check_matrix.html">check_matrix()</a></code> itself – is unaffected); <code><a href="../reference/resolve_obs.html">resolve_obs()</a></code> passes <code>min_rows = 1</code>, so <code><a href="../reference/sample.html">sample()</a></code>, <code><a href="../reference/log_prob.html">log_prob()</a></code>, and a zero-row <code>x_obs</code> stored on the posterior at construction all now name the argument and say “must have at least 1 row” instead of crashing (<a href="https://github.com/pedroliman/neuralsbi/issues/349" class="external-link">#349</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/353" class="external-link">#353</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.68" id="neuralsbi-0668">neuralsbi 0.6.68<a class="anchor" aria-label="anchor" href="#neuralsbi-0668"></a></h2>
 <ul><li>
