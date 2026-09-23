@@ -46,8 +46,8 @@
 #'   must be the same width, since they are draws of the same quantity. Row
 #'   counts need not match; the larger set is subsampled down to the smaller.
 #'   Pass reference draws as `x`, following `sbibm`.
-#' @param n_folds Number of cross-validation folds. At least 2, and fewer than
-#'   the number of draws in the smaller sample set.
+#' @param n_folds Number of cross-validation folds. At least 2, and no more
+#'   than the number of draws in the smaller sample set.
 #' @param seed Optional seed. Fixes the fold split, the subsampling, the network
 #'   initialization and the minibatch order.
 #' @param classifier `"mlp"` for the `sbibm` network, `"logistic"` for
@@ -122,16 +122,18 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
          call. = FALSE)
   }
   n_each <- min(nrow(x), nrow(y))
-  if (n_folds >= n_each) {
+  if (n_folds > n_each) {
     # Folds are cut within x and within y separately (see
-    # c2st_stratified_folds()), so n_folds up to n_each still leaves every
-    # fold's test set at least one draw of each class. Past that the per-class
-    # folds thin out and an empty one scores NA (roc_auc()'s n1 == 0 or
-    # n0 == 0 guard), which propagates through mean(aucs) with nothing said
+    # c2st_stratified_folds()), via rep_len(seq_len(n_folds), n_x) and the same
+    # for n_y. n_folds == n_each still gives every fold exactly one row of the
+    # smaller class, so no fold's test set is empty. Only past that point does
+    # rep_len() truncate seq_len(n_folds) short, leaving some fold indices with
+    # zero rows of the class, and an empty one scores NA (roc_auc()'s n1 == 0
+    # or n0 == 0 guard), which propagates through mean(aucs) with nothing said
     # about why.
     stop(sprintf(paste0("`n_folds` is %d, but the smaller sample set has only ",
-                        "%s. It must be fewer, so that every fold has draws to ",
-                        "test on."),
+                        "%s. It must be no more, so that every fold has draws ",
+                        "to test on."),
                  n_folds, n_things(n_each, "draw")),
          call. = FALSE)
   }
@@ -210,7 +212,7 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
 #' `StratifiedKFold` guarantees for a two-class target, which is what `sbibm`
 #' gets from `cross_val_score()`'s default cv for a classification estimator.
 #'
-#' `n_folds < min(n_x, n_y)` (enforced by the caller) keeps every per-class
+#' `n_folds <= min(n_x, n_y)` (enforced by the caller) keeps every per-class
 #' `rep_len()` split at one row or more per fold, so every fold's test set
 #' still has at least one draw of each class.
 #'

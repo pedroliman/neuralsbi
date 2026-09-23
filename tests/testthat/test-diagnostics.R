@@ -378,15 +378,20 @@ test_that("c2st() refuses more folds than it has draws to fill them", {
   few <- matrix(stats::rnorm(8), ncol = 2)
 
   expect_error(c2st(few, few), regexp = "smaller sample set has only 4 draws")
-  expect_error(c2st(few, few, n_folds = 4),
-               regexp = "`n_folds` is 4, but the smaller sample set")
+  # n_folds == n_each (4) is the valid boundary (#350): every fold still gets
+  # a draw of each class, so it must not error.
+  expect_error(c2st(few, few, n_folds = 5),
+               regexp = "`n_folds` is 5, but the smaller sample set")
   # The lower bound still comes from check_count(), before the draws are seen.
   expect_error(c2st(few, few, n_folds = 1),
                regexp = "at least 2 since each fold is scored")
 
-  # Fewer folds than draws is fine, including on the smaller of two sets.
+  # n_folds up to and including n_each is fine, including on the smaller of
+  # two sets.
   cheap <- list(classifier = "logistic", seed = 1)
   expect_type(do.call(c2st, c(list(few, few, n_folds = 3), cheap))$accuracy,
+              "double")
+  expect_type(do.call(c2st, c(list(few, few, n_folds = 4), cheap))$accuracy,
               "double")
   plenty <- matrix(stats::rnorm(400), ncol = 2)
   expect_false(is.nan(
