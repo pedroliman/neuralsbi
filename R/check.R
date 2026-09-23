@@ -119,9 +119,16 @@ check_numeric <- function(value, arg) {
 #' @param arg Name of the argument, as it appears in the user's call.
 #' @param what Optional phrase describing what a column means, e.g.
 #'   `"one parameter per column"`. Shown in parentheses.
+#' @param min_rows Smallest number of rows accepted. `0` (the default) accepts
+#'   an empty matrix, which is right for most callers -- `within_support()` on
+#'   zero draws is a legitimate, if odd, question. An observation argument is
+#'   not: `resolve_obs()` passes `min_rows = 1` so a zero-row `obs`/`x` (a
+#'   real-data filter that happened to drop every row) gets a named error here
+#'   instead of reaching `x[1, , drop = FALSE]` and failing with a bare,
+#'   unnamed "subscript out of bounds" (#349).
 #' @return A numeric matrix with `d` columns, column names preserved.
 #' @keywords internal
-check_matrix <- function(value, d = NULL, arg, what = NULL) {
+check_matrix <- function(value, d = NULL, arg, what = NULL, min_rows = 0L) {
   bad <- function(fmt, ...) {
     stop(sprintf("`%s` %s", arg, sprintf(fmt, ...)), call. = FALSE)
   }
@@ -158,6 +165,10 @@ check_matrix <- function(value, d = NULL, arg, what = NULL) {
     # so plainly enough to be worth mentioning.
     hint <- if (nrow(value) == d) " Did you mean to transpose it?" else ""
     bad("%s, but it has %d.%s", width(), ncol(value), hint)
+  }
+  if (nrow(value) < min_rows) {
+    bad("must have at least %s, but it has %s.",
+        n_things(min_rows, "row"), n_things(nrow(value), "row"))
   }
 
   storage.mode(value) <- "double"

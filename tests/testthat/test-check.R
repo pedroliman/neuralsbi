@@ -46,6 +46,17 @@ test_that("check_matrix() passes matrices and data frames through", {
   expect_equal(dim(check_matrix(matrix(0, 0, 2), 2L, "theta")), c(0L, 2L))
 })
 
+test_that("check_matrix() enforces min_rows only when asked", {
+  # min_rows defaults to 0, so a zero-row matrix is accepted here exactly as
+  # in the test above -- resolve_obs() opts into the floor explicitly (#349)
+  # rather than it applying to every check_matrix() call unconditionally.
+  expect_equal(dim(check_matrix(matrix(0, 0, 2), 2L, "theta")), c(0L, 2L))
+  expect_error(check_matrix(matrix(0, 0, 2), 2L, "obs", min_rows = 1L),
+               "`obs` must have at least 1 row, but it has 0 rows\\.")
+  expect_equal(dim(check_matrix(matrix(0, 3, 2), 2L, "obs", min_rows = 1L)),
+               c(3L, 2L))
+})
+
 test_that("check_matrix() suggests a transpose when the rows match", {
   expect_error(check_matrix(matrix(0, 2, 100), 2L, "theta"),
                "Did you mean to transpose it")
