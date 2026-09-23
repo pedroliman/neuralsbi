@@ -34,7 +34,7 @@ c2st(
 
 - n_folds:
 
-  Number of cross-validation folds. At least 2, and fewer than the
+  Number of cross-validation folds. At least 2, and no more than the
   number of draws in the smaller sample set.
 
 - seed:

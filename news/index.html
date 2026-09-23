@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.67</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.68</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.68" id="neuralsbi-0668">neuralsbi 0.6.68<a class="anchor" aria-label="anchor" href="#neuralsbi-0668"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/c2st.html">c2st()</a></code> now accepts <code>n_folds</code> equal to the smaller sample set’s size, the valid boundary, instead of rejecting it.</strong> The validation at the top of <code><a href="../reference/c2st.html">c2st()</a></code> read <code>if (n_folds &gt;= n_each) stop(...)</code>, which rejected <code>n_folds == n_each</code> even though <code>c2st_stratified_folds()</code> handles that case correctly: folds are cut within <code>x</code> and within <code>y</code> separately via <code>rep_len(seq_len(n_folds), n)</code>, and <code>n_folds == n_each</code> still gives every fold exactly one row of the smaller class, so no fold’s test set is empty and no fold AUC comes back <code>NA</code>. Only <code>n_folds</code> past that point leaves some fold indices with zero rows of a class. The check is now <code>n_folds &gt; n_each</code>, matching what <code>c2st_stratified_folds()</code>’s own docstring already documented as the real constraint (<a href="https://github.com/pedroliman/neuralsbi/issues/350" class="external-link">#350</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/354" class="external-link">#354</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.67" id="neuralsbi-0667">neuralsbi 0.6.67<a class="anchor" aria-label="anchor" href="#neuralsbi-0667"></a></h2>
 <ul><li>

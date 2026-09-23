@@ -1,5 +1,23 @@
 # Changelog
 
+## neuralsbi 0.6.68
+
+- **[`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) now
+  accepts `n_folds` equal to the smaller sample set’s size, the valid
+  boundary, instead of rejecting it.** The validation at the top of
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md) read
+  `if (n_folds >= n_each) stop(...)`, which rejected `n_folds == n_each`
+  even though `c2st_stratified_folds()` handles that case correctly:
+  folds are cut within `x` and within `y` separately via
+  `rep_len(seq_len(n_folds), n)`, and `n_folds == n_each` still gives
+  every fold exactly one row of the smaller class, so no fold’s test set
+  is empty and no fold AUC comes back `NA`. Only `n_folds` past that
+  point leaves some fold indices with zero rows of a class. The check is
+  now `n_folds > n_each`, matching what `c2st_stratified_folds()`’s own
+  docstring already documented as the real constraint
+  ([\#350](https://github.com/pedroliman/neuralsbi/issues/350))
+  ([\#354](https://github.com/pedroliman/neuralsbi/issues/354)).
+
 ## neuralsbi 0.6.67
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
