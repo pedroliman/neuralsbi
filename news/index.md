@@ -1,5 +1,42 @@
 # Changelog
 
+## neuralsbi 0.6.67
+
+- **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md)/[`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md)
+  no longer silently fit a garbage model on zero-row precomputed
+  `theta`/`x`.**
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  (`R/npe.R`), shared by
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md) and
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md), checks
+  `n_simulations >= 2` on the simulator path but had no equivalent floor
+  on the precomputed-data path:
+  `npe(prior, theta = matrix(numeric(0), 0, 2), x = matrix(numeric(0), 0, 2), density_estimator = "linear_gaussian")`
+  ran to completion, with
+  [`fit_standardizer()`](https://neuralsbi.pedrodelima.com/reference/fit_standardizer.md)
+  taking
+  [`colMeans()`](https://rdrr.io/r/base/colSums.html)/[`sd()`](https://rdrr.io/r/stats/sd.html)
+  of zero rows and the resulting `NaN` center surviving standardization
+  unnoticed.
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)
+  now runs `theta`/`x` through a new `check_min_rows()` (`R/check.R`)
+  before fitting either standardizer, naming whichever argument is
+  empty. [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md)
+  was already non-silent about the fully-empty case, via its own
+  pre-flight `check_train_controls(n = nrow(theta), ...)` call, just
+  with a message about `validation_fraction` rather than the empty
+  argument; it now also gets `check_min_rows()`’s clearer message for
+  the case that check never covered, a precomputed `x` empty while
+  `theta` is not. A single precomputed row is untouched by this fix and
+  still trains, as before, with
+  [`warn_constant_columns()`](https://neuralsbi.pedrodelima.com/reference/warn_constant_columns.md)’s
+  existing warning on the way past standardization – that warning’s
+  message no longer hardcodes “has one row” for what could be zero rows
+  too, and now reports the actual count
+  ([\#348](https://github.com/pedroliman/neuralsbi/issues/348))
+  ([\#351](https://github.com/pedroliman/neuralsbi/issues/351)).
+
 ## neuralsbi 0.6.66
 
 - **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)

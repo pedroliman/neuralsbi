@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.66</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.67</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.67" id="neuralsbi-0667">neuralsbi 0.6.67<a class="anchor" aria-label="anchor" href="#neuralsbi-0667"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe.html">npe()</a></code>/<code><a href="../reference/nle.html">nle()</a></code> no longer silently fit a garbage model on zero-row precomputed <code>theta</code>/<code>x</code>.</strong> <code><a href="../reference/prepare_simulations.html">prepare_simulations()</a></code> (<code>R/npe.R</code>), shared by <code><a href="../reference/npe.html">npe()</a></code>, <code><a href="../reference/nle.html">nle()</a></code> and <code><a href="../reference/nre.html">nre()</a></code>, checks <code>n_simulations &gt;= 2</code> on the simulator path but had no equivalent floor on the precomputed-data path: <code>npe(prior, theta = matrix(numeric(0), 0, 2), x = matrix(numeric(0), 0, 2), density_estimator = "linear_gaussian")</code> ran to completion, with <code><a href="../reference/fit_standardizer.html">fit_standardizer()</a></code> taking <code><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans()</a></code>/<code><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd()</a></code> of zero rows and the resulting <code>NaN</code> center surviving standardization unnoticed. <code><a href="../reference/prepare_simulations.html">prepare_simulations()</a></code> now runs <code>theta</code>/<code>x</code> through a new <code>check_min_rows()</code> (<code>R/check.R</code>) before fitting either standardizer, naming whichever argument is empty. <code><a href="../reference/nre.html">nre()</a></code> was already non-silent about the fully-empty case, via its own pre-flight <code>check_train_controls(n = nrow(theta), ...)</code> call, just with a message about <code>validation_fraction</code> rather than the empty argument; it now also gets <code>check_min_rows()</code>’s clearer message for the case that check never covered, a precomputed <code>x</code> empty while <code>theta</code> is not. A single precomputed row is untouched by this fix and still trains, as before, with <code><a href="../reference/warn_constant_columns.html">warn_constant_columns()</a></code>’s existing warning on the way past standardization – that warning’s message no longer hardcodes “has one row” for what could be zero rows too, and now reports the actual count (<a href="https://github.com/pedroliman/neuralsbi/issues/348" class="external-link">#348</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/351" class="external-link">#351</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.66" id="neuralsbi-0666">neuralsbi 0.6.66<a class="anchor" aria-label="anchor" href="#neuralsbi-0666"></a></h2>
 <ul><li>
