@@ -317,3 +317,25 @@ test_that("log_prob() on a bounded-prior NPE posterior does not mutate the calle
   log_prob(post, 0.3, n_normalization = 500)
   expect_identical(.Random.seed, before)
 })
+
+test_that("log_prob() rejects a non-logical normalize instead of misreading it (#340)", {
+  # normalize was only ever tested with `&&`, which errors outright for a
+  # non-logical right-hand side (masking the real argument name behind a base
+  # R error) but coerces a numeric one silently, so normalize = 1/0 worked by
+  # luck while normalize = NA or "yes" never named the argument.
+  set.seed(22)
+  prior <- prior_uniform(-1, 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+
+  expect_error(log_prob(post, 0.2, normalize = NA),
+               "`normalize` must be TRUE or FALSE")
+  expect_error(log_prob(post, 0.2, normalize = "yes"),
+               "`normalize` must be TRUE or FALSE")
+
+  # TRUE/FALSE keep working exactly as before.
+  expect_true(is.finite(log_prob(post, 0.2, normalize = TRUE)))
+  expect_true(is.finite(log_prob(post, 0.2, normalize = FALSE)))
+})

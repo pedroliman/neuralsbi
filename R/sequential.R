@@ -82,6 +82,10 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
          call. = FALSE)
   }
   check_x_obs(x_obs)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat()'s per-round progress line
+  # with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   # Every round simulates, so the counts are checked once, up front, rather
   # than when round r first reads one.
   n_rounds <- check_count(n_rounds, "n_rounds",
@@ -133,6 +137,13 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
+  # standardize reaches round 1 through `...` just like the other npe()
+  # arguments above, and is validated inside npe() itself with check_flag()
+  # (R/npe.R) -- but only once the npe() call at the bottom of the round loop
+  # runs, after prepare_simulations() had already spent round 1's whole
+  # simulation budget. verbose gets the immediate-failure treatment above;
+  # standardize was left out of this battery (#346).
+  standardize <- check_flag(npe_arg("standardize"), "standardize")
   # Mirrors npe()'s own resolution (R/npe.R): a caller-supplied fitter
   # function is checked for arity, a string choice is matched against the
   # same four names npe() accepts. Until now `density_estimator` was only

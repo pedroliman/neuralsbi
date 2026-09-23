@@ -46,6 +46,13 @@ test_that("train_conditional_de() checks its controls without torch", {
                "`clip_grad_norm` must be a single positive number or Inf")
   expect_error(train(validation_fraction = 1), "strictly between 0 and 1")
   expect_error(train(validation_fraction = 0), "strictly between 0 and 1")
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  # train_conditional_de() is a documented extension point a custom
+  # density_estimator can call directly, so it validates verbose itself
+  # rather than trusting npe()/nle()/nre() to have done it already.
+  expect_error(train(verbose = 1), "`verbose` must be TRUE or FALSE")
+  expect_error(train(verbose = "yes"), "`verbose` must be TRUE or FALSE")
 })
 
 test_that("train_conditional_de() says how many rows the split would need", {

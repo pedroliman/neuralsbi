@@ -198,6 +198,9 @@ test_that("log_prob() on an NRE posterior is the unnormalized potential", {
                      as.numeric(fit$prior$log_prob(theta)))
   expect_warning(log_prob(post, theta, normalize = TRUE), "no normalizing")
   expect_equal(log_prob(post, rbind(c(9, 9))), -Inf)
+  # #344: a non-logical normalize must raise a named error, not be silently
+  # read as FALSE by isTRUE().
+  expect_error(log_prob(post, theta, normalize = 1), "`normalize`")
 })
 
 # GitHub #163: mcmc_log_prob() is shared by NLE and NRE posteriors, so the
@@ -318,6 +321,45 @@ test_that("nre() checks its arguments before the simulator runs", {
     nre(gauss_prior(), counting_simulator, n_simulations = 100,
         classifier = "logistic", n_blocks = -1L),
     "`n_blocks` must be a single whole number")
+  expect_identical(calls, 0L)
+})
+
+test_that("nre() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", verbose = 1),
+    "`verbose` must be TRUE or FALSE")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", verbose = "yes"),
+    "`verbose` must be TRUE or FALSE")
+  expect_identical(calls, 0L)
+})
+
+test_that("nre() rejects a non-logical standardize instead of misreading it (#340)", {
+  # standardize was only ever tested with `if (standardize)`, which errors
+  # outright for most non-logical values but only after prepare_simulations()
+  # had already spent the simulation budget.
+  calls <- 0L
+  counting_simulator <- function(mu, nu) {
+    calls <<- calls + 1L
+    gauss_sim(mu, nu)
+  }
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", standardize = NA),
+    "`standardize` must be TRUE or FALSE")
+  expect_error(
+    nre(gauss_prior(), counting_simulator, n_simulations = 100,
+        classifier = "logistic", standardize = "yes"),
+    "`standardize` must be TRUE or FALSE")
   expect_identical(calls, 0L)
 })
 

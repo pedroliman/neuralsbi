@@ -49,6 +49,11 @@ train_conditional_de <- function(build_net, log_prob_fn, theta, x,
                        patience, n_restarts, clip_grad_norm,
                        n = nrow(as_theta_matrix(theta)),
                        min_val_rows = min_val_rows)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336). Checked
+  # here too, not just in npe()/nle()/nre(), since train_conditional_de() is a
+  # documented extension point a custom density_estimator can call directly.
+  verbose <- check_flag(verbose, "verbose")
   # The bar spans every restart, so progress reporting is set up out here and
   # the loop itself lives in train_restarts().
   with_nsbi_progress(train_restarts(
