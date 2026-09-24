@@ -73,9 +73,45 @@ test_that("a fit whose network died points at save_npe(), not at a torch error",
   expect_output(print(fit), "network unusable")
 })
 
+test_that("sample() and log_prob() re-check a fit's network after posterior() construction, not just at construction (#341)", {
+  # check_fit_alive() is meant to fail at the door, not three calls later, but
+  # posterior.nsbi_npe() only ran it once, when the posterior object was
+  # built. A fit's torch network can die on the same object afterward --
+  # typically saveRDS()/readRDS() across R sessions -- and sample()/log_prob()
+  # reached the dead pointer directly, surfacing torch's raw "external
+  # pointer is not valid" instead of pointing at save_npe()/load_npe().
+  dead <- structure(list(), class = "nsbi_dead_net_341_npe")
+  registerS3method("$", "nsbi_dead_net_341_npe",
+                   function(x, name) stop("external pointer is not valid"))
+
+  fit <- fit_toy(200)
+  post <- posterior(fit, x_obs = c(0.4, -0.6))
+  # the network dies after the posterior already exists
+  post$fit$de$net <- dead
+
+  expect_error(sample(post, n = 10), "save_npe")
+  expect_error(log_prob(post, c(0, 0)), "save_npe")
+})
+
 test_that("de_rebuild_net refuses an estimator it cannot rebuild", {
   expect_error(de_rebuild_net(structure(list(), class = "nsbi_de_lingauss")),
                "Cannot rebuild")
+})
+
+test_that("save_npe rejects a torch-backed fit with an unrecognized estimator class before writing anything", {
+  fit <- fit_toy(100)
+  # stand in for a custom density_estimator (documented extension point): a
+  # class de_rebuild_net() does not know, with a $net that reports itself
+  # alive (torch_net_alive() only reads $parameters) so the check under test
+  # -- the class check, not the dangling-pointer check -- is what fires.
+  fit$de <- structure(list(net = list(parameters = list())),
+                       class = c("my_custom_mdn", "nsbi_de"))
+
+  path <- tempfile(fileext = ".rds")
+  on.exit(unlink(path), add = TRUE)
+  expect_error(save_npe(fit, path), "my_custom_mdn")
+  expect_error(save_npe(fit, path), "not one.*load_npe\\(\\) knows how to rebuild")
+  expect_false(file.exists(path))
 })
 
 test_that("a torch-backed fit survives save_npe() but not saveRDS()", {

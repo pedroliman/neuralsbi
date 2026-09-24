@@ -112,6 +112,13 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   }
   device <- check_device_arg(device)
   check_prior(prior)
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
+  # standardize was only ever tested with `if (standardize)`, which errors
+  # outright for most non-logical values but not before the simulator has
+  # already run inside prepare_simulations() (#340).
+  standardize <- check_flag(standardize, "standardize")
   if (!is.null(embedding_net) && !inherits(embedding_net, "nsbi_embedding")) {
     stop("`embedding_net` must be built with embedding_mlp().", call. = FALSE)
   }
@@ -242,6 +249,13 @@ prepare_simulations <- function(prior, simulator, n_simulations, sim_args,
     check_precomputed_theta(theta, prior$dim, "theta")
     theta <- as_theta_matrix(theta, prior$dim)
     x <- as_theta_matrix(check_numeric(x, "x"))
+    # Zero precomputed rows sail through to fit_standardizer() otherwise and
+    # produce a fit that looks normal but is garbage (NaN center, all-zero
+    # regression coefficients) instead of erroring -- see #348. One row is
+    # left alone: it already surfaces its own, more specific error/warning
+    # further down (see check_min_rows()).
+    check_min_rows(theta, "theta")
+    check_min_rows(x, "x")
     if (nrow(theta) != nrow(x)) {
       stop("`theta` and `x` must have the same number of rows.", call. = FALSE)
     }
@@ -366,6 +380,9 @@ simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
   check_function(simulator, "simulator", what = "one parameter set per call")
   check_prior(prior)
   n <- check_count(n, "n")
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   if (!is.null(seed)) set.seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))

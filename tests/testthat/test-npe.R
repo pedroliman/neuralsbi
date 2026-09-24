@@ -59,6 +59,50 @@ test_that("npe() checks the controls before running the simulator", {
   expect_identical(env$calls, 0L)
 })
 
+test_that("npe() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  env <- new.env(parent = emptyenv())
+  env$calls <- 0L
+  sim <- counting_simulator(env)
+
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = "linear_gaussian", verbose = 1),
+               "`verbose` must be TRUE or FALSE")
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = "linear_gaussian", verbose = "yes"),
+               "`verbose` must be TRUE or FALSE")
+  expect_identical(env$calls, 0L)
+
+  # TRUE/FALSE keep working exactly as before.
+  expect_s3_class(npe(toy_prior(), sim, n_simulations = 100,
+                      density_estimator = "linear_gaussian", verbose = FALSE),
+                  "nsbi_npe")
+})
+
+test_that("npe() rejects a non-logical standardize instead of misreading it (#340)", {
+  # standardize was only ever tested with `if (standardize)`, which errors
+  # outright for most non-logical values but only after prepare_simulations()
+  # had already spent the simulation budget.
+  env <- new.env(parent = emptyenv())
+  env$calls <- 0L
+  sim <- counting_simulator(env)
+
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = "linear_gaussian", standardize = NA),
+               "`standardize` must be TRUE or FALSE")
+  expect_error(npe(toy_prior(), sim, n_simulations = 100,
+                   density_estimator = "linear_gaussian", standardize = "yes"),
+               "`standardize` must be TRUE or FALSE")
+  expect_identical(env$calls, 0L)
+
+  # TRUE/FALSE keep working exactly as before.
+  expect_s3_class(npe(toy_prior(), sim, n_simulations = 100,
+                      density_estimator = "linear_gaussian",
+                      standardize = FALSE),
+                  "nsbi_npe")
+})
+
 test_that("npe() rejects a malformed caller-supplied density_estimator before simulating (#259)", {
   env <- new.env(parent = emptyenv())
   env$calls <- 0L
@@ -191,6 +235,60 @@ test_that("npe() rejects simulations too few to split", {
                "holds out 1 row of 1, leaving nothing to train on")
 })
 
+test_that("npe()/nle() reject zero-row precomputed theta/x (#348)", {
+  # Before the fix this ran to completion: fit_standardizer() took
+  # colMeans()/sd() of zero rows, the resulting NaN center survived
+  # standardization, and fit_linear_gaussian() silently returned an all-zero
+  # B with Sigma set purely by the ridge floor. Torch-free so it runs
+  # everywhere. (nre() has its own regression test in test-nre.R: its
+  # pre-flight check_train_controls(n = ...) call already rejected the
+  # doubly-empty case before this fix, just with a less specific message --
+  # see the note there.)
+  prior <- toy_prior()
+  empty_theta <- matrix(numeric(0), 0, 1)
+  empty_x <- matrix(numeric(0), 0, 1)
+
+  expect_error(
+    npe(prior, theta = empty_theta, x = empty_x,
+        density_estimator = "linear_gaussian"),
+    "`theta` has 0 rows")
+  expect_error(
+    nle(prior, theta = empty_theta, x = empty_x,
+        density_estimator = "linear_gaussian"),
+    "`theta` has 0 rows")
+
+  # x is checked too, and named when it is the one that is empty.
+  expect_error(
+    npe(prior, theta = matrix(0.5, 1, 1), x = empty_x,
+        density_estimator = "linear_gaussian"),
+    "`x` has 0 rows")
+})
+
+test_that("npe() with pre-computed 1-row theta/x is unchanged by the #348 fix", {
+  # A single row is not the bug #348 is about (fit_standardizer()'s center is
+  # well-defined for one row; only its spread is undefined, which
+  # warn_constant_columns() already reports). check_min_rows() only floors at
+  # zero rows, so a 1-row precomputed fit still trains -- unchanged.
+  fit <- suppressWarnings(
+    npe(toy_prior(), theta = matrix(0.5, 1, 1), x = matrix(0.4, 1, 1),
+        density_estimator = "linear_gaussian"))
+  expect_s3_class(fit, "nsbi_npe")
+  expect_equal(fit$n_simulations, 1L)
+  # Both theta and x are a single row here, so each of their standardizers
+  # warns (test-standardize.R covers the exact wording); the point of this
+  # test is only that check_min_rows() does not turn that into an error.
+  warnings <- character(0)
+  withCallingHandlers(
+    npe(toy_prior(), theta = matrix(0.5, 1, 1), x = matrix(0.4, 1, 1),
+        density_estimator = "linear_gaussian"),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    })
+  expect_true(any(grepl("`theta` has 1 row, so the standard deviation",
+                        warnings)))
+})
+
 test_that("nle() checks the same controls", {
   expect_error(nle(toy_prior(), toy_simulator, n_simulations = 0,
                    density_estimator = "linear_gaussian"),
@@ -215,6 +313,15 @@ test_that("simulate_for_sbi() checks n and the prior", {
                "`prior` must be an nsbi_prior object")
   expect_equal(nrow(simulate_for_sbi(toy_simulator, toy_prior(), n = 5)$theta),
                5L)
+})
+
+test_that("simulate_for_sbi() rejects a non-logical verbose instead of silently staying quiet", {
+  # verbose was only ever tested with isTRUE() inside verbose_cat(), so
+  # verbose = 1 or "yes" took the "stay quiet" branch with no error (#336).
+  expect_error(simulate_for_sbi(toy_simulator, toy_prior(), n = 5, verbose = 1),
+               "`verbose` must be TRUE or FALSE")
+  expect_error(simulate_for_sbi(toy_simulator, toy_prior(), n = 5, verbose = "yes"),
+               "`verbose` must be TRUE or FALSE")
 })
 
 test_that("print.nsbi_npe() prints the ordinary summary, not just the dead-network path", {

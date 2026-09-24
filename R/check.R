@@ -119,9 +119,16 @@ check_numeric <- function(value, arg) {
 #' @param arg Name of the argument, as it appears in the user's call.
 #' @param what Optional phrase describing what a column means, e.g.
 #'   `"one parameter per column"`. Shown in parentheses.
+#' @param min_rows Smallest number of rows accepted. `0` (the default) accepts
+#'   an empty matrix, which is right for most callers -- `within_support()` on
+#'   zero draws is a legitimate, if odd, question. An observation argument is
+#'   not: `resolve_obs()` passes `min_rows = 1` so a zero-row `obs`/`x` (a
+#'   real-data filter that happened to drop every row) gets a named error here
+#'   instead of reaching `x[1, , drop = FALSE]` and failing with a bare,
+#'   unnamed "subscript out of bounds" (#349).
 #' @return A numeric matrix with `d` columns, column names preserved.
 #' @keywords internal
-check_matrix <- function(value, d = NULL, arg, what = NULL) {
+check_matrix <- function(value, d = NULL, arg, what = NULL, min_rows = 0L) {
   bad <- function(fmt, ...) {
     stop(sprintf("`%s` %s", arg, sprintf(fmt, ...)), call. = FALSE)
   }
@@ -158,6 +165,10 @@ check_matrix <- function(value, d = NULL, arg, what = NULL) {
     # so plainly enough to be worth mentioning.
     hint <- if (nrow(value) == d) " Did you mean to transpose it?" else ""
     bad("%s, but it has %d.%s", width(), ncol(value), hint)
+  }
+  if (nrow(value) < min_rows) {
+    bad("must have at least %s, but it has %s.",
+        n_things(min_rows, "row"), n_things(nrow(value), "row"))
   }
 
   storage.mode(value) <- "double"
@@ -196,6 +207,37 @@ check_precomputed_theta <- function(value, d, arg) {
       "matrix is column-major), so pass the matrix itself instead of ",
       "flattening it."),
       arg, n_things(d, "column"), length(value)),
+      call. = FALSE)
+  }
+  invisible(value)
+}
+
+#' Require at least one row of precomputed data
+#'
+#' The simulator path floors `n_simulations` at 2 with [check_count()] before
+#' it ever draws a sample. Precomputed `theta`/`x` get no such floor: with
+#' zero rows, [fit_standardizer()] takes `colMeans()`/`sd()` of nothing, the
+#' resulting `NaN` center survives standardization, and the density estimator
+#' that follows fits silently on garbage instead of erroring (GitHub #348).
+#'
+#' This only closes the zero-row case, not one row. A single precomputed row
+#' already surfaces its own, more specific error or warning further down the
+#' pipeline -- [warn_constant_columns()] on the way past standardization, and
+#' (for a neural estimator) [train_conditional_de()]'s validation-split check
+#' once training starts -- so leave that path alone here.
+#'
+#' @param value The matrix to check (`theta` or `x`, already reshaped by
+#'   [as_theta_matrix()]).
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @return `value`, invisibly and unchanged.
+#' @keywords internal
+check_min_rows <- function(value, arg) {
+  n <- nrow(value)
+  if (n < 1L) {
+    stop(sprintf(paste0(
+      "`%s` has %s: at least 1 is needed to fit anything, and in practice ",
+      "an estimator needs several to be trained meaningfully."),
+      arg, n_things(n, "row")),
       call. = FALSE)
   }
   invisible(value)

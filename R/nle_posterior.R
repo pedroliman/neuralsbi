@@ -192,6 +192,9 @@ resolve_x_iid <- function(post, x, arg = "obs") {
 sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
                                        refresh = FALSE, verbose = FALSE, ...) {
   n <- check_count(n, "n", why = "since it is the number of posterior draws")
+  # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
+  # the "stay quiet" branch inside verbose_cat() with no error (#336).
+  verbose <- check_flag(verbose, "verbose")
   mcmc_draws(x, n, obs, refresh, verbose)
 }
 
@@ -209,6 +212,10 @@ sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
 #' @param verbose Report sampling progress.
 #' @keywords internal
 mcmc_draws <- function(post, n, obs, refresh, verbose) {
+  # refresh was only ever tested with isTRUE(), so refresh = 1 or "yes"
+  # silently took the "serve the cache" branch instead of forcing a new run
+  # (#329).
+  check_flag(refresh, "refresh")
   fit <- post$fit
   x_obs <- resolve_x_iid(post, obs)
 
@@ -301,7 +308,14 @@ prior_scale <- function(prior) {
 log_prob.nsbi_mcmc_posterior <- function(post, theta, x = NULL,
                                          normalize = TRUE, ...) {
   what <- if (inherits(post$fit, "nsbi_nle")) "NLE" else "NRE"
-  mcmc_log_prob(post, theta, x, !missing(normalize) && isTRUE(normalize), what)
+  # mcmc_log_prob()'s `warn` only fires when normalize was explicitly supplied
+  # (see its own docs), so the default TRUE must stay silent -- but whatever
+  # the caller does supply still needs check_flag()'s validation, the same as
+  # every sibling log_prob() method, or normalize = 1/"yes" is silently read
+  # as FALSE by isTRUE() instead of raising a named error (#344).
+  supplied <- !missing(normalize)
+  if (supplied) normalize <- check_flag(normalize, "normalize")
+  mcmc_log_prob(post, theta, x, supplied && isTRUE(normalize), what)
 }
 
 #' Get (or build and cache) the surrogate potential behind an MCMC posterior
