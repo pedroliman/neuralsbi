@@ -466,6 +466,40 @@ test_that("nre() defers to prepare_simulations() when n_simulations can't hint a
     "`n_simulations`")
 })
 
+# GitHub #355: n_hint's guard above checked n_simulations was finite and >= 1
+# but never that it was a whole number, so a fractional value like 15.5 (with
+# no pre-computed theta/x) flowed straight into check_train_controls(n =
+# n_hint, ...), whose n-dependent stop() branches format n with sprintf's
+# "%d" -- which errors outright on a non-integer double ("invalid format
+# '%d'; use format %f, %e, %g or %a for numeric objects") instead of naming
+# n_simulations at all. classifier = "logistic" never hit this: it takes the
+# min_val_rows = 1L branch, so n_simulations = 15.5 clears
+# check_train_controls() and reaches prepare_simulations()'s own
+# check_count(), which has always reported this properly. A fractional
+# n_simulations must fall through to n_hint = NULL for every classifier, so
+# it defers to that same check_count() error instead of crashing first.
+test_that("nre() rejects a fractional n_simulations without the sprintf crash (#355)", {
+  # No torch needed to see the crash disappear: whatever error comes back
+  # (torch-missing on a libtorch-less machine, or check_count()'s message
+  # once torch is present) must not be the raw sprintf failure.
+  err <- tryCatch(
+    nre(gauss_prior(), gauss_sim, n_simulations = 15.5, classifier = "resnet"),
+    error = function(e) e)
+  expect_false(grepl("invalid format", conditionMessage(err), fixed = TRUE))
+})
+
+test_that("nre()'s fractional n_simulations error matches for resnet and logistic (#355)", {
+  skip_if_no_torch()
+  resnet_msg <- tryCatch(
+    nre(gauss_prior(), gauss_sim, n_simulations = 15.5, classifier = "resnet"),
+    error = function(e) conditionMessage(e))
+  logistic_msg <- tryCatch(
+    nre(gauss_prior(), gauss_sim, n_simulations = 15.5, classifier = "logistic"),
+    error = function(e) conditionMessage(e))
+  expect_match(resnet_msg, "^`n_simulations` must be a single whole number")
+  expect_identical(resnet_msg, logistic_msg)
+})
+
 test_that("an embedding net is rejected by the logistic classifier", {
   expect_warning(
     nre(gauss_prior(), gauss_sim, n_simulations = 200, classifier = "logistic",
