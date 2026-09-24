@@ -166,7 +166,14 @@ nre <- function(prior, simulator = NULL, n_simulations = 1000,
   n_hint <- if (!is.null(theta) && !is.null(x)) {
     tryCatch(nrow(as_theta_matrix(theta, prior$dim)), error = function(e) NULL)
   } else if (is.numeric(n_simulations) && length(n_simulations) == 1L &&
-             is.finite(n_simulations) && n_simulations >= 1) {
+             is.finite(n_simulations) && n_simulations == trunc(n_simulations) &&
+             n_simulations >= 1) {
+    # The trunc() check mirrors check_count()'s own whole-number test: a
+    # fractional n_simulations (e.g. 15.5) must fall through to NULL here so
+    # check_train_controls() below skips its n-dependent stops, whose
+    # sprintf(..., "%d", n) formatting errors outright on a non-whole double.
+    # prepare_simulations() still catches it properly with check_count()'s
+    # friendly message once it actually runs (#355).
     n_simulations
   } else {
     NULL
