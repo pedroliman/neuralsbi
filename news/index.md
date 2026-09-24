@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.70
+
+- **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) no
+  longer crashes with a cryptic `sprintf` error when `n_simulations` is
+  fractional and the classifier is a neural one.**
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) builds
+  `n_hint`, a row-count hint used to validate the training controls
+  before any simulation runs, straight from `n_simulations`, but only
+  checked that it was finite and at least 1, not that it was a whole
+  number. A fractional value like `n_simulations = 15.5` flowed into
+  `check_train_controls(n = n_hint, ...)`, whose `n`-dependent
+  [`stop()`](https://rdrr.io/r/base/stop.html) branches format `n` with
+  `sprintf`’s `"%d"` – which errors outright on a non-integer double
+  (“invalid format ‘%d’; use format %f, %e, %g or %a for numeric
+  objects”) instead of naming the real problem.
+  `classifier = "logistic"` never hit this: its closed-form fit takes a
+  looser `min_val_rows` floor that `n_simulations = 15.5` clears, so
+  only the neural classifiers (`"resnet"`, the default, plus `"mlp"` and
+  `"linear"`) reached the crash. `n_hint` now mirrors
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md)’s
+  own whole-number test, so a fractional `n_simulations` falls through
+  to `n_hint = NULL` for every classifier and defers to
+  [`prepare_simulations()`](https://neuralsbi.pedrodelima.com/reference/prepare_simulations.md)’s
+  existing
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md)
+  error, the same friendly message `"logistic"` already gave
+  ([\#355](https://github.com/pedroliman/neuralsbi/issues/355))
+  ([\#356](https://github.com/pedroliman/neuralsbi/issues/356)).
+
 ## neuralsbi 0.6.69
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)

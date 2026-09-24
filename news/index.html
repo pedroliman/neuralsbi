@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.69</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.70</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.70" id="neuralsbi-0670">neuralsbi 0.6.70<a class="anchor" aria-label="anchor" href="#neuralsbi-0670"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/nre.html">nre()</a></code> no longer crashes with a cryptic <code>sprintf</code> error when <code>n_simulations</code> is fractional and the classifier is a neural one.</strong> <code><a href="../reference/nre.html">nre()</a></code> builds <code>n_hint</code>, a row-count hint used to validate the training controls before any simulation runs, straight from <code>n_simulations</code>, but only checked that it was finite and at least 1, not that it was a whole number. A fractional value like <code>n_simulations = 15.5</code> flowed into <code>check_train_controls(n = n_hint, ...)</code>, whose <code>n</code>-dependent <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code> branches format <code>n</code> with <code>sprintf</code>’s <code>"%d"</code> – which errors outright on a non-integer double (“invalid format ‘%d’; use format %f, %e, %g or %a for numeric objects”) instead of naming the real problem. <code>classifier = "logistic"</code> never hit this: its closed-form fit takes a looser <code>min_val_rows</code> floor that <code>n_simulations = 15.5</code> clears, so only the neural classifiers (<code>"resnet"</code>, the default, plus <code>"mlp"</code> and <code>"linear"</code>) reached the crash. <code>n_hint</code> now mirrors <code><a href="../reference/check_count.html">check_count()</a></code>’s own whole-number test, so a fractional <code>n_simulations</code> falls through to <code>n_hint = NULL</code> for every classifier and defers to <code><a href="../reference/prepare_simulations.html">prepare_simulations()</a></code>’s existing <code><a href="../reference/check_count.html">check_count()</a></code> error, the same friendly message <code>"logistic"</code> already gave (<a href="https://github.com/pedroliman/neuralsbi/issues/355" class="external-link">#355</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/356" class="external-link">#356</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.69" id="neuralsbi-0669">neuralsbi 0.6.69<a class="anchor" aria-label="anchor" href="#neuralsbi-0669"></a></h2>
 <ul><li>
