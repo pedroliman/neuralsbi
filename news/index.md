@@ -1,5 +1,40 @@
 # Changelog
 
+## neuralsbi 0.6.71
+
+- **[`task_sir()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)’s
+  simulator no longer overshoots to a physically-impossible trajectory
+  for plausible draws from its own prior.** The Euler integrator took a
+  single `dt = 1` day step per day, with no clamp on `S`/`I` inside the
+  loop: for `beta` draws in the tail of
+  `prior_lognormal(meanlog = log(0.4), sdlog = 0.5)`,
+  `newinf = beta * S * I / N` could exceed the current `S`, driving `S`
+  negative and `I` above the population `N`, then oscillating. This
+  happened for roughly 0.7-1% of draws from the task’s own prior at the
+  default `N = 1e6`, `days = 160` – not freak outliers. The bug was
+  silent downstream: the simulator’s own output is clamped to `[0, 1]`
+  before [`stats::rbinom()`](https://rdrr.io/r/stats/Binomial.html), so
+  a contaminated draw produced a finite, plausible-looking observation
+  indistinguishable from a legitimate one, and
+  [`drop_failed_sims()`](https://neuralsbi.pedrodelima.com/reference/drop_failed_sims.md)
+  only screens for NA/NaN/Inf. The integrator now takes 20 Euler
+  sub-steps per day (`sir_trajectory()`, a new internal helper in
+  `R/tasks.R`), which shrinks each step’s increment enough that
+  `newinf`/`newrec` stay small relative to `S`/`I` across the prior’s
+  whole support; each sub-step additionally clamps `newinf`/`newrec` to
+  not exceed the current `S`/`I`, as a second line of defense for
+  parameter draws extreme enough to overshoot even a sub-stepped step.
+  [`task_sir()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)’s
+  simulator is unchanged in its public contract – same prior, same
+  `N`/`days`/`n_points`/`n_obs_draws` arguments, same output shape – and
+  `sir_trajectory()` also makes the full daily `S`/`I`/`R` path
+  inspectable, which the strengthened regression test in `test-tasks.R`
+  uses to draw 2000 theta from the prior and check `S`/`I` stay within
+  `[0, N]` throughout, rather than only checking the already-clamped
+  `[0, 1]` output
+  ([\#357](https://github.com/pedroliman/neuralsbi/issues/357))
+  ([\#359](https://github.com/pedroliman/neuralsbi/issues/359)).
+
 ## neuralsbi 0.6.70
 
 - **[`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md) no
