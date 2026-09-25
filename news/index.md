@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.6.72
+
+- **The NPE half of the `sbi` head-to-head benchmark
+  (`inst/benchmarks/01`-`04`) has been run for the first time, against
+  `sbi` 0.27.0.** `gaussian_linear` (10 dimensions, MDN and MAF, 10k
+  simulations) passes the roadmap’s C2ST \<= 0.60 bar outright, against
+  both `sbi` and the exact posterior: MDN 0.57-0.58, MAF 0.53.
+  `two_moons` (2 dimensions, no closed-form reference) misses it: MDN
+  0.62-0.66 at every one of 5 observations, MAF on the line at
+  0.59-0.66, passing 3 of 5. Every posterior mean/sd difference stays
+  small on `two_moons` regardless (under 0.04 mean, 0.02 sd, against a
+  `[-1, 1]` prior) – the gap there is
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)’s MLP
+  classifier catching a difference in the *shape* of two independently
+  fit posteriors of a bimodal target, with no reference to check either
+  against, not a large or obviously wrong fit on either side. Results,
+  the full reading, and the raw comparison CSVs:
+  `docs/benchmarks/npe-vs-sbi.md`. `docs/verification-roadmap.md`’s
+  status table and “Next actions” are updated to match
+  ([\#358](https://github.com/pedroliman/neuralsbi/issues/358))
+  ([\#360](https://github.com/pedroliman/neuralsbi/issues/360)).
+
 ## neuralsbi 0.6.71
 
 - **[`task_sir()`](https://neuralsbi.pedrodelima.com/reference/tasks.md)’s

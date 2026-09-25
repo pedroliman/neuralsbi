@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.71</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.72</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.72" id="neuralsbi-0672">neuralsbi 0.6.72<a class="anchor" aria-label="anchor" href="#neuralsbi-0672"></a></h2>
+<ul><li>
+<strong>The NPE half of the <code>sbi</code> head-to-head benchmark (<code>inst/benchmarks/01</code>-<code>04</code>) has been run for the first time, against <code>sbi</code> 0.27.0.</strong> <code>gaussian_linear</code> (10 dimensions, MDN and MAF, 10k simulations) passes the roadmap’s C2ST &lt;= 0.60 bar outright, against both <code>sbi</code> and the exact posterior: MDN 0.57-0.58, MAF 0.53. <code>two_moons</code> (2 dimensions, no closed-form reference) misses it: MDN 0.62-0.66 at every one of 5 observations, MAF on the line at 0.59-0.66, passing 3 of 5. Every posterior mean/sd difference stays small on <code>two_moons</code> regardless (under 0.04 mean, 0.02 sd, against a <code>[-1, 1]</code> prior) – the gap there is <code><a href="../reference/c2st.html">c2st()</a></code>’s MLP classifier catching a difference in the <em>shape</em> of two independently fit posteriors of a bimodal target, with no reference to check either against, not a large or obviously wrong fit on either side. Results, the full reading, and the raw comparison CSVs: <code>docs/benchmarks/npe-vs-sbi.md</code>. <code>docs/verification-roadmap.md</code>’s status table and “Next actions” are updated to match (<a href="https://github.com/pedroliman/neuralsbi/issues/358" class="external-link">#358</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/360" class="external-link">#360</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.71" id="neuralsbi-0671">neuralsbi 0.6.71<a class="anchor" aria-label="anchor" href="#neuralsbi-0671"></a></h2>
 <ul><li>
