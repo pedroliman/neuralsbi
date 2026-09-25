@@ -555,7 +555,7 @@ it carries no defaults of its own. When changing a default, update the
 | MAF | `R/flows.R` | done + tested (round trip, analytic parity) |
 | NSF | `R/nsf.R` | done + tested; autoregressive (sbi uses coupling) |
 | Tasks | `R/tasks.R` | gaussian_linear (analytic ref), two_moons, slcp, sir |
-| Benchmarks vs sbi (NPE) | `inst/benchmarks/01..04` | scripted, **never executed** |
+| Benchmarks vs sbi (NPE) | `inst/benchmarks/01..04` | **run** against sbi 0.27.0; results in `docs/benchmarks/npe-vs-sbi.md` |
 | Benchmarks vs sbi (NLE) | `inst/benchmarks/05..08` | **run** against sbi 0.26.1; results in `docs/benchmarks/nle-vs-sbi.md` |
 | Summaries/tidy | `R/summaries.R` | done |
 | Coverage plot | `plot_coverage()` in `R/plotting.R` | done |
@@ -606,10 +606,21 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    `test-coverage` job that runs the full libtorch suite both last passed on
    the `main` merge commit. Longer term, consider generating NAMESPACE/man
    with roxygen2 so codoc drift can't recur.
-2. **Run the sbi head-to-head** (finishes M3, headline claim). Needs
-   `pip install sbi`. Follow `inst/benchmarks/README.md`: gaussian_linear
-   and two_moons, estimators mdn + maf, 10k sims. Commit the comparison
-   CSVs + a short summary to `docs/benchmarks/`. Acceptance: C2ST ≤ 0.60.
+2. **Run the sbi head-to-head** (finishes M3, headline claim). **Both halves
+   are now done.** The NPE half (`01`-`04`, sbi 0.27.0, gaussian_linear and
+   two_moons, mdn + maf, 10k sims) passes on `gaussian_linear`: C2ST <= 0.60
+   against `sbi` and against the exact posterior, both estimators (MDN
+   0.57-0.58, MAF 0.53). It misses the bar on `two_moons` (no closed form, so
+   only `neuralsbi` vs `sbi`): MDN 0.62-0.66 at all 5 observations, MAF
+   0.59-0.66, on the line at 3 of 5. Every mean/sd difference stays small
+   (under 0.04 mean, 0.02 sd, against a `[-1, 1]` prior) -- the two-moons gap
+   is `c2st()`'s MLP catching a difference in *shape* (the crescent's
+   bimodality) between two independently fit MDN/MAF posteriors with no
+   reference to check either against, not a large or obviously wrong
+   posterior on either side. `gaussian_linear` ran at 2 observations rather
+   than the script's default 5: `c2st()`'s MLP classifier is `O(d)` in hidden
+   width, and at `d = 10` one 10000-vs-10000 comparison measured 956 seconds
+   on this container's CPU. Write-up: `docs/benchmarks/npe-vs-sbi.md`.
    **The NLE half is done** (`05`–`08`, sbi 0.26.1, MAF, 10k sims,
    gaussian_linear at 5 dimensions, observation sets of 1/10/100):
    indistinguishable from `sbi` and from the analytic posterior at one
@@ -617,7 +628,8 @@ Neural estimators train via `train_conditional_de(build_net, log_prob_fn, ...)`.
    implementations degrade by the same amount in the same way — the i.i.d.
    sum amplifying the surrogate's per-observation error, not either
    implementation. Write-up: `docs/benchmarks/nle-vs-sbi.md`. **Still open:**
-   the NPE half (`01`–`04`), which has never been executed, and NLE at other
+   NPE on `slcp` (M4, see #4 below), NPE at `gaussian_linear`'s full 5
+   observations if the C2ST cost ever gets cheaper, and NLE at other
    tasks/estimators.
 3. **Two-moons calibration study** (finishes M2): done via
    `inst/benchmarks/two_moons_calibration.R` — `sbc()` + `plot_coverage()` +
