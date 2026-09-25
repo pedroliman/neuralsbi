@@ -1,0 +1,5 @@
+# Upstream checkouts fetched by 00_setup.R
+external/
+
+# Everything a run produces
+results/
