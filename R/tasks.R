@@ -106,21 +106,47 @@ task_sir <- function(N = 1e6, days = 160, n_points = 10L, n_obs_draws = 1000L) {
                            sdlog = c(0.5, 0.2))
   obs_times <- round(seq(1, days, length.out = n_points))
   simulator <- function(theta) {
-    beta <- theta[1]; gamma <- theta[2]
-    S <- N - 1; I <- 1; R <- 0
-    Ipath <- numeric(days)
-    for (t in seq_len(days)) {
-      newinf <- beta * S * I / N
-      newrec <- gamma * I
-      S <- S - newinf
-      I <- I + newinf - newrec
-      R <- R + newrec
-      Ipath[t] <- I
-    }
-    p <- pmin(pmax(Ipath[obs_times] / N, 0), 1)
+    path <- sir_trajectory(theta, N = N, days = days)
+    p <- pmin(pmax(path$I[obs_times] / N, 0), 1)
     unname(stats::rbinom(n_points, n_obs_draws, p) / n_obs_draws)
   }
   new_task("sir", prior, simulator, 2L, n_points)
+}
+
+#' Integrate the SIR ODE with sub-stepped Euler (internal)
+#'
+#' A single explicit-Euler step per day overshoots for plausible draws from
+#' [task_sir()]'s own prior: `beta * S * I / N` can exceed the current `S`,
+#' driving `S` negative and `I` above `N`, then oscillating. Sub-stepping
+#' shrinks the per-step increment so `newinf`/`newrec` stay small relative to
+#' `S`/`I`; the `pmin()` clamps below are a second line of defense for
+#' extreme parameter draws where even a sub-stepped step could still
+#' overshoot. Returns the full daily `S`/`I`/`R` trajectory so both the
+#' simulator and tests can check it stays within `[0, N]`.
+#'
+#' @param theta Length-2 vector `c(beta, gamma)`.
+#' @param N Population size.
+#' @param days Number of days to simulate.
+#' @param n_substeps Euler sub-steps per day.
+#' @return A list with `S`, `I`, `R`: length-`days` vectors of the
+#'   end-of-day state.
+#' @keywords internal
+sir_trajectory <- function(theta, N, days, n_substeps = 20L) {
+  beta <- theta[1]; gamma <- theta[2]
+  dt <- 1 / n_substeps
+  S <- N - 1; I <- 1; R <- 0
+  Spath <- numeric(days); Ipath <- numeric(days); Rpath <- numeric(days)
+  for (t in seq_len(days)) {
+    for (sub in seq_len(n_substeps)) {
+      newinf <- min(beta * S * I / N * dt, S)
+      newrec <- min(gamma * I * dt, I)
+      S <- S - newinf
+      I <- I + newinf - newrec
+      R <- R + newrec
+    }
+    Spath[t] <- S; Ipath[t] <- I; Rpath[t] <- R
+  }
+  list(S = Spath, I = Ipath, R = Rpath)
 }
 
 #' SLCP task (sbibm `slcp`)
