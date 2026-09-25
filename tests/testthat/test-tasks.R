@@ -48,6 +48,27 @@ test_that("sir task simulates plausible epidemics under its prior", {
   expect_gt(max(x_fast), max(x_slow))
 })
 
+test_that("sir integrator keeps S and I within [0, N] for the prior's tail (#357)", {
+  # Regression test for the Euler-overshoot bug: a single dt = 1 day step let
+  # newinf exceed S for beta draws in the prior's tail, driving S negative
+  # and I above N. That silently produced a physically-impossible trajectory
+  # whose *output* still passed the pmin/pmax([0, 1]) clamp downstream, so
+  # this checks the raw S/I path directly rather than the clamped output.
+  # ~0.7-1% of draws hit the failure historically, so this draws enough theta
+  # to reliably exercise it.
+  set.seed(357)
+  N <- 1e6; days <- 160
+  prior <- prior_lognormal(meanlog = c(log(0.4), log(0.125)), sdlog = c(0.5, 0.2))
+  theta <- sample_prior(prior, 2000)
+  for (i in seq_len(nrow(theta))) {
+    path <- sir_trajectory(theta[i, ], N = N, days = days)
+    expect_true(all(path$S >= 0 & path$S <= N),
+                info = sprintf("row %d: beta=%.4f gamma=%.4f", i, theta[i, 1], theta[i, 2]))
+    expect_true(all(path$I >= 0 & path$I <= N),
+                info = sprintf("row %d: beta=%.4f gamma=%.4f", i, theta[i, 1], theta[i, 2]))
+  }
+})
+
 test_that("print.nsbi_task() reports dimensions and whether a reference posterior exists", {
   expect_output(print(task_gaussian_linear(dim = 3L)),
                "gaussian_linear: 3 parameters -> 3 data dims \\(analytic reference available\\)")
