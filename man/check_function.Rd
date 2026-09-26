@@ -4,7 +4,7 @@
 \alias{check_function}
 \title{Validate a callback argument}
 \usage{
-check_function(f, arg, what = NULL)
+check_function(f, arg, what = NULL, n_args = 1L)
 }
 \arguments{
 \item{f}{The user's value.}
@@ -13,6 +13,10 @@ check_function(f, arg, what = NULL)
 
 \item{what}{Optional phrase naming the argument the function receives, e.g.
 \code{"the number of draws"}. Shown in parentheses.}
+
+\item{n_args}{Number of positional arguments \code{f} will be called with.
+Defaults to 1. \code{f} passes if it has at least \code{n_args} formals, or fewer
+formals plus \code{...}.}
 }
 \value{
 \code{f}, invisibly.
