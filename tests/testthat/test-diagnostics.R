@@ -341,6 +341,15 @@ test_that("plot_posterior_predictive runs and locates the observation", {
   unlink(path)
 })
 
+test_that("plot_posterior_predictive() names x_obs on a length mismatch (#362)", {
+  skip_if_no_ggplot2()
+  pred <- matrix(rnorm(30), ncol = 3)
+  expect_error(
+    plot_posterior_predictive(pred, x_obs = c(1, 2)),
+    "`x_obs` must have length 3 \\(one value per column of `pred`\\), not 2"
+  )
+})
+
 test_that("sbc(), tarp() and c2st() check their counts", {
   set.seed(11)
   prior <- prior_normal(mean = 0, sd = 1)
