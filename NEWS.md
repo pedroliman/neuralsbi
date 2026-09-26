@@ -1,6 +1,6 @@
 # neuralsbi 0.6.73
 
-* **`plot_posterior_predictive()` now names `x_obs` and its expected length on a mismatch, instead of a bare, unnamed `stopifnot()` error.** Every other shape/length check in the package goes through a helper that says what argument was wrong and why; this was the one shape check still using a raw `stopifnot(length(x_obs) == d)`, which errored with `"Error: length(x_obs) == d is not TRUE"` and no indication of which function raised it, what length was expected, or what was received (#362).
+* **`plot_posterior_predictive()` now names `x_obs` and its expected length on a mismatch, instead of a bare, unnamed `stopifnot()` error.** Every other shape/length check in the package goes through a helper that says what argument was wrong and why; this was the one shape check still using a raw `stopifnot(length(x_obs) == d)`, which errored with `"Error: length(x_obs) == d is not TRUE"` and no indication of which function raised it, what length was expected, or what was received (#362) (#364).
 
 # neuralsbi 0.6.72
 
