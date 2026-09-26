@@ -1,5 +1,31 @@
 # Changelog
 
+## neuralsbi 0.6.73
+
+- **[`check_function()`](https://neuralsbi.pedrodelima.com/reference/check_function.md)
+  now verifies arity, so a wrong-arity `density_estimator`/`classifier`
+  fails before the simulation budget is spent.**
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md),
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md), and
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  all call a user-supplied `density_estimator`/`classifier` as
+  `f(theta_z, x_z)` – two positional arguments – but
+  [`check_function()`](https://neuralsbi.pedrodelima.com/reference/check_function.md)
+  only checked that the function took at least one, documented as the
+  check for `simulator`/`sample_fn`/`log_prob_fn`, which really do take
+  one. A function with one formal and no `...` passed silently and only
+  failed once training called it, with an unnamed “unused argument”
+  error and the whole simulation budget already spent.
+  [`check_function()`](https://neuralsbi.pedrodelima.com/reference/check_function.md)
+  takes a new `n_args` argument (default 1, so
+  `simulator`/`sample_fn`/`log_prob_fn` are unaffected); the four call
+  sites that validate `density_estimator`/`classifier` now pass
+  `n_args = 2`, so a wrong-arity function is caught before the simulator
+  runs and the error names the argument and the expected arity
+  ([\#361](https://github.com/pedroliman/neuralsbi/issues/361))
+  ([\#363](https://github.com/pedroliman/neuralsbi/issues/363)).
+
 ## neuralsbi 0.6.72
 
 - **The NPE half of the `sbi` head-to-head benchmark

@@ -9,7 +9,7 @@ mistake.
 ## Usage
 
 ``` r
-check_function(f, arg, what = NULL)
+check_function(f, arg, what = NULL, n_args = 1L)
 ```
 
 ## Arguments
@@ -26,6 +26,12 @@ check_function(f, arg, what = NULL)
 
   Optional phrase naming the argument the function receives, e.g.
   `"the number of draws"`. Shown in parentheses.
+
+- n_args:
+
+  Number of positional arguments `f` will be called with. Defaults to 1.
+  `f` passes if it has at least `n_args` formals, or fewer formals plus
+  `...`.
 
 ## Value
 

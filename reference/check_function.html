@@ -53,7 +53,7 @@ argument it will be given, keeps the complaint next to the mistake."><meta prope
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.72</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.73</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,7 +98,7 @@ argument it will be given, keeps the complaint next to the mistake.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_function</span><span class="op">(</span><span class="va">f</span>, <span class="va">arg</span>, what <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_function</span><span class="op">(</span><span class="va">f</span>, <span class="va">arg</span>, what <span class="op">=</span> <span class="cn">NULL</span>, n_args <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -116,6 +116,12 @@ argument it will be given, keeps the complaint next to the mistake.</p>
 <dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
 <dd><p>Optional phrase naming the argument the function receives, e.g.
 <code>"the number of draws"</code>. Shown in parentheses.</p></dd>
+
+
+<dt id="arg-n-args">n_args<a class="anchor" aria-label="anchor" href="#arg-n-args"></a></dt>
+<dd><p>Number of positional arguments <code>f</code> will be called with.
+Defaults to 1. <code>f</code> passes if it has at least <code>n_args</code> formals, or fewer
+formals plus <code>...</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
