@@ -481,19 +481,24 @@ check_flag <- function(x, arg) {
 #' @param arg Name of the argument.
 #' @param what Optional phrase naming the argument the function receives, e.g.
 #'   `"the number of draws"`. Shown in parentheses.
+#' @param n_args Number of positional arguments `f` will be called with.
+#'   Defaults to 1. `f` passes if it has at least `n_args` formals, or fewer
+#'   formals plus `...`.
 #' @return `f`, invisibly.
 #' @keywords internal
-check_function <- function(f, arg, what = NULL) {
+check_function <- function(f, arg, what = NULL, n_args = 1L) {
   detail <- if (is.null(what)) "" else sprintf(" (%s)", what)
+  noun <- if (n_args == 1L) "one argument" else sprintf("%d arguments", n_args)
   if (!is.function(f)) {
-    stop(sprintf("`%s` must be a function of one argument%s, not %s.",
-                 arg, detail, describe_value(f)),
+    stop(sprintf("`%s` must be a function of %s%s, not %s.",
+                 arg, noun, detail, describe_value(f)),
          call. = FALSE)
   }
   fmls <- tryCatch(formals(args(f)), error = function(e) NULL)
-  if (length(fmls) == 0L) {
-    stop(sprintf("`%s` must be a function of one argument%s, but it takes none.",
-                 arg, detail),
+  if (length(fmls) < n_args && !("..." %in% names(fmls))) {
+    got <- if (length(fmls) == 0L) "none" else length(fmls)
+    stop(sprintf("`%s` must be a function of %s%s, but it takes %s.",
+                 arg, noun, detail, got),
          call. = FALSE)
   }
   invisible(f)

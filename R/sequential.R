@@ -155,7 +155,7 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   # every round.
   if (is.function(density_estimator)) {
     check_function(density_estimator, "density_estimator",
-                   what = "theta and x matrices")
+                   what = "theta and x matrices", n_args = 2L)
   } else {
     density_estimator <- match.arg(density_estimator)
   }
