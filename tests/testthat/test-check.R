@@ -1,3 +1,21 @@
+test_that("check_function() checks arity via n_args, not just presence of args", {
+  # Default n_args = 1: unchanged behavior.
+  expect_error(check_function(function() NULL, "f"),
+               "`f` must be a function of one argument, but it takes none")
+  expect_silent(check_function(function(x) x, "f"))
+
+  # n_args = 2: one formal is not enough, ... satisfies it, and the message
+  # names the expected arity instead of always saying "one argument".
+  expect_error(check_function(function(x) x, "f", n_args = 2L),
+               "`f` must be a function of 2 arguments, but it takes 1")
+  expect_silent(check_function(function(x, y) x + y, "f", n_args = 2L))
+  expect_silent(check_function(function(...) NULL, "f", n_args = 2L))
+  expect_silent(check_function(function(x, ...) x, "f", n_args = 2L))
+
+  expect_error(check_function("not a function", "f", n_args = 2L),
+               "`f` must be a function of 2 arguments, not")
+})
+
 test_that("check_matrix() names the argument it is complaining about", {
   expect_error(check_matrix(matrix(0, 3, 5), 2L, "theta",
                             "one parameter per column"),
