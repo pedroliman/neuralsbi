@@ -320,7 +320,12 @@ plot_posterior_predictive <- function(pred, x_obs, labels = NULL, bins = 30L) {
   pred <- as_theta_matrix(pred)
   d <- ncol(pred)
   x_obs <- as.numeric(x_obs)
-  stopifnot(length(x_obs) == d)
+  if (length(x_obs) != d) {
+    stop(sprintf(
+      "`x_obs` must have length %d (one value per column of `pred`), not %d.",
+      d, length(x_obs)),
+      call. = FALSE)
+  }
   if (is.null(labels)) {
     labels <- colnames(pred) %||% paste0("x[", seq_len(d), "]")
   }
