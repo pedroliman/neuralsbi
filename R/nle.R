@@ -77,7 +77,7 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   # See npe(): everything here is checked before the simulator runs.
   if (is.function(density_estimator)) {
     check_function(density_estimator, "density_estimator",
-                   what = "theta and x matrices")
+                   what = "theta and x matrices", n_args = 2L)
   } else {
     density_estimator <- match.arg(density_estimator)
   }

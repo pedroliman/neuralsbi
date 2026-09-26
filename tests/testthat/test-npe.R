@@ -380,6 +380,24 @@ test_that("simulate_for_sbi() names a swapped (simulator, prior) pair", {
   expect_equal(nrow(simulate_for_sbi(toy_simulator, toy_prior(), 5)$x), 5L)
 })
 
+test_that("npe() rejects a wrong-arity density_estimator before simulating (#361)", {
+  # density_estimator is always called as f(theta_z, x_z); a function that
+  # cannot take two arguments should fail here, before the simulation budget
+  # is spent, and name density_estimator rather than surfacing as an "unused
+  # argument" error deep inside training.
+  n_calls <- 0L
+  sim <- function(mu) {
+    n_calls <<- n_calls + 1L
+    toy_simulator(mu)
+  }
+  expect_error(
+    npe(toy_prior(), sim, n_simulations = 20L,
+        density_estimator = function(theta) stop("never reached")),
+    "`density_estimator` must be a function of 2 arguments"
+  )
+  expect_equal(n_calls, 0L)
+})
+
 test_that("npe() with pre-computed theta/x is reproducible given `seed` (#213)", {
   skip_if_no_torch()
   # Regression test for GitHub #213. simulate_for_sbi() seeds R's base RNG,
