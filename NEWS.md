@@ -1,6 +1,6 @@
 # neuralsbi 0.6.73
 
-* **`plot_posterior_predictive()` now names `x_obs` and its length when `x_obs` does not match the number of columns of `pred`.** The check was a bare `stopifnot(length(x_obs) == d)`, the one shape check in the package still raising R's unnamed "not all arguments are TRUE" instead of going through a `check_*()` helper the way `check_matrix()` and `check_bound()` do elsewhere. It now raises a message naming `x_obs`, the expected length, and the length it got (#362).
+* **`plot_posterior_predictive()` now names `x_obs` and its length when `x_obs` does not match the number of columns of `pred`.** The check was a bare `stopifnot(length(x_obs) == d)`, the one shape check in the package still raising R's unnamed "not all arguments are TRUE" instead of going through a `check_*()` helper the way `check_matrix()` and `check_bound()` do elsewhere. It now raises a message naming `x_obs`, the expected length, and the length it got (#362) (#365).
 
 # neuralsbi 0.6.72
 
