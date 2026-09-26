@@ -25,6 +25,17 @@
   runs and the error names the argument and the expected arity
   ([\#361](https://github.com/pedroliman/neuralsbi/issues/361))
   ([\#363](https://github.com/pedroliman/neuralsbi/issues/363)).
+- **[`plot_posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/plot_posterior_predictive.md)
+  now names `x_obs` and its expected length on a mismatch, instead of a
+  bare, unnamed [`stopifnot()`](https://rdrr.io/r/base/stopifnot.html)
+  error.** Every other shape/length check in the package goes through a
+  helper that says what argument was wrong and why; this was the one
+  shape check still using a raw `stopifnot(length(x_obs) == d)`, which
+  errored with `"Error: length(x_obs) == d is not TRUE"` and no
+  indication of which function raised it, what length was expected, or
+  what was received
+  ([\#362](https://github.com/pedroliman/neuralsbi/issues/362))
+  ([\#364](https://github.com/pedroliman/neuralsbi/issues/364)).
 
 ## neuralsbi 0.6.72
 
