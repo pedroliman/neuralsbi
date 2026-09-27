@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.6.74
+
+- **[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)’s
+  ECP curve no longer biases coverage down at points where a trial’s
+  coverage value lands exactly on a level’s grid boundary.** Each
+  trial’s coverage value `f` is `count / n_posterior_samples` for an
+  integer count, so `f` lands exactly on one of the 0.05-spaced ECP
+  levels whenever `n_posterior_samples` is a multiple of 20 – and, at
+  the top of the range, `f == 1` exactly whenever every posterior draw
+  lands closer to the reference point than the truth does, which is not
+  a rare edge case. The curve was computed with a strict `mean(f < a)`,
+  which excluded a trial tied exactly on the boundary even though it
+  genuinely belongs to the credible region at that level;
+  [`expected_coverage()`](https://neuralsbi.pedrodelima.com/reference/expected_coverage.md)
+  had the identical bug, fixed in
+  [\#308](https://github.com/pedroliman/neuralsbi/issues/308) with a
+  closed `u >= lo & u <= hi`.
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) now
+  matches it with `mean(f <= a)`
+  ([\#366](https://github.com/pedroliman/neuralsbi/issues/366))
+  ([\#367](https://github.com/pedroliman/neuralsbi/issues/367)).
+
 ## neuralsbi 0.6.73
 
 - **[`check_function()`](https://neuralsbi.pedrodelima.com/reference/check_function.md)
