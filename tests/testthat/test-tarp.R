@@ -15,7 +15,11 @@ test_that("tarp is calibrated for the exact linear-Gaussian posterior", {
   expect_s3_class(res, "nsbi_tarp")
   expect_length(res$coverage_values, 150L)
   expect_true(all(res$coverage_values >= 0 & res$coverage_values <= 1))
-  # ECP within Monte-Carlo noise of the diagonal
+  # ECP within Monte-Carlo noise of the diagonal. 0.12 stays as it is: for this
+  # seed the observed deviation is ~0.03 both before and after the #366
+  # boundary fix (that bug's bias is O(1/n_tarp), too small next to this
+  # tolerance to move it), so tightening this bound would not add coverage of
+  # that bug -- the dedicated test below does that directly.
   expect_lt(max(abs(res$ecp - res$levels)), 0.12)
   # coverage values themselves look uniform
   # ties from the 1/300 quantization only make the KS test conservative here
@@ -34,6 +38,30 @@ test_that("tarp detects an overconfident posterior", {
   res <- tarp(fit, wide_sim, n_tarp = 150L, n_posterior_samples = 300L,
               seed = 2)
   expect_gt(max(abs(res$ecp - res$levels)), 0.15)
+})
+
+test_that("tarp's ECP curve counts a coverage value exactly on a level as covered", {
+  # #366: f (a trial's coverage value) is count / n_posterior_samples for an
+  # integer count, so f = 1 exactly whenever every posterior draw lands closer
+  # to the reference than the truth does -- not a rare edge case with a small
+  # n_posterior_samples. The true ECP at level a = 1 is always exactly 1 (every
+  # f is <= 1 by construction), but the old strict `mean(f < a)` excluded any
+  # trial with f == 1, biasing that point of the curve below 1 whenever such a
+  # trial occurred. n_posterior_samples = 10 makes f == 1 (and f == 0) common
+  # enough that this seed hits both ties, so the assertion below is not
+  # incidental to one lucky draw.
+  set.seed(20)
+  prior <- prior_normal(mean = c(0, 0), sd = 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.5)
+  fit <- npe(prior, simulator, n_simulations = 2000,
+             density_estimator = "linear_gaussian")
+  res <- tarp(fit, simulator, n_tarp = 200L, n_posterior_samples = 10L,
+              seed = 21)
+  f <- res$coverage_values
+
+  expect_true(any(f == 1)) # confirms this seed actually exercises the tie
+  expect_equal(tail(res$levels, 1), 1)
+  expect_equal(tail(res$ecp, 1), 1) # mean(f <= 1) is always 1; mean(f < 1) was not
 })
 
 test_that("tarp supports prior reference points and prints", {
