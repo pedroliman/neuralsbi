@@ -353,7 +353,15 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
   f <- unlist(trial$results) %||% numeric(0)
 
   levels <- seq(0, 1, by = 0.05)
-  ecp <- sapply(levels, function(a) mean(f < a))
+  # Closed interval, for the same reason as expected_coverage()'s `u >= lo &
+  # u <= hi` (#308): f is itself count / n_posterior_samples for an integer
+  # count, so f * L lands exactly on a level's grid point whenever L is a
+  # multiple of 20, and a trial landing exactly on that boundary is genuinely
+  # at or below it. The strict `f < a` excluded it, biasing the ECP curve down
+  # by O(1/n_tarp), most visibly at a = 1: every f is <= 1 by construction, so
+  # the true ECP there is always exactly 1, but `mean(f < 1)` came in under 1
+  # whenever any trial's f reached 1 exactly.
+  ecp <- sapply(levels, function(a) mean(f <= a))
   structure(
     list(coverage_values = f, levels = levels, ecp = ecp,
          n_tarp = n_tarp, n_dropped = prep$n_dropped,
