@@ -249,6 +249,33 @@ test_that("truncation works with a bounded prior", {
   expect_true(all(within_support(prior, draws)))
 })
 
+test_that("npe_sequential errors when the round-2 truncation draw comes back short (#368)", {
+  set.seed(70)
+  # sample.nsbi_posterior() only warns and returns a short sample when a
+  # bounded prior's estimator leaks mass outside its support faster than
+  # rejection sampling can keep up (capped by max_sampling_batches). Mocking
+  # it directly is more reliable than engineering a genuinely leaky
+  # estimator, and it still exercises the guard added to npe_sequential()'s
+  # r > 1 branch: mock only the call made for round 2's truncation reference
+  # sample (the first call inside the loop), and leave every other call
+  # (round 1's fit, log_prob(), etc.) untouched.
+  prior <- prior_uniform(low = -2, high = 2)
+  simulator <- function(theta) theta + rnorm(1, sd = 0.3)
+  real_sample_nsbi_posterior <- sample.nsbi_posterior
+  local_mocked_bindings(
+    sample.nsbi_posterior = function(x, size = 1000, n = size, ...) {
+      draws <- real_sample_nsbi_posterior(x, n = n, ...)
+      draws[seq_len(n - 1L), , drop = FALSE]
+    }
+  )
+  expect_error(
+    npe_sequential(prior, simulator, x_obs = 0.5, n_rounds = 2,
+                  n_simulations = 200, n_truncation_samples = 500,
+                  density_estimator = "linear_gaussian", seed = 71),
+    "round 2's truncation draw returned 499 of 500 requested posterior samples"
+  )
+})
+
 test_that("npe_sequential's proposal loop requests the shortfall each batch, not the full round budget", {
   set.seed(60)
   requested <- integer(0)
