@@ -216,6 +216,67 @@ test_that("errors inside a worker reach the caller", {
   )
 })
 
+test_that("a worker error cancels the other still-pending futures", {
+  skip_on_cran()
+  skip_if_not_installed("future")
+
+  old_plan <- future::plan(future::multisession, workers = 2L)
+  on.exit(future::plan(old_plan), add = TRUE)
+
+  cancelled <- list()
+  local_mocked_bindings(
+    cancel = function(x, ...) {
+      cancelled[[length(cancelled) + 1L]] <<- x
+      TRUE
+    },
+    .package = "future"
+  )
+
+  # batch 1 errors immediately; batch 2 sleeps, so with 2 workers it is still
+  # dispatched and running (not yet resolved) when batch 1's error unwinds
+  # the collection loop.
+  fun <- function(batch, tick) {
+    if (batch == 1L) stop("batch 1 blew up")
+    Sys.sleep(2)
+    batch
+  }
+
+  expect_error(
+    nsbi_batch_apply(list(1L, 2L), fun, seeds = rng_streams(2)),
+    "batch 1 blew up"
+  )
+  # both futures still tracked in `pending` at the moment of the error get a
+  # best-effort cancel call: batch 2 (genuinely still running) and batch 1
+  # itself (already resolved with the error) -- cancelling the latter is a
+  # harmless no-op, not a bug, since the loop has no cheap way to tell "just
+  # errored" apart from "still running" once it is inside the error handler.
+  expect_length(cancelled, 2L)
+})
+
+test_that("a failed cancel does not mask the original error", {
+  skip_on_cran()
+  skip_if_not_installed("future")
+
+  old_plan <- future::plan(future::multisession, workers = 2L)
+  on.exit(future::plan(old_plan), add = TRUE)
+
+  local_mocked_bindings(
+    cancel = function(x, ...) stop("cancellation is not supported here"),
+    .package = "future"
+  )
+
+  fun <- function(batch, tick) {
+    if (batch == 1L) stop("batch 1 blew up")
+    Sys.sleep(2)
+    batch
+  }
+
+  expect_error(
+    nsbi_batch_apply(list(1L, 2L), fun, seeds = rng_streams(2)),
+    "batch 1 blew up"
+  )
+})
+
 test_that("a failed trial lowers the effective n_sbc and is reported", {
   set.seed(21)
   prior <- prior_normal(mean = c(0, 0), sd = 1)
