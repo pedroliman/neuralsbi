@@ -1,6 +1,6 @@
 # neuralsbi 0.6.75
 
-* **`train_conditional_de()` no longer crashes when an epoch's validation loss comes back NaN.** Every epoch called `scheduler$step(val_loss)` unconditionally, but `lr_reduce_on_plateau()`'s internal `.is_better()` comparison has no NaN guard, and R's `NaN < x` evaluates to `NA` rather than Python's `False`, so a NaN `val_loss` -- an exploding-gradient restart, say -- threw "missing value where TRUE/FALSE needed" from inside the scheduler and aborted the whole call, losing every earlier restart's progress. A NaN epoch was already treated as "no improvement" for best-value tracking a few lines above; the scheduler step now gets the same `is.finite(val_loss)` guard, so it just skips that epoch's LR decay instead of crashing (#370).
+* **`train_conditional_de()` no longer crashes when an epoch's validation loss comes back NaN.** Every epoch called `scheduler$step(val_loss)` unconditionally, but `lr_reduce_on_plateau()`'s internal `.is_better()` comparison has no NaN guard, and R's `NaN < x` evaluates to `NA` rather than Python's `False`, so a NaN `val_loss` -- an exploding-gradient restart, say -- threw "missing value where TRUE/FALSE needed" from inside the scheduler and aborted the whole call, losing every earlier restart's progress. A NaN epoch was already treated as "no improvement" for best-value tracking a few lines above; the scheduler step now gets the same `is.finite(val_loss)` guard, so it just skips that epoch's LR decay instead of crashing (#370) (#371).
 
 # neuralsbi 0.6.74
 
