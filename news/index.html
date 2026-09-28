@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.74</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.75</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.75" id="neuralsbi-0675">neuralsbi 0.6.75<a class="anchor" aria-label="anchor" href="#neuralsbi-0675"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> no longer silently biases a round’s truncation threshold when the round-2-or-later reference draw comes back short.</strong> The <code>r &gt; 1</code> branch of the round loop calls <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> to draw <code>n_truncation_samples</code> reference samples and takes their <code>epsilon</code>-quantile log-density as that round’s acceptance threshold, but <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> only warns, and returns fewer rows than asked for, when a bounded prior’s density estimator leaks mass outside the prior support faster than rejection sampling can keep up (capped by <code>max_sampling_batches</code>). A short reference sample fed straight into <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">stats::quantile()</a></code> computed a threshold from fewer draws than requested, with no round-specific signal to say so – the same failure mode <code><a href="../reference/diagnostic_draws.html">diagnostic_draws()</a></code> already guards against in <code><a href="../reference/sbc.html">sbc()</a></code>/<code><a href="../reference/tarp.html">tarp()</a></code>. <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code> now <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code>s with a round-specific message naming the round, the shortfall, and the fix (train on more simulations, or lower <code>n_truncation_samples</code>), instead of proceeding on a biased threshold (<a href="https://github.com/pedroliman/neuralsbi/issues/368" class="external-link">#368</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/369" class="external-link">#369</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.74" id="neuralsbi-0674">neuralsbi 0.6.74<a class="anchor" aria-label="anchor" href="#neuralsbi-0674"></a></h2>
 <ul><li>

@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.75
+
+- **[`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  no longer silently biases a round’s truncation threshold when the
+  round-2-or-later reference draw comes back short.** The `r > 1` branch
+  of the round loop calls
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  to draw `n_truncation_samples` reference samples and takes their
+  `epsilon`-quantile log-density as that round’s acceptance threshold,
+  but
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  only warns, and returns fewer rows than asked for, when a bounded
+  prior’s density estimator leaks mass outside the prior support faster
+  than rejection sampling can keep up (capped by
+  `max_sampling_batches`). A short reference sample fed straight into
+  [`stats::quantile()`](https://rdrr.io/r/stats/quantile.html) computed
+  a threshold from fewer draws than requested, with no round-specific
+  signal to say so – the same failure mode
+  [`diagnostic_draws()`](https://neuralsbi.pedrodelima.com/reference/diagnostic_draws.md)
+  already guards against in
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)/[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md).
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  now [`stop()`](https://rdrr.io/r/base/stop.html)s with a
+  round-specific message naming the round, the shortfall, and the fix
+  (train on more simulations, or lower `n_truncation_samples`), instead
+  of proceeding on a biased threshold
+  ([\#368](https://github.com/pedroliman/neuralsbi/issues/368))
+  ([\#369](https://github.com/pedroliman/neuralsbi/issues/369)).
+
 ## neuralsbi 0.6.74
 
 - **[`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md)’s
