@@ -183,28 +183,44 @@ nsbi_batch_apply <- function(batches, fun, p = NULL, weights = NULL,
   pending <- integer(0)   # indices submitted but not yet collected
   nxt <- 1L
   collected <- 0L
-  while (collected < n) {
-    while (length(pending) < workers && nxt <= n) {
-      futures[[nxt]] <- future::futureCall(FUN = fun,
-                                           args = list(batches[[nxt]], noop),
-                                           seed = seeds[[nxt]])
-      pending <- c(pending, nxt)
-      nxt <- nxt + 1L
+  tryCatch({
+    while (collected < n) {
+      while (length(pending) < workers && nxt <= n) {
+        futures[[nxt]] <- future::futureCall(FUN = fun,
+                                             args = list(batches[[nxt]], noop),
+                                             seed = seeds[[nxt]])
+        pending <- c(pending, nxt)
+        nxt <- nxt + 1L
+      }
+      done <- vapply(pending, function(i) future::resolved(futures[[i]]),
+                     logical(1))
+      if (!any(done)) {
+        Sys.sleep(0.05)
+        next
+      }
+      for (i in pending[done]) {
+        out[[i]] <- future::value(futures[[i]])
+        futures[i] <- list(NULL)
+        collected <- collected + 1L
+        if (!is.null(p)) p(weights[i])
+      }
+      pending <- pending[!done]
     }
-    done <- vapply(pending, function(i) future::resolved(futures[[i]]),
-                   logical(1))
-    if (!any(done)) {
-      Sys.sleep(0.05)
-      next
+  }, error = function(e) {
+    # One batch's simulator call errored (future::value() re-throws above).
+    # Everything else still in `pending` is dispatched to a worker and
+    # running, with nobody left to await it -- cancel it best-effort so it
+    # does not keep spending compute after the caller has already handled
+    # the error. Cancellation is backend-dependent and can itself fail (e.g.
+    # a backend that does not support it), so a failed cancel is swallowed
+    # rather than masking the original error.
+    for (i in pending) {
+      if (!is.null(futures[[i]])) {
+        tryCatch(future::cancel(futures[[i]]), error = function(e) NULL)
+      }
     }
-    for (i in pending[done]) {
-      out[[i]] <- future::value(futures[[i]])
-      futures[i] <- list(NULL)
-      collected <- collected + 1L
-      if (!is.null(p)) p(weights[i])
-    }
-    pending <- pending[!done]
-  }
+    stop(e)
+  })
   out
 }
 
