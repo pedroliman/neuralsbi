@@ -266,7 +266,13 @@ train_restarts <- function(build_net, log_prob_fn, theta, x, max_epochs,
       } else {
         epochs_no_improve <- epochs_no_improve + 1L
       }
-      scheduler$step(val_loss)  # decay lr on validation plateau
+      # A NaN val_loss (exploding gradients, a bad restart) is already treated
+      # as "no improvement" above; the scheduler needs the same guard, because
+      # lr_reduce_on_plateau()'s .is_better() has no NaN check and R's
+      # `NaN < x` is NA rather than Python's False, so `scheduler$step(NaN)`
+      # throws "missing value where TRUE/FALSE needed" and aborts the whole
+      # restart instead of just skipping this epoch's LR decay (#370).
+      if (is.finite(val_loss)) scheduler$step(val_loss)
       p(1, total = train_progress_total(epochs_done, best_epoch, patience,
                                         max_epochs, restart, n_restarts))
       if (verbose && (epoch %% 10L == 0L || epoch == 1L)) {

@@ -129,6 +129,57 @@ test_that("min_val_rows also floors batch_size", {
     "`batch_size` of 1 is too small.*needs at least 2 rows")
 })
 
+test_that("a NaN validation loss degrades gracefully instead of crashing (#370)", {
+  # GitHub #370: scheduler$step(val_loss) ran unconditionally, even when
+  # val_loss was NaN. lr_reduce_on_plateau()'s .is_better() has no NaN guard,
+  # and R's `NaN < x` is NA rather than Python's False, so that call threw
+  # "missing value where TRUE/FALSE needed" and aborted train_conditional_de()
+  # entirely -- losing every earlier restart's progress -- instead of just
+  # skipping that epoch's LR decay, the way a NaN already skips best-value
+  # tracking a few lines above it.
+  skip_if_no_torch()
+  set.seed(370)
+
+  n <- 20L
+  theta <- matrix(stats::rnorm(n), ncol = 1)
+  x <- matrix(stats::rnorm(n), ncol = 1)
+  validation_fraction <- 0.1
+  n_val <- max(1L, floor(validation_fraction * n))
+
+  # A one-off closure that forces exactly the first validation call's loss to
+  # NaN (as an exploding-gradient restart would produce on its own), then
+  # returns a real loss for every later call, training or validation.
+  val_calls <- 0L
+  net_and_loss <- function() {
+    net <- torch::nn_linear(1, 1)
+    log_prob_fn <- function(net, theta, x) {
+      out <- net(x)
+      lp <- (-0.5 * (theta - out)^2)$squeeze(2)
+      if (x$shape[1] == n_val) {
+        val_calls <<- val_calls + 1L
+        if (val_calls == 1L) return(torch::torch_full(theta$shape[1], NaN))
+      }
+      lp
+    }
+    list(net = net, log_prob_fn = log_prob_fn)
+  }
+  parts <- net_and_loss()
+
+  expect_no_error(
+    fit <- train_conditional_de(
+      build_net = function() parts$net, log_prob_fn = parts$log_prob_fn,
+      theta = theta, x = x, max_epochs = 4L, patience = 10L, n_restarts = 1L,
+      validation_fraction = validation_fraction, seed = 370)
+  )
+  expect_true(val_calls >= 1L)
+  # The forced-NaN epoch is recorded as-is (not silently dropped or coerced),
+  # and training still finishes with a finite best validation loss from a
+  # later, unaffected epoch -- the NaN epoch was treated as "no improvement",
+  # not as a crash.
+  expect_true(any(is.nan(fit$history$val_loss)))
+  expect_true(is.finite(fit$best_val_loss))
+})
+
 test_that("minibatches() covers every row and never leaves one on its own", {
   order <- seq_len(21L)
 
