@@ -177,6 +177,21 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
     } else {
       post <- posterior(fit, x_obs = x_obs)
       ref <- sample.nsbi_posterior(post, n = n_truncation_samples)
+      # sample.nsbi_posterior() only warns when rejection sampling can't keep
+      # up with a leaky bounded-prior estimator and returns fewer than `n`
+      # rows (capped by max_sampling_batches); a threshold computed from a
+      # short reference sample would silently bias round r's acceptance
+      # region with no round-specific signal. diagnostic_draws() (R/
+      # diagnostics.R) guards the same failure mode the same way.
+      if (nrow(ref) < n_truncation_samples) {
+        stop(sprintf(
+          paste0("npe_sequential(): round %d's truncation draw returned %d ",
+                 "of %d requested posterior samples. The estimator is ",
+                 "leaking mass outside the prior support, and a short draw ",
+                 "would silently bias round %d's truncation threshold. ",
+                 "Train on more simulations, or lower `n_truncation_samples`."),
+          r, nrow(ref), n_truncation_samples, r), call. = FALSE)
+      }
       lp_ref <- log_prob(post, ref, normalize = FALSE)
       threshold <- stats::quantile(lp_ref, probs = epsilon, names = FALSE)
 
