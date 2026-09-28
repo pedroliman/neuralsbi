@@ -1,6 +1,10 @@
-# neuralsbi 0.6.75
+# neuralsbi 0.6.76
 
 * **`train_conditional_de()` no longer crashes when an epoch's validation loss comes back NaN.** Every epoch called `scheduler$step(val_loss)` unconditionally, but `lr_reduce_on_plateau()`'s internal `.is_better()` comparison has no NaN guard, and R's `NaN < x` evaluates to `NA` rather than Python's `False`, so a NaN `val_loss` -- an exploding-gradient restart, say -- threw "missing value where TRUE/FALSE needed" from inside the scheduler and aborted the whole call, losing every earlier restart's progress. A NaN epoch was already treated as "no improvement" for best-value tracking a few lines above; the scheduler step now gets the same `is.finite(val_loss)` guard, so it just skips that epoch's LR decay instead of crashing (#370) (#371).
+
+# neuralsbi 0.6.75
+
+* **`npe_sequential()` no longer silently biases a round's truncation threshold when the round-2-or-later reference draw comes back short.** The `r > 1` branch of the round loop calls `sample.nsbi_posterior()` to draw `n_truncation_samples` reference samples and takes their `epsilon`-quantile log-density as that round's acceptance threshold, but `sample.nsbi_posterior()` only warns, and returns fewer rows than asked for, when a bounded prior's density estimator leaks mass outside the prior support faster than rejection sampling can keep up (capped by `max_sampling_batches`). A short reference sample fed straight into `stats::quantile()` computed a threshold from fewer draws than requested, with no round-specific signal to say so -- the same failure mode `diagnostic_draws()` already guards against in `sbc()`/`tarp()`. `npe_sequential()` now `stop()`s with a round-specific message naming the round, the shortfall, and the fix (train on more simulations, or lower `n_truncation_samples`), instead of proceeding on a biased threshold (#368) (#369).
 
 # neuralsbi 0.6.74
 
