@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.76</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.77</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.77" id="neuralsbi-0677">neuralsbi 0.6.77<a class="anchor" aria-label="anchor" href="#neuralsbi-0677"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/nsbi_batch_apply.html">nsbi_batch_apply()</a></code> now cancels still-pending futures when a batch’s simulator call errors, instead of abandoning them.</strong> The parallel collection loop in <code>R/parallel.R</code> calls <code><a href="https://future.futureverse.org/reference/value.html" class="external-link">future::value()</a></code> on each newly-resolved future; when a batch’s simulator call had errored, <code><a href="https://future.futureverse.org/reference/value.html" class="external-link">future::value()</a></code> re-throws and the error propagated straight out of <code><a href="../reference/nsbi_batch_apply.html">nsbi_batch_apply()</a></code>/<code><a href="../reference/run_simulator.html">run_simulator()</a></code>, leaving any other already-dispatched, not-yet-collected futures running on their workers with their results discarded. This is the dispatch loop behind every simulator call in the package under a <code>future</code> plan (<code><a href="../reference/npe.html">npe()</a></code>, <code><a href="../reference/simulate_for_sbi.html">simulate_for_sbi()</a></code>, <code><a href="../reference/npe_sequential.html">npe_sequential()</a></code>, <code><a href="../reference/sbc.html">sbc()</a></code>, <code><a href="../reference/tarp.html">tarp()</a></code>, <code><a href="../reference/posterior_predictive.html">posterior_predictive()</a></code>), so a diverging simulator or a bad parameter draw wasted worker compute and could leave <code>multisession</code> workers busy after the caller had already handled the error. The collection loop now calls <code><a href="https://future.futureverse.org/reference/cancel.html" class="external-link">future::cancel()</a></code> (best-effort, wrapped in its own <code>tryCatch</code> since cancellation is backend-dependent and can itself fail) on every future still <code>pending</code> before re-throwing the original error; the error itself still propagates unchanged (<a href="https://github.com/pedroliman/neuralsbi/issues/372" class="external-link">#372</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/373" class="external-link">#373</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.76" id="neuralsbi-0676">neuralsbi 0.6.76<a class="anchor" aria-label="anchor" href="#neuralsbi-0676"></a></h2>
 <ul><li>

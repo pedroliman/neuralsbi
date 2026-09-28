@@ -1,5 +1,38 @@
 # Changelog
 
+## neuralsbi 0.6.77
+
+- **[`nsbi_batch_apply()`](https://neuralsbi.pedrodelima.com/reference/nsbi_batch_apply.md)
+  now cancels still-pending futures when a batch’s simulator call
+  errors, instead of abandoning them.** The parallel collection loop in
+  `R/parallel.R` calls
+  [`future::value()`](https://future.futureverse.org/reference/value.html)
+  on each newly-resolved future; when a batch’s simulator call had
+  errored,
+  [`future::value()`](https://future.futureverse.org/reference/value.html)
+  re-throws and the error propagated straight out of
+  [`nsbi_batch_apply()`](https://neuralsbi.pedrodelima.com/reference/nsbi_batch_apply.md)/[`run_simulator()`](https://neuralsbi.pedrodelima.com/reference/run_simulator.md),
+  leaving any other already-dispatched, not-yet-collected futures
+  running on their workers with their results discarded. This is the
+  dispatch loop behind every simulator call in the package under a
+  `future` plan
+  ([`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md),
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md),
+  [`posterior_predictive()`](https://neuralsbi.pedrodelima.com/reference/posterior_predictive.md)),
+  so a diverging simulator or a bad parameter draw wasted worker compute
+  and could leave `multisession` workers busy after the caller had
+  already handled the error. The collection loop now calls
+  [`future::cancel()`](https://future.futureverse.org/reference/cancel.html)
+  (best-effort, wrapped in its own `tryCatch` since cancellation is
+  backend-dependent and can itself fail) on every future still `pending`
+  before re-throwing the original error; the error itself still
+  propagates unchanged
+  ([\#372](https://github.com/pedroliman/neuralsbi/issues/372))
+  ([\#373](https://github.com/pedroliman/neuralsbi/issues/373)).
+
 ## neuralsbi 0.6.76
 
 - **[`train_conditional_de()`](https://neuralsbi.pedrodelima.com/reference/train_conditional_de.md)
