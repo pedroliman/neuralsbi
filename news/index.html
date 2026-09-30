@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.77</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.78</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.78" id="neuralsbi-0678">neuralsbi 0.6.78<a class="anchor" aria-label="anchor" href="#neuralsbi-0678"></a></h2>
+<ul><li>
+<strong><code>linear_gaussian</code> now warns when there are too few simulations for its regression.</strong> <code>fit_linear_gaussian()</code> regresses theta on x with an intercept, so when the number of training rows is at most <code>dim_x + 1</code> the fit interpolates the data, the residuals are exactly zero, and the posterior covariance reduces to the ridge. The result was a near-delta posterior with huge log-densities and no signal to the user. The fit now warns, naming the row and coefficient counts and the two fixes (simulate more, or raise <code>ridge</code>) (<a href="https://github.com/pedroliman/neuralsbi/issues/374" class="external-link">#374</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/375" class="external-link">#375</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.77" id="neuralsbi-0677">neuralsbi 0.6.77<a class="anchor" aria-label="anchor" href="#neuralsbi-0677"></a></h2>
 <ul><li>

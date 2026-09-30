@@ -1,5 +1,18 @@
 # Changelog
 
+## neuralsbi 0.6.78
+
+- **`linear_gaussian` now warns when there are too few simulations for
+  its regression.** `fit_linear_gaussian()` regresses theta on x with an
+  intercept, so when the number of training rows is at most `dim_x + 1`
+  the fit interpolates the data, the residuals are exactly zero, and the
+  posterior covariance reduces to the ridge. The result was a near-delta
+  posterior with huge log-densities and no signal to the user. The fit
+  now warns, naming the row and coefficient counts and the two fixes
+  (simulate more, or raise `ridge`)
+  ([\#374](https://github.com/pedroliman/neuralsbi/issues/374))
+  ([\#375](https://github.com/pedroliman/neuralsbi/issues/375)).
+
 ## neuralsbi 0.6.77
 
 - **[`nsbi_batch_apply()`](https://neuralsbi.pedrodelima.com/reference/nsbi_batch_apply.md)
