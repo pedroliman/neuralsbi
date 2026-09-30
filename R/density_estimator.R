@@ -158,6 +158,17 @@ fit_linear_gaussian <- function(theta, x, ridge = 1e-6, verbose = FALSE) {
   n <- nrow(theta)
   p <- ncol(theta)
   X <- cbind(1, x)                       # design matrix with intercept
+  # With n <= ncol(X) the regression interpolates the training rows, so the
+  # residuals are exactly zero and Sigma collapses to the ridge: a near-delta
+  # posterior with meaningless log-densities.
+  if (n <= ncol(X)) {
+    warning(sprintf(
+      paste0("linear_gaussian has %d training rows for %d regression ",
+             "coefficients per parameter, so the fit interpolates the data ",
+             "and the posterior variance is set by `ridge` alone. Simulate ",
+             "more than %d rows or raise `ridge`."),
+      n, ncol(X), ncol(X)), call. = FALSE)
+  }
   # Ridge-regularized least squares: B = (X'X + rI)^-1 X'theta. The ridge is
   # relative to each column's own scale rather than an absolute 1e-6. On
   # standardized data the two are the same thing, but this estimator also runs

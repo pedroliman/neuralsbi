@@ -98,8 +98,9 @@ test_that("the denominator floors at 1 when the design is wider than it is tall"
   # n - ncol(X) is negative here. A negative denominator would flip the sign of
   # Sigma and take chol() down with it.
   set.seed(23)
-  de <- fit_linear_gaussian(matrix(stats::rnorm(4), ncol = 2),
-                            matrix(stats::rnorm(8), ncol = 4), ridge = 0.1)
+  de <- suppressWarnings(
+    fit_linear_gaussian(matrix(stats::rnorm(4), ncol = 2),
+                        matrix(stats::rnorm(8), ncol = 4), ridge = 0.1))
 
   expect_true(all(is.finite(de$Sigma)))
   expect_true(all(diag(de$Sigma) > 0))
@@ -222,4 +223,17 @@ test_that("an estimator fitted before dim_x existed still evaluates", {
   old$dim_x <- NULL
   expect_equal(lingauss_mean(old, matrix(c(0.1, 0.2, 0.3), nrow = 1)),
                lingauss_mean(de, matrix(c(0.1, 0.2, 0.3), nrow = 1)))
+})
+
+test_that("fit_linear_gaussian() warns when the regression is saturated", {
+  set.seed(24)
+  theta <- matrix(stats::rnorm(20), ncol = 2)
+  x <- matrix(stats::rnorm(100), ncol = 10)
+  # n = 10 rows, 11 coefficients: interpolation.
+  expect_warning(fit_linear_gaussian(theta, x), "interpolates")
+  # n = 11 is still saturated (n == ncol(X)); n = 12 is not.
+  expect_warning(fit_linear_gaussian(rbind(theta, 0), rbind(x, 1)),
+                 "interpolates")
+  expect_no_warning(fit_linear_gaussian(
+    rbind(theta, 0, 1), rbind(x, 1, stats::rnorm(10))))
 })
