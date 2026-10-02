@@ -16,7 +16,35 @@ test_that("sbc returns ranks of the right shape and reasonable calibration", {
   res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 200, seed = 3)
   expect_equal(dim(res$ranks), c(100L, 2L))
   # a well-specified exact estimator should not fail uniformity badly
-  expect_true(all(res$uniformity_pvalue > 0.001))
+  expect_true(all(res$uniformity_pvalue > 0.05))
+})
+
+test_that("sbc_rank_bins() splits the L + 1 rank values with matching null probabilities", {
+  for (L in c(5L, 19L, 50L, 100L, 1000L)) {
+    b <- sbc_rank_bins(L, 20L)
+    expect_equal(sum(b$width), L + 1L)
+    expect_equal(sum(b$p), 1)
+    expect_true(all(b$width >= 1L))
+    expect_lte(max(b$width) - min(b$width), 1L)
+    # every rank value 0..L lands in the bin whose width says it should
+    expect_equal(as.integer(tabulate(findInterval(0:L, b$start), nbins = length(b$p))),
+                 as.integer(b$width))
+  }
+  expect_length(sbc_rank_bins(3L, 20L)$p, 4L)
+})
+
+test_that("the sbc() uniformity test does not reject exactly uniform ranks at small L", {
+  # At L = 50 the 21-edge equal-width cut used to give bins of 2 or 3 rank
+  # values, and a test assuming equal bin probabilities rejected every time.
+  set.seed(11)
+  L <- 50L
+  bins <- sbc_rank_bins(L, 20L)
+  pv <- replicate(100, {
+    r <- sample(0:L, 2000, replace = TRUE)
+    tab <- tabulate(findInterval(r, bins$start), nbins = length(bins$p))
+    stats::chisq.test(tab, p = bins$p, simulate.p.value = TRUE)$p.value
+  })
+  expect_lt(mean(pv < 0.05), 0.15)
 })
 
 test_that("sbc() is well calibrated under a bounded prior that actively truncates", {
@@ -45,7 +73,7 @@ test_that("sbc() is well calibrated under a bounded prior that actively truncate
   fit$de$chol <- chol(fit$de$Sigma)
 
   res <- sbc(fit, simulator, n_sbc = 100, n_posterior_samples = 200, seed = 1)
-  expect_true(all(res$uniformity_pvalue > 0.01))
+  expect_true(all(res$uniformity_pvalue > 0.05))
   cov <- expected_coverage(res, levels = c(0.5, 0.8, 0.9))
   # a calibrated posterior lands close to the nominal diagonal at every level;
   # 0.15 is a loose band for n_sbc = 100 trials, not a tight numerical pin

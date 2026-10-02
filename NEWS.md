@@ -1,3 +1,7 @@
+# neuralsbi 0.6.79
+
+* **`sbc()`'s uniformity p-value no longer rejects exactly uniform ranks when the rank bins are unequal.** The L + 1 possible rank values 0..L were cut into 20 equal-width intervals, which hold 2 or 3 values each at L = 50 and 51 or 50 at L = 1000, but `chisq.test()` was called with its default equal cell probabilities. Exactly uniform ranks were rejected 100% of the time at L = 50, 10% at L = 100 and 7% at L = 1000, so a calibrated fit got a small p-value at small `n_posterior_samples` or large `n_sbc`. A new internal `sbc_rank_bins()` splits the rank values into near-equal groups and returns each bin's share, which `sbc()` now passes as `p`. `plot_sbc()` uses the same bins, so its expected-count line and band follow each bin's share instead of the constant `n_sbc / bins` (#376) (#378).
+
 # neuralsbi 0.6.78
 
 * **`linear_gaussian` now warns when there are too few simulations for its regression.** `fit_linear_gaussian()` regresses theta on x with an intercept, so when the number of training rows is at most `dim_x + 1` the fit interpolates the data, the residuals are exactly zero, and the posterior covariance reduces to the ridge. The result was a near-delta posterior with huge log-densities and no signal to the user. The fit now warns, naming the row and coefficient counts and the two fixes (simulate more, or raise `ridge`) (#374) (#375).
