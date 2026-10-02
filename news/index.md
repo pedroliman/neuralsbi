@@ -1,5 +1,27 @@
 # Changelog
 
+## neuralsbi 0.6.79
+
+- **[`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md)’s
+  uniformity p-value no longer rejects exactly uniform ranks when the
+  rank bins are unequal.** The L + 1 possible rank values 0..L were cut
+  into 20 equal-width intervals, which hold 2 or 3 values each at L = 50
+  and 51 or 50 at L = 1000, but
+  [`chisq.test()`](https://rdrr.io/r/stats/chisq.test.html) was called
+  with its default equal cell probabilities. Exactly uniform ranks were
+  rejected 100% of the time at L = 50, 10% at L = 100 and 7% at L =
+  1000, so a calibrated fit got a small p-value at small
+  `n_posterior_samples` or large `n_sbc`. A new internal
+  `sbc_rank_bins()` splits the rank values into near-equal groups and
+  returns each bin’s share, which
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) now
+  passes as `p`.
+  [`plot_sbc()`](https://neuralsbi.pedrodelima.com/reference/plot_sbc.md)
+  uses the same bins, so its expected-count line and band follow each
+  bin’s share instead of the constant `n_sbc / bins`
+  ([\#376](https://github.com/pedroliman/neuralsbi/issues/376))
+  ([\#378](https://github.com/pedroliman/neuralsbi/issues/378)).
+
 ## neuralsbi 0.6.78
 
 - **`linear_gaussian` now warns when there are too few simulations for
