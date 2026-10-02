@@ -429,3 +429,21 @@ test_that("npe() with pre-computed theta/x is reproducible given `seed` (#213)",
   expect_identical(fit1$de$history, fit2$de$history)
   expect_identical(fit1$de$best_val_loss, fit2$de$best_val_loss)
 })
+
+test_that("npe() errors when only one of theta and x is supplied, before simulating", {
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  calls <- 0L
+  sim <- function(mu) {
+    calls <<- calls + 1L
+    mu + stats::rnorm(1, sd = 0.5)
+  }
+  expect_error(
+    npe(prior, sim, n_simulations = 200, theta = matrix(1, 50, 1), density_estimator = "linear_gaussian"),
+    "must be supplied together"
+  )
+  expect_error(
+    npe(prior, sim, n_simulations = 200, x = matrix(1, 50, 1), density_estimator = "linear_gaussian"),
+    "must be supplied together"
+  )
+  expect_identical(calls, 0L)
+})
