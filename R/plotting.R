@@ -215,10 +215,16 @@ plot_sbc <- function(sbc_result, param = 1L, bins = 20L) {
   require_ggplot2()
   r <- sbc_result$ranks[, param]
   L <- sbc_result$n_posterior_samples
-  breaks <- seq(0, L, length.out = bins + 1L)
-  expected <- sbc_result$n_sbc / bins
-  band <- binom_band(1 / bins, sbc_result$n_sbc)
-  ci <- c(band$lo, band$hi) * sbc_result$n_sbc
+  # Bins hold unequal numbers of rank values unless (L + 1) is a multiple of
+  # `bins`, so the expected count and band vary by bin.
+  rb <- sbc_rank_bins(L, bins)
+  breaks <- c(rb$start, L + 1L) - 0.5
+  band <- binom_band(rb$p, sbc_result$n_sbc)
+  ref <- data.frame(
+    xmin = breaks[-length(breaks)], xmax = breaks[-1L],
+    expected = rb$p * sbc_result$n_sbc,
+    lo = band$lo * sbc_result$n_sbc, hi = band$hi * sbc_result$n_sbc
+  )
 
   param_name <- colnames(sbc_result$ranks)[param]
   title <- if (is.null(param_name)) {
@@ -229,8 +235,15 @@ plot_sbc <- function(sbc_result, param = 1L, bins = 20L) {
 
   p <- ggplot2::ggplot(data.frame(rank = r), ggplot2::aes(x = .data$rank)) +
     ggplot2::geom_histogram(breaks = breaks, fill = "grey80", colour = "white") +
-    ggplot2::geom_hline(yintercept = expected, colour = "firebrick", linewidth = 0.7, linetype = "dashed") +
-    ggplot2::geom_hline(yintercept = ci, colour = "firebrick", linewidth = 0.5, linetype = "dotted") +
+    ggplot2::geom_segment(
+      data = ref, colour = "firebrick", linewidth = 0.7, linetype = "dashed",
+      ggplot2::aes(x = .data$xmin, xend = .data$xmax, y = .data$expected, yend = .data$expected)) +
+    ggplot2::geom_segment(
+      data = ref, colour = "firebrick", linewidth = 0.5, linetype = "dotted",
+      ggplot2::aes(x = .data$xmin, xend = .data$xmax, y = .data$lo, yend = .data$lo)) +
+    ggplot2::geom_segment(
+      data = ref, colour = "firebrick", linewidth = 0.5, linetype = "dotted",
+      ggplot2::aes(x = .data$xmin, xend = .data$xmax, y = .data$hi, yend = .data$hi)) +
     ggplot2::labs(title = title, x = "rank of true value", y = "count") +
     ggplot2::theme_minimal()
 

@@ -184,16 +184,13 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
   # scale should follow the draws rather than the request either way.
   L <- trial$n_posterior_samples
   pvals <- apply(ranks, 2, function(r) {
-    nb <- min(20L, L + 1L)
-    br <- cut(r, breaks = seq(0, L, length.out = nb + 1L),
-              include.lowest = TRUE)
-    tab <- table(br)
+    bins <- sbc_rank_bins(L, 20L)
+    tab <- tabulate(findInterval(r, bins$start), nbins = length(bins$p))
     # Monte Carlo p-value: bypasses the asymptotic chi-squared approximation
-    # entirely (and its low-expected-count warning), rather than working
-    # around a case where the approximation happens to hold. Also valid at
-    # the small n_sbc test fixtures use, where the asymptotic version warns
-    # routinely.
-    stats::chisq.test(tab, simulate.p.value = TRUE)$p.value
+    # entirely (and its low-expected-count warning). The L + 1 possible ranks
+    # do not split evenly into bins, so the null cell probabilities are passed
+    # explicitly instead of assumed equal.
+    stats::chisq.test(tab, p = bins$p, simulate.p.value = TRUE)$p.value
   })
   names(pvals) <- colnames(ranks)
   structure(
@@ -201,6 +198,17 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
          n_dropped = prep$n_dropped, uniformity_pvalue = pvals),
     class = "nsbi_sbc"
   )
+}
+
+# Bins the L + 1 possible rank values 0..L into at most `bins` contiguous
+# groups of near-equal size. Returns the first rank value of each bin and the
+# null probability of each bin under exactly uniform ranks (its share of the
+# L + 1 values). Shared by sbc() and plot_sbc() so test and plot agree.
+sbc_rank_bins <- function(L, bins) {
+  nb <- min(as.integer(bins), L + 1L)
+  start <- ceiling((seq_len(nb) - 1L) * (L + 1L) / nb)
+  width <- diff(c(start, L + 1L))
+  list(start = start, width = width, p = width / (L + 1L))
 }
 
 #' @export
