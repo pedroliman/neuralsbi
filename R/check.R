@@ -707,3 +707,13 @@ check_finite <- function(m, arg, allow_inf = FALSE) {
                paste(kinds, collapse = "/"), where),
        call. = FALSE)
 }
+
+# theta and x are a pair: prepare_simulations() uses them only when both are
+# given, so a lone one used to be dropped while the simulator ran on a budget
+# the caller never meant to spend (#377).
+check_theta_x_pair <- function(theta, x) {
+  if (xor(is.null(theta), is.null(x))) {
+    stop("`theta` and `x` must be supplied together.", call. = FALSE)
+  }
+  invisible(NULL)
+}

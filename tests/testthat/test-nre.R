@@ -875,3 +875,21 @@ test_that("a one-row batch scores zero through the graph, not around it", {
   expect_silent((-lp$mean())$backward())
   expect_true(all(as.numeric(net$parameters[[1]]$grad) == 0))
 })
+
+test_that("nre() errors when only one of theta and x is supplied, before simulating", {
+  prior <- prior_uniform(c(mu = -3), c(mu = 3))
+  calls <- 0L
+  sim <- function(mu) {
+    calls <<- calls + 1L
+    mu + stats::rnorm(1, sd = 0.5)
+  }
+  expect_error(
+    nre(prior, sim, n_simulations = 200, theta = matrix(1, 50, 1), classifier = "logistic"),
+    "must be supplied together"
+  )
+  expect_error(
+    nre(prior, sim, n_simulations = 200, x = matrix(1, 50, 1), classifier = "logistic"),
+    "must be supplied together"
+  )
+  expect_identical(calls, 0L)
+})
