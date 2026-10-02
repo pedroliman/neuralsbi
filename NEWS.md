@@ -1,6 +1,6 @@
 # neuralsbi 0.6.80
 
-* **`npe()`, `nle()` and `nre()` now error when only one of `theta` and `x` is supplied.** `prepare_simulations()` uses precomputed simulations only when both are given, so a lone `theta` or `x` was dropped without a word while the simulator ran its full `n_simulations` budget. The documented contract is that `simulator` and `n_simulations` are ignored only when the pair is supplied. A new internal `check_theta_x_pair()` runs in the early argument validation of all three fitters, so the error ("`theta` and `x` must be supplied together") fires before any simulation (#377).
+* **`npe()`, `nle()` and `nre()` now error when only one of `theta` and `x` is supplied.** `prepare_simulations()` uses precomputed simulations only when both are given, so a lone `theta` or `x` was dropped without a word while the simulator ran its full `n_simulations` budget. The documented contract is that `simulator` and `n_simulations` are ignored only when the pair is supplied. A new internal `check_theta_x_pair()` runs in the early argument validation of all three fitters, so the error ("`theta` and `x` must be supplied together") fires before any simulation (#377) (#379).
 
 # neuralsbi 0.6.79
 
