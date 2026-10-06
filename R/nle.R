@@ -103,7 +103,7 @@ nle <- function(prior, simulator = NULL, n_simulations = 1000,
   # prepare_simulations() branch runs, so train_restarts()'s train/validation
   # split and minibatch order are reproducible even with pre-computed
   # theta/x (GitHub #213).
-  if (!is.null(seed)) set.seed(seed)
+  local_seed(seed)
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
 

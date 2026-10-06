@@ -161,7 +161,7 @@ npe_sequential <- function(prior, simulator, x_obs, n_rounds = 2L,
   }
   check_torch_for_estimator(density_estimator, c("maf", "mdn", "nsf"),
                             npe_arg("device"))
-  if (!is.null(seed)) set.seed(seed)
+  local_seed(seed)
   budgets <- rep_len(n_simulations, n_rounds)
 
   theta_all <- NULL

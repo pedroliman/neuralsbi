@@ -116,6 +116,27 @@ torch_available <- function() {
   requireNamespace("torch", quietly = TRUE) && isTRUE(torch::torch_is_installed())
 }
 
+#' Seed R's RNG for the rest of the calling function, then restore it
+#'
+#' Entry points with a `seed` argument call this once near the top. It does `set.seed(seed)` and registers an `on.exit()` in the *caller's* frame that puts the caller's `.Random.seed` back (or removes it if there was none), so a seeded call is reproducible without leaving the user's own random stream in a state fixed by `seed` (GitHub #381, the entry-point analogue of #272 and #319). With `seed = NULL` it does nothing. Use [with_fixed_seed()] instead when only one expression needs the seed.
+#'
+#' @param seed Integer seed, or `NULL` to leave the RNG alone.
+#' @param envir Frame whose exit triggers the restore.
+#' @return `NULL`, invisibly.
+#' @keywords internal
+local_seed <- function(seed, envir = parent.frame()) {
+  if (is.null(seed)) return(invisible(NULL))
+  had <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  old <- if (had) get(".Random.seed", envir = globalenv())
+  restore <- function() {
+    if (had) assign(".Random.seed", old, envir = globalenv())
+    else suppressWarnings(rm(".Random.seed", envir = globalenv()))
+  }
+  do.call(base::on.exit, list(bquote(.(restore)()), TRUE), envir = envir)
+  set.seed(seed)
+  invisible(NULL)
+}
+
 #' Seed torch's global RNG, returning its previous state to restore later
 #'
 #' `torch::torch_manual_seed()` reseeds torch's one global generator, and
