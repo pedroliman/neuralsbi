@@ -155,7 +155,9 @@ resolve_x <- function(post, x) {
 #' @param size,n Number of posterior draws (`n` is an alias for `size`).
 #' @param obs Observation to condition on (defaults to the posterior's `x_obs`).
 #' @param max_sampling_batches Safety cap on rejection-sampling rounds for
-#'   bounded priors.
+#'   bounded priors. The first round draws `n` rows; later rounds size the
+#'   batch from the running acceptance rate (at most `100 * n` rows), so low
+#'   acceptance still fills `n` draws within a few rounds.
 #' @param ... Unused.
 #' @return An `n x dim` matrix of posterior draws (class `nsbi_samples`).
 #' @method sample nsbi_posterior
@@ -172,15 +174,32 @@ sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
   prior <- fit$prior
   bounded <- !is.null(prior$lower) || !is.null(prior$upper)
 
+  sample_chunk_size <- 1e5
   collected <- matrix(0, nrow = 0, ncol = fit$dim_theta)
   n_tried <- 0L
   batch <- 0L
   while (nrow(collected) < n && batch < max_sampling_batches) {
     batch <- batch + 1L
     n_needed <- n - nrow(collected)
-    draw_std <- de_sample(fit$de, xo_std, n_needed)
-    draw <- invert_standardizer(fit$std_theta, draw_std)
-    n_tried <- n_tried + n_needed
+    # The first round asks for n. Later rounds size the batch from the running
+    # acceptance rate, so the shortfall closes in a few rounds instead of
+    # shrinking by (1 - acceptance) per round (#380). The rate is floored at
+    # 1% and the batch capped at 100 * n; de_sample() is called in chunks of
+    # at most `sample_chunk_size` rows to bound memory.
+    n_batch <- n_needed
+    if (n_tried > 0L) {
+      acc <- max(nrow(collected) / n_tried, 0.01)
+      n_batch <- min(ceiling(1.2 * n_needed / acc), 100 * n)
+    }
+    draw <- matrix(0, nrow = 0, ncol = fit$dim_theta)
+    n_left <- n_batch
+    while (n_left > 0) {
+      n_chunk <- min(n_left, sample_chunk_size)
+      draw_std <- de_sample(fit$de, xo_std, n_chunk)
+      draw <- rbind(draw, invert_standardizer(fit$std_theta, draw_std))
+      n_left <- n_left - n_chunk
+    }
+    n_tried <- n_tried + n_batch
     # A non-finite row from de_sample() (an under-trained MAF/NSF/MDN can
     # produce one) needs dropping regardless of whether the prior is bounded
     # -- unlike within_support()'s NA-vs-FALSE issue below, this filter has
