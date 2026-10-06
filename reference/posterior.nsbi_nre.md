@@ -117,5 +117,5 @@ post <- posterior(fit, x_obs, n_chains = 4, warmup = 50, thin = 2)
 draws <- sample(post, 400)
 colMeans(draws)
 #>       mu 
-#> 1.024003 
+#> 1.010809 
 ```

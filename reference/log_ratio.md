@@ -78,5 +78,5 @@ fit <- nre(prior, function(mu) c(y = rnorm(1, mu, 0.5)),
 x_obs <- matrix(rnorm(20, mean = 1, sd = 0.5), ncol = 1)
 grid <- matrix(seq(-2, 2, length.out = 5), ncol = 1)
 log_ratio(fit, grid, x_obs)
-#> [1] -370.224203 -141.967041    3.034027   64.779000   43.267879
+#> [1] -323.565117 -121.642954   -1.366952   37.262889   -5.753432
 ```

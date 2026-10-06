@@ -74,5 +74,5 @@ fit <- nle(prior, function(mu) c(y = rnorm(1, mu, 0.5)),
 x_obs <- matrix(rnorm(20, mean = 1, sd = 0.5), ncol = 1)
 grid <- matrix(seq(-2, 2, length.out = 5), ncol = 1)
 log_lik(fit, grid, x_obs)
-#> [1] -400.28858 -185.21681  -55.90868  -12.36420  -54.58337
+#> [1] -361.84136 -166.81823  -50.95923  -14.26436  -56.73362
 ```

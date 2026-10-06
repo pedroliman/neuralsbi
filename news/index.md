@@ -1,5 +1,34 @@
 # Changelog
 
+## neuralsbi 0.6.82
+
+- **`seed =` no longer reseeds the caller’s global R RNG.**
+  [`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),
+  [`nle()`](https://neuralsbi.pedrodelima.com/reference/nle.md),
+  [`nre()`](https://neuralsbi.pedrodelima.com/reference/nre.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md),
+  [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md),
+  [`simulate_for_sbi()`](https://neuralsbi.pedrodelima.com/reference/simulate_for_sbi.md)
+  and
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  each called a bare `set.seed(seed)`, so the user’s next
+  [`runif()`](https://rdrr.io/r/stats/Uniform.html) depended on `seed`.
+  A user running `npe(..., seed = k)` or `sbc(..., seed = k)` in a loop
+  got downstream draws that repeated or correlated across iterations. A
+  new internal
+  [`local_seed()`](https://neuralsbi.pedrodelima.com/reference/local_seed.md)
+  seeds the function and restores the caller’s `.Random.seed` (or
+  removes it if there was none) when the function exits, and all eight
+  entry points use it. Seeded results are unchanged.
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  still derives its per-round seeds from the stream it seeded, inside
+  the restored scope. Torch’s generator was already restored by
+  [`train_restarts()`](https://neuralsbi.pedrodelima.com/reference/train_restarts.md)
+  and [`c2st()`](https://neuralsbi.pedrodelima.com/reference/c2st.md)
+  ([\#381](https://github.com/pedroliman/neuralsbi/issues/381))
+  ([\#383](https://github.com/pedroliman/neuralsbi/issues/383)).
+
 ## neuralsbi 0.6.81
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
