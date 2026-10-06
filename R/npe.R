@@ -153,7 +153,7 @@ npe <- function(prior, simulator = NULL, n_simulations = 1000,
   # else in this call would ever touch the base RNG, and train_restarts()
   # (R/train.R) still draws the train/validation split and every epoch's
   # minibatch order from it (GitHub #213).
-  if (!is.null(seed)) set.seed(seed)
+  local_seed(seed)
   prep <- prepare_simulations(prior, simulator, n_simulations, sim_args,
                               theta, x, standardize, seed, verbose)
   de <- fit_density_estimator(
@@ -384,7 +384,7 @@ simulate_for_sbi <- function(simulator, prior, n, sim_args = list(),
   # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
   # the "stay quiet" branch inside verbose_cat() with no error (#336).
   verbose <- check_flag(verbose, "verbose")
-  if (!is.null(seed)) set.seed(seed)
+  local_seed(seed)
   theta <- sample_prior(prior, n)
   verbose_cat(verbose, sprintf("Simulating %d draws...\n", n))
   x <- run_simulator(simulator, theta, sim_args = sim_args)

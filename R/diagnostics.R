@@ -165,7 +165,7 @@ sbc <- function(fit, simulator, prior = fit$prior, n_sbc = 200L,
   n_sbc <- check_count(n_sbc, "n_sbc")
   n_posterior_samples <- check_count(n_posterior_samples,
                                      "n_posterior_samples")
-  if (!is.null(seed)) set.seed(seed)
+  local_seed(seed)
   prep <- sbc_draws(fit, simulator, prior, n_sbc, sim_args, what = "SBC trials")
   theta_true <- prep$theta
   n_sbc <- prep$n
@@ -330,7 +330,7 @@ tarp <- function(fit, simulator, prior = fit$prior, n_tarp = 200L,
                 "and one draw leaves that spread undefined"))
   n_posterior_samples <- check_count(n_posterior_samples,
                                      "n_posterior_samples")
-  if (!is.null(seed)) set.seed(seed)
+  local_seed(seed)
   prep <- sbc_draws(fit, simulator, prior, n_tarp, sim_args, what = "TARP trials")
   theta_true <- prep$theta
   n_tarp <- prep$n
