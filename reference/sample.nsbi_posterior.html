@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.80</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.81</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,7 +112,9 @@ generic).</p></dd>
 
 <dt id="arg-max-sampling-batches">max_sampling_batches<a class="anchor" aria-label="anchor" href="#arg-max-sampling-batches"></a></dt>
 <dd><p>Safety cap on rejection-sampling rounds for
-bounded priors.</p></dd>
+bounded priors. The first round draws <code>n</code> rows; later rounds size the
+batch from the running acceptance rate (at most <code>100 * n</code> rows), so low
+acceptance still fills <code>n</code> draws within a few rounds.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

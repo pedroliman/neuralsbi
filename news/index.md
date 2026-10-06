@@ -1,5 +1,28 @@
 # Changelog
 
+## neuralsbi 0.6.81
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  now returns `n` draws from a bounded prior at low acceptance.** Each
+  rejection-sampling round in
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  asked `de_sample()` only for the shortfall, so at acceptance `a` the
+  shortfall shrank by a factor of `1 - a` per round and the 100-round
+  cap ran out near `50 * n` attempts. With `prior_uniform(0, 1)` and
+  `x_obs = 1.3` (about 1% acceptance), `sample(p, 1000)` returned 678
+  rows with a warning, and
+  [`map_estimate()`](https://neuralsbi.pedrodelima.com/reference/map_estimate.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md),
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) and
+  [`npe_sequential()`](https://neuralsbi.pedrodelima.com/reference/npe_sequential.md)
+  failed on the short draw. The first round still asks for `n`; later
+  rounds now size the batch as `1.2 * shortfall / acceptance`, with the
+  running acceptance floored at 1% and the batch capped at `100 * n`,
+  and call `de_sample()` in chunks of at most 1e5 rows to bound memory.
+  The warning when `max_sampling_batches` runs out is unchanged
+  ([\#380](https://github.com/pedroliman/neuralsbi/issues/380))
+  ([\#382](https://github.com/pedroliman/neuralsbi/issues/382)).
+
 ## neuralsbi 0.6.80
 
 - **[`npe()`](https://neuralsbi.pedrodelima.com/reference/npe.md),

@@ -27,7 +27,10 @@ sample(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, ...)
 
 - max_sampling_batches:
 
-  Safety cap on rejection-sampling rounds for bounded priors.
+  Safety cap on rejection-sampling rounds for bounded priors. The first
+  round draws `n` rows; later rounds size the batch from the running
+  acceptance rate (at most `100 * n` rows), so low acceptance still
+  fills `n` draws within a few rounds.
 
 - ...:
 
