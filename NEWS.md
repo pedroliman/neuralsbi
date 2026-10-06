@@ -1,3 +1,7 @@
+# neuralsbi 0.6.81
+
+* **`sample()` now returns `n` draws from a bounded prior at low acceptance.** Each rejection-sampling round in `sample.nsbi_posterior()` asked `de_sample()` only for the shortfall, so at acceptance `a` the shortfall shrank by a factor of `1 - a` per round and the 100-round cap ran out near `50 * n` attempts. With `prior_uniform(0, 1)` and `x_obs = 1.3` (about 1% acceptance), `sample(p, 1000)` returned 678 rows with a warning, and `map_estimate()`, `sbc()`, `tarp()` and `npe_sequential()` failed on the short draw. The first round still asks for `n`; later rounds now size the batch as `1.2 * shortfall / acceptance`, with the running acceptance floored at 1% and the batch capped at `100 * n`, and call `de_sample()` in chunks of at most 1e5 rows to bound memory. The warning when `max_sampling_batches` runs out is unchanged (#380).
+
 # neuralsbi 0.6.80
 
 * **`npe()`, `nle()` and `nre()` now error when only one of `theta` and `x` is supplied.** `prepare_simulations()` uses precomputed simulations only when both are given, so a lone `theta` or `x` was dropped without a word while the simulator ran its full `n_simulations` budget. The documented contract is that `simulator` and `n_simulations` are ignored only when the pair is supplied. A new internal `check_theta_x_pair()` runs in the early argument validation of all three fitters, so the error ("`theta` and `x` must be supplied together") fires before any simulation (#377) (#379).

@@ -15,7 +15,9 @@ generic).}
 \item{obs}{Observation to condition on (defaults to the posterior's \code{x_obs}).}
 
 \item{max_sampling_batches}{Safety cap on rejection-sampling rounds for
-bounded priors.}
+bounded priors. The first round draws \code{n} rows; later rounds size the
+batch from the running acceptance rate (at most \code{100 * n} rows), so low
+acceptance still fills \code{n} draws within a few rounds.}
 
 \item{...}{Unused.}
 }

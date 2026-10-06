@@ -58,7 +58,7 @@ test_that("unbounded priors are unaffected by normalize", {
                log_prob(post, theta, normalize = FALSE))
 })
 
-test_that("sample() requests the shortfall each rejection-sampling round, not a full batch, and still returns exactly n rows", {
+test_that("sample() sizes later rounds from the running acceptance rate and still returns exactly n rows", {
   set.seed(11)
   prior <- prior_uniform(low = c(0, 0), high = c(1, 1))
   simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
@@ -83,10 +83,38 @@ test_that("sample() requests the shortfall each rejection-sampling round, not a 
   expect_equal(nrow(draws), 500L)
   expect_gt(length(requested), 1L)   # more than one round was needed here
   expect_equal(requested[1], 500L)   # first round always asks for the full n
-  # every later round asks only for the still-missing draws, never the full
-  # 500 again, and the shortfall never grows round to round
-  expect_true(all(requested[-1] < 500L))
-  expect_true(all(diff(requested) <= 0))
+  # later rounds are scaled up by the acceptance rate, so they can exceed
+  # the shortfall but never the 100 * n cap
+  expect_true(all(requested <= 100 * 500L))
+})
+
+test_that("sample() returns exactly n rows at 1-5% acceptance (#380)", {
+  set.seed(380)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
+  fit <- npe(prior, simulator, n_simulations = 1000,
+             density_estimator = "linear_gaussian")
+  for (x_obs in c(1.3, 1.35, 1.4)) {
+    post <- posterior(fit, x_obs = x_obs)
+    expect_no_warning(draws <- sample(post, n = 1000))
+    expect_equal(nrow(draws), 1000L)
+    expect_true(all(draws >= 0 & draws <= 1))
+    # a single round of n draws would fall well short at this x_obs
+    raw <- de_sample(fit$de, standardized_obs(post, NULL), 1000)
+    raw <- invert_standardizer(fit$std_theta, raw)
+    expect_lt(mean(within_support(prior, raw)), 0.8)
+  }
+})
+
+test_that("sample() still warns when the draw budget is exhausted at very low acceptance", {
+  set.seed(381)
+  prior <- prior_uniform(0, 1)
+  simulator <- function(theta) theta + rnorm(length(theta), sd = 0.2)
+  fit <- npe(prior, simulator, n_simulations = 500,
+             density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 3)
+  expect_warning(sample(post, n = 100, max_sampling_batches = 2),
+                 "inside prior support")
 })
 
 test_that("the posterior counts are checked before they reach de_sample()", {
