@@ -8,9 +8,9 @@
 \usage{
 dstudent_t(x, df, location = 0, scale = 1, log = FALSE)
 
-pstudent_t(q, df, location = 0, scale = 1)
+pstudent_t(q, df, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
 
-qstudent_t(p, df, location = 0, scale = 1)
+qstudent_t(p, df, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
 }
 \arguments{
 \item{x, q, p}{Value, quantile or probability.}
@@ -18,6 +18,8 @@ qstudent_t(p, df, location = 0, scale = 1)
 \item{df, location, scale}{Distribution parameters.}
 
 \item{log}{Return the log density.}
+
+\item{lower.tail, log.p}{As in \code{stats::pt()}: use the lower tail, and take or return log probabilities.}
 }
 \description{
 \code{stats::dt()} only knows the standardized t, and Stan's \code{student_t} is the
