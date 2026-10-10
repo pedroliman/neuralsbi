@@ -129,6 +129,7 @@ prior_family <- function(family) {
 #' @param x,q,p Value, quantile or probability.
 #' @param df,location,scale Distribution parameters.
 #' @param log Return the log density.
+#' @param lower.tail,log.p As in `stats::pt()`: use the lower tail, and take or return log probabilities.
 #' @keywords internal
 dstudent_t <- function(x, df, location = 0, scale = 1, log = FALSE) {
   out <- stats::dt((x - location) / scale, df = df, log = TRUE) - log(scale)
