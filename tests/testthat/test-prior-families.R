@@ -258,8 +258,9 @@ test_that("prior_truncated checks its arguments and its bounds", {
   expect_error(prior_truncated(list(), lower = 0),
                "must be an nsbi_prior object")
 
-  # Bounds off in the far tail leave no mass to renormalize by.
-  expect_error(prior_truncated(prior_normal(0, 1), lower = 100, upper = 200),
+  # Bounds so far out that even the log tail probability overflows leave no
+  # mass to renormalize by. (A cut at 100 sds is valid on the log scale.)
+  expect_error(prior_truncated(prior_normal(0, 1), lower = 1e155, upper = 1e156),
                "leave no probability mass")
   # And bounds outside the family's own support leave nothing at all.
   expect_error(prior_truncated(prior_beta(2, 2), lower = 2, upper = 3),
@@ -382,4 +383,43 @@ test_that("stan_code() puts the generated prior into a whole program", {
   expect_match(code, "x ~ nsbi_log_lik_sum\\(theta, nsbi_w\\);")
   # Nothing extra to ship: the prior is in the source, not in the data.
   expect_named(stan_data(fit, model = FALSE), c("nsbi_nw", "nsbi_w"))
+})
+
+test_that("truncating far into the upper tail keeps draws continuous and in bounds", {
+  set.seed(1)
+  for (lo in c(7.5, 8)) {
+    p <- prior_truncated(prior_normal(c(z = 0), c(z = 1)), lower = lo)
+    z <- sample_prior(p, 5000)[, 1]
+    expect_true(all(is.finite(z)))
+    expect_true(all(z >= lo))
+    expect_gt(length(unique(z)), 4900)
+  }
+  # Truncated normal tail: density at x is dnorm(x) / pnorm(lo, lower = FALSE).
+  p <- prior_truncated(prior_normal(c(z = 0), c(z = 1)), lower = 8)
+  truth <- stats::dnorm(8.1, log = TRUE) -
+    stats::pnorm(8, lower.tail = FALSE, log.p = TRUE)
+  expect_equal(as.numeric(p$log_prob(matrix(8.1, ncol = 1))), truth,
+               tolerance = 1e-8)
+  expect_equal(truth, 1.289, tolerance = 1e-3)
+})
+
+test_that("an upper-tail cut of an exponential is valid and memoryless", {
+  set.seed(2)
+  p <- prior_truncated(prior_exponential(c(r = 1)), lower = 40)
+  x <- sample_prior(p, 5000)[, 1]
+  expect_true(all(x >= 40))
+  expect_equal(mean(x - 40), 1, tolerance = 0.06)
+  expect_equal(as.numeric(p$log_prob(matrix(41, ncol = 1))), -1,
+               tolerance = 1e-8)
+})
+
+test_that("a narrow prior cut at 8 prior sds and a two-sided upper-tail cut work", {
+  set.seed(3)
+  p <- prior_truncated(prior_normal(c(a = 0), c(a = 0.01)), lower = 0.08)
+  expect_true(all(sample_prior(p, 1000)[, 1] >= 0.08))
+  both <- prior_truncated(prior_normal(c(z = 0), c(z = 1)), lower = 9,
+                          upper = 10)
+  x <- sample_prior(both, 1000)[, 1]
+  expect_true(all(x >= 9 & x <= 10))
+  expect_equal(as.numeric(exp(both$log_prob(matrix(9.5, ncol = 1)))) > 0, TRUE)
 })

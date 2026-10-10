@@ -137,14 +137,18 @@ dstudent_t <- function(x, df, location = 0, scale = 1, log = FALSE) {
 
 #' @rdname dstudent_t
 #' @keywords internal
-pstudent_t <- function(q, df, location = 0, scale = 1) {
-  stats::pt((q - location) / scale, df = df)
+pstudent_t <- function(q, df, location = 0, scale = 1, lower.tail = TRUE,
+                       log.p = FALSE) {
+  stats::pt((q - location) / scale, df = df, lower.tail = lower.tail,
+            log.p = log.p)
 }
 
 #' @rdname dstudent_t
 #' @keywords internal
-qstudent_t <- function(p, df, location = 0, scale = 1) {
-  location + scale * stats::qt(p, df = df)
+qstudent_t <- function(p, df, location = 0, scale = 1, lower.tail = TRUE,
+                       log.p = FALSE) {
+  location + scale * stats::qt(p, df = df, lower.tail = lower.tail,
+                               log.p = log.p)
 }
 
 # ---- one marginal ---------------------------------------------------------
@@ -180,10 +184,20 @@ new_marginal <- function(family, args, lower = -Inf, upper = Inf,
                  format(natural[1L]), format(natural[2L])),
          call. = FALSE)
   }
-  p_lower <- do.call(f$p, c(list(lower), args))
-  p_upper <- do.call(f$p, c(list(upper), args))
-  mass <- p_upper - p_lower
-  if (!is.finite(mass) || mass <= 0) {
+  # Work on the tail that holds the bounds. A bound past the median has a
+  # lower-tail CDF within a few ulp of 1, so differencing it loses the mass
+  # (or returns zero) while the survival function is still accurate.
+  cdf <- function(x, lower_tail) {
+    do.call(f$p, c(list(x), args, list(lower.tail = lower_tail, log.p = TRUE)))
+  }
+  lower_tail <- !(is.finite(lower) && cdf(lower, TRUE) > log(0.5))
+  # log_a is the log tail probability at the bound nearer the middle of the
+  # distribution, log_b at the bound farther out.
+  log_a <- cdf(if (lower_tail) upper else lower, lower_tail)
+  log_b <- cdf(if (lower_tail) lower else upper, lower_tail)
+  log_mass <- log_a + log1p(-exp(log_b - log_a))
+  mass <- exp(log_mass)
+  if (!is.finite(log_mass) || log_mass == -Inf) {
     stop(sprintf(paste0("The bounds for %s leave no probability mass: a %s ",
                         "prior puts %s of its mass on [%s, %s], so the ",
                         "truncated density has no normalizing constant."),
@@ -191,8 +205,8 @@ new_marginal <- function(family, args, lower = -Inf, upper = Inf,
          call. = FALSE)
   }
   list(family = family, args = args, lower = lower, upper = upper,
-       natural = natural, p_lower = p_lower, p_upper = p_upper,
-       log_norm = log(mass))
+       natural = natural, lower_tail = lower_tail, log_a = log_a,
+       log_b = log_b, log_norm = log_mass)
 }
 
 #' Log density of one marginal, renormalized and masked outside its bounds
@@ -212,14 +226,19 @@ marginal_log_prob <- function(m, x) {
 #'
 #' Inverse-CDF sampling covers the truncated and untruncated cases with the
 #' same line, and it is exact: no rejection loop that stalls when the bounds
-#' cut into a tail.
+#' cut into a tail. The uniform is mapped onto the log tail probabilities that
+#' [new_marginal()] chose, so a cut far into the upper tail keeps full
+#' precision instead of rounding to a handful of values.
 #' @param m A marginal from [new_marginal()].
 #' @param n Number of draws.
 #' @keywords internal
 marginal_sample <- function(m, n) {
   f <- prior_family(m$family)
-  u <- m$p_lower + stats::runif(n) * (m$p_upper - m$p_lower)
-  do.call(f$q, c(list(u), m$args))
+  log_u <- m$log_a + log1p(-stats::runif(n) * -expm1(m$log_b - m$log_a))
+  x <- do.call(f$q, c(list(log_u), m$args,
+                      list(lower.tail = m$lower_tail, log.p = TRUE)))
+  # Rounding in the quantile can land a hair outside the bounds.
+  pmin(pmax(x, m$lower), m$upper)
 }
 
 #' Assemble marginals into an independent joint prior
