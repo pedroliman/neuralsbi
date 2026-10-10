@@ -53,7 +53,7 @@ names the registry uses."><meta property="og:image" content="https://neuralsbi.p
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.82</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.83</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,9 +100,9 @@ names the registry uses.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dstudent_t</span><span class="op">(</span><span class="va">x</span>, <span class="va">df</span>, location <span class="op">=</span> <span class="fl">0</span>, scale <span class="op">=</span> <span class="fl">1</span>, log <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">pstudent_t</span><span class="op">(</span><span class="va">q</span>, <span class="va">df</span>, location <span class="op">=</span> <span class="fl">0</span>, scale <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu">pstudent_t</span><span class="op">(</span><span class="va">q</span>, <span class="va">df</span>, location <span class="op">=</span> <span class="fl">0</span>, scale <span class="op">=</span> <span class="fl">1</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">qstudent_t</span><span class="op">(</span><span class="va">p</span>, <span class="va">df</span>, location <span class="op">=</span> <span class="fl">0</span>, scale <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">qstudent_t</span><span class="op">(</span><span class="va">p</span>, <span class="va">df</span>, location <span class="op">=</span> <span class="fl">0</span>, scale <span class="op">=</span> <span class="fl">1</span>, lower.tail <span class="op">=</span> <span class="cn">TRUE</span>, log.p <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -119,6 +119,10 @@ names the registry uses.</p>
 
 <dt id="arg-log">log<a class="anchor" aria-label="anchor" href="#arg-log"></a></dt>
 <dd><p>Return the log density.</p></dd>
+
+
+<dt id="arg-lower-tail-log-p">lower.tail, log.p<a class="anchor" aria-label="anchor" href="#arg-lower-tail-log-p"></a></dt>
+<dd><p>As in <code><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">stats::pt()</a></code>: use the lower tail, and take or return log probabilities.</p></dd>
 
 </dl></div>
 

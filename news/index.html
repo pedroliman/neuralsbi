@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.82</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.83</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.83" id="neuralsbi-0683">neuralsbi 0.6.83<a class="anchor" aria-label="anchor" href="#neuralsbi-0683"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/prior_truncated.html">prior_truncated()</a></code> now samples and normalizes correctly when the lower bound is far in the upper tail.</strong> The truncated mass and the inverse-CDF uniform came from the lower-tail CDF alone, so for <code>prior_truncated(prior_normal(0, 1), lower = 8)</code> the CDF at the bound rounded to 1 and 5000 draws held 7 distinct values, some below the bound and 440 of them <code>Inf</code>. <code><a href="../reference/log_prob.html">log_prob()</a></code> used a wrong normaliser (1.221 instead of 1.289 at 8.1), and <code>prior_truncated(prior_exponential(1), lower = 40)</code> errored with “no probability mass”. <code><a href="../reference/new_marginal.html">new_marginal()</a></code> now works on the log scale of whichever tail holds the bounds (the survival function when the lower bound is past the median), and <code><a href="../reference/marginal_sample.html">marginal_sample()</a></code> draws on that same tail, clamped to the bounds. Left-tail and central truncation give the same results as before up to rounding (<a href="https://github.com/pedroliman/neuralsbi/issues/385" class="external-link">#385</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/386" class="external-link">#386</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.82" id="neuralsbi-0682">neuralsbi 0.6.82<a class="anchor" aria-label="anchor" href="#neuralsbi-0682"></a></h2>
 <ul><li>

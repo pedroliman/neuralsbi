@@ -11,9 +11,9 @@ uses.
 ``` r
 dstudent_t(x, df, location = 0, scale = 1, log = FALSE)
 
-pstudent_t(q, df, location = 0, scale = 1)
+pstudent_t(q, df, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
 
-qstudent_t(p, df, location = 0, scale = 1)
+qstudent_t(p, df, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
 ```
 
 ## Arguments
@@ -29,3 +29,8 @@ qstudent_t(p, df, location = 0, scale = 1)
 - log:
 
   Return the log density.
+
+- lower.tail, log.p:
+
+  As in [`stats::pt()`](https://rdrr.io/r/stats/TDist.html): use the
+  lower tail, and take or return log probabilities.
