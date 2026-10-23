@@ -1,5 +1,17 @@
 # Changelog
 
+## neuralsbi 0.6.84
+
+- **[`fit_standardizer()`](https://neuralsbi.pedrodelima.com/reference/fit_standardizer.md)
+  now scales columns whose spread is small in absolute terms.** A column
+  was treated as constant when its standard deviation fell below an
+  absolute `1e-8`, so a parameter of order 1e-9 was left unscaled and
+  the user was warned that it “holds the same value in every row”. The
+  test is now relative to the column’s mean, so only columns with no
+  real spread are flagged
+  ([\#387](https://github.com/pedroliman/neuralsbi/issues/387))
+  ([\#388](https://github.com/pedroliman/neuralsbi/issues/388)).
+
 ## neuralsbi 0.6.83
 
 - **[`prior_truncated()`](https://neuralsbi.pedrodelima.com/reference/prior_truncated.md)

@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.83</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.84</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.84" id="neuralsbi-0684">neuralsbi 0.6.84<a class="anchor" aria-label="anchor" href="#neuralsbi-0684"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/fit_standardizer.html">fit_standardizer()</a></code> now scales columns whose spread is small in absolute terms.</strong> A column was treated as constant when its standard deviation fell below an absolute <code>1e-8</code>, so a parameter of order 1e-9 was left unscaled and the user was warned that it “holds the same value in every row”. The test is now relative to the column’s mean, so only columns with no real spread are flagged (<a href="https://github.com/pedroliman/neuralsbi/issues/387" class="external-link">#387</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/388" class="external-link">#388</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.83" id="neuralsbi-0683">neuralsbi 0.6.83<a class="anchor" aria-label="anchor" href="#neuralsbi-0683"></a></h2>
 <ul><li>
