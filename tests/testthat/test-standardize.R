@@ -50,8 +50,8 @@ test_that("the no-spread guard leaves scale at 1 in both branches", {
                matrix(0, 1, 2))
 })
 
-test_that("eps decides how little spread counts as none", {
-  tiny <- cbind(a = rep(c(0, 1e-12), 10))
+test_that("eps decides how little spread counts as none, relative to the mean", {
+  tiny <- cbind(a = rep(c(1, 1 + 1e-12), 10))
   expect_equal(unname(fit_standardizer(tiny)$scale), 1)
   expect_lt(unname(fit_standardizer(tiny, eps = 1e-20)$scale), 1e-10)
 })
