@@ -1,6 +1,6 @@
 # neuralsbi 0.6.84
 
-* **`fit_standardizer()` now scales columns whose spread is small in absolute terms.** A column was treated as constant when its standard deviation fell below an absolute `1e-8`, so a parameter of order 1e-9 was left unscaled and the user was warned that it "holds the same value in every row". The test is now relative to the column's mean, so only columns with no real spread are flagged (#387).
+* **`fit_standardizer()` now scales columns whose spread is small in absolute terms.** A column was treated as constant when its standard deviation fell below an absolute `1e-8`, so a parameter of order 1e-9 was left unscaled and the user was warned that it "holds the same value in every row". The test is now relative to the column's mean, so only columns with no real spread are flagged (#387) (#388).
 
 # neuralsbi 0.6.83
 
