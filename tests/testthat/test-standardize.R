@@ -50,8 +50,8 @@ test_that("the no-spread guard leaves scale at 1 in both branches", {
                matrix(0, 1, 2))
 })
 
-test_that("eps decides how little spread counts as none", {
-  tiny <- cbind(a = rep(c(0, 1e-12), 10))
+test_that("eps decides how little spread counts as none, relative to the mean", {
+  tiny <- cbind(a = rep(c(1, 1 + 1e-12), 10))
   expect_equal(unname(fit_standardizer(tiny)$scale), 1)
   expect_lt(unname(fit_standardizer(tiny, eps = 1e-20)$scale), 1e-10)
 })
@@ -122,4 +122,15 @@ test_that("standardize = FALSE builds its degenerate standardizer quietly", {
   expect_silent(npe(prior, sim, n_simulations = 50,
                     density_estimator = "linear_gaussian",
                     standardize = FALSE))
+})
+
+test_that("a varying column at a tiny scale is scaled and does not warn", {
+  set.seed(1)
+  th <- matrix(rnorm(200, sd = 1e-9))
+  expect_no_warning(f <- fit_standardizer(th, what = "theta"))
+  expect_equal(f$scale, sd(th[, 1]), ignore_attr = TRUE)
+})
+
+test_that("a constant column at a large value still warns", {
+  expect_warning(fit_standardizer(matrix(5, 10, 1), what = "x"), "constant")
 })
