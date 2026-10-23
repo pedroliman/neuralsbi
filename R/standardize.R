@@ -18,7 +18,9 @@ NULL
 #' coordinate does nothing.
 #'
 #' @param x The matrix to learn from.
-#' @param eps Standard deviations below this count as no spread.
+#' @param eps A column has no spread when its standard deviation is at most
+#'   `eps` times the magnitude of its mean. The test is relative, so a column
+#'   that varies only at a small scale (a rate of order 1e-9) is still scaled.
 #' @param what Name of the argument `x` came from (`"theta"` or `"x"`), used in
 #'   the warning. `NULL`, the default, warns about nothing. The
 #'   `standardize = FALSE` path in [prepare_simulations()] builds a degenerate
@@ -29,7 +31,7 @@ fit_standardizer <- function(x, eps = 1e-8, what = NULL) {
   x <- as_theta_matrix(x)
   center <- colMeans(x)
   scale <- apply(x, 2, stats::sd)
-  flat <- scale < eps | !is.finite(scale)
+  flat <- scale <= eps * abs(center) | !is.finite(scale)
   scale[flat] <- 1
   if (!is.null(what) && any(flat)) warn_constant_columns(x, flat, what)
   structure(list(center = center, scale = scale), class = "nsbi_standardizer")

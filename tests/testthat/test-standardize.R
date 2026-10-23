@@ -123,3 +123,14 @@ test_that("standardize = FALSE builds its degenerate standardizer quietly", {
                     density_estimator = "linear_gaussian",
                     standardize = FALSE))
 })
+
+test_that("a varying column at a tiny scale is scaled and does not warn", {
+  set.seed(1)
+  th <- matrix(rnorm(200, sd = 1e-9))
+  expect_no_warning(f <- fit_standardizer(th, what = "theta"))
+  expect_equal(f$scale, sd(th[, 1]), ignore_attr = TRUE)
+})
+
+test_that("a constant column at a large value still warns", {
+  expect_warning(fit_standardizer(matrix(5, 10, 1), what = "x"), "constant")
+})
