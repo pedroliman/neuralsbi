@@ -1,3 +1,7 @@
+# neuralsbi 0.6.86
+
+* **`posterior()` now errors on an unknown sampler argument for NLE and NRE fits.** `posterior(fit, x, wamrup = 10)` collected the misspelled argument in `...`, never read it, and ran with the default `warmup`. The `slice` sampler accepts `width`, `max_steps` and `n_pool`; the `stan` sampler accepts `iter_warmup`, `iter_sampling` and `refresh`. Anything else, including an unnamed argument, is an error that names it (#390).
+
 # neuralsbi 0.6.85
 
 * **`posterior()` matches a named `x_obs` to the fit by name.** A named observation (a named vector, a one-row data frame, or a matrix with column names) was read by position, so `c(y2 = 0, y1 = 1)` conditioned on the wrong columns whenever the simulator returned `y1` first, with no warning. `posterior()` for NPE, NLE and NRE fits, and the `x`/`obs` arguments of `sample()` and `log_prob()`, now reorder the columns by `fit$x_names`. Names that are not a reordering of `x_names` are an error. Unnamed input is still read by position (#389) (#391).
