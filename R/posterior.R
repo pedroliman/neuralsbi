@@ -53,11 +53,41 @@ posterior.nsbi_npe <- function(fit, x_obs = NULL, ...) {
     check_finite(x_obs, "x_obs")
     x_obs <- check_matrix(x_obs, fit$dim_x, "x_obs",
                           "one row per independent observation")
+    x_obs <- align_x_names(x_obs, fit$x_names, "x_obs")
   }
   structure(
     list(fit = fit, x_obs = x_obs),
     class = "nsbi_posterior"
   )
+}
+
+#' Match a named observation to the fit's `x_names`
+#'
+#' A fit is trained on columns in the order the simulator returned them, and
+#' stores that order as `x_names`. An observation that carries column names
+#' is matched to the fit by name, so `c(y2 = 0, y1 = 1)` and `c(y1 = 1, y2 = 0)`
+#' give the same posterior. An observation without names is read by position,
+#' as before, and so is any observation when the fit has no `x_names`. Names
+#' that are present but are not a reordering of `x_names` are an error, since
+#' conditioning on the wrong columns would give a wrong posterior without a
+#' warning.
+#'
+#' @param x A numeric matrix, already through [check_matrix()].
+#' @param x_names The fit's `x_names`, or `NULL`.
+#' @param arg Name of the argument, as it appears in the user's call.
+#' @return `x`, with columns in the order of `x_names` when it was named.
+#' @keywords internal
+align_x_names <- function(x, x_names, arg) {
+  nm <- colnames(x)
+  if (is.null(nm) || is.null(x_names)) return(x)
+  if (anyDuplicated(nm) || anyDuplicated(x_names) ||
+      !setequal(nm, x_names)) {
+    stop(sprintf(
+      "`%s` has column names (%s) that do not match the observation names the fit was trained on (%s). Rename them, or drop the names to match by position.",
+      arg, paste(nm, collapse = ", "), paste(x_names, collapse = ", ")),
+      call. = FALSE)
+  }
+  x[, match(x_names, nm), drop = FALSE]
 }
 
 #' Resolve the observation a posterior conditions on
@@ -123,6 +153,7 @@ resolve_obs <- function(post, x, first_row, arg = if (first_row) "x" else "obs")
   # argument (#349).
   x <- check_matrix(x, post$fit$dim_x, check_arg,
                     "one row per independent observation", min_rows = 1L)
+  x <- align_x_names(x, post$fit$x_names, check_arg)
   if (!first_row) return(x)
   if (nrow(x) > 1L) {
     warning(sprintf(
