@@ -1,3 +1,7 @@
+# neuralsbi 0.6.85
+
+* **`posterior()` matches a named `x_obs` to the fit by name.** A named observation (a named vector, a one-row data frame, or a matrix with column names) was read by position, so `c(y2 = 0, y1 = 1)` conditioned on the wrong columns whenever the simulator returned `y1` first, with no warning. `posterior()` for NPE, NLE and NRE fits, and the `x`/`obs` arguments of `sample()` and `log_prob()`, now reorder the columns by `fit$x_names`. Names that are not a reordering of `x_names` are an error. Unnamed input is still read by position (#389) (#391).
+
 # neuralsbi 0.6.84
 
 * **`fit_standardizer()` now scales columns whose spread is small in absolute terms.** A column was treated as constant when its standard deviation fell below an absolute `1e-8`, so a parameter of order 1e-9 was left unscaled and the user was warned that it "holds the same value in every row". The test is now relative to the column's mean, so only columns with no real spread are flagged (#387) (#388).

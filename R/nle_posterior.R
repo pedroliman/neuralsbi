@@ -101,6 +101,7 @@ mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
     # but fabricated set of observations (#288).
     x_obs <- check_matrix(x_obs, fit$dim_x, "x_obs",
                           "one row per independent observation")
+    x_obs <- align_x_names(x_obs, fit$x_names, "x_obs")
   }
   n_chains <- check_mcmc_count(n_chains, "n_chains", 2L,
                                "so convergence can be diagnosed")
