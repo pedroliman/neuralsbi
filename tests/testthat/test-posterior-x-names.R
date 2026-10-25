@@ -73,3 +73,14 @@ test_that("NRE posteriors reorder a named x_obs", {
   post <- posterior(fit, x_obs = c(y2 = 0, y1 = 1), n_chains = 2, warmup = 10)
   expect_equal(unname(post$x_obs), matrix(c(1, 0), 1))
 })
+
+test_that("an unknown sampler argument to an NLE posterior is an error (#390)", {
+  set.seed(1)
+  fit <- nle(prior_uniform(-3, 3), function(mu) stats::rnorm(1, mu, .5), 600,
+             density_estimator = "linear_gaussian")
+  x <- matrix(1, 1, 1)
+  expect_error(posterior(fit, x, n_chains = 4, wamrup = 10), "wamrup")
+  expect_error(posterior(fit, x, iter_warmup = 10), "iter_warmup")
+  expect_s3_class(posterior(fit, x, n_chains = 4, width = 1, n_pool = 50),
+                  "nsbi_nle_posterior")
+})

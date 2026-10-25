@@ -93,6 +93,7 @@ posterior.nsbi_nle <- function(fit, x_obs = NULL,
 mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
                            init_strategy, seed, max_batch, dots, class) {
   check_fit_alive(fit)
+  check_sampler_dots(dots, sampler)
   if (!is.null(x_obs)) {
     x_obs <- check_numeric(x_obs, "x_obs")
     check_finite(x_obs, "x_obs")
@@ -130,6 +131,30 @@ mcmc_posterior <- function(fit, x_obs, sampler, n_chains, warmup, thin,
     ),
     class = c(class, "nsbi_mcmc_posterior", "nsbi_posterior")
   )
+}
+
+#' Reject sampler arguments that `sampler` does not read
+#'
+#' `mcmc_posterior()` keeps `...` as a list and the samplers read it by name,
+#' so a misspelled argument (`wamrup`) was dropped and the default used with no
+#' message (#390).
+#' @param dots The sampler arguments collected from `...`.
+#' @param sampler Either `"slice"` or `"stan"`.
+#' @keywords internal
+check_sampler_dots <- function(dots, sampler) {
+  known <- switch(sampler,
+                  slice = c("width", "max_steps", "n_pool"),
+                  stan = c("iter_warmup", "iter_sampling", "refresh"))
+  nms <- names(dots) %||% rep("", length(dots))
+  bad <- unique(c(nms[!nzchar(nms)], setdiff(nms[nzchar(nms)], known)))
+  if (length(bad)) {
+    bad[!nzchar(bad)] <- "<unnamed>"
+    stop("Unknown argument", if (length(bad) > 1) "s", " to posterior(): ",
+         paste0("`", bad, "`", collapse = ", "), ". The ", sampler,
+         " sampler takes ", paste0("`", known, "`", collapse = ", "), ".",
+         call. = FALSE)
+  }
+  invisible(dots)
 }
 
 #' Validate one MCMC count argument and return it as an integer
