@@ -1,5 +1,22 @@
 # Changelog
 
+## neuralsbi 0.6.85
+
+- **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  matches a named `x_obs` to the fit by name.** A named observation (a
+  named vector, a one-row data frame, or a matrix with column names) was
+  read by position, so `c(y2 = 0, y1 = 1)` conditioned on the wrong
+  columns whenever the simulator returned `y1` first, with no warning.
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)
+  for NPE, NLE and NRE fits, and the `x`/`obs` arguments of
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  and
+  [`log_prob()`](https://neuralsbi.pedrodelima.com/reference/log_prob.md),
+  now reorder the columns by `fit$x_names`. Names that are not a
+  reordering of `x_names` are an error. Unnamed input is still read by
+  position ([\#389](https://github.com/pedroliman/neuralsbi/issues/389))
+  ([\#391](https://github.com/pedroliman/neuralsbi/issues/391)).
+
 ## neuralsbi 0.6.84
 
 - **[`fit_standardizer()`](https://neuralsbi.pedrodelima.com/reference/fit_standardizer.md)

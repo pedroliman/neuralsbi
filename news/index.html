@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.84</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.85</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.85" id="neuralsbi-0685">neuralsbi 0.6.85<a class="anchor" aria-label="anchor" href="#neuralsbi-0685"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/posterior.html">posterior()</a></code> matches a named <code>x_obs</code> to the fit by name.</strong> A named observation (a named vector, a one-row data frame, or a matrix with column names) was read by position, so <code>c(y2 = 0, y1 = 1)</code> conditioned on the wrong columns whenever the simulator returned <code>y1</code> first, with no warning. <code><a href="../reference/posterior.html">posterior()</a></code> for NPE, NLE and NRE fits, and the <code>x</code>/<code>obs</code> arguments of <code><a href="../reference/sample.html">sample()</a></code> and <code><a href="../reference/log_prob.html">log_prob()</a></code>, now reorder the columns by <code>fit$x_names</code>. Names that are not a reordering of <code>x_names</code> are an error. Unnamed input is still read by position (<a href="https://github.com/pedroliman/neuralsbi/issues/389" class="external-link">#389</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/391" class="external-link">#391</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.84" id="neuralsbi-0684">neuralsbi 0.6.84<a class="anchor" aria-label="anchor" href="#neuralsbi-0684"></a></h2>
 <ul><li>
