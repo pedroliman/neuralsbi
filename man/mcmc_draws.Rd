@@ -4,7 +4,7 @@
 \alias{mcmc_draws}
 \title{Run (or reuse) the chain behind an MCMC posterior's \code{\link[=sample]{sample()}} method}
 \usage{
-mcmc_draws(post, n, obs, refresh, verbose)
+mcmc_draws(post, n, obs, refresh, verbose, seed = NULL)
 }
 \arguments{
 \item{post}{An MCMC-sampled \code{nsbi_posterior}.}
@@ -16,6 +16,8 @@ mcmc_draws(post, n, obs, refresh, verbose)
 \item{refresh}{Force a new run even when a cached one would do.}
 
 \item{verbose}{Report sampling progress.}
+
+\item{seed}{Optional seed that overrides the posterior's own \code{seed}.}
 }
 \description{
 The body \code{\link[=sample.nsbi_mcmc_posterior]{sample.nsbi_mcmc_posterior()}} runs regardless of whether the

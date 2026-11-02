@@ -163,3 +163,16 @@ test_that("sample()'s acceptance_rate reflects a dropped non-finite row with an 
   expect_equal(nrow(draws), 0L)
   expect_equal(attr(draws, "acceptance_rate"), 0)
 })
+
+test_that("sample() with a seed is reproducible and leaves the RNG stream alone (#393)", {
+  set.seed(31)
+  fit <- npe(prior_uniform(0, 1), function(theta) theta + stats::rnorm(1, sd = 0.05),
+             n_simulations = 300, density_estimator = "linear_gaussian")
+  post <- posterior(fit, x_obs = 0.5)
+  a <- sample(post, 5, seed = 3)
+  b <- sample(post, 5, seed = 3)
+  expect_equal(unclass(a), unclass(b))
+  set.seed(1); u1 <- stats::runif(1)
+  set.seed(1); sample(post, 5, seed = 3); u2 <- stats::runif(1)
+  expect_equal(u1, u2)
+})

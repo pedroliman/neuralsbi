@@ -210,18 +210,22 @@ resolve_x_iid <- function(post, x, arg = "obs") {
 #' @param obs Observation to condition on (defaults to the posterior's `x_obs`).
 #' @param refresh Force a new run even when a cached one would do.
 #' @param verbose Report sampling progress.
+#' @param seed Optional integer seed for this run. It overrides the `seed` given
+#'   to [posterior()]. A cached run is reused unless `refresh = TRUE`, so pass
+#'   both to get a fresh, reproducible chain.
 #' @param ... Unused.
 #' @return An `n x dim` matrix of posterior draws (class `nsbi_samples`), with
 #'   convergence diagnostics attached as attribute `diagnostics`.
 #' @method sample nsbi_mcmc_posterior
 #' @export
 sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
-                                       refresh = FALSE, verbose = FALSE, ...) {
+                                       refresh = FALSE, verbose = FALSE, seed = NULL,
+                                       ...) {
   n <- check_count(n, "n", why = "since it is the number of posterior draws")
   # verbose was only ever tested with isTRUE(), so verbose = 1 or "yes" took
   # the "stay quiet" branch inside verbose_cat() with no error (#336).
   verbose <- check_flag(verbose, "verbose")
-  mcmc_draws(x, n, obs, refresh, verbose)
+  mcmc_draws(x, n, obs, refresh, verbose, seed)
 }
 
 #' Run (or reuse) the chain behind an MCMC posterior's [sample()] method
@@ -236,8 +240,9 @@ sample.nsbi_mcmc_posterior <- function(x, size = 1000, n = size, obs = NULL,
 #' @param obs Observation to condition on, or `NULL` for the posterior's own.
 #' @param refresh Force a new run even when a cached one would do.
 #' @param verbose Report sampling progress.
+#' @param seed Optional seed that overrides the posterior's own `seed`.
 #' @keywords internal
-mcmc_draws <- function(post, n, obs, refresh, verbose) {
+mcmc_draws <- function(post, n, obs, refresh, verbose, seed = NULL) {
   # refresh was only ever tested with isTRUE(), so refresh = 1 or "yes"
   # silently took the "serve the cache" branch instead of forcing a new run
   # (#329).
@@ -253,6 +258,7 @@ mcmc_draws <- function(post, n, obs, refresh, verbose) {
   }
 
   ctl <- post$control
+  if (!is.null(seed)) ctl$seed <- seed
   # A bare set.seed(ctl$seed) here used to permanently reseed the caller's
   # RNG stream for the rest of the session (#319) -- the same bug class
   # #272/#274 fixed for the prior-log_prob probe in surrogate_potential() and
