@@ -11,6 +11,7 @@
   obs = NULL,
   refresh = FALSE,
   verbose = FALSE,
+  seed = NULL,
   ...
 )
 }
@@ -25,6 +26,10 @@
 \item{refresh}{Force a new run even when a cached one would do.}
 
 \item{verbose}{Report sampling progress.}
+
+\item{seed}{Optional integer seed for this run. It overrides the \code{seed} given
+to \code{\link[=posterior]{posterior()}}. A cached run is reused unless \code{refresh = TRUE}, so pass
+both to get a fresh, reproducible chain.}
 
 \item{...}{Unused.}
 }

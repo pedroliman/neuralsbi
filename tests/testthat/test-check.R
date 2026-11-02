@@ -296,3 +296,9 @@ test_that("check_index() accepts a factor and rejects an unusable character valu
   expect_error(check_index(NA_character_, "param", c("a", "b"), n = 2),
                "must be one parameter name or index")
 })
+
+test_that("check_count rejects whole numbers beyond the integer range (#393)", {
+  expect_error(check_count(1e10, "n"), "largest allowed value is 2147483647")
+  expect_error(check_counts(c(1, 1e10), "n"), "largest allowed value is 2147483647")
+  expect_identical(check_count(5, "n"), 5L)
+})

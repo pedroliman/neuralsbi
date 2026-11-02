@@ -258,9 +258,9 @@ check_min_rows <- function(value, arg) {
 #' @keywords internal
 check_count <- function(n, arg, min = 1L, why = NULL) {
   ok <- is.numeric(n) && length(n) == 1L && !is.na(n) && is.finite(n) &&
-    n == trunc(n) && n >= min
+    n == trunc(n) && n >= min && n <= .Machine$integer.max
   if (!ok) {
-    stop(sprintf("`%s` must be a single whole number of at least %d%s, not %s.",
+    stop(sprintf("`%s` must be a single whole number of at least %d%s, not %s. The largest allowed value is 2147483647.",
                  arg, min, if (is.null(why)) "" else paste0(" ", why),
                  describe_value(n)),
          call. = FALSE)
@@ -414,14 +414,15 @@ check_path <- function(path, arg = "path", must_exist = FALSE) {
 #' @keywords internal
 check_counts <- function(n, arg, min = 1L, what = NULL) {
   ok <- is.numeric(n) && length(n) >= 1L && !anyNA(n) && all(is.finite(n)) &&
-    all(n == trunc(n)) && all(n >= min)
+    all(n == trunc(n)) && all(n >= min) &&
+    all(n <= .Machine$integer.max)
   if (!ok) {
     shown <- if (is.numeric(n) && length(n) > 1L) {
       paste(vapply(n, describe_value, character(1)), collapse = ", ")
     } else {
       describe_value(n)
     }
-    stop(sprintf("`%s` must be whole numbers of at least %d%s, not %s.",
+    stop(sprintf("`%s` must be whole numbers of at least %d%s, not %s. The largest allowed value is 2147483647.",
                  arg, min, if (is.null(what)) "" else sprintf(" (%s)", what),
                  shown),
          call. = FALSE)

@@ -189,13 +189,16 @@ resolve_x <- function(post, x) {
 #'   bounded priors. The first round draws `n` rows; later rounds size the
 #'   batch from the running acceptance rate (at most `100 * n` rows), so low
 #'   acceptance still fills `n` draws within a few rounds.
+#' @param seed Optional integer seed. The draws are reproducible for a given
+#'   `seed`, and the caller's own random stream is restored afterwards.
 #' @param ... Unused.
 #' @return An `n x dim` matrix of posterior draws (class `nsbi_samples`).
 #' @method sample nsbi_posterior
 #' @export
 sample.nsbi_posterior <- function(x, size = 1000, n = size, obs = NULL,
-                                  max_sampling_batches = 100L, ...) {
+                                  max_sampling_batches = 100L, seed = NULL, ...) {
   post <- x
+  local_seed(seed)
   n <- check_count(n, "n", why = "since it is the number of posterior draws")
   max_sampling_batches <- check_count(
     max_sampling_batches, "max_sampling_batches",
