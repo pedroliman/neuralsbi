@@ -1,5 +1,26 @@
 # Changelog
 
+## neuralsbi 0.6.87
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  takes a `seed` argument, and count checks reject values above the
+  integer range.** `sample(post, n, seed = 3)` swallowed `seed` in `...`
+  and returned different draws on every call.
+  [`sample.nsbi_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_posterior.md)
+  and
+  [`sample.nsbi_mcmc_posterior()`](https://neuralsbi.pedrodelima.com/reference/sample.nsbi_mcmc_posterior.md)
+  now accept `seed`, which makes the draws reproducible and restores the
+  caller’s random stream afterwards. For NLE and NRE fits a cached run
+  is still reused unless `refresh = TRUE`.
+  [`check_count()`](https://neuralsbi.pedrodelima.com/reference/check_count.md)
+  and
+  [`check_counts()`](https://neuralsbi.pedrodelima.com/reference/check_counts.md)
+  let whole numbers above 2147483647 through and returned `NA`, so
+  `sample(post, 3e9)` failed with an unrelated error; they now error
+  with the allowed range
+  ([\#393](https://github.com/pedroliman/neuralsbi/issues/393))
+  ([\#394](https://github.com/pedroliman/neuralsbi/issues/394)).
+
 ## neuralsbi 0.6.86
 
 - **[`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md)

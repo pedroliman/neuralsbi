@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.86</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.87</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,7 +90,7 @@
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'nsbi_posterior'</span></span>
-<span><span class="fu"><a href="sample.html">sample</a></span><span class="op">(</span><span class="va">x</span>, size <span class="op">=</span> <span class="fl">1000</span>, n <span class="op">=</span> <span class="va">size</span>, obs <span class="op">=</span> <span class="cn">NULL</span>, max_sampling_batches <span class="op">=</span> <span class="fl">100L</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="sample.html">sample</a></span><span class="op">(</span><span class="va">x</span>, size <span class="op">=</span> <span class="fl">1000</span>, n <span class="op">=</span> <span class="va">size</span>, obs <span class="op">=</span> <span class="cn">NULL</span>, max_sampling_batches <span class="op">=</span> <span class="fl">100L</span>, seed <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -115,6 +115,11 @@ generic).</p></dd>
 bounded priors. The first round draws <code>n</code> rows; later rounds size the
 batch from the running acceptance rate (at most <code>100 * n</code> rows), so low
 acceptance still fills <code>n</code> draws within a few rounds.</p></dd>
+
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>Optional integer seed. The draws are reproducible for a given
+<code>seed</code>, and the caller's own random stream is restored afterwards.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

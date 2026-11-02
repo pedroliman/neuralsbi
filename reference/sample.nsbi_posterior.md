@@ -6,7 +6,7 @@ Sample from a posterior
 
 ``` r
 # S3 method for class 'nsbi_posterior'
-sample(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, ...)
+sample(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, seed = NULL, ...)
 ```
 
 ## Arguments
@@ -31,6 +31,11 @@ sample(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, ...)
   round draws `n` rows; later rounds size the batch from the running
   acceptance rate (at most `100 * n` rows), so low acceptance still
   fills `n` draws within a few rounds.
+
+- seed:
+
+  Optional integer seed. The draws are reproducible for a given `seed`,
+  and the caller's own random stream is restored afterwards.
 
 - ...:
 

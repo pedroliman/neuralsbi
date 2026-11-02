@@ -11,7 +11,7 @@ know which kind of fit produced it.
 ## Usage
 
 ``` r
-mcmc_draws(post, n, obs, refresh, verbose)
+mcmc_draws(post, n, obs, refresh, verbose, seed = NULL)
 ```
 
 ## Arguments
@@ -35,3 +35,7 @@ mcmc_draws(post, n, obs, refresh, verbose)
 - verbose:
 
   Report sampling progress.
+
+- seed:
+
+  Optional seed that overrides the posterior's own `seed`.

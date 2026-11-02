@@ -21,6 +21,7 @@ sample(
   obs = NULL,
   refresh = FALSE,
   verbose = FALSE,
+  seed = NULL,
   ...
 )
 ```
@@ -48,6 +49,13 @@ sample(
 - verbose:
 
   Report sampling progress.
+
+- seed:
+
+  Optional integer seed for this run. It overrides the `seed` given to
+  [`posterior()`](https://neuralsbi.pedrodelima.com/reference/posterior.md).
+  A cached run is reused unless `refresh = TRUE`, so pass both to get a
+  fresh, reproducible chain.
 
 - ...:
 

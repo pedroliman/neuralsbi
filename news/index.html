@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.86</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.87</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.87" id="neuralsbi-0687">neuralsbi 0.6.87<a class="anchor" aria-label="anchor" href="#neuralsbi-0687"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sample.html">sample()</a></code> takes a <code>seed</code> argument, and count checks reject values above the integer range.</strong> <code>sample(post, n, seed = 3)</code> swallowed <code>seed</code> in <code>...</code> and returned different draws on every call. <code><a href="../reference/sample.nsbi_posterior.html">sample.nsbi_posterior()</a></code> and <code><a href="../reference/sample.nsbi_mcmc_posterior.html">sample.nsbi_mcmc_posterior()</a></code> now accept <code>seed</code>, which makes the draws reproducible and restores the caller’s random stream afterwards. For NLE and NRE fits a cached run is still reused unless <code>refresh = TRUE</code>. <code><a href="../reference/check_count.html">check_count()</a></code> and <code><a href="../reference/check_counts.html">check_counts()</a></code> let whole numbers above 2147483647 through and returned <code>NA</code>, so <code>sample(post, 3e9)</code> failed with an unrelated error; they now error with the allowed range (<a href="https://github.com/pedroliman/neuralsbi/issues/393" class="external-link">#393</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/394" class="external-link">#394</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.86" id="neuralsbi-0686">neuralsbi 0.6.86<a class="anchor" aria-label="anchor" href="#neuralsbi-0686"></a></h2>
 <ul><li>
