@@ -1,6 +1,6 @@
 # neuralsbi 0.6.87
 
-* **`sample()`, `sbc()` and `tarp()` are reproducible for MAF and NSF posteriors.** `local_seed()` called only `set.seed()`, which does not seed torch, so the flows' base noise differed between calls with the same `seed`. `local_seed()` now also seeds and restores torch's RNG, and `sample()` for an NPE posterior gains a `seed` argument (it was silently swallowed by `...` before) (#395).
+* **`sample()`, `sbc()` and `tarp()` are reproducible for MAF and NSF posteriors.** `local_seed()` called only `set.seed()`, which does not seed torch, so the flows' base noise differed between calls with the same `seed`. `local_seed()` now also seeds and restores torch's RNG, and `sample()` for an NPE posterior gains a `seed` argument (it was silently swallowed by `...` before) (#395) (#396).
 
 # neuralsbi 0.6.86
 
