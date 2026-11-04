@@ -1,3 +1,7 @@
+# neuralsbi 0.6.87
+
+* **`sample()`, `sbc()` and `tarp()` are reproducible for MAF and NSF posteriors.** `local_seed()` called only `set.seed()`, which does not seed torch, so the flows' base noise differed between calls with the same `seed`. `local_seed()` now also seeds and restores torch's RNG, and `sample()` for an NPE posterior gains a `seed` argument (it was silently swallowed by `...` before) (#395).
+
 # neuralsbi 0.6.86
 
 * **`posterior()` now errors on an unknown sampler argument for NLE and NRE fits.** `posterior(fit, x, wamrup = 10)` collected the misspelled argument in `...`, never read it, and ran with the default `warmup`. The `slice` sampler accepts `width`, `max_steps` and `n_pool`; the `stan` sampler accepts `iter_warmup`, `iter_sampling` and `refresh`. Anything else, including an unnamed argument, is an error that names it (#390) (#392).

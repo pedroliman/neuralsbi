@@ -4,7 +4,7 @@
 \alias{sample.nsbi_posterior}
 \title{Sample from a posterior}
 \usage{
-\method{sample}{nsbi_posterior}(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, ...)
+\method{sample}{nsbi_posterior}(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, seed = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{nsbi_posterior} object (named \code{x} to satisfy the \code{\link[=sample]{sample()}}
@@ -18,6 +18,10 @@ generic).}
 bounded priors. The first round draws \code{n} rows; later rounds size the
 batch from the running acceptance rate (at most \code{100 * n} rows), so low
 acceptance still fills \code{n} draws within a few rounds.}
+
+\item{seed}{Optional integer seed. The draws are reproducible for a given
+\code{seed}, for every estimator including MAF and NSF, and the caller's R and
+torch random streams are restored afterwards.}
 
 \item{...}{Unused.}
 }
