@@ -190,7 +190,8 @@ resolve_x <- function(post, x) {
 #'   batch from the running acceptance rate (at most `100 * n` rows), so low
 #'   acceptance still fills `n` draws within a few rounds.
 #' @param seed Optional integer seed. The draws are reproducible for a given
-#'   `seed`, and the caller's own random stream is restored afterwards.
+#'   `seed`, for every estimator including MAF and NSF, and the caller's R and
+#'   torch random streams are restored afterwards.
 #' @param ... Unused.
 #' @return An `n x dim` matrix of posterior draws (class `nsbi_samples`).
 #' @method sample nsbi_posterior

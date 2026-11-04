@@ -118,7 +118,7 @@ torch_available <- function() {
 
 #' Seed R's RNG for the rest of the calling function, then restore it
 #'
-#' Entry points with a `seed` argument call this once near the top. It does `set.seed(seed)` and registers an `on.exit()` in the *caller's* frame that puts the caller's `.Random.seed` back (or removes it if there was none), so a seeded call is reproducible without leaving the user's own random stream in a state fixed by `seed` (GitHub #381, the entry-point analogue of #272 and #319). With `seed = NULL` it does nothing. Use [with_fixed_seed()] instead when only one expression needs the seed.
+#' Entry points with a `seed` argument call this once near the top. It does `set.seed(seed)` and registers an `on.exit()` in the *caller's* frame that puts the caller's `.Random.seed` back (or removes it if there was none), so a seeded call is reproducible without leaving the user's own random stream in a state fixed by `seed` (GitHub #381, the entry-point analogue of #272 and #319). With `seed = NULL` it does nothing. With `torch` installed it also seeds and restores torch's global RNG (#395). Use [with_fixed_seed()] instead when only one expression needs the seed.
 #'
 #' @param seed Integer seed, or `NULL` to leave the RNG alone.
 #' @param envir Frame whose exit triggers the restore.
@@ -134,6 +134,15 @@ local_seed <- function(seed, envir = parent.frame()) {
   }
   do.call(base::on.exit, list(bquote(.(restore)()), TRUE), envir = envir)
   set.seed(seed)
+  # MAF, NSF and the neural classifiers draw from torch's own generator, which
+  # set.seed() does not touch, so a seeded sample()/sbc()/tarp() was not
+  # reproducible for them (#395). Seed and restore it the same way.
+  if (torch_available()) {
+    old_torch_rng <- set_torch_seed(seed)
+    do.call(base::on.exit,
+            list(bquote(torch::torch_set_rng_state(.(old_torch_rng))), TRUE),
+            envir = envir)
+  }
   invisible(NULL)
 }
 
