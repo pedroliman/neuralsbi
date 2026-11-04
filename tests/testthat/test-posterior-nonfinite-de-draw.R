@@ -176,3 +176,17 @@ test_that("sample() with a seed is reproducible and leaves the RNG stream alone 
   set.seed(1); sample(post, 5, seed = 3); u2 <- stats::runif(1)
   expect_equal(u1, u2)
 })
+
+test_that("sample(seed =) is reproducible and leaves the R RNG alone (#395)", {
+  skip_if_no_torch()
+  set.seed(1)
+  prior <- prior_normal(rep(0, 2), 1)
+  sim <- function(theta) theta + rnorm(length(theta), sd = 0.3)
+  for (est in c("maf", "nsf")) {
+    fit <- npe(prior, sim, 300, density_estimator = est, max_epochs = 2, seed = 1,
+               verbose = FALSE)
+    post <- posterior(fit, x_obs = c(0, 0))
+    expect_identical(sample(post, 5, seed = 3), sample(post, 5, seed = 3))
+    expect_false(identical(sample(post, 5, seed = 3), sample(post, 5, seed = 4)))
+  }
+})

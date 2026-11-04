@@ -15,6 +15,6 @@ local_seed(seed, envir = parent.frame())
 \code{NULL}, invisibly.
 }
 \description{
-Entry points with a \code{seed} argument call this once near the top. It does \code{set.seed(seed)} and registers an \code{on.exit()} in the \emph{caller's} frame that puts the caller's \code{.Random.seed} back (or removes it if there was none), so a seeded call is reproducible without leaving the user's own random stream in a state fixed by \code{seed} (GitHub #381, the entry-point analogue of #272 and #319). With \code{seed = NULL} it does nothing. Use \code{\link[=with_fixed_seed]{with_fixed_seed()}} instead when only one expression needs the seed.
+Entry points with a \code{seed} argument call this once near the top. It does \code{set.seed(seed)} and registers an \code{on.exit()} in the \emph{caller's} frame that puts the caller's \code{.Random.seed} back (or removes it if there was none), so a seeded call is reproducible without leaving the user's own random stream in a state fixed by \code{seed} (GitHub #381, the entry-point analogue of #272 and #319). With \code{seed = NULL} it does nothing. With \code{torch} installed it also seeds and restores torch's global RNG (#395). Use \code{\link[=with_fixed_seed]{with_fixed_seed()}} instead when only one expression needs the seed.
 }
 \keyword{internal}
