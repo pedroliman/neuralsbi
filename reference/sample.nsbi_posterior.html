@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.87</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.88</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -119,7 +119,8 @@ acceptance still fills <code>n</code> draws within a few rounds.</p></dd>
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
 <dd><p>Optional integer seed. The draws are reproducible for a given
-<code>seed</code>, and the caller's own random stream is restored afterwards.</p></dd>
+<code>seed</code>, for every estimator including MAF and NSF, and the caller's R and
+torch random streams are restored afterwards.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

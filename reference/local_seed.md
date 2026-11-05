@@ -7,7 +7,8 @@ frame that puts the caller's `.Random.seed` back (or removes it if there
 was none), so a seeded call is reproducible without leaving the user's
 own random stream in a state fixed by `seed` (GitHub \#381, the
 entry-point analogue of \#272 and \#319). With `seed = NULL` it does
-nothing. Use
+nothing. With `torch` installed it also seeds and restores torch's
+global RNG (#395). Use
 [`with_fixed_seed()`](https://neuralsbi.pedrodelima.com/reference/with_fixed_seed.md)
 instead when only one expression needs the seed.
 

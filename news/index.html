@@ -47,7 +47,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neuralsbi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.87</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.88</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,6 +82,11 @@
       <small>Source: <a href="https://github.com/pedroliman/neuralsbi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.6.88" id="neuralsbi-0688">neuralsbi 0.6.88<a class="anchor" aria-label="anchor" href="#neuralsbi-0688"></a></h2>
+<ul><li>
+<strong><code><a href="../reference/sample.html">sample()</a></code>, <code><a href="../reference/sbc.html">sbc()</a></code> and <code><a href="../reference/tarp.html">tarp()</a></code> are reproducible for MAF and NSF posteriors.</strong> <code><a href="../reference/local_seed.html">local_seed()</a></code> called only <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, which does not seed torch, so the flows’ base noise differed between calls with the same <code>seed</code>. <code><a href="../reference/local_seed.html">local_seed()</a></code> now also seeds and restores torch’s RNG, and <code><a href="../reference/sample.html">sample()</a></code> for an NPE posterior gains a <code>seed</code> argument (it was silently swallowed by <code>...</code> before) (<a href="https://github.com/pedroliman/neuralsbi/issues/395" class="external-link">#395</a>) (<a href="https://github.com/pedroliman/neuralsbi/issues/397" class="external-link">#397</a>).</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.87" id="neuralsbi-0687">neuralsbi 0.6.87<a class="anchor" aria-label="anchor" href="#neuralsbi-0687"></a></h2>
 <ul><li>

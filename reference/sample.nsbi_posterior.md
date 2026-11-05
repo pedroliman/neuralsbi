@@ -35,7 +35,8 @@ sample(x, size = 1000, n = size, obs = NULL, max_sampling_batches = 100L, seed =
 - seed:
 
   Optional integer seed. The draws are reproducible for a given `seed`,
-  and the caller's own random stream is restored afterwards.
+  for every estimator including MAF and NSF, and the caller's R and
+  torch random streams are restored afterwards.
 
 - ...:
 

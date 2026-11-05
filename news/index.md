@@ -1,5 +1,23 @@
 # Changelog
 
+## neuralsbi 0.6.88
+
+- **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md),
+  [`sbc()`](https://neuralsbi.pedrodelima.com/reference/sbc.md) and
+  [`tarp()`](https://neuralsbi.pedrodelima.com/reference/tarp.md) are
+  reproducible for MAF and NSF posteriors.**
+  [`local_seed()`](https://neuralsbi.pedrodelima.com/reference/local_seed.md)
+  called only [`set.seed()`](https://rdrr.io/r/base/Random.html), which
+  does not seed torch, so the flows’ base noise differed between calls
+  with the same `seed`.
+  [`local_seed()`](https://neuralsbi.pedrodelima.com/reference/local_seed.md)
+  now also seeds and restores torch’s RNG, and
+  [`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
+  for an NPE posterior gains a `seed` argument (it was silently
+  swallowed by `...` before)
+  ([\#395](https://github.com/pedroliman/neuralsbi/issues/395))
+  ([\#397](https://github.com/pedroliman/neuralsbi/issues/397)).
+
 ## neuralsbi 0.6.87
 
 - **[`sample()`](https://neuralsbi.pedrodelima.com/reference/sample.md)
