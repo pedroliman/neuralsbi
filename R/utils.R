@@ -136,11 +136,13 @@ local_seed <- function(seed, envir = parent.frame()) {
   set.seed(seed)
   # MAF, NSF and the neural classifiers draw from torch's own generator, which
   # set.seed() does not touch, so a seeded sample()/sbc()/tarp() was not
-  # reproducible for them (#395). Seed and restore it the same way.
+  # reproducible for them (#395). Seed and restore it the same way. The torch
+  # restore runs first (after = FALSE) because it can touch R's RNG, and the
+  # R restore has to be the last word on .Random.seed.
   if (torch_available()) {
     old_torch_rng <- set_torch_seed(seed)
     do.call(base::on.exit,
-            list(bquote(torch::torch_set_rng_state(.(old_torch_rng))), TRUE),
+            list(bquote(torch::torch_set_rng_state(.(old_torch_rng))), TRUE, FALSE),
             envir = envir)
   }
   invisible(NULL)

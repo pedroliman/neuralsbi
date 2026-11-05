@@ -149,12 +149,8 @@ c2st <- function(x, y, n_folds = 5L, seed = NULL,
                           "spread; see ?c2st.")
     )
     device <- resolve_device(device)
-    # Two random streams to fix: R's decides the folds, the subsampling and the
-    # batch order, torch's decides the network's starting weights.
-    if (!is.null(seed)) {
-      old_torch_rng <- set_torch_seed(seed)
-      on.exit(torch::torch_set_rng_state(old_torch_rng), add = TRUE)
-    }
+    # local_seed() above already seeded torch (network starting weights) as well
+    # as R (folds, subsampling, batch order), and restores both.
   }
   # base::sample.int, not the package's sample() generic, which dispatches on
   # its first argument.
