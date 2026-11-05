@@ -20,7 +20,8 @@ batch from the running acceptance rate (at most \code{100 * n} rows), so low
 acceptance still fills \code{n} draws within a few rounds.}
 
 \item{seed}{Optional integer seed. The draws are reproducible for a given
-\code{seed}, and the caller's own random stream is restored afterwards.}
+\code{seed}, for every estimator including MAF and NSF, and the caller's R and
+torch random streams are restored afterwards.}
 
 \item{...}{Unused.}
 }

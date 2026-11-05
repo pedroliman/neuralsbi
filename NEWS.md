@@ -1,3 +1,7 @@
+# neuralsbi 0.6.88
+
+* **`sample()`, `sbc()` and `tarp()` are reproducible for MAF and NSF posteriors.** `local_seed()` called only `set.seed()`, which does not seed torch, so the flows' base noise differed between calls with the same `seed`. `local_seed()` now also seeds and restores torch's RNG, and `sample()` for an NPE posterior gains a `seed` argument (it was silently swallowed by `...` before) (#395) (#397).
+
 # neuralsbi 0.6.87
 
 * **`sample()` takes a `seed` argument, and count checks reject values above the integer range.** `sample(post, n, seed = 3)` swallowed `seed` in `...` and returned different draws on every call. `sample.nsbi_posterior()` and `sample.nsbi_mcmc_posterior()` now accept `seed`, which makes the draws reproducible and restores the caller's random stream afterwards. For NLE and NRE fits a cached run is still reused unless `refresh = TRUE`. `check_count()` and `check_counts()` let whole numbers above 2147483647 through and returned `NA`, so `sample(post, 3e9)` failed with an unrelated error; they now error with the allowed range (#393) (#394).
